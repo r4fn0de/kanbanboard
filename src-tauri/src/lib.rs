@@ -1,10 +1,225 @@
+use anyhow::anyhow;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
+use serde_json::{json, Value};
+use sqlx::{
+    sqlite::{SqliteConnectOptions, SqliteJournalMode, SqlitePool, SqlitePoolOptions, SqliteRow},
+    Row,
+};
+use std::fs;
 use std::path::PathBuf;
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tauri::menu::{MenuBuilder, MenuItemBuilder, PredefinedMenuItem, SubmenuBuilder};
-use tauri::{AppHandle, Emitter, Manager};
+use tauri::{AppHandle, Emitter, Manager, State};
+
+const KANBAN_SCHEMA: &str = include_str!("../schema/kanban.sql");
+const DATABASE_FILE: &str = "flowspace.db";
+
+type DbPool = SqlitePool;
+
+async fn establish_pool(app: &AppHandle) -> Result<DbPool, String> {
+    let app_data_dir = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| format!("Failed to resolve app data directory: {e}"))?;
+
+    fs::create_dir_all(&app_data_dir)
+        .map_err(|e| format!("Failed to create app data directory: {e}"))?;
+
+    let db_path = app_data_dir.join(DATABASE_FILE);
+
+    let mut options = SqliteConnectOptions::new()
+        .filename(&db_path)
+        .create_if_missing(true)
+        .foreign_keys(true);
+
+    options = options.journal_mode(SqliteJournalMode::Wal);
+
+    options = options.busy_timeout(Duration::from_secs(5));
+
+    let pool = SqlitePoolOptions::new()
+        .max_connections(5)
+        .connect_with(options)
+        .await
+        .map_err(|e| format!("Failed to create SQLite pool: {e}"))?;
+
+    Ok(pool)
+}
+
+async fn initialize_schema(pool: &DbPool) -> Result<(), String> {
+    for statement in KANBAN_SCHEMA.split(';') {
+        let sql = statement.trim();
+        if sql.is_empty() {
+            continue;
+        }
+
+        sqlx::query(sql)
+            .execute(pool)
+            .await
+            .map_err(|e| format!("Failed to execute schema statement `{sql}`: {e}"))?;
+    }
+
+    Ok(())
+}
+
+fn map_board_row(row: SqliteRow) -> Result<Value, sqlx::Error> {
+    Ok(json!({
+        "id": row.try_get::<String, _>("id")?,
+        "title": row.try_get::<String, _>("title")?,
+        "description": row.try_get::<Option<String>, _>("description")?,
+        "createdAt": row.try_get::<String, _>("created_at")?,
+        "updatedAt": row.try_get::<String, _>("updated_at")?,
+        "archivedAt": row.try_get::<Option<String>, _>("archived_at")?,
+    }))
+}
+
+fn map_column_row(row: SqliteRow) -> Result<Value, sqlx::Error> {
+    Ok(json!({
+        "id": row.try_get::<String, _>("id")?,
+        "boardId": row.try_get::<String, _>("board_id")?,
+        "title": row.try_get::<String, _>("title")?,
+        "position": row.try_get::<i64, _>("position")?,
+        "wipLimit": row.try_get::<Option<i64>, _>("wip_limit")?,
+        "createdAt": row.try_get::<String, _>("created_at")?,
+        "updatedAt": row.try_get::<String, _>("updated_at")?,
+        "archivedAt": row.try_get::<Option<String>, _>("archived_at")?,
+    }))
+}
+
+fn map_card_row(row: SqliteRow) -> Result<Value, sqlx::Error> {
+    Ok(json!({
+        "id": row.try_get::<String, _>("id")?,
+        "boardId": row.try_get::<String, _>("board_id")?,
+        "columnId": row.try_get::<String, _>("column_id")?,
+        "title": row.try_get::<String, _>("title")?,
+        "description": row.try_get::<Option<String>, _>("description")?,
+        "position": row.try_get::<i64, _>("position")?,
+        "priority": row.try_get::<String, _>("priority")?,
+        "dueDate": row.try_get::<Option<String>, _>("due_date")?,
+        "createdAt": row.try_get::<String, _>("created_at")?,
+        "updatedAt": row.try_get::<String, _>("updated_at")?,
+        "archivedAt": row.try_get::<Option<String>, _>("archived_at")?,
+        "tags": Vec::<String>::new(),
+    }))
+}
+
+#[tauri::command]
+async fn load_boards(pool: State<'_, DbPool>) -> Result<Vec<Value>, String> {
+    sqlx::query("SELECT id, title, description, created_at, updated_at, archived_at FROM kanban_boards ORDER BY created_at ASC")
+        .try_map(map_board_row)
+        .fetch_all(&*pool)
+        .await
+        .map_err(|e| {
+            log::error!("Failed to load boards: {e}");
+            e.to_string()
+        })
+}
+
+#[tauri::command]
+async fn create_board(
+    pool: State<'_, DbPool>,
+    id: String,
+    title: String,
+    description: Option<String>,
+) -> Result<(), String> {
+    sqlx::query(
+        "INSERT INTO kanban_boards (id, title, description, created_at, updated_at) VALUES (?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))",
+    )
+    .bind(id)
+    .bind(title)
+    .bind(description)
+    .execute(&*pool)
+    .await
+    .map(|_| ())
+    .map_err(|e| {
+        log::error!("Failed to create board: {e}");
+        e.to_string()
+    })
+}
+
+#[tauri::command]
+async fn load_columns(pool: State<'_, DbPool>, board_id: String) -> Result<Vec<Value>, String> {
+    sqlx::query("SELECT id, board_id, title, position, wip_limit, created_at, updated_at, archived_at FROM kanban_columns WHERE board_id = ? ORDER BY position ASC")
+        .bind(board_id)
+        .try_map(map_column_row)
+        .fetch_all(&*pool)
+        .await
+        .map_err(|e| {
+            log::error!("Failed to load columns: {e}");
+            e.to_string()
+        })
+}
+
+#[tauri::command]
+async fn create_column(
+    pool: State<'_, DbPool>,
+    id: String,
+    board_id: String,
+    title: String,
+    position: i64,
+    wip_limit: Option<i64>,
+) -> Result<(), String> {
+    sqlx::query(
+        "INSERT INTO kanban_columns (id, board_id, title, position, wip_limit, created_at, updated_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))",
+    )
+    .bind(id)
+    .bind(board_id)
+    .bind(title)
+    .bind(position)
+    .bind(wip_limit)
+    .execute(&*pool)
+    .await
+    .map(|_| ())
+    .map_err(|e| {
+        log::error!("Failed to create column: {e}");
+        e.to_string()
+    })
+}
+
+#[tauri::command]
+async fn load_cards(pool: State<'_, DbPool>, board_id: String) -> Result<Vec<Value>, String> {
+    sqlx::query("SELECT id, board_id, column_id, title, description, position, priority, due_date, created_at, updated_at, archived_at FROM kanban_cards WHERE board_id = ? ORDER BY position ASC")
+        .bind(board_id)
+        .try_map(map_card_row)
+        .fetch_all(&*pool)
+        .await
+        .map_err(|e| {
+            log::error!("Failed to load cards: {e}");
+            e.to_string()
+        })
+}
+
+#[tauri::command]
+async fn create_card(
+    pool: State<'_, DbPool>,
+    id: String,
+    board_id: String,
+    column_id: String,
+    title: String,
+    description: Option<String>,
+    position: i64,
+    priority: String,
+    due_date: Option<String>,
+) -> Result<(), String> {
+    sqlx::query(
+        "INSERT INTO kanban_cards (id, board_id, column_id, title, description, position, priority, due_date, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))",
+    )
+    .bind(id)
+    .bind(board_id)
+    .bind(column_id)
+    .bind(title)
+    .bind(description)
+    .bind(position)
+    .bind(priority)
+    .bind(due_date)
+    .execute(&*pool)
+    .await
+    .map(|_| ())
+    .map_err(|e| {
+        log::error!("Failed to create card: {e}");
+        e.to_string()
+    })
+}
 
 // Validation functions
 fn validate_filename(filename: &str) -> Result<(), String> {
@@ -433,6 +648,16 @@ pub fn run() {
                 app.package_info().name
             );
 
+            let handle = app.handle();
+
+            let pool = tauri::async_runtime::block_on(establish_pool(&handle))
+                .map_err(|e| anyhow!(e))?;
+
+            tauri::async_runtime::block_on(initialize_schema(&pool))
+                .map_err(|e| anyhow!(e))?;
+
+            app.manage(pool);
+
             // Set up native menu system
             if let Err(e) = create_app_menu(app) {
                 log::error!("Failed to create app menu: {e}");
@@ -514,7 +739,13 @@ pub fn run() {
             send_native_notification,
             save_emergency_data,
             load_emergency_data,
-            cleanup_old_recovery_files
+            cleanup_old_recovery_files,
+            load_boards,
+            create_board,
+            load_columns,
+            create_column,
+            load_cards,
+            create_card
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

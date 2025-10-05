@@ -1,69 +1,3 @@
-// Common types used across the application
-//
-export type EntityId = string
-
-export interface KanbanBoard {
-  id: EntityId
-  title: string
-  description?: string | null
-  createdAt: string
-  updatedAt: string
-  archivedAt?: string | null
-}
-
-export interface KanbanColumn {
-  id: EntityId
-  boardId: EntityId
-  title: string
-  position: number
-  wipLimit?: number | null
-  createdAt: string
-  updatedAt: string
-  archivedAt?: string | null
-}
-
-export type KanbanPriority = 'low' | 'medium' | 'high'
-
-export interface KanbanCard {
-  id: EntityId
-  boardId: EntityId
-  columnId: EntityId
-  title: string
-  description?: string | null
-  position: number
-  priority: KanbanPriority
-  dueDate?: string | null
-  tags: string[]
-  createdAt: string
-  updatedAt: string
-  archivedAt?: string | null
-}
-
-export interface KanbanTag {
-  id: EntityId
-  boardId: EntityId
-  label: string
-  color?: string | null
-  createdAt: string
-  updatedAt: string
-}
-
-export interface KanbanActivity {
-  id: EntityId
-  boardId: EntityId
-  cardId?: EntityId | null
-  columnId?: EntityId | null
-  action: string
-  meta?: Record<string, unknown>
-  createdAt: string
-}
-
-/**
- * Canonical SQLite schema used to bootstrap the local database.
- * This string can be executed via the Tauri SQLite plugin or a custom
- * persistence layer to ensure all required tables exist.
- */
-export const KANBAN_SCHEMA_SQL = `
 CREATE TABLE IF NOT EXISTS kanban_boards (
   id TEXT PRIMARY KEY,
   title TEXT NOT NULL,
@@ -127,4 +61,3 @@ CREATE INDEX IF NOT EXISTS idx_columns_board_position ON kanban_columns(board_id
 CREATE INDEX IF NOT EXISTS idx_cards_board_position ON kanban_cards(board_id, position);
 CREATE INDEX IF NOT EXISTS idx_cards_column_position ON kanban_cards(column_id, position);
 CREATE INDEX IF NOT EXISTS idx_activity_board_created ON kanban_activity(board_id, created_at DESC);
-` as const;
