@@ -27,13 +27,7 @@ import type { KanbanBoard } from '@/types/common'
 import { useBoards, useCreateBoard } from '@/services/kanban'
 
 export function BoardsView() {
-  const {
-    data: boards = [],
-    isLoading,
-    isError,
-    error,
-    refetch,
-  } = useBoards()
+  const { data: boards = [], isLoading, isError, error, refetch } = useBoards()
   const { mutateAsync: createBoard, isPending } = useCreateBoard()
 
   const [selectedBoard, setSelectedBoard] = useState<KanbanBoard | null>(null)
@@ -55,7 +49,8 @@ export function BoardsView() {
     if (
       updated &&
       (updated.title !== selectedBoard.title ||
-        updated.description !== selectedBoard.description)
+        updated.description !== selectedBoard.description ||
+        (updated.icon ?? null) !== (selectedBoard.icon ?? null))
     ) {
       setSelectedBoard(updated)
     }
@@ -95,6 +90,7 @@ export function BoardsView() {
           id: crypto.randomUUID(),
           title: trimmedTitle,
           description: trimmedDescription ? trimmedDescription : undefined,
+          icon: 'Folder',
         })
         toast.success('Board created successfully')
         resetForm()
@@ -151,7 +147,10 @@ export function BoardsView() {
         </div>
         <div className="grid flex-1 gap-6 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
           {['a', 'b', 'c', 'd', 'e', 'f'].map(key => (
-            <div key={key} className="h-40 bg-white border border-gray-200/60 rounded-2xl p-6 shadow-sm dark:bg-gray-900 dark:border-gray-700/60">
+            <div
+              key={key}
+              className="h-40 bg-white border border-gray-200/60 rounded-2xl p-6 shadow-sm dark:bg-gray-900 dark:border-gray-700/60"
+            >
               <div className="space-y-3">
                 <div className="h-6 bg-gray-200 rounded animate-pulse dark:bg-gray-700"></div>
                 <div className="h-4 bg-gray-200 rounded animate-pulse dark:bg-gray-700"></div>
@@ -169,8 +168,18 @@ export function BoardsView() {
       <div className="flex h-full flex-col items-center justify-center gap-6 p-8 text-center">
         <div className="flex flex-col items-center gap-4">
           <div className="h-16 w-16 rounded-full bg-red-50 flex items-center justify-center dark:bg-red-900/20">
-            <svg className="h-8 w-8 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+            <svg
+              className="h-8 w-8 text-red-500"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"
+              />
             </svg>
           </div>
           <div className="flex flex-col gap-2">
@@ -178,7 +187,9 @@ export function BoardsView() {
               Could not load the boards.
             </p>
             {error instanceof Error ? (
-              <p className="text-base text-gray-600 leading-relaxed dark:text-gray-400">{error.message}</p>
+              <p className="text-base text-gray-600 leading-relaxed dark:text-gray-400">
+                {error.message}
+              </p>
             ) : null}
           </div>
         </div>
@@ -194,7 +205,9 @@ export function BoardsView() {
       <div className="flex h-full flex-col gap-8 p-8">
         <div className="flex items-center justify-between gap-4">
           <div className="flex flex-col gap-2">
-            <h1 className="text-3xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">Boards</h1>
+            <h1 className="text-3xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">
+              Boards
+            </h1>
             <p className="text-base text-gray-600 dark:text-gray-400">
               Manage your local Kanban boards.
             </p>
@@ -245,8 +258,18 @@ export function BoardsView() {
           <div className="flex flex-1 flex-col items-center justify-center gap-6 text-center">
             <div className="flex flex-col items-center gap-4">
               <div className="h-16 w-16 rounded-full bg-gray-100 flex items-center justify-center dark:bg-gray-800">
-                <svg className="h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                <svg
+                  className="h-8 w-8 text-gray-400"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
+                  />
                 </svg>
               </div>
               <div className="flex flex-col gap-2">
@@ -254,11 +277,17 @@ export function BoardsView() {
                   No boards found
                 </p>
                 <p className="max-w-sm text-base text-gray-600 leading-relaxed dark:text-gray-400">
-                  Create the first board to start organizing your tasks in columns and cards.
+                  Create the first board to start organizing your tasks in
+                  columns and cards.
                 </p>
               </div>
             </div>
-            <Button onClick={handleEmptyStateCreate} disabled={isPending} size="lg" className="px-8">
+            <Button
+              onClick={handleEmptyStateCreate}
+              disabled={isPending}
+              size="lg"
+              className="px-8"
+            >
               Create first board
             </Button>
           </div>
@@ -267,7 +296,7 @@ export function BoardsView() {
 
       <DialogContent>
         <DialogHeader>
-            <DialogTitle>New board</DialogTitle>
+          <DialogTitle>New board</DialogTitle>
           <DialogDescription>
             Define a name and description to start organizing your tasks.
           </DialogDescription>

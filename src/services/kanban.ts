@@ -1,19 +1,17 @@
 import { invoke } from '@tauri-apps/api/core'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
-import type {
-  KanbanBoard,
-  KanbanCard,
-  KanbanColumn,
-} from '@/types/common'
+import type { KanbanBoard, KanbanCard, KanbanColumn } from '@/types/common'
 
 const KANBAN_DB_KEY = 'kanban'
 
 export const kanbanQueryKeys = {
   all: [KANBAN_DB_KEY] as const,
   boards: () => [...kanbanQueryKeys.all, 'boards'] as const,
-  columns: (boardId: string) => [...kanbanQueryKeys.boards(), 'columns', boardId] as const,
-  cards: (boardId: string) => [...kanbanQueryKeys.boards(), 'cards', boardId] as const,
+  columns: (boardId: string) =>
+    [...kanbanQueryKeys.boards(), 'columns', boardId] as const,
+  cards: (boardId: string) =>
+    [...kanbanQueryKeys.boards(), 'cards', boardId] as const,
 }
 
 export async function fetchBoards(): Promise<KanbanBoard[]> {
@@ -24,12 +22,14 @@ export interface CreateBoardInput {
   id: string
   title: string
   description?: string
+  icon?: string
 }
 
 export async function createBoard(input: CreateBoardInput): Promise<void> {
   await invoke('create_board', {
     ...input,
     description: input.description ?? null,
+    icon: input.icon ?? 'Folder',
   })
 }
 
@@ -57,6 +57,20 @@ export async function deleteBoard(input: DeleteBoardInput): Promise<void> {
   })
 }
 
+export interface UpdateBoardIconInput {
+  id: string
+  icon: string
+}
+
+export async function updateBoardIcon(
+  input: UpdateBoardIconInput
+): Promise<void> {
+  await invoke('update_board_icon', {
+    id: input.id,
+    icon: input.icon,
+  })
+}
+
 export function useMoveColumn(boardId: string) {
   const queryClient = useQueryClient()
   return useMutation({
@@ -66,21 +80,30 @@ export function useMoveColumn(boardId: string) {
 
       await queryClient.cancelQueries({ queryKey: columnsKey })
 
-      const previousColumns = queryClient.getQueryData<KanbanColumn[]>(columnsKey)
+      const previousColumns =
+        queryClient.getQueryData<KanbanColumn[]>(columnsKey)
 
       if (previousColumns) {
-        const fromIndex = previousColumns.findIndex(c => c.id === input.columnId)
+        const fromIndex = previousColumns.findIndex(
+          c => c.id === input.columnId
+        )
         if (fromIndex !== -1) {
           const updated = [...previousColumns]
           const [moved] = updated.splice(fromIndex, 1)
           if (!moved) {
             return { previousColumns }
           }
-          const target = Math.max(0, Math.min(input.targetIndex, updated.length))
+          const target = Math.max(
+            0,
+            Math.min(input.targetIndex, updated.length)
+          )
           updated.splice(target, 0, moved)
 
           // Recalculate positions to reflect new order
-          const withPositions = updated.map((c, idx) => ({ ...c, position: idx }))
+          const withPositions = updated.map((c, idx) => ({
+            ...c,
+            position: idx,
+          }))
           queryClient.setQueryData<KanbanColumn[]>(columnsKey, withPositions)
         }
       }
@@ -89,11 +112,16 @@ export function useMoveColumn(boardId: string) {
     },
     onError: (_error, _variables, context) => {
       if (context?.previousColumns) {
-        queryClient.setQueryData(kanbanQueryKeys.columns(boardId), context.previousColumns)
+        queryClient.setQueryData(
+          kanbanQueryKeys.columns(boardId),
+          context.previousColumns
+        )
       }
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: kanbanQueryKeys.columns(boardId) })
+      queryClient.invalidateQueries({
+        queryKey: kanbanQueryKeys.columns(boardId),
+      })
       queryClient.invalidateQueries({ queryKey: kanbanQueryKeys.boards() })
     },
   })
@@ -112,19 +140,21 @@ export function useRenameBoard() {
 
       if (previousBoards) {
         const now = new Date().toISOString()
-        queryClient.setQueryData<KanbanBoard[]>(kanbanQueryKeys.boards(), boards =>
-          boards
-            ? boards.map(board =>
-                board.id === input.id
-                  ? {
-                      ...board,
-                      title: input.title,
-                      description: input.description ?? null,
-                      updatedAt: now,
-                    }
-                  : board
-              )
-            : boards
+        queryClient.setQueryData<KanbanBoard[]>(
+          kanbanQueryKeys.boards(),
+          boards =>
+            boards
+              ? boards.map(board =>
+                  board.id === input.id
+                    ? {
+                        ...board,
+                        title: input.title,
+                        description: input.description ?? null,
+                        updatedAt: now,
+                      }
+                    : board
+                )
+              : boards
         )
       }
 
@@ -132,7 +162,10 @@ export function useRenameBoard() {
     },
     onError: (_error, _variables, context) => {
       if (context?.previousBoards) {
-        queryClient.setQueryData(kanbanQueryKeys.boards(), context.previousBoards)
+        queryClient.setQueryData(
+          kanbanQueryKeys.boards(),
+          context.previousBoards
+        )
       }
     },
     onSettled: () => {
@@ -153,8 +186,10 @@ export function useDeleteBoard() {
       )
 
       if (previousBoards) {
-        queryClient.setQueryData<KanbanBoard[]>(kanbanQueryKeys.boards(), boards =>
-          boards ? boards.filter(board => board.id !== input.id) : boards
+        queryClient.setQueryData<KanbanBoard[]>(
+          kanbanQueryKeys.boards(),
+          boards =>
+            boards ? boards.filter(board => board.id !== input.id) : boards
         )
       }
 
@@ -162,14 +197,21 @@ export function useDeleteBoard() {
     },
     onError: (_error, _variables, context) => {
       if (context?.previousBoards) {
-        queryClient.setQueryData(kanbanQueryKeys.boards(), context.previousBoards)
+        queryClient.setQueryData(
+          kanbanQueryKeys.boards(),
+          context.previousBoards
+        )
       }
     },
     onSettled: (_result, _error, variables) => {
       queryClient.invalidateQueries({ queryKey: kanbanQueryKeys.boards() })
       if (variables?.id) {
-        queryClient.removeQueries({ queryKey: kanbanQueryKeys.columns(variables.id) })
-        queryClient.removeQueries({ queryKey: kanbanQueryKeys.cards(variables.id) })
+        queryClient.removeQueries({
+          queryKey: kanbanQueryKeys.columns(variables.id),
+        })
+        queryClient.removeQueries({
+          queryKey: kanbanQueryKeys.cards(variables.id),
+        })
       }
     },
   })
@@ -205,7 +247,9 @@ export function useMoveCard(boardId: string) {
             .sort((a, b) => a.position - b.position)
           const toList = sameColumn
             ? [...fromList]
-            : updated.filter(c => c.columnId === input.toColumnId).sort((a, b) => a.position - b.position)
+            : updated
+                .filter(c => c.columnId === input.toColumnId)
+                .sort((a, b) => a.position - b.position)
 
           const target = Math.max(0, Math.min(input.targetIndex, toList.length))
           toList.splice(target, 0, moving)
@@ -217,13 +261,17 @@ export function useMoveCard(boardId: string) {
 
           if (sameColumn) {
             const normalized = normalizePositions(toList)
-            const remaining = updated.filter(c => c.columnId !== input.fromColumnId)
+            const remaining = updated.filter(
+              c => c.columnId !== input.fromColumnId
+            )
             next = remaining.concat(normalized)
           } else {
             const normalizedFrom = normalizePositions(fromList)
             const normalizedTo = normalizePositions(toList)
             const remaining = updated.filter(
-              c => c.columnId !== input.fromColumnId && c.columnId !== input.toColumnId
+              c =>
+                c.columnId !== input.fromColumnId &&
+                c.columnId !== input.toColumnId
             )
             next = remaining.concat(normalizedFrom, normalizedTo)
           }
@@ -236,12 +284,19 @@ export function useMoveCard(boardId: string) {
     },
     onError: (_error, _variables, context) => {
       if (context?.previousCards) {
-        queryClient.setQueryData(kanbanQueryKeys.cards(boardId), context.previousCards)
+        queryClient.setQueryData(
+          kanbanQueryKeys.cards(boardId),
+          context.previousCards
+        )
       }
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: kanbanQueryKeys.cards(boardId) })
-      queryClient.invalidateQueries({ queryKey: kanbanQueryKeys.columns(boardId) })
+      queryClient.invalidateQueries({
+        queryKey: kanbanQueryKeys.cards(boardId),
+      })
+      queryClient.invalidateQueries({
+        queryKey: kanbanQueryKeys.columns(boardId),
+      })
     },
   })
 }
@@ -343,6 +398,7 @@ export function useCreateBoard() {
         id: input.id,
         title: input.title,
         description: input.description ?? null,
+        icon: input.icon ?? 'Folder',
         createdAt: now,
         updatedAt: now,
         archivedAt: null,
@@ -350,14 +406,18 @@ export function useCreateBoard() {
 
       queryClient.setQueryData<KanbanBoard[]>(
         kanbanQueryKeys.boards(),
-        oldBoards => (oldBoards ? [...oldBoards, optimisticBoard] : [optimisticBoard])
+        oldBoards =>
+          oldBoards ? [...oldBoards, optimisticBoard] : [optimisticBoard]
       )
 
       return { previousBoards }
     },
     onError: (_error, _variables, context) => {
       if (context?.previousBoards) {
-        queryClient.setQueryData(kanbanQueryKeys.boards(), context.previousBoards)
+        queryClient.setQueryData(
+          kanbanQueryKeys.boards(),
+          context.previousBoards
+        )
       }
     },
     onSettled: () => {
@@ -383,7 +443,8 @@ export function useCreateColumn(boardId: string) {
 
       await queryClient.cancelQueries({ queryKey: columnsKey })
 
-      const previousColumns = queryClient.getQueryData<KanbanColumn[]>(columnsKey)
+      const previousColumns =
+        queryClient.getQueryData<KanbanColumn[]>(columnsKey)
 
       const now = new Date().toISOString()
       const optimisticColumn: KanbanColumn = {
@@ -405,11 +466,16 @@ export function useCreateColumn(boardId: string) {
     },
     onError: (_error, _variables, context) => {
       if (context?.previousColumns) {
-        queryClient.setQueryData(kanbanQueryKeys.columns(boardId), context.previousColumns)
+        queryClient.setQueryData(
+          kanbanQueryKeys.columns(boardId),
+          context.previousColumns
+        )
       }
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: kanbanQueryKeys.columns(boardId) })
+      queryClient.invalidateQueries({
+        queryKey: kanbanQueryKeys.columns(boardId),
+      })
       queryClient.invalidateQueries({ queryKey: kanbanQueryKeys.boards() })
     },
   })
@@ -458,12 +524,65 @@ export function useCreateCard(boardId: string) {
     },
     onError: (_error, _variables, context) => {
       if (context?.previousCards) {
-        queryClient.setQueryData(kanbanQueryKeys.cards(boardId), context.previousCards)
+        queryClient.setQueryData(
+          kanbanQueryKeys.cards(boardId),
+          context.previousCards
+        )
       }
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: kanbanQueryKeys.cards(boardId) })
-      queryClient.invalidateQueries({ queryKey: kanbanQueryKeys.columns(boardId) })
+      queryClient.invalidateQueries({
+        queryKey: kanbanQueryKeys.cards(boardId),
+      })
+      queryClient.invalidateQueries({
+        queryKey: kanbanQueryKeys.columns(boardId),
+      })
+    },
+  })
+}
+
+export function useUpdateBoardIcon() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: updateBoardIcon,
+    onMutate: async input => {
+      await queryClient.cancelQueries({ queryKey: kanbanQueryKeys.boards() })
+
+      const previousBoards = queryClient.getQueryData<KanbanBoard[]>(
+        kanbanQueryKeys.boards()
+      )
+
+      if (previousBoards) {
+        const now = new Date().toISOString()
+        queryClient.setQueryData<KanbanBoard[]>(
+          kanbanQueryKeys.boards(),
+          boards =>
+            boards
+              ? boards.map(board =>
+                  board.id === input.id
+                    ? {
+                        ...board,
+                        icon: input.icon,
+                        updatedAt: now,
+                      }
+                    : board
+                )
+              : boards
+        )
+      }
+
+      return { previousBoards }
+    },
+    onError: (_error, _variables, context) => {
+      if (context?.previousBoards) {
+        queryClient.setQueryData(
+          kanbanQueryKeys.boards(),
+          context.previousBoards
+        )
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: kanbanQueryKeys.boards() })
     },
   })
 }

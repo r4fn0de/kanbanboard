@@ -6,6 +6,7 @@ export interface KanbanBoard {
   id: EntityId
   title: string
   description?: string | null
+  icon?: string | null
   createdAt: string
   updatedAt: string
   archivedAt?: string | null
@@ -68,6 +69,7 @@ CREATE TABLE IF NOT EXISTS kanban_boards (
   id TEXT PRIMARY KEY,
   title TEXT NOT NULL,
   description TEXT,
+  icon TEXT,
   created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
   updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
   archived_at TEXT
@@ -127,4 +129,4 @@ CREATE INDEX IF NOT EXISTS idx_columns_board_position ON kanban_columns(board_id
 CREATE INDEX IF NOT EXISTS idx_cards_board_position ON kanban_cards(board_id, position);
 CREATE INDEX IF NOT EXISTS idx_cards_column_position ON kanban_cards(column_id, position);
 CREATE INDEX IF NOT EXISTS idx_activity_board_created ON kanban_activity(board_id, created_at DESC);
-` as const;
+` as const

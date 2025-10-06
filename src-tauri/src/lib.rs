@@ -1,10 +1,10 @@
 use anyhow::anyhow;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use sqlx::{
-    sqlite::{SqliteConnectOptions, SqliteJournalMode, SqlitePool, SqlitePoolOptions, SqliteRow},
     Row, Sqlite, Transaction,
+    sqlite::{SqliteConnectOptions, SqliteJournalMode, SqlitePool, SqlitePoolOptions, SqliteRow},
 };
 use std::fs;
 use std::path::PathBuf;
@@ -14,6 +14,15 @@ use tauri::{AppHandle, Emitter, Manager, State};
 
 const KANBAN_SCHEMA: &str = include_str!("../schema/kanban.sql");
 const DATABASE_FILE: &str = "flowspace.db";
+const DEFAULT_BOARD_ICON: &str = "Folder";
+const ALLOWED_BOARD_ICONS: &[&str] = &[
+    "Folder",
+    "ClipboardList",
+    "Briefcase",
+    "Rocket",
+    "Lightbulb",
+    "Target",
+];
 
 type DbPool = SqlitePool;
 
@@ -128,7 +137,8 @@ async fn move_card(
     .await
     .map_err(|e| format!("Falha ao carregar cartão: {e}"))?;
 
-    let (current_column_id, card_board_id) = card_info.ok_or_else(|| "Cartão não encontrado.".to_string())?;
+    let (current_column_id, card_board_id) =
+        card_info.ok_or_else(|| "Cartão não encontrado.".to_string())?;
 
     if card_board_id != board_id {
         return Err("O cartão não pertence ao quadro informado.".to_string());
@@ -138,14 +148,13 @@ async fn move_card(
         return Err("O cartão não pertence à coluna de origem informada.".to_string());
     }
 
-    let target_column_board = sqlx::query_scalar::<_, Option<String>>(
-        "SELECT board_id FROM kanban_columns WHERE id = ?",
-    )
-    .bind(&to_column_id)
-    .fetch_one(&mut *tx)
-    .await
-    .map_err(|e| format!("Falha ao carregar coluna de destino: {e}"))?
-    .ok_or_else(|| "Coluna de destino não encontrada.".to_string())?;
+    let target_column_board =
+        sqlx::query_scalar::<_, Option<String>>("SELECT board_id FROM kanban_columns WHERE id = ?")
+            .bind(&to_column_id)
+            .fetch_one(&mut *tx)
+            .await
+            .map_err(|e| format!("Falha ao carregar coluna de destino: {e}"))?
+            .ok_or_else(|| "Coluna de destino não encontrada.".to_string())?;
 
     if target_column_board != board_id {
         return Err("A coluna de destino não pertence ao quadro informado.".to_string());
@@ -260,6 +269,34 @@ async fn initialize_schema(pool: &DbPool) -> Result<(), String> {
             .map_err(|e| format!("Failed to execute schema statement `{sql}`: {e}"))?;
     }
 
+    ensure_board_icon_column(pool).await?;
+
+    Ok(())
+}
+
+async fn ensure_board_icon_column(pool: &DbPool) -> Result<(), String> {
+    let column_exists = sqlx::query_scalar::<_, Option<i64>>(
+        "SELECT 1 FROM pragma_table_info('kanban_boards') WHERE name = 'icon' LIMIT 1",
+    )
+    .fetch_optional(pool)
+    .await
+    .map_err(|e| format!("Failed to inspect kanban_boards schema: {e}"))?
+    .flatten()
+    .is_some();
+
+    if !column_exists {
+        sqlx::query("ALTER TABLE kanban_boards ADD COLUMN icon TEXT")
+            .execute(pool)
+            .await
+            .map_err(|e| format!("Failed to add icon column to kanban_boards: {e}"))?;
+    }
+
+    sqlx::query("UPDATE kanban_boards SET icon = ? WHERE icon IS NULL OR TRIM(icon) = ''")
+        .bind(DEFAULT_BOARD_ICON)
+        .execute(pool)
+        .await
+        .map_err(|e| format!("Failed to backfill board icons: {e}"))?;
+
     Ok(())
 }
 
@@ -268,6 +305,10 @@ fn map_board_row(row: SqliteRow) -> Result<Value, sqlx::Error> {
         "id": row.try_get::<String, _>("id")?,
         "title": row.try_get::<String, _>("title")?,
         "description": row.try_get::<Option<String>, _>("description")?,
+        "icon": row
+            .try_get::<Option<String>, _>("icon")?
+            .filter(|icon| !icon.trim().is_empty())
+            .unwrap_or_else(|| DEFAULT_BOARD_ICON.to_string()),
         "createdAt": row.try_get::<String, _>("created_at")?,
         "updatedAt": row.try_get::<String, _>("updated_at")?,
         "archivedAt": row.try_get::<Option<String>, _>("archived_at")?,
@@ -308,6 +349,18 @@ fn normalize_optional_text(value: Option<String>) -> Option<String> {
     value
         .map(|v| v.trim().to_string())
         .filter(|v| !v.is_empty())
+}
+
+fn normalize_board_icon(icon: Option<String>) -> Result<String, String> {
+    match icon
+        .as_ref()
+        .map(|value| value.trim())
+        .filter(|value| !value.is_empty())
+    {
+        Some(value) if ALLOWED_BOARD_ICONS.contains(&value) => Ok(value.to_string()),
+        Some(_) => Err("Ícone inválido para o quadro.".to_string()),
+        None => Ok(DEFAULT_BOARD_ICON.to_string()),
+    }
 }
 
 fn validate_priority(priority: &str) -> Result<(), String> {
@@ -367,7 +420,7 @@ async fn normalize_card_positions_tx(
 
 #[tauri::command]
 async fn load_boards(pool: State<'_, DbPool>) -> Result<Vec<Value>, String> {
-    sqlx::query("SELECT id, title, description, created_at, updated_at, archived_at FROM kanban_boards ORDER BY created_at ASC")
+    sqlx::query("SELECT id, title, description, icon, created_at, updated_at, archived_at FROM kanban_boards ORDER BY created_at ASC")
         .try_map(map_board_row)
         .fetch_all(&*pool)
         .await
@@ -413,6 +466,33 @@ async fn rename_board(
 }
 
 #[tauri::command]
+async fn update_board_icon(
+    pool: State<'_, DbPool>,
+    id: String,
+    icon: String,
+) -> Result<(), String> {
+    let normalized_icon = normalize_board_icon(Some(icon))?;
+
+    let result = sqlx::query(
+        "UPDATE kanban_boards SET icon = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?",
+    )
+    .bind(&normalized_icon)
+    .bind(&id)
+    .execute(&*pool)
+    .await
+    .map_err(|e| {
+        log::error!("Failed to update board icon {id}: {e}");
+        e.to_string()
+    })?;
+
+    if result.rows_affected() == 0 {
+        return Err("Quadro não encontrado.".to_string());
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
 async fn delete_board(pool: State<'_, DbPool>, id: String) -> Result<(), String> {
     let result = sqlx::query("DELETE FROM kanban_boards WHERE id = ?")
         .bind(&id)
@@ -436,6 +516,7 @@ async fn create_board(
     id: String,
     mut title: String,
     description: Option<String>,
+    icon: Option<String>,
 ) -> Result<(), String> {
     title = title.trim().to_string();
     if title.is_empty() {
@@ -444,13 +525,15 @@ async fn create_board(
     validate_string_input(&title, 200, "Nome do quadro")?;
 
     let normalized_description = normalize_optional_text(description);
+    let normalized_icon = normalize_board_icon(icon)?;
 
     sqlx::query(
-        "INSERT INTO kanban_boards (id, title, description, created_at, updated_at) VALUES (?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))",
+        "INSERT INTO kanban_boards (id, title, description, icon, created_at, updated_at) VALUES (?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))",
     )
     .bind(id)
     .bind(title)
     .bind(normalized_description)
+    .bind(normalized_icon)
     .execute(&*pool)
     .await
     .map(|_| ())
@@ -490,7 +573,7 @@ async fn create_column(
 
     let normalized_wip_limit = match wip_limit {
         Some(limit) if limit < 1 => {
-            return Err("O limite WIP deve ser um número inteiro positivo.".to_string())
+            return Err("O limite WIP deve ser um número inteiro positivo.".to_string());
         }
         Some(limit) => Some(limit),
         None => None,
@@ -593,22 +676,17 @@ async fn create_card(
         .await
         .map_err(|e| format!("Falha ao abrir transação: {e}"))?;
 
-    let stored_board_id = sqlx::query_scalar::<_, Option<String>>(
-        "SELECT board_id FROM kanban_columns WHERE id = ?",
-    )
-    .bind(&column_id)
-    .fetch_one(&mut *tx)
-    .await
-    .map_err(|e| format!("Falha ao validar coluna informada: {e}"))?;
+    let stored_board_id =
+        sqlx::query_scalar::<_, Option<String>>("SELECT board_id FROM kanban_columns WHERE id = ?")
+            .bind(&column_id)
+            .fetch_one(&mut *tx)
+            .await
+            .map_err(|e| format!("Falha ao validar coluna informada: {e}"))?;
 
     match stored_board_id {
         Some(db_board_id) if db_board_id == board_id => {}
-        Some(_) => {
-            return Err("A coluna informada não pertence ao quadro selecionado.".to_string())
-        }
-        None => {
-            return Err("Coluna não encontrada.".to_string())
-        }
+        Some(_) => return Err("A coluna informada não pertence ao quadro selecionado.".to_string()),
+        None => return Err("Coluna não encontrada.".to_string()),
     }
 
     let max_position = sqlx::query_scalar::<_, Option<i64>>(
@@ -1103,11 +1181,10 @@ pub fn run() {
 
             let handle = app.handle();
 
-            let pool = tauri::async_runtime::block_on(establish_pool(&handle))
-                .map_err(|e| anyhow!(e))?;
+            let pool =
+                tauri::async_runtime::block_on(establish_pool(&handle)).map_err(|e| anyhow!(e))?;
 
-            tauri::async_runtime::block_on(initialize_schema(&pool))
-                .map_err(|e| anyhow!(e))?;
+            tauri::async_runtime::block_on(initialize_schema(&pool)).map_err(|e| anyhow!(e))?;
 
             app.manage(pool);
 
@@ -1196,6 +1273,7 @@ pub fn run() {
             load_boards,
             create_board,
             rename_board,
+            update_board_icon,
             delete_board,
             load_columns,
             create_column,

@@ -2,6 +2,7 @@ CREATE TABLE IF NOT EXISTS kanban_boards (
   id TEXT PRIMARY KEY,
   title TEXT NOT NULL,
   description TEXT,
+  icon TEXT,
   created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
   updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
   archived_at TEXT
