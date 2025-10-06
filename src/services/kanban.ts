@@ -33,6 +33,112 @@ export async function createBoard(input: CreateBoardInput): Promise<void> {
   })
 }
 
+export function useMoveColumn(boardId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: moveColumn,
+    onMutate: async input => {
+      const columnsKey = kanbanQueryKeys.columns(boardId)
+
+      await queryClient.cancelQueries({ queryKey: columnsKey })
+
+      const previousColumns = queryClient.getQueryData<KanbanColumn[]>(columnsKey)
+
+      if (previousColumns) {
+        const fromIndex = previousColumns.findIndex(c => c.id === input.columnId)
+        if (fromIndex !== -1) {
+          const updated = [...previousColumns]
+          const [moved] = updated.splice(fromIndex, 1)
+          if (!moved) {
+            return { previousColumns }
+          }
+          const target = Math.max(0, Math.min(input.targetIndex, updated.length))
+          updated.splice(target, 0, moved)
+
+          // Recalculate positions to reflect new order
+          const withPositions = updated.map((c, idx) => ({ ...c, position: idx }))
+          queryClient.setQueryData<KanbanColumn[]>(columnsKey, withPositions)
+        }
+      }
+
+      return { previousColumns }
+    },
+    onError: (_error, _variables, context) => {
+      if (context?.previousColumns) {
+        queryClient.setQueryData(kanbanQueryKeys.columns(boardId), context.previousColumns)
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: kanbanQueryKeys.columns(boardId) })
+      queryClient.invalidateQueries({ queryKey: kanbanQueryKeys.boards() })
+    },
+  })
+}
+
+export function useMoveCard(boardId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: moveCard,
+    onMutate: async input => {
+      const cardsKey = kanbanQueryKeys.cards(boardId)
+
+      await queryClient.cancelQueries({ queryKey: cardsKey })
+
+      const previousCards = queryClient.getQueryData<KanbanCard[]>(cardsKey)
+
+      if (previousCards) {
+        const updated = [...previousCards]
+        const movingIndex = updated.findIndex(c => c.id === input.cardId)
+        if (movingIndex !== -1) {
+          const [moving] = updated.splice(movingIndex, 1)
+          if (!moving) {
+            return { previousCards }
+          }
+
+          // Update columnId to destination
+          moving.columnId = input.toColumnId
+
+          // Build new arrays per column to compute target position
+          const fromList = updated
+            .filter(c => c.columnId === input.fromColumnId)
+            .sort((a, b) => a.position - b.position)
+          const toList = updated
+            .filter(c => c.columnId === input.toColumnId)
+            .sort((a, b) => a.position - b.position)
+
+          const target = Math.max(0, Math.min(input.targetIndex, toList.length))
+          toList.splice(target, 0, moving)
+
+          // Recalculate positions for both affected columns
+          const normalizePositions = (list: KanbanCard[]) =>
+            list.map((c, idx) => ({ ...c, position: idx + 1 }))
+
+          const normalizedFrom = normalizePositions(fromList)
+          const normalizedTo = normalizePositions(toList)
+
+          // Merge back into a single array
+          const next = updated
+            .filter(c => c.columnId !== input.fromColumnId && c.columnId !== input.toColumnId)
+            .concat(normalizedFrom, normalizedTo)
+
+          queryClient.setQueryData<KanbanCard[]>(cardsKey, next)
+        }
+      }
+
+      return { previousCards }
+    },
+    onError: (_error, _variables, context) => {
+      if (context?.previousCards) {
+        queryClient.setQueryData(kanbanQueryKeys.cards(boardId), context.previousCards)
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: kanbanQueryKeys.cards(boardId) })
+      queryClient.invalidateQueries({ queryKey: kanbanQueryKeys.columns(boardId) })
+    },
+  })
+}
+
 export async function fetchColumns(boardId: string): Promise<KanbanColumn[]> {
   return invoke<KanbanColumn[]>('load_columns', { boardId })
 }

@@ -1137,8 +1137,10 @@ pub fn run() {
             create_board,
             load_columns,
             create_column,
+            move_column,
             load_cards,
-            create_card
+            create_card,
+            move_card
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

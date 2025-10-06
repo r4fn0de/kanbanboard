@@ -85,7 +85,7 @@ export function BoardsView() {
 
       const trimmedTitle = title.trim()
       if (!trimmedTitle) {
-        setFormError('Informe um nome para o quadro.')
+        setFormError('Inform a name for the board.')
         return
       }
 
@@ -97,14 +97,14 @@ export function BoardsView() {
           title: trimmedTitle,
           description: trimmedDescription ? trimmedDescription : undefined,
         })
-        toast.success('Quadro criado com sucesso')
+        toast.success('Board created successfully')
         resetForm()
         setIsDialogOpen(false)
       } catch (mutationError) {
         const message =
           mutationError instanceof Error
             ? mutationError.message
-            : 'Não foi possível criar o quadro'
+            : 'Could not create the board'
         toast.error(message)
         setFormError(message)
       }
@@ -157,12 +157,12 @@ export function BoardsView() {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-4 p-6 text-center">
         <p className="text-lg font-semibold text-foreground">
-          Não foi possível carregar os quadros.
+          Could not load the boards.
         </p>
         {error instanceof Error ? (
           <p className="text-sm text-muted-foreground">{error.message}</p>
         ) : null}
-        <Button onClick={() => refetch()}>Tentar novamente</Button>
+        <Button onClick={() => refetch()}>Try again</Button>
       </div>
     )
   }
@@ -172,13 +172,13 @@ export function BoardsView() {
       <div className="flex h-full flex-col gap-6 p-6">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight">Quadros</h1>
+            <h1 className="text-2xl font-semibold tracking-tight">Boards</h1>
             <p className="text-sm text-muted-foreground">
-              Gerencie seus quadros Kanban locais.
+              Manage your local Kanban boards.
             </p>
           </div>
           <DialogTrigger asChild>
-            <Button disabled={isPending}>Novo quadro</Button>
+            <Button disabled={isPending}>New board</Button>
           </DialogTrigger>
         </div>
 
@@ -209,13 +209,13 @@ export function BoardsView() {
         ) : (
           <div className="flex flex-1 flex-col items-center justify-center gap-4 text-center">
             <p className="text-lg font-semibold text-foreground">
-              Nenhum quadro encontrado
+              No boards found
             </p>
             <p className="max-w-sm text-sm text-muted-foreground">
-              Crie o primeiro quadro para começar a organizar suas tarefas em colunas e cartões.
+              Create the first board to start organizing your tasks in columns and cards.
             </p>
             <Button onClick={handleEmptyStateCreate} disabled={isPending}>
-              Criar primeiro quadro
+              Create first board
             </Button>
           </div>
         )}
@@ -223,29 +223,29 @@ export function BoardsView() {
 
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Novo quadro</DialogTitle>
+            <DialogTitle>New board</DialogTitle>
           <DialogDescription>
-            Defina nome e descrição para começar a organizar suas tarefas.
+            Define a name and description to start organizing your tasks.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleCreateBoardSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor={titleInputId}>Nome do quadro</Label>
+            <Label htmlFor={titleInputId}>Board name</Label>
             <Input
               id={titleInputId}
               value={title}
               onChange={event => setTitle(event.target.value)}
-              placeholder="Ex.: Planejamento do produto"
+              placeholder="Ex.: Product planning"
               autoFocus
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor={descriptionInputId}>Descrição (opcional)</Label>
+            <Label htmlFor={descriptionInputId}>Description (optional)</Label>
             <Textarea
               id={descriptionInputId}
               value={description}
               onChange={event => setDescription(event.target.value)}
-              placeholder="Informe detalhes ou objetivos do quadro"
+              placeholder="Inform details or objectives of the board"
               rows={3}
             />
           </div>
@@ -255,11 +255,11 @@ export function BoardsView() {
           <DialogFooter>
             <DialogClose asChild>
               <Button type="button" variant="outline" disabled={isPending}>
-                Cancelar
+                Cancel
               </Button>
             </DialogClose>
             <Button type="submit" disabled={isPending}>
-              {isPending ? 'Criando...' : 'Criar quadro'}
+              {isPending ? 'Creating...' : 'Create board'}
             </Button>
           </DialogFooter>
         </form>
