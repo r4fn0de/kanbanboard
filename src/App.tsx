@@ -1,13 +1,14 @@
 import { useEffect } from 'react'
+import { RouterProvider } from 'react-router-dom'
 import { check } from '@tauri-apps/plugin-updater'
 import { relaunch } from '@tauri-apps/plugin-process'
 import { initializeCommandSystem } from './lib/commands'
 import { logger } from './lib/logger'
 import { cleanupOldFiles } from './lib/recovery'
 import './App.css'
-import MainWindow from './components/layout/MainWindow'
 import { ThemeProvider } from './components/ThemeProvider'
 import ErrorBoundary from './components/ErrorBoundary'
+import { appRouter } from './routes/router'
 
 function App() {
   // Initialize command system and cleanup on app startup
@@ -86,7 +87,7 @@ function App() {
   return (
     <ErrorBoundary>
       <ThemeProvider>
-        <MainWindow />
+        <RouterProvider router={appRouter} />
       </ThemeProvider>
     </ErrorBoundary>
   )

@@ -1,4 +1,4 @@
-import { BoardsView } from '@/components/kanban/BoardsView'
+import { Outlet } from 'react-router'
 import { cn } from '@/lib/utils'
 
 interface MainWindowContentProps {
@@ -12,7 +12,7 @@ export function MainWindowContent({
 }: MainWindowContentProps) {
   return (
     <div className={cn('flex h-full flex-col bg-background', className)}>
-      {children || <BoardsView />}
+      {children ?? <Outlet />}
     </div>
   )
 }

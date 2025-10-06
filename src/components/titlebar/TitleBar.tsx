@@ -17,7 +17,7 @@ interface TitleBarProps {
   title?: string
 }
 
-export function TitleBar({ className, title = 'Tauri App' }: TitleBarProps) {
+export function TitleBar({ className, title = 'Kanban' }: TitleBarProps) {
   const {
     leftSidebarVisible,
     rightSidebarVisible,
@@ -28,7 +28,7 @@ export function TitleBar({ className, title = 'Tauri App' }: TitleBarProps) {
   const { transparencyEnabled } = useTheme()
 
   const barClasses = cn(
-    'relative flex h-8 w-full shrink-0 items-center justify-between rounded-t-[12px] border-b',
+    'relative flex h-8 w-full shrink-0 items-center justify-between rounded-t-[12px]',
     transparencyEnabled
       ? 'border-border/30 bg-background/20 backdrop-blur-lg supports-[backdrop-filter]:bg-background/10 supports-[backdrop-filter]:backdrop-blur-xl'
       : 'border-border bg-background'
