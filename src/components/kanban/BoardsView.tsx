@@ -22,7 +22,6 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Skeleton } from '@/components/ui/skeleton'
 import { Textarea } from '@/components/ui/textarea'
 import type { KanbanBoard } from '@/types/common'
 import { useBoards, useCreateBoard } from '@/services/kanban'
@@ -142,11 +141,23 @@ export function BoardsView() {
 
   if (isLoading) {
     return (
-      <div className="flex flex-col gap-4 p-6">
-        <Skeleton className="h-10 w-48" />
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      <div className="flex flex-col gap-8 p-8">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex flex-col gap-2">
+            <div className="h-8 w-32 bg-gray-200 rounded-lg animate-pulse dark:bg-gray-700"></div>
+            <div className="h-4 w-48 bg-gray-200 rounded animate-pulse dark:bg-gray-700"></div>
+          </div>
+          <div className="h-10 w-24 bg-gray-200 rounded-xl animate-pulse dark:bg-gray-700"></div>
+        </div>
+        <div className="grid flex-1 gap-6 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
           {['a', 'b', 'c', 'd', 'e', 'f'].map(key => (
-            <Skeleton key={key} className="h-36" />
+            <div key={key} className="h-40 bg-white border border-gray-200/60 rounded-2xl p-6 shadow-sm dark:bg-gray-900 dark:border-gray-700/60">
+              <div className="space-y-3">
+                <div className="h-6 bg-gray-200 rounded animate-pulse dark:bg-gray-700"></div>
+                <div className="h-4 bg-gray-200 rounded animate-pulse dark:bg-gray-700"></div>
+                <div className="h-4 bg-gray-200 rounded w-3/4 animate-pulse dark:bg-gray-700"></div>
+              </div>
+            </div>
           ))}
         </div>
       </div>
@@ -155,35 +166,48 @@ export function BoardsView() {
 
   if (isError) {
     return (
-      <div className="flex h-full flex-col items-center justify-center gap-4 p-6 text-center">
-        <p className="text-lg font-semibold text-foreground">
-          Could not load the boards.
-        </p>
-        {error instanceof Error ? (
-          <p className="text-sm text-muted-foreground">{error.message}</p>
-        ) : null}
-        <Button onClick={() => refetch()}>Try again</Button>
+      <div className="flex h-full flex-col items-center justify-center gap-6 p-8 text-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-16 w-16 rounded-full bg-red-50 flex items-center justify-center dark:bg-red-900/20">
+            <svg className="h-8 w-8 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+            </svg>
+          </div>
+          <div className="flex flex-col gap-2">
+            <p className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+              Could not load the boards.
+            </p>
+            {error instanceof Error ? (
+              <p className="text-base text-gray-600 leading-relaxed dark:text-gray-400">{error.message}</p>
+            ) : null}
+          </div>
+        </div>
+        <Button onClick={() => refetch()} size="lg" className="px-8">
+          Try again
+        </Button>
       </div>
     )
   }
 
   return (
     <Dialog open={isDialogOpen} onOpenChange={handleDialogOpenChange}>
-      <div className="flex h-full flex-col gap-6 p-6">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight">Boards</h1>
-            <p className="text-sm text-muted-foreground">
+      <div className="flex h-full flex-col gap-8 p-8">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex flex-col gap-2">
+            <h1 className="text-3xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">Boards</h1>
+            <p className="text-base text-gray-600 dark:text-gray-400">
               Manage your local Kanban boards.
             </p>
           </div>
           <DialogTrigger asChild>
-            <Button disabled={isPending}>New board</Button>
+            <Button disabled={isPending} size="lg" className="px-6">
+              New board
+            </Button>
           </DialogTrigger>
         </div>
 
         {hasBoards ? (
-          <div className="grid flex-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="grid flex-1 gap-6 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
             {boards.map(board => (
               <Card
                 key={board.id}
@@ -191,30 +215,50 @@ export function BoardsView() {
                 tabIndex={0}
                 onClick={() => handleSelectBoard(board)}
                 onKeyDown={event => handleBoardKeyDown(board, event)}
-                className="flex flex-col justify-center gap-2 border border-border/60 p-4 transition hover:border-primary/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="group flex flex-col justify-center gap-4 border border-gray-200/60 bg-white p-6 rounded-2xl shadow-sm transition-all duration-200 hover:shadow-lg hover:border-gray-300/80 hover:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400/20 focus-visible:ring-offset-2 dark:border-gray-700/60 dark:bg-gray-900 dark:hover:border-gray-600/80 cursor-pointer"
               >
-                <CardHeader className="space-y-2 p-0">
-                  <CardTitle className="line-clamp-1 text-lg font-semibold">
+                <CardHeader className="space-y-3 p-0">
+                  <CardTitle className="line-clamp-2 text-xl font-semibold text-gray-900 group-hover:text-gray-800 dark:text-gray-100 dark:group-hover:text-gray-200">
                     {board.title}
                   </CardTitle>
                   {board.description ? (
-                    <CardDescription className="line-clamp-2 text-sm text-muted-foreground">
+                    <CardDescription className="line-clamp-3 text-sm text-gray-600 leading-relaxed dark:text-gray-400">
                       {board.description}
                     </CardDescription>
-                  ) : null}
+                  ) : (
+                    <div className="h-4"></div> // Spacer for consistent height
+                  )}
                 </CardHeader>
+                <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-500">
+                  <span className="flex items-center gap-1">
+                    <div className="h-2 w-2 rounded-full bg-gray-400"></div>
+                    Board
+                  </span>
+                  <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                    Click to open →
+                  </span>
+                </div>
               </Card>
             ))}
           </div>
         ) : (
-          <div className="flex flex-1 flex-col items-center justify-center gap-4 text-center">
-            <p className="text-lg font-semibold text-foreground">
-              No boards found
-            </p>
-            <p className="max-w-sm text-sm text-muted-foreground">
-              Create the first board to start organizing your tasks in columns and cards.
-            </p>
-            <Button onClick={handleEmptyStateCreate} disabled={isPending}>
+          <div className="flex flex-1 flex-col items-center justify-center gap-6 text-center">
+            <div className="flex flex-col items-center gap-4">
+              <div className="h-16 w-16 rounded-full bg-gray-100 flex items-center justify-center dark:bg-gray-800">
+                <svg className="h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                </svg>
+              </div>
+              <div className="flex flex-col gap-2">
+                <p className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+                  No boards found
+                </p>
+                <p className="max-w-sm text-base text-gray-600 leading-relaxed dark:text-gray-400">
+                  Create the first board to start organizing your tasks in columns and cards.
+                </p>
+              </div>
+            </div>
+            <Button onClick={handleEmptyStateCreate} disabled={isPending} size="lg" className="px-8">
               Create first board
             </Button>
           </div>
