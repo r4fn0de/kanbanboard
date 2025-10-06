@@ -4,6 +4,7 @@ import { ProjectsOverview } from '@/components/projects/ProjectsOverview'
 import { ProjectsFavorites } from '@/components/projects/ProjectsFavorites'
 import { BoardsView } from '@/components/kanban/BoardsView'
 import { HomeWelcome } from '@/components/home/HomeWelcome'
+import { ProjectBoardView } from '@/components/projects/ProjectBoardView'
 
 export const appRouter = createHashRouter([
   {
@@ -25,6 +26,10 @@ export const appRouter = createHashRouter([
       {
         path: 'projects/favorites',
         element: <ProjectsFavorites />,
+      },
+      {
+        path: 'projects/:boardId',
+        element: <ProjectBoardView />,
       },
     ],
   },

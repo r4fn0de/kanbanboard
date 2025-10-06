@@ -1,13 +1,21 @@
-import { useCallback, useEffect, useId, useMemo, useState } from 'react'
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import { toast } from 'sonner'
 
-import { DndContext, PointerSensor, closestCorners, useDroppable, useSensor, useSensors } from '@dnd-kit/core'
-import type { DragEndEvent } from '@dnd-kit/core'
+import {
+  DndContext,
+  DragOverlay,
+  PointerSensor,
+  closestCorners,
+  useDroppable,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core'
+import type { DragCancelEvent, DragEndEvent, DragStartEvent } from '@dnd-kit/core'
 import {
   arrayMove,
   SortableContext,
-  rectSortingStrategy,
+  horizontalListSortingStrategy,
   useSortable,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
@@ -46,14 +54,96 @@ import {
   useMoveCard,
   useMoveColumn,
 } from '@/services/kanban'
+import { cn } from '@/lib/utils'
+import { Badge } from '@/components/ui/badge'
+import { Palette, UserRound } from 'lucide-react'
+
+function CardAvatar({ name }: { name: string }) {
+  const initials = name
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map(part => part[0]?.toUpperCase() ?? '')
+    .join('')
+  return (
+    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-foreground/10 text-xs font-medium text-foreground">
+      {initials || <UserRound className="h-4 w-4" />}
+    </div>
+  )
+}
+
+function PriorityBadge({ priority }: { priority: KanbanCard['priority'] }) {
+  const variants: Record<KanbanCard['priority'], { label: string; className: string }> = {
+    low: {
+      label: 'Low',
+      className: 'bg-emerald-100 text-emerald-900',
+    },
+    medium: {
+      label: 'Medium',
+      className: 'bg-amber-100 text-amber-900',
+    },
+    high: {
+      label: 'High',
+      className: 'bg-rose-100 text-rose-900',
+    },
+  }
+
+  const variant = variants[priority]
+  return (
+    <Badge className={cn('rounded-full px-2.5 py-0.5 text-xs font-medium', variant.className)}>
+      {variant.label}
+    </Badge>
+  )
+}
+
+function CardContent({ card }: { card: KanbanCard }) {
+  const ownerName = card.assignee ?? 'Unassigned'
+
+  return (
+    <>
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex flex-1 flex-col gap-1">
+          <span className="text-sm font-semibold text-foreground">{card.title}</span>
+          {card.description ? (
+            <p className="text-sm text-muted-foreground">{card.description}</p>
+          ) : null}
+        </div>
+        <PriorityBadge priority={card.priority} />
+      </div>
+      <div className="flex items-center justify-between text-sm text-muted-foreground">
+        <div className="flex items-center gap-2">
+          <CardAvatar name={ownerName} />
+          <span>{ownerName}</span>
+        </div>
+        {card.dueDate ? <span>Due {new Date(card.dueDate).toLocaleDateString()}</span> : null}
+      </div>
+    </>
+  )
+}
+
+function CardOverlay({ card }: { card: KanbanCard }) {
+  return (
+    <div className="pointer-events-none flex w-[280px] max-w-full flex-col gap-3 rounded-2xl border border-transparent bg-background p-4 shadow-lg">
+      <CardContent card={card} />
+    </div>
+  )
+}
+
+const DEFAULT_COLUMN_TITLES = ['To-Do', 'In Progress', 'Done'] as const
 
 function DraggableCard({ card }: { card: KanbanCard }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: `card-${card.id}` })
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.6 : undefined,
+    transition: isDragging ? 'none' : transition ?? 'transform 220ms cubic-bezier(0.2, 0, 0, 1)',
+    opacity: isDragging ? 0.85 : undefined,
+    boxShadow: isDragging
+      ? '0px 18px 38px -16px rgba(15, 23, 42, 0.32)'
+      : '0px 6px 16px -14px rgba(15, 23, 42, 0.28)',
+    cursor: isDragging ? 'grabbing' : 'grab',
+    willChange: 'transform',
+    zIndex: isDragging ? 30 : undefined,
   }
 
   return (
@@ -62,20 +152,9 @@ function DraggableCard({ card }: { card: KanbanCard }) {
       style={style}
       {...attributes}
       {...listeners}
-      className="rounded-md border border-border/50 bg-background p-3 shadow-sm"
+      className="flex flex-col gap-3 rounded-2xl border border-transparent bg-background p-4 shadow-sm transition hover:border-border/40 hover:shadow-md active:cursor-grabbing"
     >
-      <div className="flex items-center justify-between">
-        <span className="text-sm font-medium text-foreground">{card.title}</span>
-        <span className="text-xs uppercase text-muted-foreground">{card.priority}</span>
-      </div>
-      {card.description ? (
-        <p className="mt-2 text-xs text-muted-foreground">{card.description}</p>
-      ) : null}
-      {card.dueDate ? (
-        <p className="mt-2 text-xs text-muted-foreground">
-          Vencimento: {new Date(card.dueDate).toLocaleDateString()}
-        </p>
-      ) : null}
+      <CardContent card={card} />
     </div>
   )
 }
@@ -91,39 +170,53 @@ function DraggableColumn({
   onAddCard: () => void
   isCreatingCard: boolean
 }) {
-  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: `column-${column.id}`,
   })
   const { setNodeRef: setDroppableRef } = useDroppable({ id: `column-${column.id}-cards` })
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
-    transition,
+    transition: isDragging ? 'none' : transition ?? 'transform 240ms cubic-bezier(0.22, 1, 0.36, 1)',
+    cursor: isDragging ? 'grabbing' : 'grab',
+    willChange: 'transform',
   }
+
+  const cardsCount = columnCards.length
+
+  const columnColors = {
+    accent: 'bg-violet-100 text-violet-900 border-violet-200',
+    done: 'bg-emerald-100 text-emerald-900 border-emerald-200',
+    default: 'bg-muted/40 text-muted-foreground border-border/60',
+  } as const
+
+  const palette = column.title.toLowerCase().includes('done')
+    ? columnColors.done
+    : column.title.toLowerCase().includes('progress')
+    ? columnColors.accent
+    : columnColors.default
 
   return (
     <div
       ref={setNodeRef}
       style={style}
-      className="flex h-full flex-col rounded-lg border border-border/60 bg-muted/40"
+      className={cn(
+        'flex h-full w-[320px] flex-shrink-0 flex-col gap-3 rounded-3xl border p-3 transition-all active:cursor-grabbing',
+        palette
+      )}
     >
-      <div
-        className="flex items-center justify-between gap-2 border-b border-border/60 p-4"
-        {...attributes}
-        {...listeners}
-      >
-        <div>
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-            {column.title}
-          </h2>
-          {typeof column.wipLimit === 'number' ? (
-            <p className="text-xs text-muted-foreground">Limite WIP: {column.wipLimit}</p>
-          ) : null}
+      <div className="flex items-center justify-between gap-3 rounded-2xl bg-white/70 px-4 py-3 shadow-sm">
+        <div className="flex items-center gap-2" {...attributes} {...listeners}>
+          <Badge variant="secondary" className="flex items-center gap-1 rounded-full bg-white/60 px-3 py-1 text-xs font-medium text-foreground">
+            <Palette className="h-4 w-4 text-muted-foreground" />
+            {cardsCount}
+          </Badge>
+          <h2 className="text-base font-semibold text-foreground">{column.title}</h2>
         </div>
-        <Button size="sm" variant="secondary" onClick={onAddCard} disabled={isCreatingCard}>
-          New card
+        <Button size="sm" variant="ghost" onClick={onAddCard} disabled={isCreatingCard}>
+          Add
         </Button>
       </div>
-      <div ref={setDroppableRef} className="flex flex-1 flex-col gap-3 overflow-y-auto p-4">
+      <div ref={setDroppableRef} className="flex flex-1 flex-col gap-3 overflow-y-auto overflow-x-visible p-1">
         <SortableContext
           items={columnCards.map(c => `card-${c.id}`)}
           strategy={verticalListSortingStrategy}
@@ -131,7 +224,9 @@ function DraggableColumn({
           {columnCards.length > 0 ? (
             columnCards.map(card => <DraggableCard key={card.id} card={card} />)
           ) : (
-            <p className="text-center text-xs text-muted-foreground">No cards in this column.</p>
+            <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-foreground/20 bg-white/40 p-6 text-center text-sm text-muted-foreground">
+              No cards yet. Click Add to create one.
+            </div>
           )}
         </SortableContext>
       </div>
@@ -187,6 +282,8 @@ export function BoardDetailView({ board, onBack }: BoardDetailViewProps) {
   const cardTitleId = useId()
   const cardDescriptionId = useId()
   const cardDueDateId = useId()
+  const [activeCardId, setActiveCardId] = useState<string | null>(null)
+  const hasSeededDefaultColumns = useRef(false)
 
   const [columnOrder, setColumnOrder] = useState<string[]>([])
 
@@ -226,11 +323,44 @@ export function BoardDetailView({ board, onBack }: BoardDetailViewProps) {
     return map
   }, [columns, cards])
 
+  const activeCard = useMemo(
+    () => cards.find(card => card.id === activeCardId) ?? null,
+    [activeCardId, cards]
+  )
+
   const resetColumnForm = useCallback(() => {
     setColumnTitle('')
     setColumnWipLimit('')
     setColumnFormError(null)
   }, [])
+
+  useEffect(() => {
+    if (isLoadingColumns || columns.length > 0 || hasSeededDefaultColumns.current) {
+      return
+    }
+
+    hasSeededDefaultColumns.current = true
+
+    ;(async () => {
+      try {
+        await Promise.all(
+          DEFAULT_COLUMN_TITLES.map((title, index) =>
+            createColumn({
+              id: crypto.randomUUID(),
+              boardId: board.id,
+              title,
+              position: index,
+              wipLimit: null,
+            })
+          )
+        )
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : 'Could not create default columns'
+        toast.error(message)
+      }
+    })()
+  }, [board.id, columns.length, createColumn, isLoadingColumns])
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -241,6 +371,7 @@ export function BoardDetailView({ board, onBack }: BoardDetailViewProps) {
   const handleDragEnd = useCallback(
     (event: DragEndEvent) => {
       const { active, over } = event
+      setActiveCardId(null)
       if (!over) return
 
       const activeId = String(active.id)
@@ -310,6 +441,21 @@ export function BoardDetailView({ board, onBack }: BoardDetailViewProps) {
     },
     [board.id, cards, cardsByColumn, moveCardMutate, moveColumnMutate, columnOrder, queryClient]
   )
+
+  const handleDragStart = useCallback(
+    (event: DragStartEvent) => {
+      const { active } = event
+      const activeId = String(active.id)
+      if (activeId.startsWith('card-')) {
+        setActiveCardId(activeId.replace('card-', ''))
+      }
+    },
+    []
+  )
+
+  const handleDragCancel = useCallback((_: DragCancelEvent) => {
+    setActiveCardId(null)
+  }, [])
 
   const resetCardForm = useCallback(() => {
     setCardTitle('')
@@ -534,9 +680,18 @@ export function BoardDetailView({ board, onBack }: BoardDetailViewProps) {
           </Button>
         </div>
       ) : (
-        <DndContext sensors={sensors} collisionDetection={closestCorners} onDragEnd={handleDragEnd}>
-          <SortableContext items={columnOrder.map(id => `column-${id}`)} strategy={rectSortingStrategy}>
-            <div className="grid flex-1 gap-4 md:grid-cols-3">
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCorners}
+          onDragStart={handleDragStart}
+          onDragCancel={handleDragCancel}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext
+            items={columnOrder.map(id => `column-${id}`)}
+            strategy={horizontalListSortingStrategy}
+          >
+            <div className="flex flex-1 items-stretch gap-4 overflow-x-auto pb-4">
               {columnOrder.map(columnId => {
                 const column = columns.find(col => col.id === columnId)
                 if (!column) {
@@ -558,6 +713,9 @@ export function BoardDetailView({ board, onBack }: BoardDetailViewProps) {
               })}
             </div>
           </SortableContext>
+          <DragOverlay dropAnimation={null}>
+            {activeCard ? <CardOverlay card={activeCard} /> : null}
+          </DragOverlay>
         </DndContext>
       )}
 

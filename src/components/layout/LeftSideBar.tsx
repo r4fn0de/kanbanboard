@@ -2,7 +2,7 @@ import { cn } from '@/lib/utils'
 import { useTheme } from '@/hooks/use-theme'
 import type { FormEvent } from 'react'
 import { useMemo, useState, useId } from 'react'
-import { ChevronDown, ChevronRight, Home, Folder, Plus } from 'lucide-react'
+import { ChevronDown, ChevronRight, Home, Folder, MoreHorizontal, Plus } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
 import {
   Dialog,
@@ -17,7 +17,14 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
-import { useCreateBoard } from '@/services/kanban'
+import { useBoards, useCreateBoard } from '@/services/kanban'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { useNavigate } from 'react-router-dom'
 
 interface LeftSideBarProps {
   children?: React.ReactNode
@@ -32,8 +39,10 @@ export function LeftSideBar({ children, className }: LeftSideBarProps) {
   const [projectDescription, setProjectDescription] = useState('')
   const projectNameId = useId()
   const projectDescriptionId = useId()
+  const navigate = useNavigate()
 
   const createBoard = useCreateBoard()
+  const { data: boards = [], isLoading: isLoadingBoards, isError: isBoardsError } = useBoards()
 
   const sidebarClasses = cn(
     'flex h-full flex-col border-r',
@@ -42,19 +51,17 @@ export function LeftSideBar({ children, className }: LeftSideBarProps) {
       : 'border-border bg-background'
   )
 
-  const projectLinks = useMemo(
-    () => [
-      {
-        to: '/projects/all',
-        label: 'All Projects',
-      },
-      {
-        to: '/projects/favorites',
-        label: 'Favorites',
-      },
-    ],
-    []
-  )
+  const projectLinks = useMemo(() => {
+    if (isLoadingBoards) {
+      return null
+    }
+
+    if (isBoardsError) {
+      return []
+    }
+
+    return boards
+  }, [boards, isBoardsError, isLoadingBoards])
 
   return (
     <div
@@ -91,21 +98,70 @@ export function LeftSideBar({ children, className }: LeftSideBarProps) {
 
           {projectsOpen ? (
             <div className="mt-1 flex flex-col gap-1 pl-7">
-              {projectLinks.map(link => (
-                <NavLink
-                  key={link.to}
-                  to={link.to}
-                  className={({ isActive }) =>
-                    cn(
-                      'flex items-center gap-2 rounded-md px-3 py-1.5 text-left text-muted-foreground transition hover:bg-foreground/10 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                      isActive ? 'bg-foreground/10 text-foreground' : undefined
-                    )
-                  }
-                >
-                  <Folder className="h-3.5 w-3.5" />
-                  <span>{link.label}</span>
-                </NavLink>
-              ))}
+              {isLoadingBoards ? (
+                <span className="px-3 py-1.5 text-sm text-muted-foreground">Loading…</span>
+              ) : projectLinks && projectLinks.length ? (
+                projectLinks.map(board => (
+                  <div
+                    key={board.id}
+                    className="group relative flex items-center rounded-md px-1 py-0.5"
+                  >
+                    <NavLink
+                      to={`/projects/${board.id}`}
+                      className={({ isActive }) =>
+                        cn(
+                          'flex grow items-center gap-2 rounded-md px-3 py-1.5 text-left text-muted-foreground transition hover:bg-foreground/10 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                          isActive ? 'bg-foreground/10 text-foreground' : undefined
+                        )
+                      }
+                    >
+                      <Folder className="h-3.5 w-3.5" />
+                      <span className="truncate">{board.title}</span>
+                    </NavLink>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button
+                          type="button"
+                          className="ml-1 flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground opacity-0 pointer-events-none transition group-hover:opacity-100 group-hover:pointer-events-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                          aria-label={`Open actions for ${board.title}`}
+                        >
+                          <MoreHorizontal className="h-4 w-4" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent side="right" align="start" className="w-44">
+                        <DropdownMenuItem
+                          onSelect={() => {
+                            toast('Rename project', {
+                              description: 'Rename functionality coming soon.',
+                            })
+                          }}
+                        >
+                          Rename
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onSelect={() => {
+                            toast('Delete project', {
+                              description: 'Delete functionality coming soon.',
+                            })
+                          }}
+                          className="text-destructive focus:text-destructive"
+                        >
+                          Delete
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onSelect={() => navigate(`/projects/${board.id}`)}
+                        >
+                          Open
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                ))
+              ) : (
+                <span className="px-3 py-1.5 text-sm text-muted-foreground">
+                  No projects yet
+                </span>
+              )}
               <Button
                 type="button"
                 variant="ghost"
