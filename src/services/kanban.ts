@@ -195,31 +195,38 @@ export function useMoveCard(boardId: string) {
             return { previousCards }
           }
 
+          const sameColumn = input.fromColumnId === input.toColumnId
+
           // Update columnId to destination
           moving.columnId = input.toColumnId
 
-          // Build new arrays per column to compute target position
           const fromList = updated
             .filter(c => c.columnId === input.fromColumnId)
             .sort((a, b) => a.position - b.position)
-          const toList = updated
-            .filter(c => c.columnId === input.toColumnId)
-            .sort((a, b) => a.position - b.position)
+          const toList = sameColumn
+            ? [...fromList]
+            : updated.filter(c => c.columnId === input.toColumnId).sort((a, b) => a.position - b.position)
 
           const target = Math.max(0, Math.min(input.targetIndex, toList.length))
           toList.splice(target, 0, moving)
 
-          // Recalculate positions for both affected columns
           const normalizePositions = (list: KanbanCard[]) =>
             list.map((c, idx) => ({ ...c, position: idx + 1 }))
 
-          const normalizedFrom = normalizePositions(fromList)
-          const normalizedTo = normalizePositions(toList)
+          let next: KanbanCard[]
 
-          // Merge back into a single array
-          const next = updated
-            .filter(c => c.columnId !== input.fromColumnId && c.columnId !== input.toColumnId)
-            .concat(normalizedFrom, normalizedTo)
+          if (sameColumn) {
+            const normalized = normalizePositions(toList)
+            const remaining = updated.filter(c => c.columnId !== input.fromColumnId)
+            next = remaining.concat(normalized)
+          } else {
+            const normalizedFrom = normalizePositions(fromList)
+            const normalizedTo = normalizePositions(toList)
+            const remaining = updated.filter(
+              c => c.columnId !== input.fromColumnId && c.columnId !== input.toColumnId
+            )
+            next = remaining.concat(normalizedFrom, normalizedTo)
+          }
 
           queryClient.setQueryData<KanbanCard[]>(cardsKey, next)
         }

@@ -67,10 +67,10 @@ export function LeftSideBar({ children, className }: LeftSideBarProps) {
   const { data: boards = [], isLoading: isLoadingBoards, isError: isBoardsError } = useBoards()
 
   const sidebarClasses = cn(
-    'flex h-full flex-col border-r',
+    'flex h-full flex-col border-r rounded-l-[12px]',
     transparencyEnabled
-      ? 'border-border/30 bg-background/30 backdrop-blur-lg supports-[backdrop-filter]:bg-background/15 supports-[backdrop-filter]:backdrop-blur-2xl'
-      : 'border-border bg-background'
+      ? 'border-gray-200/40 bg-gray-50/60 backdrop-blur-xl supports-[backdrop-filter]:bg-gray-50/40 supports-[backdrop-filter]:backdrop-blur-2xl dark:border-gray-700/40 dark:bg-gray-900/60 dark:supports-[backdrop-filter]:bg-gray-900/40'
+      : 'border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-900'
   )
 
   const handleConfirmDelete = () => {
@@ -115,56 +115,59 @@ export function LeftSideBar({ children, className }: LeftSideBarProps) {
     <div
       className={cn(sidebarClasses, className)}
     >
-      <nav className="flex flex-col gap-1 p-3 text-sm text-foreground">
+      <nav className="flex flex-col gap-2 p-4 text-sm text-foreground">
         <NavLink
           to="/"
           end
           className={({ isActive }) =>
             cn(
-              'flex items-center gap-2 rounded-md px-3 py-2 text-left transition hover:bg-foreground/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-              isActive ? 'bg-foreground/10 text-foreground' : undefined
+              'flex items-center gap-3 rounded-xl px-4 py-3 text-left transition-all duration-200 hover:bg-gray-200/60 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:hover:bg-gray-800/60',
+              isActive ? 'bg-gray-200/80 text-foreground shadow-sm dark:bg-gray-800/80' : 'text-gray-600 dark:text-gray-400'
             )
           }
         >
           <Home className="h-4 w-4" />
-          <span>Home</span>
+          <span className="font-medium">Home</span>
         </NavLink>
 
         <div className="flex flex-col">
           <button
             type="button"
             onClick={() => setProjectsOpen(prev => !prev)}
-            className="flex items-center gap-2 rounded-md px-3 py-2 text-left transition hover:bg-foreground/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="flex items-center gap-3 rounded-xl px-4 py-3 text-left transition-all duration-200 hover:bg-gray-200/60 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring text-gray-600 dark:text-gray-400 dark:hover:bg-gray-800/60"
           >
             {projectsOpen ? (
               <ChevronDown className="h-4 w-4" />
             ) : (
               <ChevronRight className="h-4 w-4" />
             )}
-            <span>Projects</span>
+            <span className="font-medium">Projects</span>
           </button>
 
           {projectsOpen ? (
-            <div className="mt-1 flex flex-col gap-1 pl-7">
+            <div className="mt-2 flex flex-col gap-2 ml-6">
               {isLoadingBoards ? (
-                <span className="px-3 py-1.5 text-sm text-muted-foreground">Loading…</span>
+                <div className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-gray-500 dark:text-gray-400">
+                  <div className="h-3 w-3 animate-pulse rounded-full bg-gray-300 dark:bg-gray-600"></div>
+                  <span>Loading…</span>
+                </div>
               ) : projectLinks && projectLinks.length ? (
                 projectLinks.map(board => (
                   <div
                     key={board.id}
-                    className="group relative flex items-center rounded-md px-1 py-0.5"
+                    className="group relative flex items-center rounded-lg"
                   >
                     <NavLink
                       to={`/projects/${board.id}`}
                       className={({ isActive }) =>
                         cn(
-                          'flex grow items-center gap-2 rounded-md pl-3 pr-10 py-1.5 text-left text-muted-foreground transition hover:bg-foreground/10 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                          isActive ? 'bg-foreground/10 text-foreground' : undefined
+                          'flex grow items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm transition-all duration-200 hover:bg-gray-200/60 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:hover:bg-gray-800/60',
+                          isActive ? 'bg-gray-200/80 text-foreground shadow-sm dark:bg-gray-800/80' : 'text-gray-600 dark:text-gray-400'
                         )
                       }
                     >
-                      <Folder className="h-3.5 w-3.5" />
-                      <span className="truncate">{board.title}</span>
+                      <Folder className="h-4 w-4" />
+                      <span className="truncate font-medium">{board.title}</span>
                     </NavLink>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -174,13 +177,13 @@ export function LeftSideBar({ children, className }: LeftSideBarProps) {
                           whileTap={{ scale: 0.92 }}
                           transition={{ duration: 0.18, ease: 'easeOut' }}
                           className={cn(
-                            'absolute right-1 top-1/2 -translate-y-1/2 flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground opacity-0 pointer-events-none transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                            'absolute right-2 top-1/2 -translate-y-1/2 flex h-6 w-6 items-center justify-center rounded-md text-gray-500 opacity-0 pointer-events-none transition-all duration-200 hover:bg-gray-300/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:text-gray-400 dark:hover:bg-gray-700/60',
                             'group-hover:opacity-100 group-hover:pointer-events-auto',
-                            'data-[state=open]:opacity-100 data-[state=open]:pointer-events-auto data-[state=open]:bg-foreground/10 data-[state=open]:text-foreground'
+                            'data-[state=open]:opacity-100 data-[state=open]:pointer-events-auto data-[state=open]:bg-gray-300/80 data-[state=open]:text-gray-700 dark:data-[state=open]:bg-gray-700/80 dark:data-[state=open]:text-gray-300'
                           )}
                           aria-label={`Open actions for ${board.title}`}
                         >
-                          <MoreHorizontal className="h-4 w-4" />
+                          <MoreHorizontal className="h-3.5 w-3.5" />
                         </motion.button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent side="right" align="start" className="w-44">
@@ -214,18 +217,19 @@ export function LeftSideBar({ children, className }: LeftSideBarProps) {
                   </div>
                 ))
               ) : (
-                <span className="px-3 py-1.5 text-sm text-muted-foreground">
-                  No projects yet
-                </span>
+                <div className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-gray-500 dark:text-gray-400">
+                  <div className="h-2 w-2 rounded-full bg-gray-300 dark:bg-gray-600"></div>
+                  <span>No projects yet</span>
+                </div>
               )}
               <Button
                 type="button"
                 variant="ghost"
-                className="mt-1 flex items-center gap-2 justify-start px-3 py-1.5 text-left text-muted-foreground hover:text-foreground"
+                className="mt-2 flex items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm text-gray-600 transition-all duration-200 hover:bg-gray-200/60 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:text-gray-400 dark:hover:bg-gray-800/60"
                 onClick={() => setCreateProjectOpen(true)}
               >
-                <Plus className="h-3.5 w-3.5" />
-                <span>New Project</span>
+                <Plus className="h-4 w-4" />
+                <span className="font-medium">New Project</span>
               </Button>
             </div>
           ) : null}

@@ -1,6 +1,7 @@
 import { render, screen } from '@/test/test-utils'
 import { describe, it, expect, vi } from 'vitest'
 import App from './App'
+import { HomeWelcome } from './components/home/HomeWelcome'
 
 // Mock Tauri API
 vi.mock('@tauri-apps/api/core', () => ({
@@ -9,9 +10,9 @@ vi.mock('@tauri-apps/api/core', () => ({
 
 describe('App', () => {
   it('renders main window layout', () => {
-    render(<App />)
+    render(<HomeWelcome />)
     expect(
-      screen.getByRole('heading', { name: /hello world/i })
+      screen.getByRole('heading', { name: /welcome to kanbanboard/i })
     ).toBeInTheDocument()
   })
 
