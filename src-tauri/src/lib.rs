@@ -17,11 +17,21 @@ const DATABASE_FILE: &str = "flowspace.db";
 const DEFAULT_BOARD_ICON: &str = "Folder";
 const ALLOWED_BOARD_ICONS: &[&str] = &[
     "Folder",
-    "ClipboardList",
+    "LayoutDashboard",
+    "Layers",
     "Briefcase",
-    "Rocket",
-    "Lightbulb",
+    "ClipboardList",
+    "CalendarDays",
+    "BarChart3",
     "Target",
+    "Users",
+    "MessagesSquare",
+    "LifeBuoy",
+    "Lightbulb",
+    "Rocket",
+    "Package",
+    "Palette",
+    "PenTool",
 ];
 
 type DbPool = SqlitePool;

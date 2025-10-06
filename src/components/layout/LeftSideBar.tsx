@@ -8,13 +8,23 @@ import {
   ChevronRight,
   Home,
   Folder,
+  LayoutDashboard,
+  Layers,
+  Briefcase,
+  ClipboardList,
+  CalendarDays,
+  BarChart3,
+  Target,
+  Rocket,
+  Package,
+  Users,
+  MessagesSquare,
+  Lightbulb,
+  Palette,
+  PenTool,
+  LifeBuoy,
   MoreHorizontal,
   Plus,
-  ClipboardList,
-  Briefcase,
-  Rocket,
-  Lightbulb,
-  Target,
 } from 'lucide-react'
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import {
@@ -60,14 +70,59 @@ interface LeftSideBarProps {
   className?: string
 }
 
-const PROJECT_ICON_OPTIONS = [
-  { value: 'Folder', label: 'Folder', icon: Folder },
-  { value: 'ClipboardList', label: 'Tasks', icon: ClipboardList },
-  { value: 'Briefcase', label: 'Briefcase', icon: Briefcase },
-  { value: 'Rocket', label: 'Launch', icon: Rocket },
-  { value: 'Lightbulb', label: 'Idea', icon: Lightbulb },
-  { value: 'Target', label: 'Goals', icon: Target },
+interface ProjectIconOption {
+  value: string
+  label: string
+  icon: LucideIcon
+}
+
+interface ProjectIconSection {
+  label: string
+  options: readonly ProjectIconOption[]
+}
+
+const PROJECT_ICON_SECTIONS: readonly ProjectIconSection[] = [
+  {
+    label: 'General',
+    options: [
+      { value: 'Folder', label: 'Folder', icon: Folder },
+      { value: 'LayoutDashboard', label: 'Dashboard', icon: LayoutDashboard },
+      { value: 'Layers', label: 'Layers', icon: Layers },
+      { value: 'Briefcase', label: 'Briefcase', icon: Briefcase },
+    ],
+  },
+  {
+    label: 'Planning',
+    options: [
+      { value: 'ClipboardList', label: 'Tasks', icon: ClipboardList },
+      { value: 'CalendarDays', label: 'Schedule', icon: CalendarDays },
+      { value: 'BarChart3', label: 'Analytics', icon: BarChart3 },
+      { value: 'Target', label: 'Goals', icon: Target },
+    ],
+  },
+  {
+    label: 'Collaboration',
+    options: [
+      { value: 'Users', label: 'Team', icon: Users },
+      { value: 'MessagesSquare', label: 'Discussions', icon: MessagesSquare },
+      { value: 'LifeBuoy', label: 'Support', icon: LifeBuoy },
+      { value: 'Lightbulb', label: 'Ideas', icon: Lightbulb },
+    ],
+  },
+  {
+    label: 'Execution',
+    options: [
+      { value: 'Rocket', label: 'Launch', icon: Rocket },
+      { value: 'Package', label: 'Delivery', icon: Package },
+      { value: 'Palette', label: 'Design', icon: Palette },
+      { value: 'PenTool', label: 'Creation', icon: PenTool },
+    ],
+  },
 ] as const
+
+const PROJECT_ICON_OPTIONS = PROJECT_ICON_SECTIONS.flatMap(
+  section => section.options
+)
 
 const PROJECT_ICON_MAP = PROJECT_ICON_OPTIONS.reduce<
   Record<string, LucideIcon>
@@ -76,7 +131,7 @@ const PROJECT_ICON_MAP = PROJECT_ICON_OPTIONS.reduce<
   return accumulator
 }, {})
 
-const DEFAULT_PROJECT_ICON = PROJECT_ICON_OPTIONS[0].value
+const DEFAULT_PROJECT_ICON = PROJECT_ICON_OPTIONS[0]?.value ?? 'Folder'
 
 export function LeftSideBar({ children, className }: LeftSideBarProps) {
   const { transparencyEnabled } = useTheme()
@@ -466,28 +521,40 @@ export function LeftSideBar({ children, className }: LeftSideBarProps) {
               Choose an icon to represent this project in the sidebar.
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-3 sm:grid-cols-3">
-            {PROJECT_ICON_OPTIONS.map(option => {
-              const IconComponent = option.icon
-              const isSelected = changeIconValue === option.value
-              return (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => setChangeIconValue(option.value)}
-                  disabled={updateBoardIcon.isPending}
-                  className={cn(
-                    'flex h-20 flex-col items-center justify-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium transition',
-                    isSelected
-                      ? 'border-primary bg-primary/10 text-primary dark:bg-primary/20'
-                      : 'border-transparent bg-gray-100 text-gray-600 hover:border-gray-300 hover:bg-gray-100/80 dark:bg-gray-800 dark:text-gray-300 dark:hover:border-gray-600'
-                  )}
-                >
-                  <IconComponent className="h-5 w-5" />
-                  <span>{option.label}</span>
-                </button>
-              )
-            })}
+          <div className="space-y-4">
+            {PROJECT_ICON_SECTIONS.map(section => (
+              <div key={section.label} className="space-y-2">
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  {section.label}
+                </p>
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                  {section.options.map(option => {
+                    const IconComponent = option.icon
+                    const isSelected = changeIconValue === option.value
+                    return (
+                      <button
+                        key={option.value}
+                        type="button"
+                        onClick={() => setChangeIconValue(option.value)}
+                        disabled={updateBoardIcon.isPending}
+                        aria-pressed={isSelected}
+                        className={cn(
+                          'flex h-16 flex-col items-center justify-center gap-1.5 rounded-xl border px-3 py-2 text-sm font-medium transition',
+                          isSelected
+                            ? 'border-primary bg-primary/10 text-primary shadow-sm dark:bg-primary/20'
+                            : 'border-transparent bg-gray-100 text-gray-600 hover:border-gray-300 hover:bg-gray-100/80 dark:bg-gray-800 dark:text-gray-300 dark:hover:border-gray-600'
+                        )}
+                      >
+                        <IconComponent className="h-5 w-5" />
+                        <span className="truncate text-xs font-medium">
+                          {option.label}
+                        </span>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            ))}
           </div>
           <DialogFooter>
             <Button
