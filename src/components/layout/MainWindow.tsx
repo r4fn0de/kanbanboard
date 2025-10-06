@@ -3,7 +3,6 @@ import {
   ResizablePanel,
   ResizableHandle,
 } from '@/components/ui/resizable'
-import { TitleBar } from '@/components/titlebar/TitleBar'
 import { LeftSideBar } from './LeftSideBar'
 import { RightSideBar } from './RightSideBar'
 import { MainWindowContent } from './MainWindowContent'
@@ -14,10 +13,12 @@ import { useTheme } from '@/hooks/use-theme'
 import { useUIStore } from '@/store/ui-store'
 import { useMainWindowEventListeners } from '@/hooks/useMainWindowEventListeners'
 import { cn } from '@/lib/utils'
+import { useCallback } from 'react'
 
 export function MainWindow() {
   const { theme, transparencyEnabled } = useTheme()
-  const { leftSidebarVisible, rightSidebarVisible } = useUIStore()
+  const { leftSidebarVisible, rightSidebarVisible, toggleLeftSidebar } =
+    useUIStore()
 
   // Set up global event listeners (keyboard shortcuts, etc.)
   useMainWindowEventListeners()
@@ -29,10 +30,22 @@ export function MainWindow() {
       : 'bg-background supports-[backdrop-filter]:rounded-b-[12px]'
   )
 
+  const handleEdgeActivate = useCallback(() => {
+    if (!leftSidebarVisible) {
+      toggleLeftSidebar()
+    }
+  }, [leftSidebarVisible, toggleLeftSidebar])
+
   return (
-    <div className="flex h-screen w-full flex-col overflow-hidden rounded-[12px] supports-[backdrop-filter]:rounded-[12px]">
-      {/* Title Bar */}
-      <TitleBar />
+    <div className="relative flex h-screen w-full flex-col overflow-hidden rounded-[12px] supports-[backdrop-filter]:rounded-[12px]">
+      {!leftSidebarVisible ? (
+        <button
+          type="button"
+          onClick={handleEdgeActivate}
+          aria-label="Show left sidebar"
+          className="absolute left-0 top-0 z-20 h-full w-2 cursor-pointer bg-transparent"
+        />
+      ) : null}
 
       {/* Main Content Area with Resizable Panels */}
       <div className={contentClasses}>

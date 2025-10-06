@@ -24,7 +24,12 @@ import {
   PenTool,
   LifeBuoy,
   MoreHorizontal,
+  PanelLeft,
+  PanelLeftClose,
+  PanelRight,
+  PanelRightClose,
   Plus,
+  Settings,
 } from 'lucide-react'
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import {
@@ -64,6 +69,9 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { motion } from 'framer-motion'
+import { MacOSWindowControls } from '@/components/titlebar/MacOSWindowControls'
+import { executeCommand, useCommandContext } from '@/lib/commands'
+import { useUIStore } from '@/store/ui-store'
 
 interface LeftSideBarProps {
   children?: React.ReactNode
@@ -158,6 +166,13 @@ export function LeftSideBar({ children, className }: LeftSideBarProps) {
   const renameProjectDescriptionId = useId()
   const navigate = useNavigate()
   const location = useLocation()
+  const commandContext = useCommandContext()
+  const {
+    leftSidebarVisible,
+    rightSidebarVisible,
+    toggleLeftSidebar,
+    toggleRightSidebar,
+  } = useUIStore()
 
   const createBoard = useCreateBoard()
   const renameBoard = useRenameBoard()
@@ -170,7 +185,7 @@ export function LeftSideBar({ children, className }: LeftSideBarProps) {
   } = useBoards()
 
   const sidebarClasses = cn(
-    'flex h-full flex-col border-r rounded-l-[12px]',
+    'flex h-full flex-col rounded-l-[12px]',
     transparencyEnabled
       ? 'border-gray-200/40 bg-gray-50/60 backdrop-blur-xl supports-[backdrop-filter]:bg-gray-50/40 supports-[backdrop-filter]:backdrop-blur-2xl dark:border-gray-700/40 dark:bg-gray-900/60 dark:supports-[backdrop-filter]:bg-gray-900/40'
       : 'border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-900'
@@ -256,7 +271,57 @@ export function LeftSideBar({ children, className }: LeftSideBarProps) {
 
   return (
     <div className={cn(sidebarClasses, className)}>
-      <nav className="flex flex-col gap-2 p-4 text-sm text-foreground">
+      <div
+        data-tauri-drag-region
+        className="flex items-center justify-between px-4 pt-4 pb-3"
+      >
+        <MacOSWindowControls className="px-0" />
+        <div className="flex items-center gap-1">
+          <Button
+            onClick={toggleLeftSidebar}
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6 text-foreground/70 hover:text-foreground"
+            title={
+              leftSidebarVisible ? 'Hide Left Sidebar' : 'Show Left Sidebar'
+            }
+          >
+            {leftSidebarVisible ? (
+              <PanelLeftClose className="h-3 w-3" />
+            ) : (
+              <PanelLeft className="h-3 w-3" />
+            )}
+          </Button>
+          <Button
+            onClick={() => executeCommand('open-preferences', commandContext)}
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6 text-foreground/70 hover:text-foreground"
+            title="Settings"
+          >
+            <Settings className="h-3 w-3" />
+          </Button>
+          <Button
+            onClick={toggleRightSidebar}
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6 text-foreground/70 hover:text-foreground"
+            title={
+              rightSidebarVisible
+                ? 'Hide Right Sidebar'
+                : 'Show Right Sidebar'
+            }
+          >
+            {rightSidebarVisible ? (
+              <PanelRightClose className="h-3 w-3" />
+            ) : (
+              <PanelRight className="h-3 w-3" />
+            )}
+          </Button>
+        </div>
+      </div>
+
+      <nav className="mt-1 flex flex-col gap-2 px-4 pb-4 text-sm text-foreground">
         <NavLink
           to="/"
           end
@@ -371,14 +436,9 @@ export function LeftSideBar({ children, className }: LeftSideBarProps) {
                               setDeleteProjectTitle(board.title)
                               setDeleteProjectOpen(true)
                             }}
-                            className="text-destructive focus:text-destructive"
+                            className="text-red-600 focus:text-red-600 focus:bg-red-50 hover:text-red-600 hover:bg-red-50 dark:text-red-400 dark:focus:text-red-300 dark:focus:bg-red-900/20 dark:hover:text-red-300 dark:hover:bg-red-900/20"
                           >
                             Delete
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onSelect={() => navigate(`/projects/${board.id}`)}
-                          >
-                            Open
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>

@@ -735,10 +735,13 @@ export function BoardDetailView({ board, onBack }: BoardDetailViewProps) {
 	}
 
 	return (
-		<div className="flex h-full flex-col gap-6 p-6">
-			<div className="flex flex-col gap-2">
-				<Button variant="ghost" className="w-max px-0" onClick={onBack}>
-					← Back
+		<div className="flex h-full flex-col gap-6 p-4">
+			<div className="flex flex-col gap-2 -mt-2">
+				<Button variant="ghost" className="w-max px-3 py-2 h-auto text-gray-600 hover:text-gray-900 hover:bg-gray-100/60 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-800/60 transition-all duration-200 rounded-xl" onClick={onBack}>
+					<svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+					</svg>
+					<span className="font-medium">Back</span>
 				</Button>
 				<div>
 					<h1 className="text-2xl font-semibold tracking-tight">
