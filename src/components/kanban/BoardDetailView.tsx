@@ -343,20 +343,23 @@ export function BoardDetailView({ board, onBack }: BoardDetailViewProps) {
 
     ;(async () => {
       try {
-        await Promise.all(
-          DEFAULT_COLUMN_TITLES.map((title, index) =>
-            createColumn({
-              id: crypto.randomUUID(),
-              boardId: board.id,
-              title,
-              position: index,
-              wipLimit: null,
-            })
-          )
-        )
+        for (const [index, title] of DEFAULT_COLUMN_TITLES.entries()) {
+          // Execute sequentially to avoid SQLite write lock errors
+          await createColumn({
+            id: crypto.randomUUID(),
+            boardId: board.id,
+            title,
+            position: index,
+            wipLimit: null,
+          })
+        }
       } catch (error) {
         const message =
-          error instanceof Error ? error.message : 'Could not create default columns'
+          error instanceof Error
+            ? error.message
+            : typeof error === 'string'
+            ? error
+            : 'Could not create default columns'
         toast.error(message)
       }
     })()

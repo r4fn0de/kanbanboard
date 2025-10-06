@@ -378,6 +378,59 @@ async fn load_boards(pool: State<'_, DbPool>) -> Result<Vec<Value>, String> {
 }
 
 #[tauri::command]
+async fn rename_board(
+    pool: State<'_, DbPool>,
+    id: String,
+    mut title: String,
+    description: Option<String>,
+) -> Result<(), String> {
+    title = title.trim().to_string();
+    if title.is_empty() {
+        return Err("O nome do quadro não pode ser vazio.".to_string());
+    }
+    validate_string_input(&title, 200, "Nome do quadro")?;
+
+    let normalized_description = normalize_optional_text(description);
+
+    let result = sqlx::query(
+        "UPDATE kanban_boards SET title = ?, description = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?",
+    )
+    .bind(&title)
+    .bind(normalized_description)
+    .bind(&id)
+    .execute(&*pool)
+    .await
+    .map_err(|e| {
+        log::error!("Failed to rename board {id}: {e}");
+        e.to_string()
+    })?;
+
+    if result.rows_affected() == 0 {
+        return Err("Quadro não encontrado.".to_string());
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
+async fn delete_board(pool: State<'_, DbPool>, id: String) -> Result<(), String> {
+    let result = sqlx::query("DELETE FROM kanban_boards WHERE id = ?")
+        .bind(&id)
+        .execute(&*pool)
+        .await
+        .map_err(|e| {
+            log::error!("Failed to delete board {id}: {e}");
+            e.to_string()
+        })?;
+
+    if result.rows_affected() == 0 {
+        return Err("Quadro não encontrado.".to_string());
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
 async fn create_board(
     pool: State<'_, DbPool>,
     id: String,
@@ -1142,6 +1195,8 @@ pub fn run() {
             cleanup_old_recovery_files,
             load_boards,
             create_board,
+            rename_board,
+            delete_board,
             load_columns,
             create_column,
             move_column,

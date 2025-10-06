@@ -3,7 +3,7 @@ import { useTheme } from '@/hooks/use-theme'
 import type { FormEvent } from 'react'
 import { useMemo, useState, useId } from 'react'
 import { ChevronDown, ChevronRight, Home, Folder, MoreHorizontal, Plus } from 'lucide-react'
-import { NavLink } from 'react-router-dom'
+import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import {
   Dialog,
   DialogContent,
@@ -12,19 +12,28 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
-import { useBoards, useCreateBoard } from '@/services/kanban'
+import { useBoards, useCreateBoard, useDeleteBoard, useRenameBoard } from '@/services/kanban'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 
 interface LeftSideBarProps {
@@ -38,11 +47,23 @@ export function LeftSideBar({ children, className }: LeftSideBarProps) {
   const [createProjectOpen, setCreateProjectOpen] = useState(false)
   const [projectName, setProjectName] = useState('')
   const [projectDescription, setProjectDescription] = useState('')
+  const [renameProjectOpen, setRenameProjectOpen] = useState(false)
+  const [renameProjectId, setRenameProjectId] = useState<string | null>(null)
+  const [renameProjectName, setRenameProjectName] = useState('')
+  const [renameProjectDescription, setRenameProjectDescription] = useState('')
+  const [deleteProjectOpen, setDeleteProjectOpen] = useState(false)
+  const [deleteProjectId, setDeleteProjectId] = useState<string | null>(null)
+  const [deleteProjectTitle, setDeleteProjectTitle] = useState('')
   const projectNameId = useId()
   const projectDescriptionId = useId()
+  const renameProjectNameId = useId()
+  const renameProjectDescriptionId = useId()
   const navigate = useNavigate()
+  const location = useLocation()
 
   const createBoard = useCreateBoard()
+  const renameBoard = useRenameBoard()
+  const deleteBoard = useDeleteBoard()
   const { data: boards = [], isLoading: isLoadingBoards, isError: isBoardsError } = useBoards()
 
   const sidebarClasses = cn(
@@ -51,6 +72,32 @@ export function LeftSideBar({ children, className }: LeftSideBarProps) {
       ? 'border-border/30 bg-background/30 backdrop-blur-lg supports-[backdrop-filter]:bg-background/15 supports-[backdrop-filter]:backdrop-blur-2xl'
       : 'border-border bg-background'
   )
+
+  const handleConfirmDelete = () => {
+    if (!deleteProjectId || deleteBoard.isPending) {
+      return
+    }
+
+    const targetId = deleteProjectId
+
+    deleteBoard.mutate(
+      { id: targetId },
+      {
+        onSuccess: () => {
+          toast.success('Project deleted')
+          setDeleteProjectOpen(false)
+
+          if (location.pathname === `/projects/${targetId}`) {
+            navigate('/projects/all')
+          }
+        },
+        onError: error => {
+          const message = error instanceof Error ? error.message : 'Unknown error'
+          toast.error('Failed to delete project', { description: message })
+        },
+      }
+    )
+  }
 
   const projectLinks = useMemo(() => {
     if (isLoadingBoards) {
@@ -139,18 +186,19 @@ export function LeftSideBar({ children, className }: LeftSideBarProps) {
                       <DropdownMenuContent side="right" align="start" className="w-44">
                         <DropdownMenuItem
                           onSelect={() => {
-                            toast('Rename project', {
-                              description: 'Rename functionality coming soon.',
-                            })
+                            setRenameProjectId(board.id)
+                            setRenameProjectName(board.title)
+                            setRenameProjectDescription(board.description ?? '')
+                            setRenameProjectOpen(true)
                           }}
                         >
                           Rename
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           onSelect={() => {
-                            toast('Delete project', {
-                              description: 'Delete functionality coming soon.',
-                            })
+                            setDeleteProjectId(board.id)
+                            setDeleteProjectTitle(board.title)
+                            setDeleteProjectOpen(true)
                           }}
                           className="text-destructive focus:text-destructive"
                         >
@@ -185,6 +233,97 @@ export function LeftSideBar({ children, className }: LeftSideBarProps) {
       </nav>
 
       {children}
+
+      <Dialog
+        open={renameProjectOpen}
+        onOpenChange={open => {
+          setRenameProjectOpen(open)
+          if (!open) {
+            setRenameProjectId(null)
+            setRenameProjectName('')
+            setRenameProjectDescription('')
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Rename project</DialogTitle>
+            <DialogDescription>
+              Update the project name and description to keep your workspace organized.
+            </DialogDescription>
+          </DialogHeader>
+          <form
+            className="space-y-4"
+            onSubmit={(event: FormEvent<HTMLFormElement>) => {
+              event.preventDefault()
+
+              if (renameBoard.isPending || !renameProjectId) {
+                return
+              }
+
+              const trimmedName = renameProjectName.trim()
+
+              if (!trimmedName) {
+                toast.error('Project name is required')
+                return
+              }
+
+              renameBoard.mutate(
+                {
+                  id: renameProjectId,
+                  title: trimmedName,
+                  description: renameProjectDescription.trim() || undefined,
+                },
+                {
+                  onSuccess: () => {
+                    toast.success('Project updated')
+                    setRenameProjectOpen(false)
+                  },
+                  onError: error => {
+                    const message = error instanceof Error ? error.message : 'Unknown error'
+                    toast.error('Failed to rename project', { description: message })
+                  },
+                }
+              )
+            }}
+          >
+            <div className="space-y-2">
+              <Label htmlFor={renameProjectNameId}>Project name</Label>
+              <Input
+                id={renameProjectNameId}
+                value={renameProjectName}
+                onChange={event => setRenameProjectName(event.target.value)}
+                placeholder="e.g. Marketing Launch"
+                autoFocus
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor={renameProjectDescriptionId}>Description</Label>
+              <Textarea
+                id={renameProjectDescriptionId}
+                value={renameProjectDescription}
+                onChange={event => setRenameProjectDescription(event.target.value)}
+                placeholder="Optional context to help your team get started"
+                rows={4}
+              />
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setRenameProjectOpen(false)}
+                disabled={renameBoard.isPending}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={renameBoard.isPending}>
+                {renameBoard.isPending ? 'Updating…' : 'Save changes'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={createProjectOpen} onOpenChange={open => setCreateProjectOpen(open)}>
         <DialogContent>
@@ -267,6 +406,41 @@ export function LeftSideBar({ children, className }: LeftSideBarProps) {
           </form>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog
+        open={deleteProjectOpen}
+        onOpenChange={open => {
+          setDeleteProjectOpen(open)
+          if (!open) {
+            setDeleteProjectId(null)
+            setDeleteProjectTitle('')
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete project</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete
+              {deleteProjectTitle ? ` "${deleteProjectTitle}"` : ' this project'} and all of its
+              data.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteBoard.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={event => {
+                event.preventDefault()
+                handleConfirmDelete()
+              }}
+              disabled={deleteBoard.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteBoard.isPending ? 'Deleting…' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

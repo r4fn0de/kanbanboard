@@ -39,8 +39,8 @@ export function MainWindow() {
         <ResizablePanelGroup direction="horizontal">
           {/* Left Sidebar */}
           <ResizablePanel
-            defaultSize={20}
-            minSize={15}
+            defaultSize={rightSidebarVisible ? 20 : 18}
+            minSize={rightSidebarVisible ? 15 : 12}
             maxSize={40}
             className={cn(!leftSidebarVisible && 'hidden')}
           >

@@ -33,6 +33,30 @@ export async function createBoard(input: CreateBoardInput): Promise<void> {
   })
 }
 
+export interface RenameBoardInput {
+  id: string
+  title: string
+  description?: string
+}
+
+export async function renameBoard(input: RenameBoardInput): Promise<void> {
+  await invoke('rename_board', {
+    id: input.id,
+    title: input.title,
+    description: input.description ?? null,
+  })
+}
+
+export interface DeleteBoardInput {
+  id: string
+}
+
+export async function deleteBoard(input: DeleteBoardInput): Promise<void> {
+  await invoke('delete_board', {
+    id: input.id,
+  })
+}
+
 export function useMoveColumn(boardId: string) {
   const queryClient = useQueryClient()
   return useMutation({
@@ -71,6 +95,82 @@ export function useMoveColumn(boardId: string) {
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: kanbanQueryKeys.columns(boardId) })
       queryClient.invalidateQueries({ queryKey: kanbanQueryKeys.boards() })
+    },
+  })
+}
+
+export function useRenameBoard() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: renameBoard,
+    onMutate: async input => {
+      await queryClient.cancelQueries({ queryKey: kanbanQueryKeys.boards() })
+
+      const previousBoards = queryClient.getQueryData<KanbanBoard[]>(
+        kanbanQueryKeys.boards()
+      )
+
+      if (previousBoards) {
+        const now = new Date().toISOString()
+        queryClient.setQueryData<KanbanBoard[]>(kanbanQueryKeys.boards(), boards =>
+          boards
+            ? boards.map(board =>
+                board.id === input.id
+                  ? {
+                      ...board,
+                      title: input.title,
+                      description: input.description ?? null,
+                      updatedAt: now,
+                    }
+                  : board
+              )
+            : boards
+        )
+      }
+
+      return { previousBoards }
+    },
+    onError: (_error, _variables, context) => {
+      if (context?.previousBoards) {
+        queryClient.setQueryData(kanbanQueryKeys.boards(), context.previousBoards)
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: kanbanQueryKeys.boards() })
+    },
+  })
+}
+
+export function useDeleteBoard() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: deleteBoard,
+    onMutate: async input => {
+      await queryClient.cancelQueries({ queryKey: kanbanQueryKeys.boards() })
+
+      const previousBoards = queryClient.getQueryData<KanbanBoard[]>(
+        kanbanQueryKeys.boards()
+      )
+
+      if (previousBoards) {
+        queryClient.setQueryData<KanbanBoard[]>(kanbanQueryKeys.boards(), boards =>
+          boards ? boards.filter(board => board.id !== input.id) : boards
+        )
+      }
+
+      return { previousBoards }
+    },
+    onError: (_error, _variables, context) => {
+      if (context?.previousBoards) {
+        queryClient.setQueryData(kanbanQueryKeys.boards(), context.previousBoards)
+      }
+    },
+    onSettled: (_result, _error, variables) => {
+      queryClient.invalidateQueries({ queryKey: kanbanQueryKeys.boards() })
+      if (variables?.id) {
+        queryClient.removeQueries({ queryKey: kanbanQueryKeys.columns(variables.id) })
+        queryClient.removeQueries({ queryKey: kanbanQueryKeys.cards(variables.id) })
+      }
     },
   })
 }
