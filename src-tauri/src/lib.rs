@@ -670,15 +670,22 @@ fn greet(name: &str) -> String {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AppPreferences {
     pub theme: String,
+    #[serde(default = "default_transparency_enabled")]
+    pub transparency_enabled: bool,
     // Add new persistent preferences here, e.g.:
     // pub auto_save: bool,
     // pub language: String,
+}
+
+fn default_transparency_enabled() -> bool {
+    true
 }
 
 impl Default for AppPreferences {
     fn default() -> Self {
         Self {
             theme: "system".to_string(),
+            transparency_enabled: default_transparency_enabled(),
             // Add defaults for new preferences here
         }
     }

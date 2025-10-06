@@ -3,6 +3,7 @@ import { MacOSWindowControls } from './MacOSWindowControls'
 import { Button } from '@/components/ui/button'
 import { useUIStore } from '@/store/ui-store'
 import { executeCommand, useCommandContext } from '@/lib/commands'
+import { useTheme } from '@/hooks/use-theme'
 import {
   PanelLeft,
   PanelLeftClose,
@@ -24,13 +25,18 @@ export function TitleBar({ className, title = 'Tauri App' }: TitleBarProps) {
     toggleRightSidebar,
   } = useUIStore()
   const commandContext = useCommandContext()
+  const { transparencyEnabled } = useTheme()
+
+  const barClasses = cn(
+    'relative flex h-8 w-full shrink-0 items-center justify-between rounded-t-[12px] border-b',
+    transparencyEnabled
+      ? 'border-border/30 bg-background/20 backdrop-blur-lg supports-[backdrop-filter]:bg-background/10 supports-[backdrop-filter]:backdrop-blur-xl'
+      : 'border-border bg-background'
+  )
   return (
     <div
       data-tauri-drag-region
-      className={cn(
-        'relative flex h-8 w-full shrink-0 items-center justify-between border-b bg-background',
-        className
-      )}
+      className={cn(barClasses, className)}
     >
       {/* Left side - Window Controls + Left Actions */}
       <div className="flex items-center">

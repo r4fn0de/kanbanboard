@@ -3,6 +3,7 @@ import { invoke } from '@tauri-apps/api/core'
 import { toast } from 'sonner'
 import { logger } from '@/lib/logger'
 import type { AppPreferences } from '@/types/preferences'
+import { defaultPreferences } from '@/types/preferences'
 
 // Query keys for preferences
 export const preferencesQueryKeys = {
@@ -23,7 +24,7 @@ export function usePreferences() {
       } catch (error) {
         // Return defaults if preferences file doesn't exist yet
         logger.warn('Failed to load preferences, using defaults', { error })
-        return { theme: 'system' }
+        return defaultPreferences
       }
     },
     staleTime: 1000 * 60 * 5, // 5 minutes
@@ -35,7 +36,15 @@ export function useSavePreferences() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async (preferences: AppPreferences) => {
+    mutationFn: async (partialPrefs: Partial<AppPreferences>) => {
+      const current =
+        queryClient.getQueryData<AppPreferences>(
+          preferencesQueryKeys.preferences()
+        ) ?? defaultPreferences
+      const preferences: AppPreferences = {
+        ...current,
+        ...partialPrefs,
+      }
       try {
         logger.debug('Saving preferences to backend', { preferences })
         await invoke('save_preferences', { preferences })
@@ -48,9 +57,30 @@ export function useSavePreferences() {
         throw error
       }
     },
-    onSuccess: (_, preferences) => {
-      // Update the cache with the new preferences
-      queryClient.setQueryData(preferencesQueryKeys.preferences(), preferences)
+    onMutate: async partialPrefs => {
+      await queryClient.cancelQueries({ queryKey: preferencesQueryKeys.preferences() })
+      const previous = queryClient.getQueryData<AppPreferences>(
+        preferencesQueryKeys.preferences()
+      )
+
+      const merged: AppPreferences = {
+        ...(previous ?? defaultPreferences),
+        ...partialPrefs,
+      }
+
+      queryClient.setQueryData(preferencesQueryKeys.preferences(), merged)
+
+      return { previous }
+    },
+    onError: (_error, _variables, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(
+          preferencesQueryKeys.preferences(),
+          context.previous
+        )
+      }
+    },
+    onSuccess: (_data, _variables, _context) => {
       logger.info('Preferences cache updated')
       toast.success('Preferences saved')
     },

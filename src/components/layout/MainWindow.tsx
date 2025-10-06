@@ -16,19 +16,26 @@ import { useMainWindowEventListeners } from '@/hooks/useMainWindowEventListeners
 import { cn } from '@/lib/utils'
 
 export function MainWindow() {
-  const { theme } = useTheme()
+  const { theme, transparencyEnabled } = useTheme()
   const { leftSidebarVisible, rightSidebarVisible } = useUIStore()
 
   // Set up global event listeners (keyboard shortcuts, etc.)
   useMainWindowEventListeners()
 
+  const contentClasses = cn(
+    'flex flex-1 overflow-hidden rounded-b-[12px]',
+    transparencyEnabled
+      ? 'bg-background/60 backdrop-blur-md supports-[backdrop-filter]:rounded-b-[12px] supports-[backdrop-filter]:bg-background/30 supports-[backdrop-filter]:backdrop-blur-lg'
+      : 'bg-background supports-[backdrop-filter]:rounded-b-[12px]'
+  )
+
   return (
-    <div className="flex h-screen w-full flex-col overflow-hidden rounded-xl bg-background">
+    <div className="flex h-screen w-full flex-col overflow-hidden rounded-[12px] supports-[backdrop-filter]:rounded-[12px]">
       {/* Title Bar */}
       <TitleBar />
 
       {/* Main Content Area with Resizable Panels */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className={contentClasses}>
         <ResizablePanelGroup direction="horizontal">
           {/* Left Sidebar */}
           <ResizablePanel
@@ -69,7 +76,7 @@ export function MainWindow() {
         theme={
           theme === 'dark' ? 'dark' : theme === 'light' ? 'light' : 'system'
         }
-        className="toaster group"
+        className="toaster group rounded-[16px]"
         toastOptions={{
           classNames: {
             toast:
