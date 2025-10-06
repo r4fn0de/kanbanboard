@@ -25,6 +25,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { useNavigate } from 'react-router-dom'
+import { motion } from 'framer-motion'
 
 interface LeftSideBarProps {
   children?: React.ReactNode
@@ -110,7 +111,7 @@ export function LeftSideBar({ children, className }: LeftSideBarProps) {
                       to={`/projects/${board.id}`}
                       className={({ isActive }) =>
                         cn(
-                          'flex grow items-center gap-2 rounded-md px-3 py-1.5 text-left text-muted-foreground transition hover:bg-foreground/10 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                          'flex grow items-center gap-2 rounded-md pl-3 pr-10 py-1.5 text-left text-muted-foreground transition hover:bg-foreground/10 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                           isActive ? 'bg-foreground/10 text-foreground' : undefined
                         )
                       }
@@ -120,13 +121,20 @@ export function LeftSideBar({ children, className }: LeftSideBarProps) {
                     </NavLink>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <button
+                        <motion.button
                           type="button"
-                          className="ml-1 flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground opacity-0 pointer-events-none transition group-hover:opacity-100 group-hover:pointer-events-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.92 }}
+                          transition={{ duration: 0.18, ease: 'easeOut' }}
+                          className={cn(
+                            'absolute right-1 top-1/2 -translate-y-1/2 flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground opacity-0 pointer-events-none transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                            'group-hover:opacity-100 group-hover:pointer-events-auto',
+                            'data-[state=open]:opacity-100 data-[state=open]:pointer-events-auto data-[state=open]:bg-foreground/10 data-[state=open]:text-foreground'
+                          )}
                           aria-label={`Open actions for ${board.title}`}
                         >
                           <MoreHorizontal className="h-4 w-4" />
-                        </button>
+                        </motion.button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent side="right" align="start" className="w-44">
                         <DropdownMenuItem
