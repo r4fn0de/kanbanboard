@@ -52,6 +52,20 @@ export async function createColumn(input: CreateColumnInput): Promise<void> {
   })
 }
 
+export interface MoveColumnInput {
+  boardId: string
+  columnId: string
+  targetIndex: number
+}
+
+export async function moveColumn(input: MoveColumnInput): Promise<void> {
+  await invoke('move_column', {
+    boardId: input.boardId,
+    columnId: input.columnId,
+    targetIndex: input.targetIndex,
+  })
+}
+
 export async function fetchCards(boardId: string): Promise<KanbanCard[]> {
   return invoke<KanbanCard[]>('load_cards', { boardId })
 }
@@ -75,6 +89,24 @@ export async function createCard(input: CreateCardInput): Promise<void> {
   })
 }
 
+export interface MoveCardInput {
+  boardId: string
+  cardId: string
+  fromColumnId: string
+  toColumnId: string
+  targetIndex: number
+}
+
+export async function moveCard(input: MoveCardInput): Promise<void> {
+  await invoke('move_card', {
+    boardId: input.boardId,
+    cardId: input.cardId,
+    fromColumnId: input.fromColumnId,
+    toColumnId: input.toColumnId,
+    targetIndex: input.targetIndex,
+  })
+}
+
 export function useBoards() {
   return useQuery({
     queryKey: kanbanQueryKeys.boards(),
@@ -86,7 +118,36 @@ export function useCreateBoard() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: createBoard,
-    onSuccess: () => {
+    onMutate: async input => {
+      await queryClient.cancelQueries({ queryKey: kanbanQueryKeys.boards() })
+
+      const previousBoards = queryClient.getQueryData<KanbanBoard[]>(
+        kanbanQueryKeys.boards()
+      )
+
+      const now = new Date().toISOString()
+      const optimisticBoard: KanbanBoard = {
+        id: input.id,
+        title: input.title,
+        description: input.description ?? null,
+        createdAt: now,
+        updatedAt: now,
+        archivedAt: null,
+      }
+
+      queryClient.setQueryData<KanbanBoard[]>(
+        kanbanQueryKeys.boards(),
+        oldBoards => (oldBoards ? [...oldBoards, optimisticBoard] : [optimisticBoard])
+      )
+
+      return { previousBoards }
+    },
+    onError: (_error, _variables, context) => {
+      if (context?.previousBoards) {
+        queryClient.setQueryData(kanbanQueryKeys.boards(), context.previousBoards)
+      }
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: kanbanQueryKeys.boards() })
     },
   })
@@ -104,7 +165,37 @@ export function useCreateColumn(boardId: string) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: createColumn,
-    onSuccess: () => {
+    onMutate: async input => {
+      const columnsKey = kanbanQueryKeys.columns(boardId)
+
+      await queryClient.cancelQueries({ queryKey: columnsKey })
+
+      const previousColumns = queryClient.getQueryData<KanbanColumn[]>(columnsKey)
+
+      const now = new Date().toISOString()
+      const optimisticColumn: KanbanColumn = {
+        id: input.id,
+        boardId: input.boardId,
+        title: input.title,
+        position: input.position,
+        wipLimit: input.wipLimit ?? null,
+        createdAt: now,
+        updatedAt: now,
+        archivedAt: null,
+      }
+
+      queryClient.setQueryData<KanbanColumn[]>(columnsKey, old =>
+        old ? [...old, optimisticColumn] : [optimisticColumn]
+      )
+
+      return { previousColumns }
+    },
+    onError: (_error, _variables, context) => {
+      if (context?.previousColumns) {
+        queryClient.setQueryData(kanbanQueryKeys.columns(boardId), context.previousColumns)
+      }
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: kanbanQueryKeys.columns(boardId) })
       queryClient.invalidateQueries({ queryKey: kanbanQueryKeys.boards() })
     },
@@ -123,7 +214,41 @@ export function useCreateCard(boardId: string) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: createCard,
-    onSuccess: () => {
+    onMutate: async input => {
+      const cardsKey = kanbanQueryKeys.cards(boardId)
+
+      await queryClient.cancelQueries({ queryKey: cardsKey })
+
+      const previousCards = queryClient.getQueryData<KanbanCard[]>(cardsKey)
+
+      const now = new Date().toISOString()
+      const optimisticCard: KanbanCard = {
+        id: input.id,
+        boardId: input.boardId,
+        columnId: input.columnId,
+        title: input.title,
+        description: input.description ?? null,
+        position: input.position,
+        priority: input.priority,
+        dueDate: input.dueDate ?? null,
+        tags: [],
+        createdAt: now,
+        updatedAt: now,
+        archivedAt: null,
+      }
+
+      queryClient.setQueryData<KanbanCard[]>(cardsKey, old =>
+        old ? [...old, optimisticCard] : [optimisticCard]
+      )
+
+      return { previousCards }
+    },
+    onError: (_error, _variables, context) => {
+      if (context?.previousCards) {
+        queryClient.setQueryData(kanbanQueryKeys.cards(boardId), context.previousCards)
+      }
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: kanbanQueryKeys.cards(boardId) })
       queryClient.invalidateQueries({ queryKey: kanbanQueryKeys.columns(boardId) })
     },

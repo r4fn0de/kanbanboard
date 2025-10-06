@@ -1,9 +1,9 @@
 [package]
-name = "tauri-app"
+name = "kanbanboard"
 version = "0.1.0"
-description = "A Tauri App"
-authors = ["you"]
-edition = "2021"
+description = "A KanbanBoard App"
+authors = ["Rafael Porto"]
+edition = "2024"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -30,7 +30,7 @@ tauri-plugin-notification = "2"
 tauri-plugin-persisted-scope = "2"
 tauri-plugin-process = "2"
 log = "0.4"
-sqlx = { version = "0.8", default-features = false, features = ["runtime-tokio-rustls", "sqlite"] }
+sqlx = { version = "0.8", default-features = false, features = ["runtime-tokio-rustls", "sqlite", "macros"] }
 anyhow = "1.0"
 regex = "1.11.1"
 

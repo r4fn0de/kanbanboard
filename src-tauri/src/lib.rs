@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use sqlx::{
     sqlite::{SqliteConnectOptions, SqliteJournalMode, SqlitePool, SqlitePoolOptions, SqliteRow},
-    Row,
+    Row, Sqlite, Transaction,
 };
 use std::fs;
 use std::path::PathBuf;
@@ -44,6 +44,207 @@ async fn establish_pool(app: &AppHandle) -> Result<DbPool, String> {
         .map_err(|e| format!("Failed to create SQLite pool: {e}"))?;
 
     Ok(pool)
+}
+
+#[tauri::command]
+async fn move_column(
+    pool: State<'_, DbPool>,
+    board_id: String,
+    column_id: String,
+    target_index: i64,
+) -> Result<(), String> {
+    let mut tx = pool
+        .begin()
+        .await
+        .map_err(|e| format!("Falha ao abrir transação: {e}"))?;
+
+    let mut columns = sqlx::query_as::<_, (String,)>(
+        "SELECT id FROM kanban_columns WHERE board_id = ? ORDER BY position ASC, created_at ASC",
+    )
+    .bind(&board_id)
+    .fetch_all(&mut *tx)
+    .await
+    .map_err(|e| format!("Falha ao carregar colunas: {e}"))?;
+
+    if columns.is_empty() {
+        return Err("Nenhuma coluna encontrada para o quadro informado.".to_string());
+    }
+
+    let current_index = columns
+        .iter()
+        .position(|(id,)| id == &column_id)
+        .ok_or_else(|| "Coluna não encontrada.".to_string())?;
+
+    let mut ids: Vec<String> = columns.into_iter().map(|(id,)| id).collect();
+    let removed_id = ids.remove(current_index);
+
+    let mut clamped_index = target_index;
+    if clamped_index < 0 {
+        clamped_index = 0;
+    }
+    if clamped_index as usize > ids.len() {
+        clamped_index = ids.len() as i64;
+    }
+
+    ids.insert(clamped_index as usize, removed_id.clone());
+
+    for (index, id) in ids.iter().enumerate() {
+        sqlx::query(
+            "UPDATE kanban_columns SET position = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?",
+        )
+        .bind(index as i64)
+        .bind(id)
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| format!("Falha ao atualizar posições das colunas: {e}"))?;
+    }
+
+    tx.commit()
+        .await
+        .map_err(|e| format!("Falha ao confirmar transação: {e}"))?;
+
+    Ok(())
+}
+
+#[tauri::command]
+async fn move_card(
+    pool: State<'_, DbPool>,
+    board_id: String,
+    card_id: String,
+    from_column_id: String,
+    to_column_id: String,
+    target_index: i64,
+) -> Result<(), String> {
+    let mut tx = pool
+        .begin()
+        .await
+        .map_err(|e| format!("Falha ao abrir transação: {e}"))?;
+
+    let card_info = sqlx::query_as::<_, (String, String)>(
+        "SELECT column_id, board_id FROM kanban_cards WHERE id = ?",
+    )
+    .bind(&card_id)
+    .fetch_optional(&mut *tx)
+    .await
+    .map_err(|e| format!("Falha ao carregar cartão: {e}"))?;
+
+    let (current_column_id, card_board_id) = card_info.ok_or_else(|| "Cartão não encontrado.".to_string())?;
+
+    if card_board_id != board_id {
+        return Err("O cartão não pertence ao quadro informado.".to_string());
+    }
+
+    if current_column_id != from_column_id {
+        return Err("O cartão não pertence à coluna de origem informada.".to_string());
+    }
+
+    let target_column_board = sqlx::query_scalar::<_, Option<String>>(
+        "SELECT board_id FROM kanban_columns WHERE id = ?",
+    )
+    .bind(&to_column_id)
+    .fetch_one(&mut *tx)
+    .await
+    .map_err(|e| format!("Falha ao carregar coluna de destino: {e}"))?
+    .ok_or_else(|| "Coluna de destino não encontrada.".to_string())?;
+
+    if target_column_board != board_id {
+        return Err("A coluna de destino não pertence ao quadro informado.".to_string());
+    }
+
+    let mut source_cards = sqlx::query_as::<_, (String,)>(
+        "SELECT id FROM kanban_cards WHERE column_id = ? ORDER BY position ASC, created_at ASC",
+    )
+    .bind(&from_column_id)
+    .fetch_all(&mut *tx)
+    .await
+    .map_err(|e| format!("Falha ao carregar cartões da coluna de origem: {e}"))?;
+
+    let current_index = source_cards
+        .iter()
+        .position(|(id,)| id == &card_id)
+        .ok_or_else(|| "Cartão não encontrado na coluna de origem.".to_string())?;
+
+    source_cards.remove(current_index);
+
+    if from_column_id == to_column_id {
+        let mut reordered: Vec<String> = source_cards.into_iter().map(|(id,)| id).collect();
+        let mut clamped = target_index;
+        if clamped < 0 {
+            clamped = 0;
+        }
+        if clamped as usize > reordered.len() {
+            clamped = reordered.len() as i64;
+        }
+        reordered.insert(clamped as usize, card_id.clone());
+
+        for (index, id) in reordered.iter().enumerate() {
+            sqlx::query(
+                "UPDATE kanban_cards SET position = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?",
+            )
+            .bind(index as i64)
+            .bind(id)
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| format!("Falha ao atualizar posições dos cartões: {e}"))?;
+        }
+    } else {
+        // Atualiza posições na coluna de origem após remover o cartão
+        for (index, (id,)) in source_cards.iter().enumerate() {
+            sqlx::query(
+                "UPDATE kanban_cards SET position = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?",
+            )
+            .bind(index as i64)
+            .bind(id)
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| format!("Falha ao atualizar posições na coluna de origem: {e}"))?;
+        }
+
+        let mut target_cards = sqlx::query_as::<_, (String,)>(
+            "SELECT id FROM kanban_cards WHERE column_id = ? ORDER BY position ASC, created_at ASC",
+        )
+        .bind(&to_column_id)
+        .fetch_all(&mut *tx)
+        .await
+        .map_err(|e| format!("Falha ao carregar cartões da coluna de destino: {e}"))?;
+
+        let mut clamped = target_index;
+        if clamped < 0 {
+            clamped = 0;
+        }
+        if clamped as usize > target_cards.len() {
+            clamped = target_cards.len() as i64;
+        }
+
+        let mut reordered: Vec<String> = target_cards.into_iter().map(|(id,)| id).collect();
+        reordered.insert(clamped as usize, card_id.clone());
+
+        sqlx::query(
+            "UPDATE kanban_cards SET column_id = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?",
+        )
+        .bind(&to_column_id)
+        .bind(&card_id)
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| format!("Falha ao mover cartão para coluna de destino: {e}"))?;
+
+        for (index, id) in reordered.iter().enumerate() {
+            sqlx::query(
+                "UPDATE kanban_cards SET position = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?",
+            )
+            .bind(index as i64)
+            .bind(id)
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| format!("Falha ao atualizar posições na coluna de destino: {e}"))?;
+        }
+    }
+
+    tx.commit()
+        .await
+        .map_err(|e| format!("Falha ao confirmar transação: {e}"))?;
+
+    Ok(())
 }
 
 async fn initialize_schema(pool: &DbPool) -> Result<(), String> {
@@ -103,6 +304,67 @@ fn map_card_row(row: SqliteRow) -> Result<Value, sqlx::Error> {
     }))
 }
 
+fn normalize_optional_text(value: Option<String>) -> Option<String> {
+    value
+        .map(|v| v.trim().to_string())
+        .filter(|v| !v.is_empty())
+}
+
+fn validate_priority(priority: &str) -> Result<(), String> {
+    match priority {
+        "low" | "medium" | "high" => Ok(()),
+        _ => Err("Prioridade inválida. Utilize 'low', 'medium' ou 'high'.".to_string()),
+    }
+}
+
+async fn normalize_column_positions_tx(
+    tx: &mut Transaction<'_, Sqlite>,
+    board_id: &str,
+) -> Result<(), sqlx::Error> {
+    let column_ids = sqlx::query_as::<_, (String,)>(
+        "SELECT id FROM kanban_columns WHERE board_id = ? ORDER BY position ASC, created_at ASC",
+    )
+    .bind(board_id)
+    .fetch_all(&mut **tx)
+    .await?;
+
+    for (index, (column_id,)) in column_ids.into_iter().enumerate() {
+        sqlx::query(
+            "UPDATE kanban_columns SET position = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?",
+        )
+        .bind(index as i64)
+        .bind(column_id)
+        .execute(&mut **tx)
+        .await?;
+    }
+
+    Ok(())
+}
+
+async fn normalize_card_positions_tx(
+    tx: &mut Transaction<'_, Sqlite>,
+    column_id: &str,
+) -> Result<(), sqlx::Error> {
+    let card_ids = sqlx::query_as::<_, (String,)>(
+        "SELECT id FROM kanban_cards WHERE column_id = ? ORDER BY position ASC, created_at ASC",
+    )
+    .bind(column_id)
+    .fetch_all(&mut **tx)
+    .await?;
+
+    for (index, (card_id,)) in card_ids.into_iter().enumerate() {
+        sqlx::query(
+            "UPDATE kanban_cards SET position = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?",
+        )
+        .bind(index as i64)
+        .bind(card_id)
+        .execute(&mut **tx)
+        .await?;
+    }
+
+    Ok(())
+}
+
 #[tauri::command]
 async fn load_boards(pool: State<'_, DbPool>) -> Result<Vec<Value>, String> {
     sqlx::query("SELECT id, title, description, created_at, updated_at, archived_at FROM kanban_boards ORDER BY created_at ASC")
@@ -119,15 +381,23 @@ async fn load_boards(pool: State<'_, DbPool>) -> Result<Vec<Value>, String> {
 async fn create_board(
     pool: State<'_, DbPool>,
     id: String,
-    title: String,
+    mut title: String,
     description: Option<String>,
 ) -> Result<(), String> {
+    title = title.trim().to_string();
+    if title.is_empty() {
+        return Err("O nome do quadro não pode ser vazio.".to_string());
+    }
+    validate_string_input(&title, 200, "Nome do quadro")?;
+
+    let normalized_description = normalize_optional_text(description);
+
     sqlx::query(
         "INSERT INTO kanban_boards (id, title, description, created_at, updated_at) VALUES (?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))",
     )
     .bind(id)
     .bind(title)
-    .bind(description)
+    .bind(normalized_description)
     .execute(&*pool)
     .await
     .map(|_| ())
@@ -155,25 +425,80 @@ async fn create_column(
     pool: State<'_, DbPool>,
     id: String,
     board_id: String,
-    title: String,
+    mut title: String,
     position: i64,
     wip_limit: Option<i64>,
 ) -> Result<(), String> {
+    title = title.trim().to_string();
+    if title.is_empty() {
+        return Err("O nome da coluna não pode ser vazio.".to_string());
+    }
+    validate_string_input(&title, 200, "Nome da coluna")?;
+
+    let normalized_wip_limit = match wip_limit {
+        Some(limit) if limit < 1 => {
+            return Err("O limite WIP deve ser um número inteiro positivo.".to_string())
+        }
+        Some(limit) => Some(limit),
+        None => None,
+    };
+
+    let mut tx = pool
+        .begin()
+        .await
+        .map_err(|e| format!("Falha ao abrir transação: {e}"))?;
+
+    let max_position = sqlx::query_scalar::<_, Option<i64>>(
+        "SELECT MAX(position) FROM kanban_columns WHERE board_id = ?",
+    )
+    .bind(&board_id)
+    .fetch_one(&mut *tx)
+    .await
+    .map_err(|e| format!("Falha ao obter posição máxima das colunas: {e}"))?
+    .unwrap_or(-1);
+
+    let mut normalized_position = position;
+    if normalized_position < 0 || normalized_position > max_position + 1 {
+        normalized_position = max_position + 1;
+    }
+
+    let duplicate = sqlx::query_scalar::<_, Option<i64>>(
+        "SELECT 1 FROM kanban_columns WHERE board_id = ? AND position = ? LIMIT 1",
+    )
+    .bind(&board_id)
+    .bind(normalized_position)
+    .fetch_optional(&mut *tx)
+    .await
+    .map_err(|e| format!("Falha ao verificar posições duplicadas: {e}"))?;
+
+    if duplicate.is_some() {
+        return Err(format!(
+            "Já existe uma coluna na posição {}. Ajuste a ordem e tente novamente.",
+            normalized_position
+        ));
+    }
+
     sqlx::query(
         "INSERT INTO kanban_columns (id, board_id, title, position, wip_limit, created_at, updated_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))",
     )
-    .bind(id)
-    .bind(board_id)
-    .bind(title)
-    .bind(position)
-    .bind(wip_limit)
-    .execute(&*pool)
+    .bind(&id)
+    .bind(&board_id)
+    .bind(&title)
+    .bind(normalized_position)
+    .bind(normalized_wip_limit)
+    .execute(&mut *tx)
     .await
-    .map(|_| ())
-    .map_err(|e| {
-        log::error!("Failed to create column: {e}");
-        e.to_string()
-    })
+    .map_err(|e| format!("Falha ao criar coluna: {e}"))?;
+
+    normalize_column_positions_tx(&mut tx, &board_id)
+        .await
+        .map_err(|e| format!("Falha ao normalizar posições das colunas: {e}"))?;
+
+    tx.commit()
+        .await
+        .map_err(|e| format!("Falha ao confirmar transação: {e}"))?;
+
+    Ok(())
 }
 
 #[tauri::command]
@@ -195,30 +520,98 @@ async fn create_card(
     id: String,
     board_id: String,
     column_id: String,
-    title: String,
+    mut title: String,
     description: Option<String>,
     position: i64,
     priority: String,
     due_date: Option<String>,
 ) -> Result<(), String> {
+    title = title.trim().to_string();
+    if title.is_empty() {
+        return Err("O título do cartão não pode ser vazio.".to_string());
+    }
+    validate_string_input(&title, 200, "Título do cartão")?;
+    validate_priority(&priority)?;
+
+    let normalized_description = normalize_optional_text(description);
+
+    let mut tx = pool
+        .begin()
+        .await
+        .map_err(|e| format!("Falha ao abrir transação: {e}"))?;
+
+    let stored_board_id = sqlx::query_scalar::<_, Option<String>>(
+        "SELECT board_id FROM kanban_columns WHERE id = ?",
+    )
+    .bind(&column_id)
+    .fetch_one(&mut *tx)
+    .await
+    .map_err(|e| format!("Falha ao validar coluna informada: {e}"))?;
+
+    match stored_board_id {
+        Some(db_board_id) if db_board_id == board_id => {}
+        Some(_) => {
+            return Err("A coluna informada não pertence ao quadro selecionado.".to_string())
+        }
+        None => {
+            return Err("Coluna não encontrada.".to_string())
+        }
+    }
+
+    let max_position = sqlx::query_scalar::<_, Option<i64>>(
+        "SELECT MAX(position) FROM kanban_cards WHERE column_id = ?",
+    )
+    .bind(&column_id)
+    .fetch_one(&mut *tx)
+    .await
+    .map_err(|e| format!("Falha ao obter posição máxima dos cartões: {e}"))?
+    .unwrap_or(-1);
+
+    let mut normalized_position = position;
+    if normalized_position < 0 || normalized_position > max_position + 1 {
+        normalized_position = max_position + 1;
+    }
+
+    let duplicate = sqlx::query_scalar::<_, Option<i64>>(
+        "SELECT 1 FROM kanban_cards WHERE column_id = ? AND position = ? LIMIT 1",
+    )
+    .bind(&column_id)
+    .bind(normalized_position)
+    .fetch_optional(&mut *tx)
+    .await
+    .map_err(|e| format!("Falha ao verificar posições duplicadas de cartões: {e}"))?;
+
+    if duplicate.is_some() {
+        return Err(format!(
+            "Já existe um cartão na posição {} desta coluna. Ajuste a ordem e tente novamente.",
+            normalized_position
+        ));
+    }
+
     sqlx::query(
         "INSERT INTO kanban_cards (id, board_id, column_id, title, description, position, priority, due_date, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))",
     )
-    .bind(id)
-    .bind(board_id)
-    .bind(column_id)
-    .bind(title)
-    .bind(description)
-    .bind(position)
-    .bind(priority)
-    .bind(due_date)
-    .execute(&*pool)
+    .bind(&id)
+    .bind(&board_id)
+    .bind(&column_id)
+    .bind(&title)
+    .bind(normalized_description)
+    .bind(normalized_position)
+    .bind(&priority)
+    .bind(due_date.filter(|v| !v.is_empty()))
+    .execute(&mut *tx)
     .await
-    .map(|_| ())
-    .map_err(|e| {
-        log::error!("Failed to create card: {e}");
-        e.to_string()
-    })
+    .map_err(|e| format!("Falha ao criar cartão: {e}"))?;
+
+    normalize_card_positions_tx(&mut tx, &column_id)
+        .await
+        .map_err(|e| format!("Falha ao normalizar posições dos cartões: {e}"))?;
+
+    tx.commit()
+        .await
+        .map_err(|e| format!("Falha ao confirmar transação: {e}"))?;
+
+    Ok(())
 }
 
 // Validation functions
