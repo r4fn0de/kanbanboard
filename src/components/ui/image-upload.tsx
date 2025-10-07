@@ -127,8 +127,7 @@ export function ImageUpload({
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h4 className="text-sm font-medium">Attachments</h4>
+      <div className="flex justify-end">
         <Button
           type="button"
           variant="outline"

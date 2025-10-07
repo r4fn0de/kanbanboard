@@ -369,7 +369,7 @@ export interface UpdateCardInput {
 export async function updateCard(input: UpdateCardInput): Promise<void> {
   const payload: Record<string, unknown> = {
     id: input.id,
-    boardId: input.boardId,
+    board_id: input.boardId,
   }
 
   if (Object.hasOwn(input, 'title')) {
@@ -382,10 +382,11 @@ export async function updateCard(input: UpdateCardInput): Promise<void> {
     payload.priority = input.priority
   }
   if (Object.hasOwn(input, 'dueDate')) {
-    payload.dueDate = input.dueDate
+    payload.due_date = input.dueDate
   }
 
-  await invoke('update_card', payload)
+  console.log('Sending update_card request:', { args: payload });
+  await invoke('update_card', { args: payload })
 }
 
 export function useUpdateCard(boardId: string) {

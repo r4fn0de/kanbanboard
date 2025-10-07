@@ -35,20 +35,31 @@ export function TaskDetailsPanel({
 		card?.description ?? "",
 	);
 
+	const [previousCardId, setPreviousCardId] = useState<string | null>(null);
+
 	useEffect(() => {
 		if (card) {
-			setTitleDraft(card.title);
-			setDescriptionDraft(card.description ?? "");
-			setIsEditingTitle(false);
-			setIsEditingDescription(false);
-			setTitleError(null);
+			// Only reset if not currently editing to avoid overwriting user input
+			if (!isEditingTitle) {
+				setTitleDraft(card.title);
+			}
+			if (!isEditingDescription) {
+				setDescriptionDraft(card.description ?? "");
+			}
+			// Only reset editing states if card ID changed
+			if (previousCardId && previousCardId !== card.id) {
+				setIsEditingTitle(false);
+				setIsEditingDescription(false);
+				setTitleError(null);
+			}
+			setPreviousCardId(card.id);
 		}
-	}, [card]);
+	}, [card?.id, card?.title, card?.description, isEditingTitle, isEditingDescription, previousCardId]);
 
 	const handleTitleSubmit = useCallback(
 		async (e?: React.FormEvent) => {
 			e?.preventDefault();
-			if (!card || !titleDraft.trim()) return;
+			if (!card || !card.boardId || !titleDraft.trim()) return;
 
 			const trimmedTitle = titleDraft.trim();
 			if (trimmedTitle === card.title) {
@@ -79,7 +90,7 @@ export function TaskDetailsPanel({
 	const handleDescriptionSubmit = useCallback(
 		async (e?: React.FormEvent) => {
 			e?.preventDefault();
-			if (!card) return;
+			if (!card || !card.boardId) return;
 
 			const trimmedDescription = descriptionDraft.trim();
 			const finalDescription = trimmedDescription || null;
@@ -109,11 +120,32 @@ export function TaskDetailsPanel({
 		[card, descriptionDraft, updateCard],
 	);
 
+	const handleDescriptionKeyDown = useCallback(
+		(e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+			if (e.key === 'Enter') {
+				if (e.shiftKey) {
+					// Shift+Enter: allow default behavior (new line)
+					return;
+				} else {
+					// Enter: submit form
+					e.preventDefault();
+					handleDescriptionSubmit();
+				}
+			} else if (e.key === 'Escape') {
+				// Escape: cancel editing
+				e.preventDefault();
+				setDescriptionDraft(card?.description ?? "");
+				setIsEditingDescription(false);
+			}
+		},
+		[handleDescriptionSubmit, card?.description],
+	);
+
 	const handleDueDateChange = useCallback(
 		async (newDate: Date | undefined) => {
 			console.log("handleDueDateChange called with:", newDate);
-			if (!card) {
-				console.log("No card available");
+			if (!card || !card.boardId) {
+				console.log("No card or boardId available");
 				return;
 			}
 
@@ -233,8 +265,9 @@ export function TaskDetailsPanel({
 								<Textarea
 									value={descriptionDraft}
 									onChange={(e) => setDescriptionDraft(e.target.value)}
+									onKeyDown={handleDescriptionKeyDown}
 									onBlur={() => handleDescriptionSubmit()}
-									placeholder="Add a description..."
+									placeholder="Add a description... (Enter to save, Shift+Enter for new line)"
 									disabled={updateCard.isPending}
 									rows={4}
 									autoFocus

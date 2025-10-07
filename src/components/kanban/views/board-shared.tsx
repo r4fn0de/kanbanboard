@@ -62,13 +62,9 @@ export function CardContent({ card }: { card: KanbanCard }) {
   return (
     <div className="flex flex-col gap-5">
       <div className="flex items-start justify-between gap-3">
-        {firstTag ? (
+        {firstTag && (
           <span className="rounded-full bg-gray-200 px-3 py-1 text-xs font-semibold text-gray-700 dark:bg-gray-700 dark:text-gray-300">
             {firstTag}
-          </span>
-        ) : (
-          <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-600 dark:bg-gray-800 dark:text-gray-400">
-            Task
           </span>
         )}
         <div className="flex items-center gap-2">
@@ -78,6 +74,11 @@ export function CardContent({ card }: { card: KanbanCard }) {
             </div>
           )}
           <PriorityBadge priority={card.priority} />
+          {dueDateLabel && (
+            <span className="rounded-full bg-gray-300 px-3 py-1 text-xs font-semibold text-gray-800 dark:bg-gray-600 dark:text-gray-200">
+              {dueDateLabel}
+            </span>
+          )}
         </div>
       </div>
       <div className="flex flex-col gap-2">
@@ -90,13 +91,6 @@ export function CardContent({ card }: { card: KanbanCard }) {
           </p>
         ) : null}
       </div>
-      {dueDateLabel ? (
-        <div className="flex justify-end text-sm text-muted-foreground">
-          <span className="rounded-full bg-gray-300 px-3 py-1 text-xs font-semibold text-gray-800 dark:bg-gray-600 dark:text-gray-200">
-            {dueDateLabel}
-          </span>
-        </div>
-      ) : null}
     </div>
   )
 }

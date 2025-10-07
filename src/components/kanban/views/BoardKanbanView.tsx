@@ -14,28 +14,29 @@ import {
 	SortableContext,
 	horizontalListSortingStrategy,
 	useSortable,
-	verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { KanbanCard, KanbanColumn } from "@/types/common";
 import { Plus, Circle, Play, CheckCircle } from "lucide-react";
-import { useMemo } from "react";
+import { useMemo, useState, useCallback } from "react";
 import { CardContent } from "./board-shared";
+import { AddTaskDialog } from "../AddTaskDialog";
 
 interface BoardKanbanViewProps {
 	columns: KanbanColumn[];
 	columnOrder: string[];
 	cardsByColumn: Map<string, KanbanCard[]>;
 	isCreatingCard: boolean;
-	onAddCard: (column: KanbanColumn) => void;
 	onDragEnd: (event: DragEndEvent) => void;
 	onDragStart: (event: DragStartEvent) => void;
 	onDragCancel: (event: DragCancelEvent) => void;
 	activeCard: KanbanCard | null;
 	onCardSelect?: (card: KanbanCard) => void;
 	selectedCardId?: string | null;
+	boardId: string;
+	onCreateTask: (task: Omit<KanbanCard, 'createdAt' | 'updatedAt' | 'archivedAt'>) => Promise<void>;
 }
 
 const accentThemes = [
@@ -64,17 +65,21 @@ export function BoardKanbanView({
 	columnOrder,
 	cardsByColumn,
 	isCreatingCard,
-	onAddCard,
 	onDragEnd,
 	onDragStart,
 	onDragCancel,
 	activeCard,
 	onCardSelect,
 	selectedCardId,
+	boardId,
+	onCreateTask,
 }: BoardKanbanViewProps) {
+	const [isDialogOpen, setIsDialogOpen] = useState(false);
+	const [selectedColumn, setSelectedColumn] = useState<KanbanColumn | null>(null);
+
 	const sensors = useSensors(
 		useSensor(PointerSensor, {
-			activationConstraint: { distance: 5 },
+			activationConstraint: { distance: 3 },
 		}),
 	);
 
@@ -83,44 +88,64 @@ export function BoardKanbanView({
 		[columns],
 	);
 
+	const handleAddCard = useCallback((column: KanbanColumn) => {
+		setSelectedColumn(column);
+		setIsDialogOpen(true);
+	}, []);
+
+	const handleCreateTask = useCallback(async (task: Omit<KanbanCard, 'createdAt' | 'updatedAt' | 'archivedAt'>) => {
+		await onCreateTask(task);
+	}, [onCreateTask]);
+
 	return (
-		<DndContext
-			sensors={sensors}
-			collisionDetection={closestCorners}
-			onDragStart={onDragStart}
-			onDragCancel={onDragCancel}
-			onDragEnd={onDragEnd}
-		>
-			<SortableContext
-				items={columnOrder.map((id) => `column-${id}`)}
-				strategy={horizontalListSortingStrategy}
+		<>
+			<DndContext
+				sensors={sensors}
+				collisionDetection={closestCorners}
+				onDragStart={onDragStart}
+				onDragCancel={onDragCancel}
+				onDragEnd={onDragEnd}
 			>
-				<div className="flex h-full items-stretch gap-4 overflow-x-auto pb-4 min-h-0">
-					{columnOrder.map((columnId, index) => {
-						const column = columnsMap.get(columnId);
-						if (!column) {
-							return null;
-						}
-						const columnCards = cardsByColumn.get(column.id) ?? [];
-						return (
-							<DraggableColumn
-								key={column.id}
-								column={column}
-								columnCards={columnCards}
-								isCreatingCard={isCreatingCard}
-								accentIndex={index}
-								onAddCard={() => onAddCard(column)}
-								onCardSelect={onCardSelect}
-								selectedCardId={selectedCardId}
-							/>
-						);
-					})}
-				</div>
-			</SortableContext>
-			<DragOverlay dropAnimation={null}>
-				{activeCard ? <CardOverlay card={activeCard} /> : null}
-			</DragOverlay>
-		</DndContext>
+				<SortableContext
+					items={columnOrder.map((id) => `column-${id}`)}
+					strategy={horizontalListSortingStrategy}
+				>
+					<div className="flex h-full items-stretch gap-4 overflow-x-auto pb-4 min-h-0 p-2">
+						{columnOrder.map((columnId, index) => {
+							const column = columnsMap.get(columnId);
+							if (!column) {
+								return null;
+							}
+							const columnCards = cardsByColumn.get(column.id) ?? [];
+							return (
+								<DraggableColumn
+									key={column.id}
+									column={column}
+									columnCards={columnCards}
+									isCreatingCard={isCreatingCard}
+									accentIndex={index}
+									onAddCard={() => handleAddCard(column)}
+									onCardSelect={onCardSelect}
+									selectedCardId={selectedCardId}
+								/>
+							);
+						})}
+					</div>
+				</SortableContext>
+				<DragOverlay dropAnimation={null}>
+					{activeCard ? <CardOverlay card={activeCard} /> : null}
+				</DragOverlay>
+			</DndContext>
+
+			<AddTaskDialog
+				isOpen={isDialogOpen}
+				onOpenChange={setIsDialogOpen}
+				column={selectedColumn}
+				boardId={boardId}
+				cardsInColumn={selectedColumn ? cardsByColumn.get(selectedColumn.id) ?? [] : []}
+				onCreateTask={handleCreateTask}
+			/>
+		</>
 	);
 }
 
@@ -207,29 +232,24 @@ function DraggableColumn({
 			</div>
 			<div
 				ref={setDroppableRef}
-				className="flex flex-1 flex-col gap-4 overflow-y-auto overflow-x-visible p-1 min-h-[600px]"
+				className="flex flex-1 flex-col gap-4 overflow-y-auto overflow-x-visible p-3 min-h-0 rounded-xl border-2 border-transparent transition-all duration-200"
 			>
-				<SortableContext
-					items={columnCards.map((c) => `card-${c.id}`)}
-					strategy={verticalListSortingStrategy}
-				>
-					{columnCards.length > 0 ? (
-						<>
-							{columnCards.map((card) => (
-								<DraggableCard
-									key={card.id}
-									card={card}
-									onSelect={onCardSelect}
-									isSelected={selectedCardId === card.id}
-								/>
-							))}
-							{/* Drop zone at the end of cards */}
-							<ColumnEndDropZone columnId={column.id} />
-						</>
-					) : (
-						<EmptyColumnDropZone columnId={column.id} />
-					)}
-				</SortableContext>
+				{columnCards.length > 0 ? (
+					<>
+						{columnCards.map((card) => (
+							<DraggableCard
+								key={card.id}
+								card={card}
+								onSelect={onCardSelect}
+								isSelected={selectedCardId === card.id}
+							/>
+						))}
+						{/* Drop zone at the end of cards */}
+						<ColumnEndDropZone columnId={column.id} />
+					</>
+				) : (
+					<EmptyColumnDropZone columnId={column.id} />
+				)}
 			</div>
 			<Button
 				variant="ghost"
@@ -260,10 +280,6 @@ function DraggableCard({
 		transform,
 		transition,
 		isDragging,
-		isOver,
-		isSorting,
-		index,
-		overIndex,
 	} = useSortable({ id: `card-${card.id}` });
 
 	const style: React.CSSProperties = {
@@ -277,43 +293,25 @@ function DraggableCard({
 		zIndex: isDragging ? 30 : undefined,
 	};
 
-	// Show drop indicator when another card is being dragged over this position
-	const showDropIndicator = isOver && !isDragging && isSorting;
-	const isDropAbove = showDropIndicator && overIndex !== undefined && index !== undefined && overIndex <= index;
-	const isDropBelow = showDropIndicator && overIndex !== undefined && index !== undefined && overIndex > index;
-
 	return (
-		<div className="relative">
-			{/* Drop indicator above */}
-			{isDropAbove && (
-				<div className="absolute -top-2 left-0 right-0 z-40 h-1 rounded-full bg-primary/80 shadow-sm animate-pulse" />
+		<button
+			type="button"
+			ref={setNodeRef}
+			style={style}
+			{...attributes}
+			{...listeners}
+			onClick={() => onSelect?.(card)}
+			aria-pressed={isSelected}
+			aria-expanded={isSelected}
+			aria-controls="task-details-panel"
+			className={cn(
+				"flex flex-col rounded-[1.75rem] border border-border bg-card p-5 text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 active:cursor-grabbing w-full",
+				isSelected && "bg-primary/10 dark:bg-primary/15",
+				isDragging && "shadow-lg scale-105"
 			)}
-			
-			<button
-				type="button"
-				ref={setNodeRef}
-				style={style}
-				{...attributes}
-				{...listeners}
-				onClick={() => onSelect?.(card)}
-				aria-pressed={isSelected}
-				aria-expanded={isSelected}
-				aria-controls="task-details-panel"
-				className={cn(
-					"flex flex-col rounded-[1.75rem] border border-border bg-card p-5 text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 active:cursor-grabbing w-full",
-					isSelected && "bg-primary/10 dark:bg-primary/15",
-					isDragging && "shadow-lg scale-105",
-					showDropIndicator && "ring-2 ring-primary/30"
-				)}
-			>
-				<CardContent card={card} />
-			</button>
-
-			{/* Drop indicator below */}
-			{isDropBelow && (
-				<div className="absolute -bottom-2 left-0 right-0 z-40 h-1 rounded-full bg-primary/80 shadow-sm animate-pulse" />
-			)}
-		</div>
+		>
+			<CardContent card={card} />
+		</button>
 	);
 }
 
@@ -326,19 +324,22 @@ function EmptyColumnDropZone({ columnId }: { columnId: string }) {
 		<div
 			ref={setNodeRef}
 			className={cn(
-				"flex flex-col items-center justify-center rounded-3xl border border-dashed border-border bg-card/70 p-6 text-center text-sm text-muted-foreground transition-all duration-200 min-h-[120px]",
-				isOver && "border-primary bg-primary/5 border-solid"
+				"flex flex-col items-center justify-center rounded-3xl border border-dashed border-border bg-card/70 p-8 text-center text-sm text-muted-foreground transition-all duration-300 min-h-[160px] m-2",
+				isOver && "bg-primary/10 border-primary border-solid scale-[1.02] shadow-lg"
 			)}
 		>
 			{isOver ? (
-				<div className="flex flex-col items-center gap-2">
-					<div className="h-2 w-full rounded-full bg-primary/20">
-						<div className="h-full w-full rounded-full bg-primary animate-pulse" />
-					</div>
-					<span className="text-primary font-medium">Drop card here</span>
+				<div className="flex flex-col items-center gap-4">
+					<div className="h-0.5 w-16 rounded-full bg-primary" />
+					<span className="text-primary font-semibold text-base bg-primary/10 px-4 py-2 rounded-full">
+						Drop card here
+					</span>
 				</div>
 			) : (
-				<span>No cards yet. Add the first one to get started.</span>
+				<div className="flex flex-col items-center gap-2">
+					<span className="text-muted-foreground">No cards yet.</span>
+					<span className="text-muted-foreground text-xs">Add the first one to get started.</span>
+				</div>
 			)}
 		</div>
 	);
@@ -353,15 +354,17 @@ function ColumnEndDropZone({ columnId }: { columnId: string }) {
 		<div
 			ref={setNodeRef}
 			className={cn(
-				"flex-1 min-h-[60px] transition-all duration-200 rounded-2xl",
-				isOver && "bg-primary/5 border-2 border-dashed border-primary"
+				"mt-4 min-h-[20px] transition-all duration-300 rounded-2xl border-2 border-transparent",
+				isOver && "bg-primary/5 border-primary/30 min-h-[60px] shadow-lg scale-[1.02]"
 			)}
 		>
 			{isOver && (
-				<div className="flex items-center justify-center h-full">
+				<div className="flex items-center justify-center h-full py-3">
 					<div className="flex flex-col items-center gap-2">
-						<div className="h-1 w-20 rounded-full bg-primary animate-pulse" />
-						<span className="text-primary font-medium text-sm">Drop here</span>
+						<div className="h-0.5 w-16 rounded-full bg-primary" />
+						<span className="text-primary font-medium text-sm bg-primary/10 px-3 py-1 rounded-full">
+							Drop here
+						</span>
 					</div>
 				</div>
 			)}

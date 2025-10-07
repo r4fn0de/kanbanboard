@@ -68,7 +68,6 @@ async fn establish_pool(app: &AppHandle) -> Result<DbPool, String> {
 }
 
 #[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
 struct UpdateCardArgs {
     id: String,
     board_id: String,
@@ -84,6 +83,8 @@ struct UpdateCardArgs {
 
 #[tauri::command]
 async fn update_card(pool: State<'_, DbPool>, args: UpdateCardArgs) -> Result<(), String> {
+    log::info!("Attempting to update card with id: {}, board_id: {}", args.id, args.board_id);
+    
     if args.title.as_ref().is_some_and(|t| t.trim().is_empty()) {
         return Err("O título do cartão não pode ser vazio.".to_string());
     }
@@ -118,31 +119,40 @@ async fn update_card(pool: State<'_, DbPool>, args: UpdateCardArgs) -> Result<()
     );
     let mut has_changes = false;
 
-    if let Some(title) = args.title {
+    // Build the SQL query manually 
+    let mut sql = String::from("UPDATE kanban_cards SET updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')");
+    
+    // Handle title update
+    if let Some(ref title) = args.title {
         let trimmed = title.trim().to_string();
         if trimmed.is_empty() {
             return Err("O título do cartão não pode ser vazio.".to_string());
         }
+        log::info!("Updating title to: '{}' (length: {})", trimmed, trimmed.len());
         validate_string_input(&trimmed, 200, "Título do cartão")?;
-        builder.push(", title = ").push_bind(trimmed);
+        sql.push_str(&format!(", title = '{}'", trimmed.replace('\'', "''")));
         has_changes = true;
     }
-
-    if let Some(description) = args.description {
+    
+    // Handle description update
+    if let Some(ref description) = args.description {
         let normalized = match description {
-            Some(value) => normalize_optional_text(Some(value)),
+            Some(value) => normalize_optional_text(Some(value.clone())),
             None => None,
         };
-        builder.push(", description = ").push_bind(normalized);
+        let desc_str = normalized.unwrap_or_default().replace('\'', "''");
+        sql.push_str(&format!(", description = '{}'", desc_str));
         has_changes = true;
     }
-
-    if let Some(priority) = args.priority {
-        builder.push(", priority = ").push_bind(priority);
+    
+    // Handle priority update
+    if let Some(ref priority) = args.priority {
+        sql.push_str(&format!(", priority = '{}'", priority));
         has_changes = true;
     }
-
-    if let Some(due_date) = args.due_date {
+    
+    // Handle due date update
+    if let Some(ref due_date) = args.due_date {
         let normalized = match due_date {
             Some(value) => {
                 let trimmed = value.trim();
@@ -154,26 +164,38 @@ async fn update_card(pool: State<'_, DbPool>, args: UpdateCardArgs) -> Result<()
             }
             None => None,
         };
-        builder.push(", due_date = ").push_bind(normalized);
+        let date_str = normalized.unwrap_or_default().replace('\'', "''");
+        sql.push_str(&format!(", due_date = '{}'", date_str));
         has_changes = true;
     }
 
     if !has_changes {
         return Ok(());
     }
-
-    builder.push(" WHERE id = ?").push_bind(args.id);
-
-    builder
-        .build()
+    
+    sql.push_str(&format!(" WHERE id = '{}'", args.id.replace('\'', "''")));
+    
+    log::info!("Executing SQL: {}", sql);
+    
+    // Execute the query
+    let result = sqlx::query(&sql)
         .execute(&mut *tx)
         .await
-        .map_err(|e| format!("Falha ao atualizar cartão: {e}"))?;
+        .map_err(|e| {
+            log::error!("Failed to execute update query: {}", e);
+            format!("Falha ao atualizar cartão: {e}")
+        })?;
+    
+    log::info!("Update affected {} rows", result.rows_affected());
 
     tx.commit()
         .await
-        .map_err(|e| format!("Falha ao confirmar transação: {e}"))?;
+        .map_err(|e| {
+            log::error!("Failed to commit transaction: {}", e);
+            format!("Falha ao confirmar transação: {e}")
+        })?;
 
+    log::info!("Card update completed successfully");
     Ok(())
 }
 

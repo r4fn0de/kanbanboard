@@ -81,7 +81,7 @@ export function BoardDetailView({
   } = useCards(board.id)
 
   const createColumnMutation = useCreateColumn()
-  const createCardMutation = useCreateCard()
+  const createCardMutation = useCreateCard(board.id)
   const moveCardMutation = useMoveCard(board.id)
 
   const parseCardId = useCallback((id: string | number) => {
@@ -135,7 +135,18 @@ export function BoardDetailView({
           column.id,
           cards
             .filter((card) => card.columnId === column.id)
-            .sort((a, b) => a.position - b.position),
+            .sort((a, b) => {
+              // Priority order: high > medium > low
+              const priorityOrder = { high: 3, medium: 2, low: 1 };
+              const priorityDiff = priorityOrder[b.priority] - priorityOrder[a.priority];
+              
+              if (priorityDiff !== 0) {
+                return priorityDiff; // Higher priority first
+              }
+              
+              // If same priority, sort by name alphabetically
+              return a.title.localeCompare(b.title);
+            }),
         ])
       ),
     [sortedColumns, cards]
@@ -192,7 +203,36 @@ export function BoardDetailView({
 
       try {
         const columnCards = cardsByColumn.get(cardDialogColumn.id) || []
-        const maxPosition = Math.max(...columnCards.map(card => card.position), -1)
+        
+        // Calculate position based on priority and name sorting
+        const newCard = {
+          title: cardTitle.trim(),
+          priority: cardPriority,
+        }
+        
+        // Find the correct position for the new card in the sorted order
+        let targetPosition = 0
+        for (const existingCard of columnCards) {
+          const priorityOrder = { high: 3, medium: 2, low: 1 }
+          const priorityDiff = priorityOrder[existingCard.priority] - priorityOrder[newCard.priority]
+          
+          if (priorityDiff > 0) {
+            // Existing card has higher priority, new card goes before it
+            break
+          } else if (priorityDiff === 0) {
+            // Same priority, compare names
+            if (existingCard.title.localeCompare(newCard.title) <= 0) {
+              // Existing card comes before alphabetically, new card goes after
+              targetPosition = existingCard.position + 1
+            } else {
+              // New card comes before alphabetically
+              break
+            }
+          } else {
+            // Existing card has lower priority, new card goes before it
+            break
+          }
+        }
         
         await createCardMutation.mutateAsync({
           id: `temp-${Date.now()}`,
@@ -202,7 +242,7 @@ export function BoardDetailView({
           description: cardDescription.trim() || undefined,
           priority: cardPriority,
           dueDate: cardDueDate || undefined,
-          position: maxPosition + 1,
+          position: targetPosition,
         })
         resetCardForm()
         setIsCardDialogOpen(false)
@@ -313,25 +353,14 @@ export function BoardDetailView({
 
       const columnCards = cardsByColumn.get(destinationColumnId) ?? []
 
-      // Check if we're moving within the same column
+      // Check if we're moving within the same column - if so, do nothing
       if (destinationColumnId === activeCard.columnId) {
-        const currentIndex = columnCards.findIndex(card => card.id === activeCardId)
-        if (currentIndex === -1) return
-
-        // When moving downward within the same column, the drop index still counts the original position.
-        if (currentIndex < targetIndex) {
-          targetIndex -= 1
-        }
-
-        // If the card is being dropped in the same position, do nothing
-        if (currentIndex === targetIndex) return
-        
-        // Ensure target index is within bounds for same column (excluding the card being moved)
-        targetIndex = Math.max(0, Math.min(targetIndex, columnCards.length - 1))
-      } else {
-        // Moving to a different column - target index should be within the destination column's bounds
-        targetIndex = Math.max(0, Math.min(targetIndex, columnCards.length))
+        console.log('Ignoring reorder within same column')
+        return
       }
+
+      // Moving to a different column - target index should be within the destination column's bounds
+      targetIndex = Math.max(0, Math.min(targetIndex, columnCards.length))
 
       // Final validation before API call
       if (!activeCardId || !destinationColumnId) {
@@ -417,7 +446,7 @@ export function BoardDetailView({
   }
 
   return (
-    <div className="flex flex-col gap-6 p-6">
+    <div className="flex flex-col gap-6 p-6 h-screen max-h-screen overflow-hidden">
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={onBack}>
@@ -475,36 +504,70 @@ export function BoardDetailView({
           </Button>
         </div>
       ) : (
-        <div className="flex flex-1">
-          <div className="flex-1">
+        <div className="flex flex-1 min-h-0 overflow-hidden">
+          <div className="flex-1 min-h-0 overflow-hidden">
             {isKanbanView ? (
               <BoardKanbanView
                 columns={columns}
                 columnOrder={columns.map(col => col.id)}
                 cardsByColumn={cardsByColumn}
                 isCreatingCard={isCreatingCard}
-                onAddCard={(column: KanbanColumn) => {
-                  setCardDialogColumn(column)
-                  resetCardForm()
-                }}
                 onDragStart={handleDragStart}
                 onDragCancel={handleDragCancel}
                 onDragEnd={handleDragEnd}
                 activeCard={activeDragCard}
                 onCardSelect={handleCardSelect}
                 selectedCardId={selectedCardId}
+                boardId={board.id}
+                onCreateTask={async (task) => {
+                  // Calculate position based on priority and name sorting
+                  const columnCards = cardsByColumn.get(task.columnId) || []
+                  
+                  // Find the correct position for the new card in the sorted order
+                  let targetPosition = 0
+                  for (const existingCard of columnCards) {
+                    const priorityOrder = { high: 3, medium: 2, low: 1 }
+                    const priorityDiff = priorityOrder[existingCard.priority] - priorityOrder[task.priority]
+                    
+                    if (priorityDiff > 0) {
+                      // Existing card has higher priority, new card goes before it
+                      break
+                    } else if (priorityDiff === 0) {
+                      // Same priority, compare names
+                      if (existingCard.title.localeCompare(task.title) <= 0) {
+                        // Existing card comes before alphabetically, new card goes after
+                        targetPosition = existingCard.position + 1
+                      } else {
+                        // New card comes before alphabetically
+                        break
+                      }
+                    } else {
+                      // Existing card has lower priority, new card goes before it
+                      break
+                    }
+                  }
+                  
+                  await createCardMutation.mutateAsync({
+                    ...task,
+                    description: task.description || undefined,
+                    position: targetPosition,
+                  })
+                }}
               />
             ) : resolvedViewMode === 'list' ? (
               <BoardListView
                 columns={sortedColumns}
                 cardsByColumn={cardsByColumn}
-                onAddCard={(column: KanbanColumn) => {
-                  setCardDialogColumn(column)
-                  resetCardForm()
-                }}
                 isCreatingCard={isCreatingCard}
                 onCardSelect={handleCardSelect}
                 selectedCardId={selectedCardId}
+                boardId={board.id}
+                onCreateTask={async (task) => {
+                  await createCardMutation.mutateAsync({
+                    ...task,
+                    description: task.description || undefined,
+                  })
+                }}
               />
             ) : (
               <BoardTimelineView
