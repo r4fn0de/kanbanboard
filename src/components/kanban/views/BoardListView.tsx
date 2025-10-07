@@ -71,7 +71,7 @@ export function BoardListView({
                 className="flex items-center justify-center gap-2 rounded-2xl bg-card py-3 text-sm font-medium text-card-foreground transition disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <Plus className="mr-2 h-4 w-4" />
-                Add card
+                Add Task
               </Button>
             </div>
 
@@ -101,8 +101,7 @@ export function BoardListView({
                       className={cn(
                         'grid grid-cols-1 gap-4 px-6 py-4 text-left text-sm text-foreground transition-all duration-200 md:grid-cols-[minmax(0,2.2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] md:items-center md:gap-4',
                         rowIndex % 2 === 1 && 'bg-muted/30',
-                        isSelected &&
-                          'border border-primary/80 bg-primary/10 ring-2 ring-primary/30',
+                        isSelected && 'bg-primary/10 dark:bg-primary/15',
                         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 rounded-[1.5rem]'
                       )}
                     >
