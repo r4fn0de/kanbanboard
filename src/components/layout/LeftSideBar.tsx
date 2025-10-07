@@ -281,7 +281,12 @@ export function LeftSideBar({ children, className }: LeftSideBarProps) {
             onClick={toggleLeftSidebar}
             variant="ghost"
             size="icon"
-            className="h-6 w-6 text-foreground/70 hover:text-foreground"
+            className={cn(
+              "h-6 w-6 hover:bg-accent/30",
+              transparencyEnabled
+                ? "text-gray-200 hover:text-gray-200"
+                : "text-foreground/70 hover:text-foreground"
+            )}
             title={
               leftSidebarVisible ? 'Hide Left Sidebar' : 'Show Left Sidebar'
             }
@@ -296,7 +301,12 @@ export function LeftSideBar({ children, className }: LeftSideBarProps) {
             onClick={() => executeCommand('open-preferences', commandContext)}
             variant="ghost"
             size="icon"
-            className="h-6 w-6 text-foreground/70 hover:text-foreground"
+            className={cn(
+              "h-6 w-6 hover:bg-accent/30",
+              transparencyEnabled
+                ? "text-gray-200 hover:text-gray-200"
+                : "text-foreground/70 hover:text-foreground"
+            )}
             title="Settings"
           >
             <Settings className="h-3 w-3" />
@@ -305,7 +315,12 @@ export function LeftSideBar({ children, className }: LeftSideBarProps) {
             onClick={toggleRightSidebar}
             variant="ghost"
             size="icon"
-            className="h-6 w-6 text-foreground/70 hover:text-foreground"
+            className={cn(
+              "h-6 w-6 hover:bg-accent/30",
+              transparencyEnabled
+                ? "text-gray-200 hover:text-gray-200"
+                : "text-foreground/70 hover:text-foreground"
+            )}
             title={
               rightSidebarVisible ? 'Hide Right Sidebar' : 'Show Right Sidebar'
             }
@@ -323,7 +338,7 @@ export function LeftSideBar({ children, className }: LeftSideBarProps) {
         className={cn(
           'mt-1 flex flex-col gap-2 px-4 pb-4 text-sm',
           transparencyEnabled
-            ? 'text-gray-900 dark:text-gray-100'
+            ? 'text-gray-200 dark:text-gray-100'
             : 'text-foreground'
         )}
       >
@@ -335,11 +350,11 @@ export function LeftSideBar({ children, className }: LeftSideBarProps) {
               'flex items-center gap-3 rounded-xl px-4 py-3 text-left transition-all duration-200 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
               transparencyEnabled
                 ? isActive
-                  ? 'bg-accent text-accent-foreground shadow-sm backdrop-blur-sm'
-                  : 'text-foreground hover:bg-accent/10'
+                  ? 'bg-white/30 text-gray-200 shadow-sm backdrop-blur-sm'
+                  : 'text-gray-200 hover:bg-white/30'
                 : isActive
                   ? 'bg-accent text-accent-foreground shadow-sm'
-                  : 'text-muted-foreground hover:bg-accent/10'
+                  : 'text-foreground hover:bg-accent/80'
             )
           }
         >
@@ -354,8 +369,8 @@ export function LeftSideBar({ children, className }: LeftSideBarProps) {
             className={cn(
               'flex items-center gap-3 rounded-xl px-4 py-3 text-left transition-all duration-200 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
               transparencyEnabled
-                ? 'text-foreground hover:bg-accent/10'
-                : 'text-muted-foreground hover:bg-accent/10'
+                ? 'text-gray-200 hover:bg-white/30'
+                : 'text-foreground hover:bg-accent/80'
             )}
           >
             {projectsOpen ? (
@@ -390,11 +405,11 @@ export function LeftSideBar({ children, className }: LeftSideBarProps) {
                             'flex grow items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm transition-all duration-200 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                             transparencyEnabled
                               ? isActive
-                                ? 'bg-accent text-accent-foreground shadow-sm backdrop-blur-sm'
-                                : 'text-foreground hover:bg-accent/10'
+                                ? 'bg-white/30 text-gray-200 shadow-sm backdrop-blur-sm'
+                                : 'text-gray-200 hover:bg-white/30'
                               : isActive
                                 ? 'bg-accent text-accent-foreground shadow-sm'
-                                : 'text-muted-foreground hover:bg-accent/10'
+                                : 'text-foreground hover:bg-accent/80'
                           )
                         }
                       >
@@ -475,8 +490,8 @@ export function LeftSideBar({ children, className }: LeftSideBarProps) {
                 className={cn(
                   'mt-2 flex items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm transition-all duration-200 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                   transparencyEnabled
-                    ? 'text-foreground hover:bg-accent/10'
-                    : 'text-muted-foreground hover:bg-accent/10'
+                    ? 'text-gray-200 hover:text-gray-200 hover:bg-white/30'
+                    : 'text-foreground hover:bg-accent/80'
                 )}
                 onClick={() => setCreateProjectOpen(true)}
               >
