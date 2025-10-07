@@ -1,27 +1,8 @@
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
-import type { FormEvent } from 'react'
+import { useCallback, useEffect, useId, useMemo, useState } from 'react'
 import { toast } from 'sonner'
-
-import { arrayMove } from '@dnd-kit/sortable'
-import type {
-  DragCancelEvent,
-  DragEndEvent,
-  DragStartEvent,
-} from '@/components/kanban/views/BoardKanbanView'
 import { useQueryClient } from '@tanstack/react-query'
 
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -43,9 +24,8 @@ import {
 import { BoardKanbanView } from '@/components/kanban/views/BoardKanbanView'
 import { BoardListView } from '@/components/kanban/views/BoardListView'
 import { BoardTimelineView } from '@/components/kanban/views/BoardTimelineView'
-import { PriorityBadge } from '@/components/kanban/views/board-shared'
-import { formatCardDueDate } from '@/components/kanban/views/card-date'
-import type { KanbanBoard, KanbanCard, KanbanColumn } from '@/types/common'
+import { TaskDetailsPanel } from '@/components/kanban/TaskDetailsPanel'
+import type { KanbanBoard, KanbanCard, KanbanColumn, KanbanPriority } from '@/types/common'
 import {
   useCards,
   useColumns,
@@ -53,13 +33,9 @@ import {
   useCreateColumn,
   kanbanQueryKeys,
   useMoveCard,
-  useMoveColumn,
 } from '@/services/kanban'
 import { Plus, X } from 'lucide-react'
-import { useUpdateCard, type UpdateCardInput } from '@/services/kanban'
-import { ImageUpload } from '@/components/ui/image-upload'
-
-const DEFAULT_COLUMN_TITLES = ['To-Do', 'In Progress', 'Done'] as const
+import type { DragEndEvent, DragStartEvent, DragCancelEvent } from '@dnd-kit/core'
 
 interface BoardDetailViewProps {
   board: KanbanBoard
@@ -71,14 +47,28 @@ interface BoardDetailViewProps {
 export function BoardDetailView({
   board,
   onBack,
-  viewMode,
+  viewMode = DEFAULT_BOARD_VIEW_MODE,
   onViewModeChange,
 }: BoardDetailViewProps) {
   const queryClient = useQueryClient()
+  const [isColumnDialogOpen, setIsColumnDialogOpen] = useState(false)
+  const [isCardDialogOpen, setIsCardDialogOpen] = useState(false)
+  const [columnTitle, setColumnTitle] = useState('')
+  const [cardTitle, setCardTitle] = useState('')
+  const [cardDescription, setCardDescription] = useState('')
+  const [cardPriority, setCardPriority] = useState<KanbanPriority>('medium')
+  const [cardDueDate, setCardDueDate] = useState('')
+  const [cardDialogColumn, setCardDialogColumn] = useState<KanbanColumn | null>(null)
+  const [selectedCardId, setSelectedCardId] = useState<string | null>(null)
+  const [activeDragCard, setActiveDragCard] = useState<KanbanCard | null>(null)
+
+  const cardTitleId = useId()
+  const cardDescriptionId = useId()
+  const cardDueDateId = useId()
+
   const {
     data: columns = [],
     isLoading: isLoadingColumns,
-    isError: isColumnsError,
     error: columnsError,
     refetch: refetchColumns,
   } = useColumns(board.id)
@@ -86,133 +76,71 @@ export function BoardDetailView({
   const {
     data: cards = [],
     isLoading: isLoadingCards,
-    isError: isCardsError,
     error: cardsError,
     refetch: refetchCards,
   } = useCards(board.id)
 
-  const { mutateAsync: createColumn, isPending: isCreatingColumn } =
-    useCreateColumn(board.id)
-  const { mutateAsync: createCard, isPending: isCreatingCard } = useCreateCard(
-    board.id
-  )
-  const { mutate: moveColumnMutate } = useMoveColumn(board.id)
-  const { mutate: moveCardMutate } = useMoveCard(board.id)
-  const { mutateAsync: updateCard, isPending: isUpdatingCard } = useUpdateCard(
-    board.id
-  )
+  const createColumnMutation = useCreateColumn()
+  const createCardMutation = useCreateCard()
+  const moveCardMutation = useMoveCard(board.id)
 
-  const [internalViewMode, setInternalViewMode] = useState<BoardViewMode>(
-    DEFAULT_BOARD_VIEW_MODE
-  )
+  const parseCardId = useCallback((id: string | number) => {
+    const raw = id.toString()
+    return raw.startsWith('card-') ? raw.slice(5) : raw
+  }, [])
 
-  useEffect(() => {
-    if (viewMode && isBoardViewMode(viewMode)) {
-      setInternalViewMode(viewMode)
+  const parseColumnId = useCallback((id?: string | number | null) => {
+    if (!id) return null
+    let raw = id.toString()
+    
+    // Remove 'column-' prefix if present
+    if (raw.startsWith('column-')) {
+      raw = raw.slice(7)
     }
-  }, [viewMode])
-
-  const resolvedViewMode =
-    viewMode && isBoardViewMode(viewMode) ? viewMode : internalViewMode
-
-  const handleViewModeSelect = useCallback(
-    (nextMode: BoardViewMode) => {
-      if (!viewMode) {
-        setInternalViewMode(nextMode)
-      }
-      onViewModeChange?.(nextMode)
-    },
-    [onViewModeChange, viewMode]
-  )
-
-  const isKanbanView = resolvedViewMode === 'kanban'
-
-  const handleToggleViewChange = useCallback(
-    (value: string) => {
-      if (isBoardViewMode(value)) {
-        handleViewModeSelect(value)
-      }
-    },
-    [handleViewModeSelect]
-  )
-
-  const [isColumnDialogOpen, setIsColumnDialogOpen] = useState(false)
-  const [columnTitle, setColumnTitle] = useState('')
-  const [columnWipLimit, setColumnWipLimit] = useState('')
-  const [columnFormError, setColumnFormError] = useState<string | null>(null)
-  const columnTitleId = useId()
-  const columnWipId = useId()
-
-  const [cardDialogColumn, setCardDialogColumn] = useState<KanbanColumn | null>(
-    null
-  )
-  const [cardTitle, setCardTitle] = useState('')
-  const [cardDescription, setCardDescription] = useState('')
-  const [cardPriority, setCardPriority] =
-    useState<KanbanCard['priority']>('low')
-  const [cardDueDate, setCardDueDate] = useState('')
-  const [cardFormError, setCardFormError] = useState<string | null>(null)
-  const cardTitleId = useId()
-  const cardDescriptionId = useId()
-  const cardDueDateId = useId()
-  const [activeCardId, setActiveCardId] = useState<string | null>(null)
-  const [selectedCardId, setSelectedCardId] = useState<string | null>(null)
-  const hasSeededDefaultColumns = useRef(false)
-
-  const [columnOrder, setColumnOrder] = useState<string[]>([])
-
-  useEffect(() => {
-    const orderedIds = [...columns]
-      .sort((a, b) => a.position - b.position)
-      .map(column => column.id)
-
-    setColumnOrder(prev => {
-      if (
-        prev.length === orderedIds.length &&
-        prev.every((id, index) => orderedIds[index] === id)
-      ) {
-        return prev
-      }
-      return orderedIds
-    })
-  }, [columns])
-
-  const cardsByColumn = useMemo(() => {
-    const map = new Map<string, KanbanCard[]>()
-    for (const column of columns) {
-      map.set(column.id, [])
+    
+    // Remove '-cards' suffix if present
+    if (raw.endsWith('-cards')) {
+      raw = raw.slice(0, -6)
     }
-
-    for (const card of cards) {
-      const list = map.get(card.columnId)
-      if (list) {
-        list.push(card)
-      }
+    
+    // Remove '-end' suffix if present (for end drop zones)
+    if (raw.endsWith('-end')) {
+      raw = raw.slice(0, -4)
     }
-
-    for (const list of map.values()) {
-      list.sort((a, b) => a.position - b.position)
-    }
-
-    return map
-  }, [columns, cards])
-
-  const sortedColumns = useMemo(
-    () => [...columns].sort((a, b) => a.position - b.position),
-    [columns]
-  )
+    
+    // Also handle case where the ID is just the column ID without any prefix/suffix
+    return raw || null
+  }, [])
 
   const columnsById = useMemo(
-    () => new Map(columns.map(column => [column.id, column])),
+    () => new Map(columns.map((column) => [column.id, column])),
     [columns]
   )
 
-  const hasColumns = sortedColumns.length > 0
-
-  const activeCard = useMemo(
-    () => cards.find(card => card.id === activeCardId) ?? null,
-    [activeCardId, cards]
+  const sortedColumns = useMemo(
+    () =>
+      columns
+        .map((column) => ({
+          ...column,
+          cardCount: cards.filter((card) => card.columnId === column.id).length,
+        }))
+        .sort((a, b) => a.position - b.position),
+    [columns, cards]
   )
+
+  const cardsByColumn = useMemo(
+    () =>
+      new Map(
+        sortedColumns.map((column) => [
+          column.id,
+          cards
+            .filter((card) => card.columnId === column.id)
+            .sort((a, b) => a.position - b.position),
+        ])
+      ),
+    [sortedColumns, cards]
+  )
+
   const selectedCard = useMemo(
     () => cards.find(card => card.id === selectedCardId) ?? null,
     [cards, selectedCardId]
@@ -227,437 +155,318 @@ export function BoardDetailView({
 
   const resetColumnForm = useCallback(() => {
     setColumnTitle('')
-    setColumnWipLimit('')
-    setColumnFormError(null)
   }, [])
 
-  useEffect(() => {
-    if (
-      isLoadingColumns ||
-      columns.length > 0 ||
-      hasSeededDefaultColumns.current
-    ) {
-      return
-    }
+  const resetCardForm = useCallback(() => {
+    setCardTitle('')
+    setCardDescription('')
+    setCardPriority('medium')
+    setCardDueDate('')
+  }, [])
 
-    hasSeededDefaultColumns.current = true
-    ;(async () => {
+  const handleCreateColumn = useCallback(
+    async (event: React.FormEvent) => {
+      event.preventDefault()
+      if (!columnTitle.trim()) return
+
       try {
-        for (const [index, title] of DEFAULT_COLUMN_TITLES.entries()) {
-          // Execute sequentially to avoid SQLite write lock errors
-          await createColumn({
-            id: crypto.randomUUID(),
-            boardId: board.id,
-            title,
-            position: index,
-            wipLimit: null,
-          })
-        }
-      } catch (error) {
-        const message =
-          error instanceof Error
-            ? error.message
-            : typeof error === 'string'
-              ? error
-              : 'Could not create default columns'
-        toast.error(message)
-      }
-    })()
-  }, [board.id, columns.length, createColumn, isLoadingColumns])
-
-  const handleDragEnd = useCallback(
-    (event: DragEndEvent) => {
-      const { active, over } = event
-      setActiveCardId(null)
-      if (!over) return
-
-      const activeId = String(active.id)
-      const overId = String(over.id)
-
-      const getColumnIdFromSortableId = (id: string) =>
-        id.replace(/^column-/, '').replace(/-cards$/, '')
-
-      // Columns reordering
-      if (activeId.startsWith('column-') && overId.startsWith('column-')) {
-        const columnId = getColumnIdFromSortableId(activeId)
-        const overColumnId = getColumnIdFromSortableId(overId)
-        const fromIndex = columnOrder.indexOf(columnId)
-        const toIndex = columnOrder.indexOf(overColumnId)
-        if (fromIndex !== -1 && toIndex !== -1 && fromIndex !== toIndex) {
-          setColumnOrder(current => arrayMove(current, fromIndex, toIndex))
-          queryClient.setQueryData<KanbanColumn[]>(
-            kanbanQueryKeys.columns(board.id),
-            current => {
-              if (!current) return current
-              const reordered = arrayMove(current, fromIndex, toIndex).map(
-                (col, idx) => ({
-                  ...col,
-                  position: idx,
-                })
-              )
-              return reordered
-            }
-          )
-          moveColumnMutate({
-            boardId: board.id,
-            columnId,
-            targetIndex: toIndex,
-          })
-        }
-        return
-      }
-
-      // Cards move (within or across columns)
-      if (activeId.startsWith('card-')) {
-        const cardId = activeId.replace('card-', '')
-        const card = cards.find(c => c.id === cardId)
-        if (!card) return
-
-        let toColumnId: string | null = null
-        let targetIndex = 0
-
-        if (overId.startsWith('card-')) {
-          const overCardId = overId.replace('card-', '')
-          const overCard = cards.find(c => c.id === overCardId)
-          if (!overCard) return
-          toColumnId = overCard.columnId
-          const list = cardsByColumn.get(toColumnId) ?? []
-          targetIndex = list.findIndex(c => c.id === overCardId)
-        } else if (overId.startsWith('column-') && overId.endsWith('-cards')) {
-          toColumnId = overId.slice('column-'.length, -'-cards'.length)
-          const list = cardsByColumn.get(toColumnId) ?? []
-          targetIndex = list.length
-        } else {
-          return
-        }
-
-        if (toColumnId) {
-          moveCardMutate({
-            boardId: board.id,
-            cardId,
-            fromColumnId: card.columnId,
-            toColumnId,
-            targetIndex,
-          })
-        }
+        await createColumnMutation.mutateAsync({
+          id: `temp-${Date.now()}`,
+          boardId: board.id,
+          title: columnTitle.trim(),
+          position: sortedColumns.length,
+        })
+        resetColumnForm()
+        setIsColumnDialogOpen(false)
+      } catch (_error) {
+        toast.error('Failed to create column')
       }
     },
-    [
-      board.id,
-      cards,
-      cardsByColumn,
-      moveCardMutate,
-      moveColumnMutate,
-      columnOrder,
-      queryClient,
-    ]
+    [board.id, columnTitle, createColumnMutation, resetColumnForm, sortedColumns.length]
   )
 
-  const handleDragStart = useCallback((event: DragStartEvent) => {
-    const { active } = event
-    const activeId = String(active.id)
-    if (activeId.startsWith('card-')) {
-      setActiveCardId(activeId.replace('card-', ''))
-    }
-  }, [])
+  const handleCreateCard = useCallback(
+    async (event: React.FormEvent) => {
+      event.preventDefault()
+      if (!cardTitle.trim() || !cardDialogColumn) return
 
-  const handleDragCancel = useCallback((_: DragCancelEvent) => {
-    setActiveCardId(null)
-  }, [])
+      try {
+        const columnCards = cardsByColumn.get(cardDialogColumn.id) || []
+        const maxPosition = Math.max(...columnCards.map(card => card.position), -1)
+        
+        await createCardMutation.mutateAsync({
+          id: `temp-${Date.now()}`,
+          boardId: board.id,
+          columnId: cardDialogColumn.id,
+          title: cardTitle.trim(),
+          description: cardDescription.trim() || undefined,
+          priority: cardPriority,
+          dueDate: cardDueDate || undefined,
+          position: maxPosition + 1,
+        })
+        resetCardForm()
+        setIsCardDialogOpen(false)
+        setCardDialogColumn(null)
+      } catch (_error) {
+        toast.error('Failed to create card')
+      }
+    },
+    [board.id, cardTitle, cardDescription, cardPriority, cardDueDate, cardDialogColumn, createCardMutation, resetCardForm, cardsByColumn]
+  )
 
-  const handleCardSelect = useCallback((card: KanbanCard) => {
-    setSelectedCardId(card.id)
-  }, [])
+  const handleCardSelect = useCallback(
+    (card: KanbanCard) => {
+      setSelectedCardId(card.id === selectedCardId ? null : card.id)
+    },
+    [selectedCardId]
+  )
 
   const handleCloseDetails = useCallback(() => {
     setSelectedCardId(null)
   }, [])
 
-  const handleUpdateCard = useCallback(
-    async (
-      cardId: string,
-      updates: Omit<UpdateCardInput, 'id' | 'boardId'>
-    ) => {
-      await updateCard({ id: cardId, boardId: board.id, ...updates })
+  const handleDragStart = useCallback(
+    (event: DragStartEvent) => {
+      const rawId = event.active.id.toString()
+      if (!rawId.startsWith('card-')) return
+
+      const cardId = parseCardId(rawId)
+      const card = cards.find(c => c.id === cardId) ?? null
+      setActiveDragCard(card)
     },
-    [board.id, updateCard]
+    [cards, parseCardId]
   )
 
-  const resetCardForm = useCallback(() => {
-    setCardTitle('')
-    setCardDescription('')
-    setCardPriority('low')
-    setCardDueDate('')
-    setCardFormError(null)
+  const handleDragCancel = useCallback((_: DragCancelEvent) => {
+    setActiveDragCard(null)
   }, [])
 
-  const handleCreateColumn = useCallback(
-    async (event: FormEvent<HTMLFormElement>) => {
-      event.preventDefault()
-      setColumnFormError(null)
+  const handleDragEnd = useCallback(
+    async (event: DragEndEvent) => {
+      setActiveDragCard(null)
 
-      const trimmedTitle = columnTitle.trim()
-      if (!trimmedTitle) {
-        setColumnFormError('Inform a name for the column.')
+      const { active, over } = event
+      if (!over) return
+
+      const rawActiveId = active.id.toString()
+      if (!rawActiveId.startsWith('card-')) return
+
+      const activeCardId = parseCardId(rawActiveId)
+      const activeCard = cards.find(card => card.id === activeCardId)
+      if (!activeCard) return
+
+      // Enhanced parsing logic to handle different drop scenarios
+      const overData = over.data?.current as { sortable?: { containerId?: string | number; index: number } } | undefined
+      let destinationColumnId: string | null = null
+      let targetIndex = 0
+
+      // Try to get column ID from sortable container first (when dropping between cards)
+      if (overData?.sortable?.containerId) {
+        destinationColumnId = parseColumnId(overData.sortable.containerId)
+        targetIndex = overData.sortable.index ?? 0
+      } 
+      // If no container, check if we're dropping on a card directly
+      else if (over.id.toString().startsWith('card-')) {
+        const overCardId = parseCardId(over.id)
+        const overCard = cards.find(card => card.id === overCardId)
+        if (overCard) {
+          destinationColumnId = overCard.columnId
+          // Find the position of the card we're dropping on
+          const columnCards = cardsByColumn.get(overCard.columnId) ?? []
+          targetIndex = columnCards.findIndex(card => card.id === overCardId)
+          if (targetIndex === -1) targetIndex = columnCards.length
+        }
+      }
+      // Finally, try to parse the over.id directly (when dropping on empty column or end zone)
+      else {
+        destinationColumnId = parseColumnId(over.id)
+        const columnCards = cardsByColumn.get(destinationColumnId ?? '') ?? []
+        
+        // If dropping on end zone, always add to the end
+        if (over.id.toString().endsWith('-end')) {
+          targetIndex = columnCards.length
+        } else {
+          targetIndex = columnCards.length // Add to end if dropping on empty area
+        }
+      }
+      
+      console.log('Drag end debug:', {
+        activeId: active.id,
+        overId: over.id,
+        overData,
+        destinationColumnId,
+        targetIndex,
+        availableColumns: columns.map(c => ({ id: c.id, title: c.title })),
+        activeCard: { id: activeCard.id, columnId: activeCard.columnId }
+      })
+      
+      if (!destinationColumnId) {
+        console.warn('Could not determine destination column ID')
         return
       }
 
-      const wipLimit = columnWipLimit.trim()
-      const parsedWip = wipLimit ? Number.parseInt(wipLimit, 10) : undefined
-      if (wipLimit && Number.isNaN(parsedWip)) {
-        setColumnFormError('WIP limit must be an integer.')
+      // Validate that the destination column exists
+      if (!columns.some(col => col.id === destinationColumnId)) {
+        console.warn('Destination column does not exist:', destinationColumnId)
         return
       }
 
+      const columnCards = cardsByColumn.get(destinationColumnId) ?? []
+
+      // Check if we're moving within the same column
+      if (destinationColumnId === activeCard.columnId) {
+        const currentIndex = columnCards.findIndex(card => card.id === activeCardId)
+        if (currentIndex === -1) return
+
+        // When moving downward within the same column, the drop index still counts the original position.
+        if (currentIndex < targetIndex) {
+          targetIndex -= 1
+        }
+
+        // If the card is being dropped in the same position, do nothing
+        if (currentIndex === targetIndex) return
+        
+        // Ensure target index is within bounds for same column (excluding the card being moved)
+        targetIndex = Math.max(0, Math.min(targetIndex, columnCards.length - 1))
+      } else {
+        // Moving to a different column - target index should be within the destination column's bounds
+        targetIndex = Math.max(0, Math.min(targetIndex, columnCards.length))
+      }
+
+      // Final validation before API call
+      if (!activeCardId || !destinationColumnId) {
+        console.error('Missing required data for move operation')
+        return
+      }
+
+      // Only proceed with the API call if there's an actual position change
       try {
-        await createColumn({
-          id: crypto.randomUUID(),
-          boardId: board.id,
-          title: trimmedTitle,
-          position: columns.length,
-          wipLimit: parsedWip ?? null,
+        console.log('Moving card:', {
+          cardId: activeCardId,
+          fromColumnId: activeCard.columnId,
+          toColumnId: destinationColumnId,
+          targetIndex,
+          columnCardsCount: columnCards.length
         })
-        toast.success('Column created successfully')
-        resetColumnForm()
-        setIsColumnDialogOpen(false)
+        
+        await moveCardMutation.mutateAsync({
+          boardId: board.id,
+          cardId: activeCardId,
+          fromColumnId: activeCard.columnId,
+          toColumnId: destinationColumnId,
+          targetIndex,
+        })
+        
+        console.log('Card moved successfully')
       } catch (error) {
-        const message =
-          error instanceof Error ? error.message : 'Could not create the column'
-        setColumnFormError(message)
-        toast.error(message)
+        console.error('Failed to move card:', {
+          error,
+          cardId: activeCardId,
+          fromColumnId: activeCard.columnId,
+          toColumnId: destinationColumnId,
+          targetIndex
+        })
+        toast.error(`Failed to move card: ${error instanceof Error ? error.message : 'Unknown error'}`)
       }
     },
-    [
-      board.id,
-      columnTitle,
-      columnWipLimit,
-      columns.length,
-      createColumn,
-      resetColumnForm,
-    ]
+    [board.id, cards, columns, cardsByColumn, moveCardMutation, parseCardId, parseColumnId]
   )
 
-  const handleCreateCard = useCallback(
-    async (event: FormEvent<HTMLFormElement>) => {
-      event.preventDefault()
-      if (!cardDialogColumn) {
-        setCardFormError('Select a valid column.')
-        return
-      }
-
-      const trimmedTitle = cardTitle.trim()
-      if (!trimmedTitle) {
-        setCardFormError('Inform a title for the card.')
-        return
-      }
-
-      try {
-        await createCard({
-          id: crypto.randomUUID(),
-          boardId: board.id,
-          columnId: cardDialogColumn.id,
-          title: trimmedTitle,
-          description: cardDescription.trim() || undefined,
-          position: (cardsByColumn.get(cardDialogColumn.id)?.length ?? 0) + 1,
-          priority: cardPriority,
-          dueDate: cardDueDate ? new Date(cardDueDate).toISOString() : null,
-        })
-        toast.success('Card created successfully')
-        resetCardForm()
-        setCardDialogColumn(null)
-      } catch (error) {
-        const message =
-          error instanceof Error ? error.message : 'Could not create the card'
-        setCardFormError(message)
-        toast.error(message)
-      }
-    },
-    [
-      board.id,
-      cardDescription,
-      cardDialogColumn,
-      cardDueDate,
-      cardPriority,
-      cardTitle,
-      cardsByColumn,
-      createCard,
-      resetCardForm,
-    ]
-  )
-
-  const handleRetry = useCallback(() => {
-    refetchColumns()
-    refetchCards()
-  }, [refetchCards, refetchColumns])
+  const isKanbanView = viewMode === 'kanban'
+  const resolvedViewMode = isBoardViewMode(viewMode) ? viewMode : DEFAULT_BOARD_VIEW_MODE
+  const isCreatingColumn = createColumnMutation.isPending
+  const isCreatingCard = createCardMutation.isPending
 
   if (isLoadingColumns || isLoadingCards) {
     return (
-      <div className="flex h-full flex-col gap-6 p-6">
-        <div className="flex items-center gap-3">
-          <Skeleton className="h-6 w-24" />
-          <Skeleton className="h-6 w-40" />
+      <div className="flex flex-col gap-4 p-6">
+        <div className="flex items-center gap-4">
+          <Skeleton className="h-10 w-10" />
+          <Skeleton className="h-6 w-48" />
         </div>
-        <div className="flex items-center gap-3">
-          <Skeleton className="h-10 w-24" />
-        </div>
-        <div className="grid gap-4 md:grid-cols-3">
-          {['a', 'b', 'c'].map(key => (
-            <Skeleton key={key} className="h-64" />
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 3 }).map((_, index) => (
+            <div key={`column-skeleton-${index}`} className="space-y-4">
+              <Skeleton className="h-6 w-24" />
+              <div className="space-y-2">
+                {Array.from({ length: 3 }).map((_, cardIndex) => (
+                  <Skeleton key={`card-skeleton-${cardIndex}`} className="h-20 w-full" />
+                ))}
+              </div>
+            </div>
           ))}
         </div>
       </div>
     )
   }
 
-  if (isColumnsError || isCardsError) {
-    const message =
-      columnsError instanceof Error
-        ? columnsError.message
-        : cardsError instanceof Error
-          ? cardsError.message
-          : 'Could not load the board data.'
-
+  if (columnsError || cardsError) {
     return (
-      <div className="flex h-full flex-col items-center justify-center gap-4 p-6 text-center">
-        <p className="text-lg font-semibold text-foreground">{board.title}</p>
-        <p className="max-w-md text-sm text-muted-foreground">{message}</p>
-        <Button onClick={handleRetry}>Try again</Button>
-        <Button variant="outline" onClick={onBack}>
-          Back
+      <div className="flex flex-col items-center justify-center gap-4 p-6">
+        <div className="text-center">
+          <h2 className="text-lg font-semibold">Failed to load board</h2>
+          <p className="text-muted-foreground">
+            {columnsError?.message || cardsError?.message || 'An error occurred'}
+          </p>
+        </div>
+        <Button onClick={() => Promise.all([refetchColumns(), refetchCards()])}>
+          Try Again
         </Button>
       </div>
     )
   }
 
   return (
-    <div className="flex h-full flex-col gap-6 p-4">
-      <div className="flex flex-col gap-2 -mt-2">
-        <Button
-          variant="ghost"
-          className="w-max px-3 py-2 h-auto text-muted-foreground hover:text-foreground hover:bg-accent/60 dark:text-muted-foreground dark:hover:text-foreground dark:hover:bg-accent/60 transition-all duration-200 rounded-xl"
-          onClick={onBack}
-        >
-          <svg
-            className="w-4 h-4 mr-2"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M15 19l-7-7 7-7"
-            />
-          </svg>
-          <span className="font-medium">Back</span>
-        </Button>
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">
-            {board.title}
-          </h1>
-          {board.description ? (
-            <p className="text-sm text-muted-foreground">{board.description}</p>
-          ) : null}
+    <div className="flex flex-col gap-6 p-6">
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="icon" onClick={onBack}>
+            <X className="h-4 w-4" />
+          </Button>
+          <div>
+            <h1 className="text-2xl font-bold">{board.title}</h1>
+            <p className="text-muted-foreground">
+              {columns.length} columns • {cards.length} tasks
+            </p>
+          </div>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        
+        <div className="flex items-center gap-2">
           <ToggleGroup
             type="single"
-            variant="outline"
-            size="sm"
             value={resolvedViewMode}
-            onValueChange={handleToggleViewChange}
-            className="rounded-2xl border border-border bg-card"
+            onValueChange={(value) => {
+              if (value && onViewModeChange && isBoardViewMode(value)) {
+                onViewModeChange(value)
+              }
+            }}
           >
-            {BOARD_VIEW_OPTIONS.map(option => {
-              const Icon = option.icon
-              return (
-                <ToggleGroupItem
-                  key={option.value}
-                  value={option.value}
-                  className="flex items-center gap-2 px-3 py-2 text-sm font-medium"
-                >
-                  <Icon className="h-4 w-4" />
-                  <span>{option.label}</span>
-                </ToggleGroupItem>
-              )
-            })}
+            {BOARD_VIEW_OPTIONS.map((option) => (
+              <ToggleGroupItem key={option.value} value={option.value} aria-label={option.label}>
+                <option.icon className="h-4 w-4" />
+              </ToggleGroupItem>
+            ))}
           </ToggleGroup>
-          <Dialog
-            open={isColumnDialogOpen}
-            onOpenChange={setIsColumnDialogOpen}
+          
+          <Button
+            variant="outline"
+            onClick={() => setIsColumnDialogOpen(true)}
+            disabled={isCreatingColumn}
           >
-            <DialogTrigger asChild>
-              <Button
-                type="button"
-                variant="ghost"
-                className="flex items-center justify-center gap-2 rounded-2xl bg-card py-3 text-sm font-medium text-card-foreground transition disabled:cursor-not-allowed disabled:opacity-60"
-                disabled={isCreatingColumn}
-              >
-                <Plus className="h-4 w-4" />
-                New column
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>New column</DialogTitle>
-                <DialogDescription>
-                  Define a name and optionally a WIP limit for the column.
-                </DialogDescription>
-              </DialogHeader>
-              <form onSubmit={handleCreateColumn} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor={columnTitleId}>Column name</Label>
-                  <Input
-                    id={columnTitleId}
-                    value={columnTitle}
-                    onChange={event => setColumnTitle(event.target.value)}
-                    placeholder="Ex.: In progress"
-                    autoFocus
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor={columnWipId}>WIP limit (optional)</Label>
-                  <Input
-                    id={columnWipId}
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                    value={columnWipLimit}
-                    onChange={event => setColumnWipLimit(event.target.value)}
-                    placeholder="Ex.: 5 (optional)"
-                  />
-                </div>
-                {columnFormError ? (
-                  <p className="text-sm text-destructive">{columnFormError}</p>
-                ) : null}
-                <DialogFooter>
-                  <DialogClose asChild>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      disabled={isCreatingColumn}
-                    >
-                      Cancel
-                    </Button>
-                  </DialogClose>
-                  <Button type="submit" disabled={isCreatingColumn}>
-                    {isCreatingColumn ? 'Creating...' : 'Create column'}
-                  </Button>
-                </DialogFooter>
-              </form>
-            </DialogContent>
-          </Dialog>
+            <Plus className="h-4 w-4 mr-2" />
+            Add Column
+          </Button>
         </div>
       </div>
 
-      {!hasColumns ? (
-        <div className="flex flex-1 flex-col items-center justify-center gap-4 text-center">
-          <p className="text-lg font-semibold text-foreground">
-            No columns created
-          </p>
-          <p className="max-w-sm text-sm text-muted-foreground">
-            Create the first column to start organizing the tasks in this board.
-          </p>
+      {columns.length === 0 ? (
+        <div className="flex flex-col items-center justify-center gap-4 py-12">
+          <div className="text-center">
+            <h2 className="text-lg font-semibold">No columns yet</h2>
+            <p className="text-muted-foreground">
+              Create your first column to start organizing tasks
+            </p>
+          </div>
           <Button
             onClick={() => setIsColumnDialogOpen(true)}
             disabled={isCreatingColumn}
@@ -665,617 +474,181 @@ export function BoardDetailView({
             Create first column
           </Button>
         </div>
-      ) : isKanbanView ? (
-        <div className="flex flex-1 flex-col gap-6 lg:flex-row lg:items-start lg:gap-8">
-          <div className="flex-1 overflow-hidden h-full">
-            <BoardKanbanView
-              columns={columns}
-              columnOrder={columnOrder}
-              cardsByColumn={cardsByColumn}
-              isCreatingCard={isCreatingCard}
-              onAddCard={column => {
-                setCardDialogColumn(column)
-                resetCardForm()
-              }}
-              onDragStart={handleDragStart}
-              onDragCancel={handleDragCancel}
-              onDragEnd={handleDragEnd}
-              activeCard={activeCard}
-              onCardSelect={handleCardSelect}
-              selectedCardId={selectedCardId}
-            />
-          </div>
-          {selectedCard ? (
-            <TaskDetailsPanel
-              card={selectedCard}
-              column={columnsById.get(selectedCard.columnId) ?? null}
-              onClose={handleCloseDetails}
-              onUpdate={updates => handleUpdateCard(selectedCard.id, updates)}
-              isUpdating={isUpdatingCard}
-            />
-          ) : null}
-        </div>
-      ) : resolvedViewMode === 'list' ? (
-        <div className="flex flex-1 flex-col gap-6 lg:flex-row lg:items-start lg:gap-8">
-          <div className="flex-1">
-            <BoardListView
-              columns={sortedColumns}
-              cardsByColumn={cardsByColumn}
-              onAddCard={column => {
-                setCardDialogColumn(column)
-                resetCardForm()
-              }}
-              isCreatingCard={isCreatingCard}
-              onCardSelect={handleCardSelect}
-              selectedCardId={selectedCardId}
-            />
-          </div>
-          {selectedCard ? (
-            <TaskDetailsPanel
-              card={selectedCard}
-              column={columnsById.get(selectedCard.columnId) ?? null}
-              onClose={handleCloseDetails}
-              onUpdate={updates => handleUpdateCard(selectedCard.id, updates)}
-              isUpdating={isUpdatingCard}
-            />
-          ) : null}
-        </div>
       ) : (
-        <BoardTimelineView cards={cards} columnsById={columnsById} />
+        <div className="flex flex-1">
+          <div className="flex-1">
+            {isKanbanView ? (
+              <BoardKanbanView
+                columns={columns}
+                columnOrder={columns.map(col => col.id)}
+                cardsByColumn={cardsByColumn}
+                isCreatingCard={isCreatingCard}
+                onAddCard={(column: KanbanColumn) => {
+                  setCardDialogColumn(column)
+                  resetCardForm()
+                }}
+                onDragStart={handleDragStart}
+                onDragCancel={handleDragCancel}
+                onDragEnd={handleDragEnd}
+                activeCard={activeDragCard}
+                onCardSelect={handleCardSelect}
+                selectedCardId={selectedCardId}
+              />
+            ) : resolvedViewMode === 'list' ? (
+              <BoardListView
+                columns={sortedColumns}
+                cardsByColumn={cardsByColumn}
+                onAddCard={(column: KanbanColumn) => {
+                  setCardDialogColumn(column)
+                  resetCardForm()
+                }}
+                isCreatingCard={isCreatingCard}
+                onCardSelect={handleCardSelect}
+                selectedCardId={selectedCardId}
+              />
+            ) : (
+              <BoardTimelineView
+                cards={cards}
+                columnsById={columnsById}
+              />
+            )}
+          </div>
+        </div>
       )}
 
-      <Dialog
-        open={Boolean(cardDialogColumn)}
-        onOpenChange={open => {
-          if (!open) {
-            setCardDialogColumn(null)
-          }
-        }}
-      >
-        {cardDialogColumn ? (
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>
-                New card in &quot;{cardDialogColumn.title}&quot;
-              </DialogTitle>
-              <DialogDescription>
-                Detail the card to add it to the selected column.
-              </DialogDescription>
-            </DialogHeader>
-            <form onSubmit={handleCreateCard} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor={cardTitleId}>Title</Label>
-                <Input
-                  id={cardTitleId}
-                  value={cardTitle}
-                  onChange={event => setCardTitle(event.target.value)}
-                  placeholder="Ex.: Adjust page layout"
-                  autoFocus
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor={cardDescriptionId}>
-                  Description (optional)
-                </Label>
-                <Textarea
-                  id={cardDescriptionId}
-                  value={cardDescription}
-                  onChange={event => setCardDescription(event.target.value)}
-                  placeholder="Add relevant details"
-                  rows={3}
-                />
-              </div>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label>Priority</Label>
-                  <Select
-                    value={cardPriority}
-                    onValueChange={value =>
-                      setCardPriority(value as KanbanCard['priority'])
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select the priority" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="low">Low</SelectItem>
-                      <SelectItem value="medium">Medium</SelectItem>
-                      <SelectItem value="high">High</SelectItem>
-                    </SelectContent>
-                  </Select>
+      {/* Task Details Panel */}
+      {selectedCard ? (
+        <TaskDetailsPanel
+          card={selectedCard}
+          column={columnsById.get(selectedCard.columnId) ?? null}
+          onClose={handleCloseDetails}
+        />
+      ) : null}
+
+      {/* Create Column Dialog */}
+      {isColumnDialogOpen && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-background rounded-lg shadow-lg w-full max-w-md">
+            <div className="p-6">
+              <h2 className="text-lg font-semibold mb-4">Create Column</h2>
+              <form onSubmit={handleCreateColumn}>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor={cardTitleId}>Title</Label>
+                    <Input
+                      id={cardTitleId}
+                      value={columnTitle}
+                      onChange={(e) => setColumnTitle(e.target.value)}
+                      placeholder="Enter column title"
+                      disabled={isCreatingColumn}
+                      autoFocus
+                    />
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor={cardDueDateId}>Due date</Label>
-                  <Input
-                    id={cardDueDateId}
-                    type="date"
-                    value={cardDueDate}
-                    onChange={event => setCardDueDate(event.target.value)}
-                  />
-                </div>
-              </div>
-              {cardFormError ? (
-                <p className="text-sm text-destructive">{cardFormError}</p>
-              ) : null}
-              <DialogFooter>
-                <DialogClose asChild>
+                <div className="flex justify-end gap-2 mt-6">
                   <Button
                     type="button"
                     variant="outline"
+                    onClick={() => {
+                      setIsColumnDialogOpen(false)
+                      resetColumnForm()
+                    }}
+                    disabled={isCreatingColumn}
+                  >
+                    Cancel
+                  </Button>
+                  <Button type="submit" disabled={isCreatingColumn || !columnTitle.trim()}>
+                    {isCreatingColumn ? 'Creating...' : 'Create Column'}
+                  </Button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Create Card Dialog */}
+      {isCardDialogOpen && cardDialogColumn && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-background rounded-lg shadow-lg w-full max-w-md">
+            <div className="p-6">
+              <h2 className="text-lg font-semibold mb-4">
+                Create Task in {cardDialogColumn.title}
+              </h2>
+              <form onSubmit={handleCreateCard}>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor={cardTitleId}>Title</Label>
+                    <Input
+                      id={cardTitleId}
+                      value={cardTitle}
+                      onChange={(e) => setCardTitle(e.target.value)}
+                      placeholder="Enter task title"
+                      disabled={isCreatingCard}
+                      autoFocus
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor={cardDescriptionId}>Description</Label>
+                    <Textarea
+                      id={cardDescriptionId}
+                      value={cardDescription}
+                      onChange={(e) => setCardDescription(e.target.value)}
+                      placeholder="Enter task description (optional)"
+                      disabled={isCreatingCard}
+                      rows={3}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="card-priority">Priority</Label>
+                    <Select
+                      value={cardPriority}
+                      onValueChange={(value: KanbanPriority) => setCardPriority(value)}
+                      disabled={isCreatingCard}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="low">Low</SelectItem>
+                        <SelectItem value="medium">Medium</SelectItem>
+                        <SelectItem value="high">High</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor={cardDueDateId}>Due Date</Label>
+                    <Input
+                      id={cardDueDateId}
+                      type="date"
+                      value={cardDueDate}
+                      onChange={(e) => setCardDueDate(e.target.value)}
+                      disabled={isCreatingCard}
+                    />
+                  </div>
+                </div>
+                <div className="flex justify-end gap-2 mt-6">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setIsCardDialogOpen(false)
+                      setCardDialogColumn(null)
+                      resetCardForm()
+                    }}
                     disabled={isCreatingCard}
                   >
                     Cancel
                   </Button>
-                </DialogClose>
-                <Button type="submit" disabled={isCreatingCard}>
-                  {isCreatingCard ? 'Creating...' : 'Create card'}
-                </Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        ) : null}
-      </Dialog>
+                  <Button type="submit" disabled={isCreatingCard || !cardTitle.trim()}>
+                    {isCreatingCard ? 'Creating...' : 'Create Task'}
+                  </Button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
-  )
-}
-
-export default BoardDetailView
-interface TaskDetailsPanelProps {
-  card: KanbanCard
-  column: KanbanColumn | null
-  onClose: () => void
-  onUpdate: (updates: Omit<UpdateCardInput, 'id' | 'boardId'>) => Promise<void>
-  isUpdating?: boolean
-}
-
-type TaskDetailsSavingField = 'title' | 'description' | 'priority' | 'dueDate'
-
-function formatDateForInputValue(dueDate?: string | null): string {
-  if (!dueDate) return ''
-  const date = new Date(dueDate)
-  if (Number.isNaN(date.getTime())) return ''
-  const year = date.getUTCFullYear()
-  const month = String(date.getUTCMonth() + 1).padStart(2, '0')
-  const day = String(date.getUTCDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
-}
-
-function toIsoFromDateInput(value: string): string {
-  return new Date(`${value}T00:00:00Z`).toISOString()
-}
-
-function taskDetailsErrorMessage(error: unknown, fallback: string): string {
-  if (error instanceof Error && error.message) return error.message
-  if (typeof error === 'string' && error.length > 0) return error
-  return fallback
-}
-
-function TaskDetailsPanel({
-  card,
-  column,
-  onClose,
-  onUpdate,
-  isUpdating,
-}: TaskDetailsPanelProps) {
-  const queryClient = useQueryClient()
-  const dueDateLabel = formatCardDueDate(card.dueDate)
-  const [isEditingTitle, setIsEditingTitle] = useState(false)
-  const [titleDraft, setTitleDraft] = useState(card.title)
-  const [titleError, setTitleError] = useState<string | null>(null)
-  const [isEditingDescription, setIsEditingDescription] = useState(false)
-  const [descriptionDraft, setDescriptionDraft] = useState(
-    card.description ?? ''
-  )
-  const [dueDateDraft, setDueDateDraft] = useState(
-    formatDateForInputValue(card.dueDate)
-  )
-  const [savingField, setSavingField] = useState<TaskDetailsSavingField | null>(
-    null
-  )
-
-  useEffect(() => {
-    setTitleDraft(card.title)
-    setDescriptionDraft(card.description ?? '')
-    setDueDateDraft(formatDateForInputValue(card.dueDate))
-    setIsEditingTitle(false)
-    setIsEditingDescription(false)
-    setTitleError(null)
-    setSavingField(null)
-  }, [card.id, card.title, card.description, card.dueDate])
-
-  const handleTitleSubmit = useCallback(
-    async (event: FormEvent<HTMLFormElement>) => {
-      event.preventDefault()
-      if (savingField && savingField !== 'title') return
-      const nextTitle = titleDraft.trim()
-      if (!nextTitle) {
-        setTitleError('Inform a title for the card.')
-        return
-      }
-      if (nextTitle === card.title) {
-        setTitleError(null)
-        setIsEditingTitle(false)
-        return
-      }
-      setSavingField('title')
-      setTitleError(null)
-      try {
-        await onUpdate({ title: nextTitle })
-        setIsEditingTitle(false)
-      } catch (error) {
-        const message = taskDetailsErrorMessage(
-          error,
-          'Could not update the title.'
-        )
-        setTitleError(message)
-      } finally {
-        setSavingField(null)
-      }
-    },
-    [card.title, onUpdate, savingField, titleDraft]
-  )
-
-  const handleCancelTitle = useCallback(() => {
-    if (savingField === 'title') return
-    setIsEditingTitle(false)
-    setTitleDraft(card.title)
-    setTitleError(null)
-  }, [card.title, savingField])
-
-  const handleDescriptionSubmit = useCallback(
-    async (event: FormEvent<HTMLFormElement>) => {
-      event.preventDefault()
-      if (savingField && savingField !== 'description') return
-      const trimmed = descriptionDraft.trim()
-      const nextDescription = trimmed.length === 0 ? null : descriptionDraft
-      const previousDescription = card.description ?? null
-      if (nextDescription === previousDescription) {
-        setIsEditingDescription(false)
-        return
-      }
-      setSavingField('description')
-      try {
-        await onUpdate({ description: nextDescription })
-        setIsEditingDescription(false)
-      } catch (error) {
-        const message = taskDetailsErrorMessage(
-          error,
-          'Could not update the description.'
-        )
-        toast.error(message)
-      } finally {
-        setSavingField(null)
-      }
-    },
-    [card.description, descriptionDraft, onUpdate, savingField]
-  )
-
-  const handleCancelDescription = useCallback(() => {
-    if (savingField === 'description') return
-    setIsEditingDescription(false)
-    setDescriptionDraft(card.description ?? '')
-  }, [card.description, savingField])
-
-  const handleDueDateChange = useCallback(
-    async (value: string) => {
-      if (savingField && savingField !== 'dueDate') return
-      const nextDueDate = value ? toIsoFromDateInput(value) : null
-      const previousDueDate = card.dueDate ?? null
-      if (nextDueDate === previousDueDate) return
-      setSavingField('dueDate')
-      try {
-        await onUpdate({ dueDate: nextDueDate })
-      } catch {
-        setDueDateDraft(formatDateForInputValue(card.dueDate))
-      } finally {
-        setSavingField(null)
-      }
-    },
-    [card.dueDate, onUpdate, savingField]
-  )
-
-  const handlePriorityChange = useCallback(
-    async (value: string) => {
-      if (savingField && savingField !== 'priority') return
-      const nextPriority = value as KanbanCard['priority']
-      if (nextPriority === card.priority) return
-      setSavingField('priority')
-      try {
-        await onUpdate({ priority: nextPriority })
-      } finally {
-        setSavingField(null)
-      }
-    },
-    [card.priority, onUpdate, savingField]
-  )
-
-  const handleDueDateInputChange = useCallback(
-    (value: string) => {
-      setDueDateDraft(value)
-      if (value.length === 10 || value === '') void handleDueDateChange(value)
-    },
-    [handleDueDateChange]
-  )
-
-  const handleClearDueDate = useCallback(() => {
-    void handleDueDateChange('')
-  }, [handleDueDateChange])
-
-  const isBusy = savingField !== null || Boolean(isUpdating)
-
-  return (
-    <aside
-      id="task-details-panel"
-      className="w-full shrink-0 rounded-[2rem] border border-border bg-card p-6 shadow-sm lg:sticky lg:top-6 lg:w-[420px] xl:w-[480px] lg:min-h-[640px] xl:min-h-[720px] lg:max-h-[calc(100vh-48px)]"
-      aria-busy={isBusy}
-    >
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex flex-col gap-2">
-          <span className="text-xs font-semibold uppercase text-muted-foreground">
-            Task details
-          </span>
-          {isEditingTitle ? (
-            <form onSubmit={handleTitleSubmit} className="flex flex-col gap-3">
-              <Input
-                value={titleDraft}
-                onChange={event => setTitleDraft(event.target.value)}
-                autoFocus
-                disabled={savingField === 'title'}
-              />
-              {titleError ? (
-                <span className="text-xs text-destructive">{titleError}</span>
-              ) : null}
-              <div className="flex items-center gap-2">
-                <Button
-                  type="submit"
-                  size="sm"
-                  disabled={savingField === 'title'}
-                >
-                  Save
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleCancelTitle}
-                  disabled={savingField === 'title'}
-                >
-                  Cancel
-                </Button>
-              </div>
-            </form>
-          ) : (
-            <div className="flex items-center gap-3">
-              <h2 className="text-lg font-semibold leading-snug text-foreground">
-                {card.title}
-              </h2>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="rounded-full px-3 py-1 text-xs font-semibold"
-                onClick={() => setIsEditingTitle(true)}
-                disabled={isBusy}
-              >
-                Edit
-              </Button>
-            </div>
-          )}
-        </div>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          onClick={onClose}
-          className="h-8 w-8 rounded-full"
-          aria-label="Close task details"
-          disabled={isBusy}
-        >
-          <X className="h-4 w-4" />
-        </Button>
-      </div>
-
-      <div className="mt-6 space-y-6 text-sm">
-        <div className="flex flex-col gap-2">
-          <span className="text-xs font-semibold uppercase text-muted-foreground">
-            Description
-          </span>
-          {isEditingDescription ? (
-            <form
-              onSubmit={handleDescriptionSubmit}
-              className="flex flex-col gap-3"
-            >
-              <Textarea
-                value={descriptionDraft}
-                onChange={event => setDescriptionDraft(event.target.value)}
-                rows={4}
-                autoFocus
-                disabled={savingField === 'description'}
-              />
-              <div className="flex items-center gap-2">
-                <Button
-                  type="submit"
-                  size="sm"
-                  disabled={savingField === 'description'}
-                >
-                  Save
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleCancelDescription}
-                  disabled={savingField === 'description'}
-                >
-                  Cancel
-                </Button>
-              </div>
-            </form>
-          ) : card.description ? (
-            <div className="flex flex-col gap-3">
-              <div className="rounded-2xl border border-border bg-muted/60 p-4 text-muted-foreground">
-                {card.description}
-              </div>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="w-fit rounded-full px-3 py-1 text-xs font-semibold"
-                onClick={() => setIsEditingDescription(true)}
-                disabled={isBusy}
-              >
-                Edit description
-              </Button>
-            </div>
-          ) : (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="w-fit rounded-full px-3 py-1 text-xs font-semibold"
-              onClick={() => setIsEditingDescription(true)}
-              disabled={isBusy}
-            >
-              Add description
-            </Button>
-          )}
-        </div>
-
-        <div className="flex flex-col gap-2">
-          <span className="text-xs font-semibold uppercase text-muted-foreground">
-            Priority
-          </span>
-          <Select
-            value={card.priority}
-            onValueChange={handlePriorityChange}
-            disabled={isBusy}
-          >
-            <SelectTrigger className="w-fit min-w-[160px] justify-start rounded-full px-4 py-2">
-              <div className="flex items-center gap-2">
-                <PriorityBadge priority={card.priority} />
-              </div>
-            </SelectTrigger>
-            <SelectContent align="start">
-              <SelectItem value="low">Low</SelectItem>
-              <SelectItem value="medium">Medium</SelectItem>
-              <SelectItem value="high">High</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="flex flex-col gap-2">
-          <span className="text-xs font-semibold uppercase text-muted-foreground">
-            Column
-          </span>
-          <div className="rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground">
-            {column ? column.title : 'Unknown column'}
-          </div>
-        </div>
-
-        <div className="flex flex-col gap-2">
-          <span className="text-xs font-semibold uppercase text-muted-foreground">
-            Due date
-          </span>
-          <div className="flex flex-wrap items-center gap-2">
-            <Input
-              type="date"
-              value={dueDateDraft}
-              onChange={event => handleDueDateInputChange(event.target.value)}
-              disabled={isBusy}
-              className="w-full max-w-[200px]"
-            />
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="rounded-full px-3 py-1 text-xs font-semibold"
-              onClick={handleClearDueDate}
-              disabled={isBusy || dueDateDraft.length === 0}
-            >
-              Clear
-            </Button>
-          </div>
-          {dueDateLabel ? (
-            <div className="rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground">
-              {dueDateLabel}
-            </div>
-          ) : (
-            <span className="rounded-full border border-dashed border-border px-3 py-1 text-xs text-muted-foreground">
-              No due date
-            </span>
-          )}
-        </div>
-
-        <div className="flex flex-col gap-2">
-          <span className="text-xs font-semibold uppercase text-muted-foreground">
-            Tags
-          </span>
-          {card.tags.length > 0 ? (
-            <div className="flex flex-wrap gap-2">
-              {card.tags.map(tag => (
-                <Badge
-                  key={tag}
-                  variant="secondary"
-                  className="rounded-full px-3 py-1 text-xs"
-                >
-                  {tag}
-                </Badge>
-              ))}
-            </div>
-          ) : (
-            <span className="rounded-full border border-dashed border-border px-3 py-1 text-xs text-muted-foreground">
-              No tags
-            </span>
-          )}
-        </div>
-
-        <div className="flex flex-col gap-2">
-          <span className="text-xs font-semibold uppercase text-muted-foreground">
-            Attachments
-          </span>
-          <ImageUpload
-            cardId={card.id}
-            boardId={card.boardId}
-            attachments={card.attachments}
-            onUploadComplete={() => {
-              queryClient.invalidateQueries({
-                queryKey: kanbanQueryKeys.cards(card.boardId),
-              })
-            }}
-            onRemoveComplete={() => {
-              queryClient.invalidateQueries({
-                queryKey: kanbanQueryKeys.cards(card.boardId),
-              })
-            }}
-          />
-        </div>
-
-        <div className="flex flex-col gap-2">
-          <span className="text-xs font-semibold uppercase text-muted-foreground">
-            Metadata
-          </span>
-          <div className="grid gap-2 text-xs text-muted-foreground">
-            <span>
-              Created:{' '}
-              <time dateTime={card.createdAt}>
-                {new Intl.DateTimeFormat(undefined, {
-                  dateStyle: 'medium',
-                  timeStyle: 'short',
-                }).format(new Date(card.createdAt))}
-              </time>
-            </span>
-            <span>
-              Updated:{' '}
-              <time dateTime={card.updatedAt}>
-                {new Intl.DateTimeFormat(undefined, {
-                  dateStyle: 'medium',
-                  timeStyle: 'short',
-                }).format(new Date(card.updatedAt))}
-              </time>
-            </span>
-          </div>
-        </div>
-      </div>
-    </aside>
   )
 }

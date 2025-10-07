@@ -207,25 +207,27 @@ function DraggableColumn({
 			</div>
 			<div
 				ref={setDroppableRef}
-				className="flex flex-1 flex-col gap-4 overflow-y-auto overflow-x-visible p-1 min-h-0"
+				className="flex flex-1 flex-col gap-4 overflow-y-auto overflow-x-visible p-1 min-h-[600px]"
 			>
 				<SortableContext
 					items={columnCards.map((c) => `card-${c.id}`)}
 					strategy={verticalListSortingStrategy}
 				>
 					{columnCards.length > 0 ? (
-						columnCards.map((card) => (
-							<DraggableCard
-								key={card.id}
-								card={card}
-								onSelect={onCardSelect}
-								isSelected={selectedCardId === card.id}
-							/>
-						))
+						<>
+							{columnCards.map((card) => (
+								<DraggableCard
+									key={card.id}
+									card={card}
+									onSelect={onCardSelect}
+									isSelected={selectedCardId === card.id}
+								/>
+							))}
+							{/* Drop zone at the end of cards */}
+							<ColumnEndDropZone columnId={column.id} />
+						</>
 					) : (
-						<div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-border bg-card/70 p-6 text-center text-sm text-muted-foreground">
-							No cards yet. Add the first one to get started.
-						</div>
+						<EmptyColumnDropZone columnId={column.id} />
 					)}
 				</SortableContext>
 			</div>
@@ -258,6 +260,10 @@ function DraggableCard({
 		transform,
 		transition,
 		isDragging,
+		isOver,
+		isSorting,
+		index,
+		overIndex,
 	} = useSortable({ id: `card-${card.id}` });
 
 	const style: React.CSSProperties = {
@@ -265,30 +271,101 @@ function DraggableCard({
 		transition: isDragging
 			? "none"
 			: (transition ?? "transform 220ms cubic-bezier(0.2, 0, 0, 1)"),
-		opacity: isDragging ? 0.85 : undefined,
+		opacity: isDragging ? 0.4 : undefined,
 		cursor: isDragging ? "grabbing" : "grab",
 		willChange: "transform",
 		zIndex: isDragging ? 30 : undefined,
 	};
 
+	// Show drop indicator when another card is being dragged over this position
+	const showDropIndicator = isOver && !isDragging && isSorting;
+	const isDropAbove = showDropIndicator && overIndex !== undefined && index !== undefined && overIndex <= index;
+	const isDropBelow = showDropIndicator && overIndex !== undefined && index !== undefined && overIndex > index;
+
 	return (
-		<button
-			type="button"
+		<div className="relative">
+			{/* Drop indicator above */}
+			{isDropAbove && (
+				<div className="absolute -top-2 left-0 right-0 z-40 h-1 rounded-full bg-primary/80 shadow-sm animate-pulse" />
+			)}
+			
+			<button
+				type="button"
+				ref={setNodeRef}
+				style={style}
+				{...attributes}
+				{...listeners}
+				onClick={() => onSelect?.(card)}
+				aria-pressed={isSelected}
+				aria-expanded={isSelected}
+				aria-controls="task-details-panel"
+				className={cn(
+					"flex flex-col rounded-[1.75rem] border border-border bg-card p-5 text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 active:cursor-grabbing w-full",
+					isSelected && "bg-primary/10 dark:bg-primary/15",
+					isDragging && "shadow-lg scale-105",
+					showDropIndicator && "ring-2 ring-primary/30"
+				)}
+			>
+				<CardContent card={card} />
+			</button>
+
+			{/* Drop indicator below */}
+			{isDropBelow && (
+				<div className="absolute -bottom-2 left-0 right-0 z-40 h-1 rounded-full bg-primary/80 shadow-sm animate-pulse" />
+			)}
+		</div>
+	);
+}
+
+function EmptyColumnDropZone({ columnId }: { columnId: string }) {
+	const { isOver, setNodeRef } = useDroppable({
+		id: `column-${columnId}-cards`
+	});
+
+	return (
+		<div
 			ref={setNodeRef}
-			style={style}
-			{...attributes}
-			{...listeners}
-			onClick={() => onSelect?.(card)}
-			aria-pressed={isSelected}
-			aria-expanded={isSelected}
-			aria-controls="task-details-panel"
 			className={cn(
-				"flex flex-col rounded-[1.75rem] border border-border bg-card p-5 text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 active:cursor-grabbing",
-				isSelected && "bg-primary/10 dark:bg-primary/15",
+				"flex flex-col items-center justify-center rounded-3xl border border-dashed border-border bg-card/70 p-6 text-center text-sm text-muted-foreground transition-all duration-200 min-h-[120px]",
+				isOver && "border-primary bg-primary/5 border-solid"
 			)}
 		>
-			<CardContent card={card} />
-		</button>
+			{isOver ? (
+				<div className="flex flex-col items-center gap-2">
+					<div className="h-2 w-full rounded-full bg-primary/20">
+						<div className="h-full w-full rounded-full bg-primary animate-pulse" />
+					</div>
+					<span className="text-primary font-medium">Drop card here</span>
+				</div>
+			) : (
+				<span>No cards yet. Add the first one to get started.</span>
+			)}
+		</div>
+	);
+}
+
+function ColumnEndDropZone({ columnId }: { columnId: string }) {
+	const { isOver, setNodeRef } = useDroppable({
+		id: `column-${columnId}-end`
+	});
+
+	return (
+		<div
+			ref={setNodeRef}
+			className={cn(
+				"flex-1 min-h-[60px] transition-all duration-200 rounded-2xl",
+				isOver && "bg-primary/5 border-2 border-dashed border-primary"
+			)}
+		>
+			{isOver && (
+				<div className="flex items-center justify-center h-full">
+					<div className="flex flex-col items-center gap-2">
+						<div className="h-1 w-20 rounded-full bg-primary animate-pulse" />
+						<span className="text-primary font-medium text-sm">Drop here</span>
+					</div>
+				</div>
+			)}
+		</div>
 	);
 }
 
