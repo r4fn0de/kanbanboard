@@ -17,9 +17,15 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Button } from "@/components/ui/button";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu";
 import { cn } from "@/lib/utils";
 import type { KanbanCard, KanbanColumn } from "@/types/common";
-import { Plus, Circle, Play, CheckCircle } from "lucide-react";
+import { Plus, Circle, Play, CheckCircle, Trash2 } from "lucide-react";
 import { useMemo, useState, useCallback } from "react";
 import { CardContent } from "./board-shared";
 import { AddTaskDialog } from "../AddTaskDialog";
@@ -37,6 +43,7 @@ interface BoardKanbanViewProps {
 	selectedCardId?: string | null;
 	boardId: string;
 	onCreateTask: (task: Omit<KanbanCard, 'createdAt' | 'updatedAt' | 'archivedAt'>) => Promise<void>;
+  onDeleteTask?: (card: KanbanCard) => void;
 }
 
 const accentThemes = [
@@ -73,6 +80,7 @@ export function BoardKanbanView({
 	selectedCardId,
 	boardId,
 	onCreateTask,
+  onDeleteTask,
 }: BoardKanbanViewProps) {
 	const [isDialogOpen, setIsDialogOpen] = useState(false);
 	const [selectedColumn, setSelectedColumn] = useState<KanbanColumn | null>(null);
@@ -127,6 +135,7 @@ export function BoardKanbanView({
 									onAddCard={() => handleAddCard(column)}
 									onCardSelect={onCardSelect}
 									selectedCardId={selectedCardId}
+                                  onDeleteCard={onDeleteTask}
 								/>
 							);
 						})}
@@ -165,6 +174,7 @@ function DraggableColumn({
 	accentIndex,
 	onCardSelect,
 	selectedCardId,
+  onDeleteCard,
 }: {
 	column: KanbanColumn;
 	columnCards: KanbanCard[];
@@ -173,6 +183,7 @@ function DraggableColumn({
 	accentIndex: number;
 	onCardSelect?: (card: KanbanCard) => void;
 	selectedCardId?: string | null;
+  onDeleteCard?: (card: KanbanCard) => void;
 }) {
 	const {
 		attributes,
@@ -242,6 +253,7 @@ function DraggableColumn({
 								card={card}
 								onSelect={onCardSelect}
 								isSelected={selectedCardId === card.id}
+                                onDelete={onDeleteCard}
 							/>
 						))}
 						{/* Drop zone at the end of cards */}
@@ -268,10 +280,12 @@ function DraggableCard({
 	card,
 	onSelect,
 	isSelected,
+  onDelete,
 }: {
 	card: KanbanCard;
 	onSelect?: (card: KanbanCard) => void;
 	isSelected: boolean;
+  onDelete?: (card: KanbanCard) => void;
 }) {
 	const {
 		attributes,
@@ -293,26 +307,42 @@ function DraggableCard({
 		zIndex: isDragging ? 30 : undefined,
 	};
 
-	return (
-		<button
-			type="button"
-			ref={setNodeRef}
-			style={style}
-			{...attributes}
-			{...listeners}
-			onClick={() => onSelect?.(card)}
-			aria-pressed={isSelected}
-			aria-expanded={isSelected}
-			aria-controls="task-details-panel"
-			className={cn(
-				"flex flex-col rounded-[1.75rem] border border-border bg-card p-5 text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 active:cursor-grabbing w-full",
-				isSelected && "bg-primary/10 dark:bg-primary/15",
-				isDragging && "shadow-lg scale-105"
-			)}
-		>
-			<CardContent card={card} />
-		</button>
-	);
+  return (
+    <ContextMenu>
+      <ContextMenuTrigger asChild>
+        <button
+          type="button"
+          ref={setNodeRef}
+          style={style}
+          {...attributes}
+          {...listeners}
+          onClick={() => onSelect?.(card)}
+          aria-pressed={isSelected}
+          aria-expanded={isSelected}
+          aria-controls="task-details-panel"
+          className={cn(
+            "flex flex-col rounded-[1.75rem] border border-border bg-card p-5 text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 active:cursor-grabbing w-full",
+            isSelected && "bg-primary/10 dark:bg-primary/15",
+            isDragging && "shadow-lg scale-105"
+          )}
+        >
+          <CardContent card={card} />
+        </button>
+      </ContextMenuTrigger>
+      <ContextMenuContent>
+        <ContextMenuItem
+          variant="destructive"
+          onSelect={(event) => {
+            event.preventDefault();
+            onDelete?.(card);
+          }}
+        >
+          <Trash2 className="h-4 w-4" />
+          Delete task
+        </ContextMenuItem>
+      </ContextMenuContent>
+    </ContextMenu>
+  );
 }
 
 function EmptyColumnDropZone({ columnId }: { columnId: string }) {

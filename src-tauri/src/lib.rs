@@ -923,6 +923,50 @@ async fn create_card(
     Ok(())
 }
 
+#[tauri::command]
+async fn delete_card(
+    pool: State<'_, DbPool>,
+    id: String,
+    board_id: String,
+) -> Result<(), String> {
+    let mut tx = pool
+        .begin()
+        .await
+        .map_err(|e| format!("Falha ao abrir transação: {e}"))?;
+
+    let card_record = sqlx::query_as::<_, (String, String)>(
+        "SELECT column_id, board_id FROM kanban_cards WHERE id = ?",
+    )
+    .bind(&id)
+    .fetch_optional(&mut *tx)
+    .await
+    .map_err(|e| format!("Falha ao carregar cartão: {e}"))?;
+
+    let Some((column_id, stored_board_id)) = card_record else {
+        return Err("Cartão não encontrado.".to_string());
+    };
+
+    if stored_board_id != board_id {
+        return Err("O cartão não pertence ao quadro informado.".to_string());
+    }
+
+    sqlx::query("DELETE FROM kanban_cards WHERE id = ?")
+        .bind(&id)
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| format!("Falha ao excluir cartão: {e}"))?;
+
+    normalize_card_positions_tx(&mut tx, &column_id)
+        .await
+        .map_err(|e| format!("Falha ao normalizar posições dos cartões: {e}"))?;
+
+    tx.commit()
+        .await
+        .map_err(|e| format!("Falha ao confirmar transação: {e}"))?;
+
+    Ok(())
+}
+
 // Validation functions
 fn validate_filename(filename: &str) -> Result<(), String> {
     // Regex pattern: only alphanumeric, dash, underscore, dot
@@ -1458,6 +1502,7 @@ pub fn run() {
             move_column,
             load_cards,
             create_card,
+            delete_card,
             update_card,
             move_card,
             upload_image,

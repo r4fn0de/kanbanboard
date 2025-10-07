@@ -389,6 +389,19 @@ export async function updateCard(input: UpdateCardInput): Promise<void> {
   await invoke('update_card', { args: payload })
 }
 
+export interface DeleteCardInput {
+  id: string
+  boardId: string
+  columnId: string
+}
+
+export async function deleteCard(input: DeleteCardInput): Promise<void> {
+  await invoke('delete_card', {
+    id: input.id,
+    boardId: input.boardId,
+  })
+}
+
 export function useUpdateCard(boardId: string) {
   const queryClient = useQueryClient()
   return useMutation({
@@ -457,6 +470,45 @@ export function useUpdateCard(boardId: string) {
     onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: kanbanQueryKeys.cards(boardId),
+      })
+    },
+  })
+}
+
+export function useDeleteCard(boardId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: deleteCard,
+    onMutate: async input => {
+      const cardsKey = kanbanQueryKeys.cards(boardId)
+
+      await queryClient.cancelQueries({ queryKey: cardsKey })
+
+      const previousCards = queryClient.getQueryData<KanbanCard[]>(cardsKey)
+
+      if (previousCards) {
+        queryClient.setQueryData<KanbanCard[]>(
+          cardsKey,
+          cards => cards ? cards.filter(card => card.id !== input.id) : cards
+        )
+      }
+
+      return { previousCards }
+    },
+    onError: (_error, _variables, context) => {
+      if (context?.previousCards) {
+        queryClient.setQueryData(
+          kanbanQueryKeys.cards(boardId),
+          context.previousCards
+        )
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({
+        queryKey: kanbanQueryKeys.cards(boardId),
+      })
+      queryClient.invalidateQueries({
+        queryKey: kanbanQueryKeys.columns(boardId),
       })
     },
   })

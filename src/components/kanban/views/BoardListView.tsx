@@ -1,9 +1,15 @@
 import { useState, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+} from '@/components/ui/context-menu'
 import { cn } from '@/lib/utils'
 import type { KanbanCard, KanbanColumn } from '@/types/common'
-import { Plus, Circle, Play, CheckCircle } from 'lucide-react'
+import { Plus, Circle, Play, CheckCircle, Trash2 } from 'lucide-react'
 import { PriorityBadge } from './board-shared'
 import { formatCardDueDate } from './card-date'
 import { AddTaskDialog } from '../AddTaskDialog'
@@ -16,6 +22,7 @@ interface BoardListViewProps {
   selectedCardId?: string | null
   boardId: string
   onCreateTask: (task: Omit<KanbanCard, 'createdAt' | 'updatedAt' | 'archivedAt'>) => Promise<void>
+  onDeleteTask?: (card: KanbanCard) => void
 }
 
 const accentThemes = [
@@ -41,6 +48,7 @@ export function BoardListView({
   selectedCardId,
   boardId,
   onCreateTask,
+  onDeleteTask,
 }: BoardListViewProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [selectedColumn, setSelectedColumn] = useState<KanbanColumn | null>(null)
@@ -108,86 +116,101 @@ export function BoardListView({
                     const isSelected = selectedCardId === card.id
 
                     return (
-                      <button
-                        type="button"
-                        onClick={() => onCardSelect?.(card)}
-                        key={card.id}
-                        aria-pressed={isSelected}
-                        aria-expanded={isSelected}
-                        aria-controls="task-details-panel"
-                        className={cn(
-                          'grid grid-cols-1 gap-4 px-6 py-4 text-left text-sm text-foreground transition-all duration-200 md:grid-cols-[minmax(0,2.2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] md:items-center md:gap-4',
-                          rowIndex % 2 === 1 && 'bg-muted/30',
-                          isSelected && 'bg-primary/10 dark:bg-primary/15',
-                          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 rounded-[1.5rem]'
-                        )}
-                      >
-                        <div className="flex flex-col gap-1">
-                          <span className="text-xs font-semibold uppercase text-muted-foreground md:hidden">
-                            Name
-                          </span>
-                          <span className="text-sm font-semibold leading-snug text-foreground">
-                            {card.title}
-                          </span>
-                          {card.description ? (
-                            <span className="text-xs text-muted-foreground line-clamp-1">
-                              {card.description}
-                            </span>
-                          ) : null}
-                        </div>
-                        <div className="flex flex-col gap-2 md:items-start">
-                          <span className="text-xs font-semibold uppercase text-muted-foreground md:hidden">
-                            Priority
-                          </span>
-                          <PriorityBadge priority={card.priority} />
-                        </div>
-                        <div className="flex flex-col gap-2">
-                          <span className="text-xs font-semibold uppercase text-muted-foreground md:hidden">
-                            Tags
-                          </span>
-                          <div className="flex flex-wrap items-center gap-2">
-                            {displayTags.length > 0 ? (
-                              <>
-                                {displayTags.map(tag => (
-                                  <Badge
-                                    key={tag}
-                                    variant="secondary"
-                                    className="rounded-full px-3 py-1 text-xs"
-                                  >
-                                    {tag}
-                                  </Badge>
-                                ))}
-                                {remainingTags > 0 ? (
-                                  <Badge
-                                    variant="secondary"
-                                    className="rounded-full px-3 py-1 text-xs"
-                                  >
-                                    +{remainingTags}
-                                  </Badge>
-                                ) : null}
-                              </>
-                            ) : (
-                              <span className="text-xs text-muted-foreground/70">
-                                No tags
-                              </span>
+                      <ContextMenu key={card.id}>
+                        <ContextMenuTrigger asChild>
+                          <button
+                            type="button"
+                            onClick={() => onCardSelect?.(card)}
+                            aria-pressed={isSelected}
+                            aria-expanded={isSelected}
+                            aria-controls="task-details-panel"
+                            className={cn(
+                              'grid grid-cols-1 gap-4 px-6 py-4 text-left text-sm text-foreground transition-all duration-200 md:grid-cols-[minmax(0,2.2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] md:items-center md:gap-4',
+                              rowIndex % 2 === 1 && 'bg-muted/30',
+                              isSelected && 'bg-primary/10 dark:bg-primary/15',
+                              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 rounded-[1.5rem]'
                             )}
-                          </div>
-                        </div>
-                        <div className="flex flex-col gap-2 md:items-start">
-                          <span className="text-xs font-semibold uppercase text-muted-foreground md:hidden">
-                            Due date
-                          </span>
-                          {dueLabel ? (
-                            <span className="text-sm font-medium text-foreground">
-                              {dueLabel}
-                            </span>
-                          ) : (
-                            <span className="rounded-full border border-dashed border-border px-3 py-1 text-xs text-muted-foreground">
-                              Add date
-                            </span>
-                          )}
-                        </div>
-                      </button>
+                          >
+                            <div className="flex flex-col gap-1">
+                              <span className="text-xs font-semibold uppercase text-muted-foreground md:hidden">
+                                Name
+                              </span>
+                              <span className="text-sm font-semibold leading-snug text-foreground">
+                                {card.title}
+                              </span>
+                              {card.description ? (
+                                <span className="text-xs text-muted-foreground line-clamp-1">
+                                  {card.description}
+                                </span>
+                              ) : null}
+                            </div>
+                            <div className="flex flex-col gap-2 md:items-start">
+                              <span className="text-xs font-semibold uppercase text-muted-foreground md:hidden">
+                                Priority
+                              </span>
+                              <PriorityBadge priority={card.priority} />
+                            </div>
+                            <div className="flex flex-col gap-2">
+                              <span className="text-xs font-semibold uppercase text-muted-foreground md:hidden">
+                                Tags
+                              </span>
+                              <div className="flex flex-wrap items-center gap-2">
+                                {displayTags.length > 0 ? (
+                                  <>
+                                    {displayTags.map(tag => (
+                                      <Badge
+                                        key={tag}
+                                        variant="secondary"
+                                        className="rounded-full px-3 py-1 text-xs"
+                                      >
+                                        {tag}
+                                      </Badge>
+                                    ))}
+                                    {remainingTags > 0 ? (
+                                      <Badge
+                                        variant="secondary"
+                                        className="rounded-full px-3 py-1 text-xs"
+                                      >
+                                        +{remainingTags}
+                                      </Badge>
+                                    ) : null}
+                                  </>
+                                ) : (
+                                  <span className="text-xs text-muted-foreground/70">
+                                    No tags
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex flex-col gap-2 md:items-start">
+                              <span className="text-xs font-semibold uppercase text-muted-foreground md:hidden">
+                                Due date
+                              </span>
+                              {dueLabel ? (
+                                <span className="text-sm font-medium text-foreground">
+                                  {dueLabel}
+                                </span>
+                              ) : (
+                                <span className="rounded-full border border-dashed border-border px-3 py-1 text-xs text-muted-foreground">
+                                  Add date
+                                </span>
+                              )}
+                            </div>
+                          </button>
+                        </ContextMenuTrigger>
+                        <ContextMenuContent>
+                          <ContextMenuItem
+                            variant="destructive"
+                            onSelect={event => {
+                              event.preventDefault()
+                              onDeleteTask?.(card)
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                            Delete task
+                          </ContextMenuItem>
+                        </ContextMenuContent>
+                      </ContextMenu>
                     )
                   })
                 ) : (

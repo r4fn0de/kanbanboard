@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useId, useMemo, useState } from 'react'
 import { toast } from 'sonner'
-import { useQueryClient } from '@tanstack/react-query'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -31,8 +30,8 @@ import {
   useColumns,
   useCreateCard,
   useCreateColumn,
-  kanbanQueryKeys,
   useMoveCard,
+  useDeleteCard,
 } from '@/services/kanban'
 import { Plus, X } from 'lucide-react'
 import type { DragEndEvent, DragStartEvent, DragCancelEvent } from '@dnd-kit/core'
@@ -50,7 +49,6 @@ export function BoardDetailView({
   viewMode = DEFAULT_BOARD_VIEW_MODE,
   onViewModeChange,
 }: BoardDetailViewProps) {
-  const queryClient = useQueryClient()
   const [isColumnDialogOpen, setIsColumnDialogOpen] = useState(false)
   const [isCardDialogOpen, setIsCardDialogOpen] = useState(false)
   const [columnTitle, setColumnTitle] = useState('')
@@ -80,9 +78,10 @@ export function BoardDetailView({
     refetch: refetchCards,
   } = useCards(board.id)
 
-  const createColumnMutation = useCreateColumn()
+  const createColumnMutation = useCreateColumn(board.id)
   const createCardMutation = useCreateCard(board.id)
   const moveCardMutation = useMoveCard(board.id)
+  const deleteCardMutation = useDeleteCard(board.id)
 
   const parseCardId = useCallback((id: string | number) => {
     const raw = id.toString()
@@ -264,6 +263,23 @@ export function BoardDetailView({
   const handleCloseDetails = useCallback(() => {
     setSelectedCardId(null)
   }, [])
+
+  const handleDeleteCard = useCallback(
+    async (card: KanbanCard) => {
+      try {
+        await deleteCardMutation.mutateAsync({
+          id: card.id,
+          boardId: board.id,
+          columnId: card.columnId,
+        })
+        setSelectedCardId(prev => (prev === card.id ? null : prev))
+        toast.success('Task deleted')
+      } catch (_error) {
+        toast.error('Failed to delete task')
+      }
+    },
+    [board.id, deleteCardMutation]
+  )
 
   const handleDragStart = useCallback(
     (event: DragStartEvent) => {
@@ -519,6 +535,7 @@ export function BoardDetailView({
                 onCardSelect={handleCardSelect}
                 selectedCardId={selectedCardId}
                 boardId={board.id}
+                onDeleteTask={handleDeleteCard}
                 onCreateTask={async (task) => {
                   // Calculate position based on priority and name sorting
                   const columnCards = cardsByColumn.get(task.columnId) || []
@@ -562,6 +579,7 @@ export function BoardDetailView({
                 onCardSelect={handleCardSelect}
                 selectedCardId={selectedCardId}
                 boardId={board.id}
+                onDeleteTask={handleDeleteCard}
                 onCreateTask={async (task) => {
                   await createCardMutation.mutateAsync({
                     ...task,
@@ -573,6 +591,7 @@ export function BoardDetailView({
               <BoardTimelineView
                 cards={cards}
                 columnsById={columnsById}
+                onDeleteTask={handleDeleteCard}
               />
             )}
           </div>

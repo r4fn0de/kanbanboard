@@ -1,17 +1,25 @@
 import type { KanbanCard, KanbanColumn } from '@/types/common'
-import { CalendarClock } from 'lucide-react'
+import { CalendarClock, Trash2 } from 'lucide-react'
 import { useMemo } from 'react'
 import { PriorityBadge } from './board-shared'
 import { formatCardDueDate } from './card-date'
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+} from '@/components/ui/context-menu'
 
 interface BoardTimelineViewProps {
   cards: KanbanCard[]
   columnsById: Map<string, KanbanColumn>
+  onDeleteTask?: (card: KanbanCard) => void
 }
 
 export function BoardTimelineView({
   cards,
   columnsById,
+  onDeleteTask,
 }: BoardTimelineViewProps) {
   const dateFormatter = useMemo(
     () => new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }),
@@ -94,34 +102,47 @@ export function BoardTimelineView({
                 const column = columnsById.get(card.columnId)
                 const dueLabel = formatCardDueDate(card.dueDate)
                 return (
-                  <div
-                    key={card.id}
-                    className="rounded-[1.75rem] border border-border bg-card p-4"
-                  >
-                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                      <div className="flex flex-col gap-1">
-                        <span className="text-sm font-semibold text-foreground">
-                          {card.title}
-                        </span>
-                        <span className="text-xs uppercase tracking-wide text-muted-foreground">
-                          {column?.title ?? 'Unassigned'}
-                        </span>
+                  <ContextMenu key={card.id}>
+                    <ContextMenuTrigger asChild>
+                      <div className="rounded-[1.75rem] border border-border bg-card p-4">
+                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                          <div className="flex flex-col gap-1">
+                            <span className="text-sm font-semibold text-foreground">
+                              {card.title}
+                            </span>
+                            <span className="text-xs uppercase tracking-wide text-muted-foreground">
+                              {column?.title ?? 'Unassigned'}
+                            </span>
+                          </div>
+                          <PriorityBadge priority={card.priority} />
+                        </div>
+                        {card.description ? (
+                          <p className="mt-2 line-clamp-3 text-sm text-muted-foreground">
+                            {card.description}
+                          </p>
+                        ) : null}
+                        <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                          {dueLabel ? (
+                            <span className="rounded-full bg-secondary px-2 py-1 font-medium text-secondary-foreground">
+                              Due {dueLabel}
+                            </span>
+                          ) : null}
+                        </div>
                       </div>
-                      <PriorityBadge priority={card.priority} />
-                    </div>
-                    {card.description ? (
-                      <p className="mt-2 line-clamp-3 text-sm text-muted-foreground">
-                        {card.description}
-                      </p>
-                    ) : null}
-                    <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                      {dueLabel ? (
-                        <span className="rounded-full bg-secondary px-2 py-1 font-medium text-secondary-foreground">
-                          Due {dueLabel}
-                        </span>
-                      ) : null}
-                    </div>
-                  </div>
+                    </ContextMenuTrigger>
+                    <ContextMenuContent>
+                      <ContextMenuItem
+                        variant="destructive"
+                        onSelect={event => {
+                          event.preventDefault()
+                          onDeleteTask?.(card)
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        Delete task
+                      </ContextMenuItem>
+                    </ContextMenuContent>
+                  </ContextMenu>
                 )
               })}
             </div>
