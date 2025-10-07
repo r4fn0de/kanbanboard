@@ -1,7 +1,7 @@
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import type { KanbanCard } from '@/types/common'
-import { ArrowDown, ArrowUp, Minus } from 'lucide-react'
+import { ArrowDown, ArrowUp, Minus, Paperclip } from 'lucide-react'
 import type { ComponentType } from 'react'
 import { formatCardDueDate } from './card-date'
 
@@ -57,6 +57,7 @@ export function PriorityBadge({
 export function CardContent({ card }: { card: KanbanCard }) {
   const firstTag = card.tags?.[0]
   const dueDateLabel = formatCardDueDate(card.dueDate)
+  const hasAttachments = card.attachments && card.attachments.length > 0
 
   return (
     <div className="flex flex-col gap-5">
@@ -70,7 +71,14 @@ export function CardContent({ card }: { card: KanbanCard }) {
             Task
           </span>
         )}
-        <PriorityBadge priority={card.priority} />
+        <div className="flex items-center gap-2">
+          {hasAttachments && (
+            <div className="rounded-full bg-blue-100 p-1 text-blue-600 dark:bg-blue-900/50 dark:text-blue-300">
+              <Paperclip className="h-3 w-3" />
+            </div>
+          )}
+          <PriorityBadge priority={card.priority} />
+        </div>
       </div>
       <div className="flex flex-col gap-2">
         <span className="text-base font-semibold leading-snug text-foreground">

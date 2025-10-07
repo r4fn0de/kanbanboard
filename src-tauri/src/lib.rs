@@ -11,6 +11,8 @@ use std::path::PathBuf;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tauri::menu::{MenuBuilder, MenuItemBuilder, PredefinedMenuItem, SubmenuBuilder};
 use tauri::{AppHandle, Emitter, Manager, State};
+use mime_guess;
+use base64::{Engine as _, engine::general_purpose};
 
 const KANBAN_SCHEMA: &str = include_str!("../schema/kanban.sql");
 const DATABASE_FILE: &str = "flowspace.db";
@@ -390,6 +392,7 @@ async fn initialize_schema(pool: &DbPool) -> Result<(), String> {
     }
 
     ensure_board_icon_column(pool).await?;
+    ensure_card_attachments_column(pool).await?;
 
     Ok(())
 }
@@ -416,6 +419,30 @@ async fn ensure_board_icon_column(pool: &DbPool) -> Result<(), String> {
         .execute(pool)
         .await
         .map_err(|e| format!("Failed to backfill board icons: {e}"))?;
+
+    Ok(())
+}
+
+async fn ensure_card_attachments_column(pool: &DbPool) -> Result<(), String> {
+    let column_exists = sqlx::query_scalar::<_, Option<i64>>(
+        "SELECT 1 FROM pragma_table_info('kanban_cards') WHERE name = 'attachments' LIMIT 1",
+    )
+    .fetch_optional(pool)
+    .await
+    .map_err(|e| format!("Failed to inspect kanban_cards schema: {e}"))?
+    .flatten()
+    .is_some();
+
+    if !column_exists {
+        println!("Adding attachments column to kanban_cards table");
+        sqlx::query("ALTER TABLE kanban_cards ADD COLUMN attachments TEXT")
+            .execute(pool)
+            .await
+            .map_err(|e| format!("Failed to add attachments column to kanban_cards: {e}"))?;
+        println!("Attachments column added successfully");
+    } else {
+        println!("Attachments column already exists in kanban_cards table");
+    }
 
     Ok(())
 }
@@ -449,6 +476,14 @@ fn map_column_row(row: SqliteRow) -> Result<Value, sqlx::Error> {
 }
 
 fn map_card_row(row: SqliteRow) -> Result<Value, sqlx::Error> {
+    let attachments_json: Option<String> = row.try_get("attachments")?;
+    let attachments: Option<Vec<String>> = match attachments_json {
+        Some(json_str) => {
+            serde_json::from_str(&json_str).ok()
+        },
+        None => None,
+    };
+
     Ok(json!({
         "id": row.try_get::<String, _>("id")?,
         "boardId": row.try_get::<String, _>("board_id")?,
@@ -458,6 +493,7 @@ fn map_card_row(row: SqliteRow) -> Result<Value, sqlx::Error> {
         "position": row.try_get::<i64, _>("position")?,
         "priority": row.try_get::<String, _>("priority")?,
         "dueDate": row.try_get::<Option<String>, _>("due_date")?,
+        "attachments": attachments,
         "createdAt": row.try_get::<String, _>("created_at")?,
         "updatedAt": row.try_get::<String, _>("updated_at")?,
         "archivedAt": row.try_get::<Option<String>, _>("archived_at")?,
@@ -759,7 +795,7 @@ async fn create_column(
 
 #[tauri::command]
 async fn load_cards(pool: State<'_, DbPool>, board_id: String) -> Result<Vec<Value>, String> {
-    sqlx::query("SELECT id, board_id, column_id, title, description, position, priority, due_date, created_at, updated_at, archived_at FROM kanban_cards WHERE board_id = ? ORDER BY position ASC")
+    sqlx::query("SELECT id, board_id, column_id, title, description, position, priority, due_date, attachments, created_at, updated_at, archived_at FROM kanban_cards WHERE board_id = ? ORDER BY position ASC")
         .bind(board_id)
         .try_map(map_card_row)
         .fetch_all(&*pool)
@@ -1401,8 +1437,282 @@ pub fn run() {
             load_cards,
             create_card,
             update_card,
-            move_card
+            move_card,
+            upload_image,
+            remove_image,
+            get_attachment_url
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct UploadImageResponse {
+    success: bool,
+    file_path: String,
+    error: Option<String>,
+}
+
+#[tauri::command]
+async fn upload_image(
+    app: AppHandle,
+    pool: State<'_, DbPool>,
+    card_id: String,
+    board_id: String,
+    file_path: String,
+) -> Result<UploadImageResponse, String> {
+    println!("Starting upload image for card: {}, board: {}, file: {}", 
+             card_id, board_id, file_path);
+    
+    let app_data_dir = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| {
+            println!("Failed to resolve app data directory: {}", e);
+            format!("Failed to resolve app data directory: {e}")
+        })?;
+
+    let attachments_dir = app_data_dir.join("attachments");
+    println!("Creating attachments directory: {:?}", attachments_dir);
+    
+    fs::create_dir_all(&attachments_dir)
+        .map_err(|e| {
+            println!("Failed to create attachments directory: {}", e);
+            format!("Failed to create attachments directory: {e}")
+        })?;
+
+    let source_path = PathBuf::from(&file_path);
+    println!("Checking source path: {:?}", source_path);
+    
+    if !source_path.exists() {
+        println!("Source file does not exist");
+        return Ok(UploadImageResponse {
+            success: false,
+            file_path: String::new(),
+            error: Some("Source file does not exist".to_string()),
+        });
+    }
+
+    let file_extension = source_path
+        .extension()
+        .and_then(|ext| ext.to_str())
+        .unwrap_or("");
+    
+    println!("File extension: {}", file_extension);
+    
+    let mime_type = mime_guess::from_path(&source_path).first_or_octet_stream();
+    println!("Detected MIME type: {}", mime_type);
+    println!("MIME type string: {}", mime_type.as_ref());
+    
+    // Check if it's an image by extension as fallback
+    let is_image_by_extension = match file_extension.to_lowercase().as_str() {
+        "jpg" | "jpeg" | "png" | "gif" | "webp" | "svg" | "bmp" | "ico" | "tiff" | "tif" => true,
+        _ => false,
+    };
+    
+    println!("Is image by extension: {}", is_image_by_extension);
+    
+    if !mime_type.type_().as_str().starts_with("image/") && !is_image_by_extension {
+        println!("File is not an image - MIME: {}, extension: {}", mime_type, file_extension);
+        return Ok(UploadImageResponse {
+            success: false,
+            file_path: String::new(),
+            error: Some(format!("File is not an image. Detected MIME: {}, extension: {}", mime_type, file_extension)),
+        });
+    }
+
+    let timestamp = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_err(|e| {
+            println!("System time error: {}", e);
+            format!("System time error: {e}")
+        })?
+        .as_secs();
+    
+    let filename = format!("{}_{}.{}", card_id, timestamp, file_extension);
+    let destination_path = attachments_dir.join(&filename);
+    
+    println!("Copying from {:?} to {:?}", source_path, destination_path);
+
+    fs::copy(&source_path, &destination_path)
+        .map_err(|e| {
+            println!("Failed to copy file: {}", e);
+            format!("Failed to copy file: {e}")
+        })?;
+
+    let relative_path = format!("attachments/{}", filename);
+    println!("Generated relative path: {}", relative_path);
+
+    let mut tx = pool
+        .begin()
+        .await
+        .map_err(|e| {
+            println!("Failed to begin transaction: {}", e);
+            format!("Failed to begin transaction: {e}")
+        })?;
+
+    println!("Fetching existing attachments for card: {}", card_id);
+    
+    let existing_attachments: Option<String> = sqlx::query_scalar(
+        "SELECT attachments FROM kanban_cards WHERE id = ? AND board_id = ?"
+    )
+    .bind(&card_id)
+    .bind(&board_id)
+    .fetch_one(&mut *tx)
+    .await
+    .map_err(|e| {
+        println!("Failed to fetch existing attachments: {}", e);
+        format!("Failed to fetch existing attachments: {e}")
+    })?;
+
+    println!("Existing attachments: {:?}", existing_attachments);
+
+    let mut attachments_vec = match existing_attachments {
+        Some(json_str) => {
+            serde_json::from_str(&json_str).unwrap_or_else(|e| {
+                println!("Failed to parse existing attachments JSON: {}, using empty array", e);
+                vec![]
+            })
+        },
+        None => vec![],
+    };
+
+    attachments_vec.push(relative_path.clone());
+
+    let attachments_json = serde_json::to_string(&attachments_vec)
+        .map_err(|e| {
+            println!("Failed to serialize attachments: {}", e);
+            format!("Failed to serialize attachments: {e}")
+        })?;
+
+    println!("Updating card with attachments: {}", attachments_json);
+
+    sqlx::query(
+        "UPDATE kanban_cards SET attachments = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ? AND board_id = ?"
+    )
+    .bind(&attachments_json)
+    .bind(&card_id)
+    .bind(&board_id)
+    .execute(&mut *tx)
+    .await
+    .map_err(|e| {
+        println!("Failed to update card attachments: {}", e);
+        format!("Failed to update card attachments: {e}")
+    })?;
+
+    tx.commit()
+        .await
+        .map_err(|e| {
+            println!("Failed to commit transaction: {}", e);
+            format!("Failed to commit transaction: {e}")
+        })?;
+
+    println!("Upload completed successfully");
+    
+    Ok(UploadImageResponse {
+        success: true,
+        file_path: relative_path,
+        error: None,
+    })
+}
+
+#[tauri::command]
+async fn remove_image(
+    app: AppHandle,
+    pool: State<'_, DbPool>,
+    card_id: String,
+    board_id: String,
+    file_path: String,
+) -> Result<(), String> {
+    let app_data_dir = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| format!("Failed to resolve app data directory: {e}"))?;
+
+    let mut tx = pool
+        .begin()
+        .await
+        .map_err(|e| format!("Failed to begin transaction: {e}"))?;
+
+    let existing_attachments: Option<String> = sqlx::query_scalar(
+        "SELECT attachments FROM kanban_cards WHERE id = ? AND board_id = ?"
+    )
+    .bind(&card_id)
+    .bind(&board_id)
+    .fetch_one(&mut *tx)
+    .await
+    .map_err(|e| format!("Failed to fetch existing attachments: {e}"))?;
+
+    let mut attachments_vec: Vec<String> = match existing_attachments {
+        Some(json_str) => serde_json::from_str(&json_str).unwrap_or_else(|_| vec![]),
+        None => vec![],
+    };
+
+    attachments_vec.retain(|path| path != &file_path);
+
+    let attachments_json = serde_json::to_string(&attachments_vec)
+        .map_err(|e| format!("Failed to serialize attachments: {e}"))?;
+
+    sqlx::query(
+        "UPDATE kanban_cards SET attachments = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ? AND board_id = ?"
+    )
+    .bind(&attachments_json)
+    .bind(&card_id)
+    .bind(&board_id)
+    .execute(&mut *tx)
+    .await
+    .map_err(|e| format!("Failed to update card attachments: {e}"))?;
+
+    tx.commit()
+        .await
+        .map_err(|e| format!("Failed to commit transaction: {e}"))?;
+
+    let full_file_path = app_data_dir.join(&file_path);
+    if full_file_path.exists() {
+        if let Err(e) = fs::remove_file(&full_file_path) {
+            eprintln!("Warning: Failed to delete file {}: {}", full_file_path.display(), e);
+        }
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
+async fn get_attachment_url(app: AppHandle, file_path: String) -> Result<String, String> {
+    // Read the image file and convert to base64
+    let app_data_dir = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| format!("Failed to resolve app data directory: {e}"))?;
+    
+    let full_path = app_data_dir.join(&file_path);
+    if !full_path.exists() {
+        return Err(format!("File does not exist: {:?}", full_path));
+    }
+
+    let image_data = std::fs::read(&full_path)
+        .map_err(|e| format!("Failed to read file: {e}"))?;
+    
+    // Determine MIME type from file extension
+    let extension = full_path
+        .extension()
+        .and_then(|ext| ext.to_str())
+        .unwrap_or("");
+    
+    let mime_type = match extension.to_lowercase().as_str() {
+        "jpg" | "jpeg" => "image/jpeg",
+        "png" => "image/png",
+        "gif" => "image/gif",
+        "webp" => "image/webp",
+        "svg" => "image/svg+xml",
+        "bmp" => "image/bmp",
+        "ico" => "image/x-icon",
+        _ => "image/jpeg",
+    };
+
+    let base64_data = general_purpose::STANDARD.encode(&image_data);
+    let data_url = format!("data:{};base64,{}", mime_type, base64_data);
+    
+    Ok(data_url)
 }

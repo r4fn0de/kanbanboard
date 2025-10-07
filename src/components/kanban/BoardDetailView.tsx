@@ -57,6 +57,7 @@ import {
 } from '@/services/kanban'
 import { Plus, X } from 'lucide-react'
 import { useUpdateCard, type UpdateCardInput } from '@/services/kanban'
+import { ImageUpload } from '@/components/ui/image-upload'
 
 const DEFAULT_COLUMN_TITLES = ['To-Do', 'In Progress', 'Done'] as const
 
@@ -856,6 +857,7 @@ function TaskDetailsPanel({
   onUpdate,
   isUpdating,
 }: TaskDetailsPanelProps) {
+  const queryClient = useQueryClient()
   const dueDateLabel = formatCardDueDate(card.dueDate)
   const [isEditingTitle, setIsEditingTitle] = useState(false)
   const [titleDraft, setTitleDraft] = useState(card.title)
@@ -1225,6 +1227,27 @@ function TaskDetailsPanel({
               No tags
             </span>
           )}
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <span className="text-xs font-semibold uppercase text-muted-foreground">
+            Attachments
+          </span>
+          <ImageUpload
+            cardId={card.id}
+            boardId={card.boardId}
+            attachments={card.attachments}
+            onUploadComplete={() => {
+              queryClient.invalidateQueries({
+                queryKey: kanbanQueryKeys.cards(card.boardId),
+              })
+            }}
+            onRemoveComplete={() => {
+              queryClient.invalidateQueries({
+                queryKey: kanbanQueryKeys.cards(card.boardId),
+              })
+            }}
+          />
         </div>
 
         <div className="flex flex-col gap-2">

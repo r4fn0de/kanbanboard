@@ -34,6 +34,7 @@ export interface KanbanCard {
   position: number
   priority: KanbanPriority
   dueDate?: string | null
+  attachments?: string[] | null
   tags: string[]
   createdAt: string
   updatedAt: string
@@ -97,6 +98,7 @@ CREATE TABLE IF NOT EXISTS kanban_cards (
   position INTEGER NOT NULL,
   priority TEXT NOT NULL DEFAULT 'medium' CHECK (priority IN ('low','medium','high')),
   due_date TEXT,
+  attachments TEXT,
   created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
   updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
   archived_at TEXT
