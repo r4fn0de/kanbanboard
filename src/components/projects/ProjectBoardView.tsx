@@ -1,29 +1,77 @@
-import { useMemo } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useCallback, useEffect, useMemo } from 'react'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 
 import { BoardDetailView } from '@/components/kanban/BoardDetailView'
+import {
+  DEFAULT_BOARD_VIEW_MODE,
+  isBoardViewMode,
+  type BoardViewMode,
+} from '@/components/kanban/board-view-modes'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useBoards } from '@/services/kanban'
 
 export function ProjectBoardView() {
   const { boardId } = useParams<{ boardId: string }>()
+  const [searchParams, setSearchParams] = useSearchParams()
   const navigate = useNavigate()
-  const {
-    data: boards = [],
-    isLoading,
-    isError,
-    error,
-    refetch,
-  } = useBoards()
+  const { data: boards = [], isLoading, isError, error, refetch } = useBoards()
 
-  const board = useMemo(() => boards.find(item => item.id === boardId), [boards, boardId])
+  const viewParam = searchParams.get('view')
+  const viewMode = useMemo<BoardViewMode>(() => {
+    if (isBoardViewMode(viewParam)) {
+      return viewParam
+    }
+    return DEFAULT_BOARD_VIEW_MODE
+  }, [viewParam])
+
+  const board = useMemo(
+    () => boards.find(item => item.id === boardId),
+    [boards, boardId]
+  )
+
+  useEffect(() => {
+    if (viewParam && !isBoardViewMode(viewParam)) {
+      setSearchParams(
+        current => {
+          const next = new URLSearchParams(current)
+          next.delete('view')
+          return next
+        },
+        { replace: true }
+      )
+    }
+  }, [setSearchParams, viewParam])
+
+  const handleViewModeChange = useCallback(
+    (mode: BoardViewMode) => {
+      setSearchParams(
+        current => {
+          const next = new URLSearchParams(current)
+          if (mode === DEFAULT_BOARD_VIEW_MODE) {
+            next.delete('view')
+          } else {
+            next.set('view', mode)
+          }
+          return next
+        },
+        { replace: true }
+      )
+    },
+    [setSearchParams]
+  )
+
+  const handleBack = useCallback(() => {
+    navigate('/projects/all')
+  }, [navigate])
 
   if (!boardId) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-3 p-6 text-center">
-        <p className="text-lg font-semibold text-foreground">Project not specified</p>
-        <Button onClick={() => navigate('/projects/all')}>Go back</Button>
+        <p className="text-lg font-semibold text-foreground">
+          Project not specified
+        </p>
+        <Button onClick={handleBack}>Go back</Button>
       </div>
     )
   }
@@ -40,13 +88,17 @@ export function ProjectBoardView() {
   if (isError) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-4 p-6 text-center">
-        <p className="text-lg font-semibold text-foreground">Unable to load projects</p>
+        <p className="text-lg font-semibold text-foreground">
+          Unable to load projects
+        </p>
         {error instanceof Error ? (
-          <p className="max-w-sm text-sm text-muted-foreground">{error.message}</p>
+          <p className="max-w-sm text-sm text-muted-foreground">
+            {error.message}
+          </p>
         ) : null}
         <div className="flex gap-2">
           <Button onClick={() => refetch()}>Try again</Button>
-          <Button variant="outline" onClick={() => navigate('/projects/all')}>
+          <Button variant="outline" onClick={handleBack}>
             Go back
           </Button>
         </div>
@@ -57,13 +109,22 @@ export function ProjectBoardView() {
   if (!board) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-4 p-6 text-center">
-        <p className="text-lg font-semibold text-foreground">Project not found</p>
-        <Button onClick={() => navigate('/projects/all')}>Go back</Button>
+        <p className="text-lg font-semibold text-foreground">
+          Project not found
+        </p>
+        <Button onClick={handleBack}>Go back</Button>
       </div>
     )
   }
 
-  return <BoardDetailView board={board} onBack={() => navigate('/projects/all')} />
+  return (
+    <BoardDetailView
+      board={board}
+      onBack={handleBack}
+      viewMode={viewMode}
+      onViewModeChange={handleViewModeChange}
+    />
+  )
 }
 
 export default ProjectBoardView

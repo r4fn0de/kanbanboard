@@ -1,0 +1,114 @@
+import { Badge } from '@/components/ui/badge'
+import { cn } from '@/lib/utils'
+import type { KanbanCard } from '@/types/common'
+import { ArrowDown, ArrowUp, Minus, UserRound } from 'lucide-react'
+import type { ComponentType } from 'react'
+import { formatCardDueDate } from './card-date'
+
+export function CardAvatar({ name }: { name: string }) {
+  const initials = name
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map(part => part[0]?.toUpperCase() ?? '')
+    .join('')
+
+  return (
+    <div className="flex h-9 w-9 items-center justify-center rounded-full border border-gray-300 bg-gray-100 text-xs font-semibold text-gray-700 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300">
+      {initials ? initials : <UserRound className="h-4 w-4" />}
+    </div>
+  )
+}
+
+export function PriorityBadge({
+  priority,
+}: {
+  priority: KanbanCard['priority']
+}) {
+  const variants: Record<
+    KanbanCard['priority'],
+    {
+      label: string
+      className: string
+      icon: ComponentType<{ className?: string }>
+    }
+  > = {
+    low: {
+      label: 'Low',
+      className:
+        'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300',
+      icon: ArrowDown,
+    },
+    medium: {
+      label: 'Medium',
+      className:
+        'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300',
+      icon: Minus,
+    },
+    high: {
+      label: 'High',
+      className:
+        'bg-rose-100 text-rose-700 dark:bg-rose-900/50 dark:text-rose-300',
+      icon: ArrowUp,
+    },
+  }
+
+  const variant = variants[priority]
+  const Icon = variant.icon
+
+  return (
+    <Badge
+      className={cn(
+        'rounded-full px-3 py-1 text-xs font-semibold leading-none flex items-center gap-1',
+        variant.className
+      )}
+    >
+      <Icon className="h-3 w-3" />
+      {variant.label}
+    </Badge>
+  )
+}
+
+export function CardContent({ card }: { card: KanbanCard }) {
+  const ownerName = 'Unassigned'
+  const firstTag = card.tags?.[0]
+  const dueDateLabel = formatCardDueDate(card.dueDate)
+
+  return (
+    <div className="flex flex-col gap-5">
+      <div className="flex items-start justify-between gap-3">
+        {firstTag ? (
+          <span className="rounded-full bg-gray-200 px-3 py-1 text-xs font-semibold text-gray-700 dark:bg-gray-700 dark:text-gray-300">
+            {firstTag}
+          </span>
+        ) : (
+          <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-600 dark:bg-gray-800 dark:text-gray-400">
+            Task
+          </span>
+        )}
+        <PriorityBadge priority={card.priority} />
+      </div>
+      <div className="flex flex-col gap-2">
+        <span className="text-base font-semibold leading-snug text-foreground">
+          {card.title}
+        </span>
+        {card.description ? (
+          <p className="text-sm leading-relaxed text-muted-foreground">
+            {card.description}
+          </p>
+        ) : null}
+      </div>
+      <div className="flex items-center justify-between gap-3 text-sm text-muted-foreground">
+        <div className="flex items-center gap-2">
+          <CardAvatar name={ownerName} />
+          <span className="font-medium text-foreground/80">{ownerName}</span>
+        </div>
+        {dueDateLabel ? (
+          <span className="rounded-full bg-gray-300 px-3 py-1 text-xs font-semibold text-gray-800 dark:bg-gray-600 dark:text-gray-200">
+            {dueDateLabel}
+          </span>
+        ) : null}
+      </div>
+    </div>
+  )
+}

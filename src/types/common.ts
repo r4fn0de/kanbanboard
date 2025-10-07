@@ -40,6 +40,8 @@ export interface KanbanCard {
   archivedAt?: string | null
 }
 
+export type BoardViewMode = 'kanban' | 'list' | 'timeline'
+
 export interface KanbanTag {
   id: EntityId
   boardId: EntityId
