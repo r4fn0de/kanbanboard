@@ -26,7 +26,7 @@ export function MainWindow() {
   const contentClasses = cn(
     'flex flex-1 overflow-hidden rounded-b-[12px]',
     transparencyEnabled
-      ? 'bg-background/60 backdrop-blur-md supports-[backdrop-filter]:rounded-b-[12px] supports-[backdrop-filter]:bg-background/30 supports-[backdrop-filter]:backdrop-blur-lg'
+      ? 'bg-background/20 backdrop-blur-md supports-[backdrop-filter]:rounded-b-[12px] supports-[backdrop-filter]:bg-background/10 supports-[backdrop-filter]:backdrop-blur-lg'
       : 'bg-background supports-[backdrop-filter]:rounded-b-[12px]'
   )
 

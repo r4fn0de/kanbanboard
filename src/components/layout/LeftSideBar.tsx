@@ -187,7 +187,7 @@ export function LeftSideBar({ children, className }: LeftSideBarProps) {
   const sidebarClasses = cn(
     'flex h-full flex-col rounded-l-[12px]',
     transparencyEnabled
-      ? 'border-gray-200/40 bg-gray-50/60 backdrop-blur-xl supports-[backdrop-filter]:bg-gray-50/40 supports-[backdrop-filter]:backdrop-blur-2xl dark:border-gray-700/40 dark:bg-gray-900/60 dark:supports-[backdrop-filter]:bg-gray-900/40'
+      ? 'border-gray-200/20 bg-gray-50/5 backdrop-blur-xl supports-[backdrop-filter]:bg-gray-50/3 supports-[backdrop-filter]:backdrop-blur-2xl dark:border-gray-700/20 dark:bg-gray-900/5 dark:supports-[backdrop-filter]:bg-gray-900/3'
       : 'border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-900'
   )
 
