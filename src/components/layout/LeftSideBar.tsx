@@ -187,8 +187,8 @@ export function LeftSideBar({ children, className }: LeftSideBarProps) {
   const sidebarClasses = cn(
     'flex h-full flex-col rounded-l-[12px]',
     transparencyEnabled
-      ? 'border-gray-200/20 bg-gray-50/5 backdrop-blur-xl supports-[backdrop-filter]:bg-gray-50/3 supports-[backdrop-filter]:backdrop-blur-2xl dark:border-gray-700/20 dark:bg-gray-900/5 dark:supports-[backdrop-filter]:bg-gray-900/3'
-      : 'border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-900'
+      ? 'border-border/20 bg-background/5 backdrop-blur-xl supports-[backdrop-filter]:bg-background/3 supports-[backdrop-filter]:backdrop-blur-2xl'
+      : 'border-border bg-background'
   )
 
   const handleConfirmDelete = () => {
@@ -335,11 +335,11 @@ export function LeftSideBar({ children, className }: LeftSideBarProps) {
               'flex items-center gap-3 rounded-xl px-4 py-3 text-left transition-all duration-200 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
               transparencyEnabled
                 ? isActive
-                  ? 'bg-white/20 text-gray-900 shadow-sm backdrop-blur-sm dark:bg-gray-800/40 dark:text-gray-100'
-                  : 'text-gray-800 hover:bg-white/15 dark:text-gray-200 dark:hover:bg-gray-800/30'
+                  ? 'bg-accent text-accent-foreground shadow-sm backdrop-blur-sm'
+                  : 'text-foreground hover:bg-accent/10'
                 : isActive
-                  ? 'bg-gray-200/80 text-foreground shadow-sm dark:bg-gray-800/80'
-                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200/60 dark:hover:bg-gray-800/60'
+                  ? 'bg-accent text-accent-foreground shadow-sm'
+                  : 'text-muted-foreground hover:bg-accent/10'
             )
           }
         >
@@ -354,8 +354,8 @@ export function LeftSideBar({ children, className }: LeftSideBarProps) {
             className={cn(
               'flex items-center gap-3 rounded-xl px-4 py-3 text-left transition-all duration-200 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
               transparencyEnabled
-                ? 'text-gray-800 hover:bg-white/15 dark:text-gray-200 dark:hover:bg-gray-800/30'
-                : 'text-gray-600 hover:bg-gray-200/60 dark:text-gray-400 dark:hover:bg-gray-800/60'
+                ? 'text-foreground hover:bg-accent/10'
+                : 'text-muted-foreground hover:bg-accent/10'
             )}
           >
             {projectsOpen ? (
@@ -370,7 +370,7 @@ export function LeftSideBar({ children, className }: LeftSideBarProps) {
             <div className="mt-2 flex flex-col gap-2 ml-6">
               {isLoadingBoards ? (
                 <div className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-gray-500 dark:text-gray-400">
-                  <div className="h-3 w-3 animate-pulse rounded-full bg-gray-300 dark:bg-gray-600"></div>
+                  <div className="h-3 w-3 animate-pulse rounded-full bg-muted-foreground/50"></div>
                   <span>Loading…</span>
                 </div>
               ) : projectLinks && projectLinks.length ? (
@@ -390,11 +390,11 @@ export function LeftSideBar({ children, className }: LeftSideBarProps) {
                             'flex grow items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm transition-all duration-200 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                             transparencyEnabled
                               ? isActive
-                                ? 'bg-white/20 text-gray-900 shadow-sm backdrop-blur-sm dark:bg-gray-800/40 dark:text-gray-100'
-                                : 'text-gray-800 hover:bg-white/15 dark:text-gray-200 dark:hover:bg-gray-800/30'
+                                ? 'bg-accent text-accent-foreground shadow-sm backdrop-blur-sm'
+                                : 'text-foreground hover:bg-accent/10'
                               : isActive
-                                ? 'bg-gray-200/80 text-foreground shadow-sm dark:bg-gray-800/80'
-                                : 'text-gray-600 hover:bg-gray-200/60 dark:text-gray-400 dark:hover:bg-gray-800/60'
+                                ? 'bg-accent text-accent-foreground shadow-sm'
+                                : 'text-muted-foreground hover:bg-accent/10'
                           )
                         }
                       >
@@ -411,9 +411,9 @@ export function LeftSideBar({ children, className }: LeftSideBarProps) {
                             whileTap={{ scale: 0.92 }}
                             transition={{ duration: 0.18, ease: 'easeOut' }}
                             className={cn(
-                              'absolute right-2 top-1/2 -translate-y-1/2 flex h-6 w-6 items-center justify-center rounded-md text-gray-500 opacity-0 pointer-events-none transition-all duration-200 hover:bg-gray-300/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:text-gray-400 dark:hover:bg-gray-700/60',
+                              'absolute right-2 top-1/2 -translate-y-1/2 flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground opacity-0 pointer-events-none transition-all duration-200 hover:bg-accent/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                               'group-hover:opacity-100 group-hover:pointer-events-auto',
-                              'data-[state=open]:opacity-100 data-[state=open]:pointer-events-auto data-[state=open]:bg-gray-300/80 data-[state=open]:text-gray-700 dark:data-[state=open]:bg-gray-700/80 dark:data-[state=open]:text-gray-300'
+                              'data-[state=open]:opacity-100 data-[state=open]:pointer-events-auto data-[state=open]:bg-accent data-[state=open]:text-accent-foreground'
                             )}
                             aria-label={`Open actions for ${board.title}`}
                           >
@@ -465,7 +465,7 @@ export function LeftSideBar({ children, className }: LeftSideBarProps) {
                 })
               ) : (
                 <div className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-gray-500 dark:text-gray-400">
-                  <div className="h-2 w-2 rounded-full bg-gray-300 dark:bg-gray-600"></div>
+                  <div className="h-2 w-2 rounded-full bg-muted-foreground/50"></div>
                   <span>No projects yet</span>
                 </div>
               )}
@@ -475,8 +475,8 @@ export function LeftSideBar({ children, className }: LeftSideBarProps) {
                 className={cn(
                   'mt-2 flex items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm transition-all duration-200 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                   transparencyEnabled
-                    ? 'text-gray-800 hover:bg-white/15 dark:text-gray-200 dark:hover:bg-gray-800/30'
-                    : 'text-gray-600 hover:bg-gray-200/60 dark:text-gray-400 dark:hover:bg-gray-800/60'
+                    ? 'text-foreground hover:bg-accent/10'
+                    : 'text-muted-foreground hover:bg-accent/10'
                 )}
                 onClick={() => setCreateProjectOpen(true)}
               >
@@ -625,7 +625,7 @@ export function LeftSideBar({ children, className }: LeftSideBarProps) {
                           'flex h-16 flex-col items-center justify-center gap-1.5 rounded-xl border px-3 py-2 text-sm font-medium transition',
                           isSelected
                             ? 'border-primary bg-primary/10 text-primary shadow-sm dark:bg-primary/20'
-                            : 'border-transparent bg-gray-100 text-gray-600 hover:border-gray-300 hover:bg-gray-100/80 dark:bg-gray-800 dark:text-gray-300 dark:hover:border-gray-600'
+                            : 'border-transparent bg-accent/10 text-accent-foreground hover:border-accent hover:bg-accent/20'
                         )}
                       >
                         <IconComponent className="h-5 w-5" />

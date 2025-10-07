@@ -120,7 +120,7 @@ export function BoardKanbanView({
 
 function CardOverlay({ card }: { card: KanbanCard }) {
   return (
-    <div className="pointer-events-none flex w-[300px] max-w-full flex-col rounded-[28px] border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-gray-900">
+    <div className="pointer-events-none flex w-[300px] max-w-full flex-col rounded-[1.75rem] border border-border bg-card p-5">
       <CardContent card={card} />
     </div>
   )
@@ -170,11 +170,11 @@ function DraggableColumn({
     <div
       ref={setNodeRef}
       style={style}
-      className="group flex h-full w-[320px] flex-shrink-0 flex-col gap-5 rounded-[32px] border border-gray-200 bg-gray-50 p-5 transition-all duration-200 active:cursor-grabbing dark:border-gray-700 dark:bg-gray-800"
+      className="group flex h-full w-[320px] flex-shrink-0 flex-col gap-5 rounded-[2rem] border border-border bg-muted p-5 transition-all duration-200 active:cursor-grabbing"
     >
       <div
         className={cn(
-          'flex items-center justify-between gap-3 rounded-3xl border bg-white px-5 py-4 dark:bg-gray-900',
+          'flex items-center justify-between gap-3 rounded-3xl border bg-card px-5 py-4',
           theme.accentBorder
         )}
       >
@@ -206,7 +206,7 @@ function DraggableColumn({
           {columnCards.length > 0 ? (
             columnCards.map(card => <DraggableCard key={card.id} card={card} />)
           ) : (
-            <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-muted-foreground/20 bg-white/70 p-6 text-center text-sm text-muted-foreground dark:bg-zinc-800/70">
+            <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-border bg-card/70 p-6 text-center text-sm text-muted-foreground">
               No cards yet. Add the first one to get started.
             </div>
           )}
@@ -216,7 +216,7 @@ function DraggableColumn({
         variant="ghost"
         onClick={onAddCard}
         disabled={isCreatingCard}
-        className="flex items-center justify-center gap-2 rounded-2xl bg-white py-3 text-sm font-medium text-foreground transition disabled:cursor-not-allowed disabled:opacity-60 dark:bg-gray-900"
+        className="flex items-center justify-center gap-2 rounded-2xl bg-card py-3 text-sm font-medium text-card-foreground transition disabled:cursor-not-allowed disabled:opacity-60"
       >
         <Plus className="h-4 w-4" />
         Add card
@@ -253,7 +253,7 @@ function DraggableCard({ card }: { card: KanbanCard }) {
       {...attributes}
       {...listeners}
       className={cn(
-        'flex flex-col rounded-[28px] border border-gray-200 bg-white p-5 transition-all duration-200 active:cursor-grabbing dark:border-gray-700 dark:bg-gray-900'
+        'flex flex-col rounded-[1.75rem] border border-border bg-card p-5 transition-all duration-200 active:cursor-grabbing'
       )}
     >
       <CardContent card={card} />

@@ -529,7 +529,7 @@ export function BoardDetailView({
             size="sm"
             value={resolvedViewMode}
             onValueChange={handleToggleViewChange}
-            className="rounded-xl border border-border/60 bg-background/60 backdrop-blur"
+            className="rounded-2xl border border-border bg-card"
           >
             {BOARD_VIEW_OPTIONS.map(option => {
               const Icon = option.icon
@@ -552,8 +552,8 @@ export function BoardDetailView({
             <DialogTrigger asChild>
               <Button
                 type="button"
-                variant="outline"
-                className="flex items-center gap-2 rounded-xl"
+                variant="ghost"
+                className="flex items-center justify-center gap-2 rounded-2xl bg-card py-3 text-sm font-medium text-card-foreground transition disabled:cursor-not-allowed disabled:opacity-60"
                 disabled={isCreatingColumn}
               >
                 <Plus className="h-4 w-4" />

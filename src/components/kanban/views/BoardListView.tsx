@@ -2,8 +2,8 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import type { KanbanCard, KanbanColumn } from '@/types/common'
-import { Plus } from 'lucide-react'
-import { CardAvatar, PriorityBadge } from './board-shared'
+import { Plus, Circle, Play, CheckCircle } from 'lucide-react'
+import { PriorityBadge } from './board-shared'
 import { formatCardDueDate } from './card-date'
 
 interface BoardListViewProps {
@@ -14,9 +14,18 @@ interface BoardListViewProps {
 }
 
 const accentThemes = [
-  { dot: 'bg-gray-400' },
-  { dot: 'bg-gray-500' },
-  { dot: 'bg-gray-600' },
+  {
+    dot: 'bg-gray-400',
+    icon: Circle,
+  },
+  {
+    dot: 'bg-gray-500',
+    icon: Play,
+  },
+  {
+    dot: 'bg-gray-600',
+    icon: CheckCircle,
+  },
 ] as const
 
 export function BoardListView({
@@ -34,11 +43,11 @@ export function BoardListView({
         return (
           <div
             key={column.id}
-            className="overflow-hidden rounded-[32px] border border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800"
+            className="overflow-hidden rounded-[2rem] border border-border bg-muted"
           >
-            <div className="flex flex-col gap-4 border-b border-gray-200 bg-white px-6 py-5 sm:flex-row sm:items-center sm:justify-between dark:border-gray-700 dark:bg-gray-900">
+            <div className="flex flex-col gap-4 border-b border-border bg-card px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-3">
-                <span className={cn('h-2.5 w-2.5 rounded-full', theme.dot)} />
+                <theme.icon className="h-4 w-4 text-gray-600 dark:text-gray-400" />
                 <div className="flex flex-col">
                   <p className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
                     {column.title}
@@ -55,19 +64,18 @@ export function BoardListView({
                 variant="ghost"
                 onClick={() => onAddCard(column)}
                 disabled={isCreatingCard}
-                className="flex items-center justify-center gap-2 rounded-2xl bg-white py-3 text-sm font-medium text-foreground transition disabled:cursor-not-allowed disabled:opacity-60 dark:bg-gray-900"
+                className="flex items-center justify-center gap-2 rounded-2xl bg-card py-3 text-sm font-medium text-card-foreground transition disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <Plus className="mr-2 h-4 w-4" />
                 Add card
               </Button>
             </div>
 
-            <div className="hidden px-6 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground/70 md:grid md:grid-cols-[minmax(0,2.2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.1fr)] md:gap-4">
+            <div className="hidden px-6 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground/70 md:grid md:grid-cols-[minmax(0,2.2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] md:gap-4">
               <span>Name</span>
               <span>Priority</span>
               <span>Tags</span>
               <span>Due date</span>
-              <span>Assignee</span>
             </div>
 
             <div className="divide-y divide-border/60">
@@ -81,8 +89,8 @@ export function BoardListView({
                     <div
                       key={card.id}
                       className={cn(
-                        'flex flex-col gap-4 px-6 py-4 text-sm text-foreground md:grid md:grid-cols-[minmax(0,2.2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.1fr)] md:items-center md:gap-4',
-                        rowIndex % 2 === 1 && 'bg-gray-50 dark:bg-gray-700/30'
+                        'flex flex-col gap-4 px-6 py-4 text-sm text-foreground md:grid md:grid-cols-[minmax(0,2.2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] md:items-center md:gap-4',
+                        rowIndex % 2 === 1 && 'bg-muted/30'
                       )}
                     >
                       <div className="flex flex-col gap-1">
@@ -150,17 +158,6 @@ export function BoardListView({
                           </span>
                         )}
                       </div>
-                      <div className="flex flex-col gap-2 md:items-start">
-                        <span className="text-xs font-semibold uppercase text-muted-foreground md:hidden">
-                          Assignee
-                        </span>
-                        <div className="flex items-center gap-3">
-                          <CardAvatar name="Unassigned" />
-                          <span className="text-xs font-medium text-muted-foreground">
-                            Unassigned
-                          </span>
-                        </div>
-                      </div>
                     </div>
                   )
                 })
@@ -171,7 +168,7 @@ export function BoardListView({
                     variant="ghost"
                     onClick={() => onAddCard(column)}
                     disabled={isCreatingCard}
-                    className="flex items-center justify-center gap-2 rounded-2xl bg-white py-3 text-sm font-medium text-foreground transition disabled:cursor-not-allowed disabled:opacity-60 dark:bg-gray-900"
+                    className="flex items-center justify-center gap-2 rounded-2xl bg-card py-3 text-sm font-medium text-card-foreground transition disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     <Plus className="mr-2 h-4 w-4" />
                     Add first card

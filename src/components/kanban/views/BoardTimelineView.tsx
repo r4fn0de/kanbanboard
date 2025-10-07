@@ -58,7 +58,7 @@ export function BoardTimelineView({
 
   if (groups.length === 0) {
     return (
-      <div className="flex flex-1 items-center justify-center rounded-[32px] border border-dashed border-gray-300 bg-gray-50/50 p-10 text-center text-sm text-muted-foreground dark:border-gray-600 dark:bg-gray-800/50">
+      <div className="flex flex-1 items-center justify-center rounded-[2rem] border border-dashed border-border bg-muted/50 p-10 text-center text-sm text-muted-foreground">
         No cards have been added to this board yet.
       </div>
     )
@@ -66,7 +66,7 @@ export function BoardTimelineView({
 
   return (
     <div className="relative flex-1">
-      <div className="absolute left-[18px] top-4 bottom-4 hidden border-l border-gray-200 sm:block dark:border-gray-700" />
+      <div className="absolute left-[18px] top-4 bottom-4 hidden border-l border-border sm:block" />
       <div className="space-y-8">
         {groups.map(group => (
           <div
@@ -74,7 +74,7 @@ export function BoardTimelineView({
             className="relative flex flex-col gap-4 sm:flex-row sm:gap-6"
           >
             <div className="flex items-center gap-3 sm:w-64">
-              <div className="flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-600 shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-400">
+              <div className="flex h-9 w-9 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-sm">
                 <CalendarClock className="h-4 w-4" />
               </div>
               <div>
@@ -96,7 +96,7 @@ export function BoardTimelineView({
                 return (
                   <div
                     key={card.id}
-                    className="rounded-[28px] border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-900"
+                    className="rounded-[1.75rem] border border-border bg-card p-4"
                   >
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                       <div className="flex flex-col gap-1">
@@ -116,7 +116,7 @@ export function BoardTimelineView({
                     ) : null}
                     <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                       {dueLabel ? (
-                        <span className="rounded-full bg-gray-300 px-2 py-1 font-medium text-gray-800 dark:bg-gray-600 dark:text-gray-200">
+                        <span className="rounded-full bg-secondary px-2 py-1 font-medium text-secondary-foreground">
                           Due {dueLabel}
                         </span>
                       ) : null}

@@ -43,7 +43,7 @@ function FeatureCard({
   return (
     <div
       className={cn(
-        'flex flex-col gap-5 rounded-[32px] border border-gray-200 bg-white p-6 transition-all duration-200 hover:scale-[1.02] dark:border-gray-700 dark:bg-gray-900',
+        'flex flex-col gap-5 rounded-[2rem] border border-border bg-card p-6 transition-all duration-200 hover:scale-[1.02]',
         theme.accentBorder
       )}
     >

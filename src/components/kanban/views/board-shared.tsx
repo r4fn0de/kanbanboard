@@ -1,24 +1,9 @@
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import type { KanbanCard } from '@/types/common'
-import { ArrowDown, ArrowUp, Minus, UserRound } from 'lucide-react'
+import { ArrowDown, ArrowUp, Minus } from 'lucide-react'
 import type { ComponentType } from 'react'
 import { formatCardDueDate } from './card-date'
-
-export function CardAvatar({ name }: { name: string }) {
-  const initials = name
-    .split(' ')
-    .filter(Boolean)
-    .slice(0, 2)
-    .map(part => part[0]?.toUpperCase() ?? '')
-    .join('')
-
-  return (
-    <div className="flex h-9 w-9 items-center justify-center rounded-full border border-gray-300 bg-gray-100 text-xs font-semibold text-gray-700 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300">
-      {initials ? initials : <UserRound className="h-4 w-4" />}
-    </div>
-  )
-}
 
 export function PriorityBadge({
   priority,
@@ -70,7 +55,6 @@ export function PriorityBadge({
 }
 
 export function CardContent({ card }: { card: KanbanCard }) {
-  const ownerName = 'Unassigned'
   const firstTag = card.tags?.[0]
   const dueDateLabel = formatCardDueDate(card.dueDate)
 
@@ -98,17 +82,13 @@ export function CardContent({ card }: { card: KanbanCard }) {
           </p>
         ) : null}
       </div>
-      <div className="flex items-center justify-between gap-3 text-sm text-muted-foreground">
-        <div className="flex items-center gap-2">
-          <CardAvatar name={ownerName} />
-          <span className="font-medium text-foreground/80">{ownerName}</span>
-        </div>
-        {dueDateLabel ? (
+      {dueDateLabel ? (
+        <div className="flex justify-end text-sm text-muted-foreground">
           <span className="rounded-full bg-gray-300 px-3 py-1 text-xs font-semibold text-gray-800 dark:bg-gray-600 dark:text-gray-200">
             {dueDateLabel}
           </span>
-        ) : null}
-      </div>
+        </div>
+      ) : null}
     </div>
   )
 }
