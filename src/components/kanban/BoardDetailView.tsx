@@ -496,7 +496,7 @@ export function BoardDetailView({
       <div className="flex flex-col gap-2 -mt-2">
         <Button
           variant="ghost"
-          className="w-max px-3 py-2 h-auto text-gray-600 hover:text-gray-900 hover:bg-gray-100/60 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-800/60 transition-all duration-200 rounded-xl"
+          className="w-max px-3 py-2 h-auto text-muted-foreground hover:text-foreground hover:bg-accent/60 dark:text-muted-foreground dark:hover:text-foreground dark:hover:bg-accent/60 transition-all duration-200 rounded-xl"
           onClick={onBack}
         >
           <svg
