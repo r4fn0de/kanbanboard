@@ -357,6 +357,110 @@ export async function createCard(input: CreateCardInput): Promise<void> {
   })
 }
 
+export interface UpdateCardInput {
+  id: string
+  boardId: string
+  title?: string
+  description?: string | null
+  priority?: KanbanCard['priority']
+  dueDate?: string | null
+}
+
+export async function updateCard(input: UpdateCardInput): Promise<void> {
+  const payload: Record<string, unknown> = {
+    id: input.id,
+    boardId: input.boardId,
+  }
+
+  if (Object.hasOwn(input, 'title')) {
+    payload.title = input.title
+  }
+  if (Object.hasOwn(input, 'description')) {
+    payload.description = input.description
+  }
+  if (Object.hasOwn(input, 'priority')) {
+    payload.priority = input.priority
+  }
+  if (Object.hasOwn(input, 'dueDate')) {
+    payload.dueDate = input.dueDate
+  }
+
+  await invoke('update_card', payload)
+}
+
+export function useUpdateCard(boardId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: updateCard,
+    onMutate: async input => {
+      const cardsKey = kanbanQueryKeys.cards(boardId)
+
+      await queryClient.cancelQueries({ queryKey: cardsKey })
+
+      const previousCards = queryClient.getQueryData<KanbanCard[]>(cardsKey)
+
+      if (previousCards) {
+        const hasTitle = Object.hasOwn(input, 'title')
+        const hasDescription = Object.hasOwn(input, 'description')
+        const hasPriority = Object.hasOwn(input, 'priority')
+        const hasDueDate = Object.hasOwn(input, 'dueDate')
+
+        if (hasTitle || hasDescription || hasPriority || hasDueDate) {
+          const now = new Date().toISOString()
+          const updated = previousCards.map(card => {
+            if (card.id !== input.id) {
+              return card
+            }
+
+            const nextCard: KanbanCard = {
+              ...card,
+              updatedAt: now,
+            }
+
+            if (hasTitle) {
+              nextCard.title = input.title ?? card.title
+            }
+            if (hasDescription) {
+              nextCard.description =
+                input.description !== undefined
+                  ? (input.description ?? null)
+                  : (card.description ?? null)
+            }
+            if (hasPriority) {
+              nextCard.priority = input.priority ?? card.priority
+            }
+            if (hasDueDate) {
+              nextCard.dueDate =
+                input.dueDate !== undefined
+                  ? (input.dueDate ?? null)
+                  : (card.dueDate ?? null)
+            }
+
+            return nextCard
+          })
+
+          queryClient.setQueryData<KanbanCard[]>(cardsKey, updated)
+        }
+      }
+
+      return { previousCards }
+    },
+    onError: (_error, _variables, context) => {
+      if (context?.previousCards) {
+        queryClient.setQueryData(
+          kanbanQueryKeys.cards(boardId),
+          context.previousCards
+        )
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({
+        queryKey: kanbanQueryKeys.cards(boardId),
+      })
+    },
+  })
+}
+
 export interface MoveCardInput {
   boardId: string
   cardId: string

@@ -34,6 +34,8 @@ interface BoardKanbanViewProps {
   onDragStart: (event: DragStartEvent) => void
   onDragCancel: (event: DragCancelEvent) => void
   activeCard: KanbanCard | null
+  onCardSelect?: (card: KanbanCard) => void
+  selectedCardId?: string | null
 }
 
 const accentThemes = [
@@ -67,6 +69,8 @@ export function BoardKanbanView({
   onDragStart,
   onDragCancel,
   activeCard,
+  onCardSelect,
+  selectedCardId,
 }: BoardKanbanViewProps) {
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -91,7 +95,7 @@ export function BoardKanbanView({
         items={columnOrder.map(id => `column-${id}`)}
         strategy={horizontalListSortingStrategy}
       >
-        <div className="flex flex-1 items-stretch gap-4 overflow-x-auto pb-4">
+        <div className="flex h-full items-stretch gap-4 overflow-x-auto pb-4 min-h-0">
           {columnOrder.map((columnId, index) => {
             const column = columnsMap.get(columnId)
             if (!column) {
@@ -106,6 +110,8 @@ export function BoardKanbanView({
                 isCreatingCard={isCreatingCard}
                 accentIndex={index}
                 onAddCard={() => onAddCard(column)}
+                onCardSelect={onCardSelect}
+                selectedCardId={selectedCardId}
               />
             )
           })}
@@ -132,12 +138,16 @@ function DraggableColumn({
   onAddCard,
   isCreatingCard,
   accentIndex,
+  onCardSelect,
+  selectedCardId,
 }: {
   column: KanbanColumn
   columnCards: KanbanCard[]
   onAddCard: () => void
   isCreatingCard: boolean
   accentIndex: number
+  onCardSelect?: (card: KanbanCard) => void
+  selectedCardId?: string | null
 }) {
   const {
     attributes,
@@ -197,14 +207,21 @@ function DraggableColumn({
       </div>
       <div
         ref={setDroppableRef}
-        className="flex flex-1 flex-col gap-4 overflow-y-auto overflow-x-visible p-1"
+        className="flex flex-1 flex-col gap-4 overflow-y-auto overflow-x-visible p-1 min-h-0"
       >
         <SortableContext
           items={columnCards.map(c => `card-${c.id}`)}
           strategy={verticalListSortingStrategy}
         >
           {columnCards.length > 0 ? (
-            columnCards.map(card => <DraggableCard key={card.id} card={card} />)
+            columnCards.map(card => (
+              <DraggableCard
+                key={card.id}
+                card={card}
+                onSelect={onCardSelect}
+                isSelected={selectedCardId === card.id}
+              />
+            ))
           ) : (
             <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-border bg-card/70 p-6 text-center text-sm text-muted-foreground">
               No cards yet. Add the first one to get started.
@@ -225,7 +242,15 @@ function DraggableColumn({
   )
 }
 
-function DraggableCard({ card }: { card: KanbanCard }) {
+function DraggableCard({
+  card,
+  onSelect,
+  isSelected,
+}: {
+  card: KanbanCard
+  onSelect?: (card: KanbanCard) => void
+  isSelected: boolean
+}) {
   const {
     attributes,
     listeners,
@@ -247,17 +272,23 @@ function DraggableCard({ card }: { card: KanbanCard }) {
   }
 
   return (
-    <div
+    <button
+      type="button"
       ref={setNodeRef}
       style={style}
       {...attributes}
       {...listeners}
+      onClick={() => onSelect?.(card)}
+      aria-pressed={isSelected}
+      aria-expanded={isSelected}
+      aria-controls="task-details-panel"
       className={cn(
-        'flex flex-col rounded-[1.75rem] border border-border bg-card p-5 transition-all duration-200 active:cursor-grabbing'
+        'flex flex-col rounded-[1.75rem] border border-border bg-card p-5 text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 active:cursor-grabbing',
+        isSelected && 'border-primary ring-2 ring-primary/20'
       )}
     >
       <CardContent card={card} />
-    </div>
+    </button>
   )
 }
 

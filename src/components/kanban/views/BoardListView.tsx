@@ -11,6 +11,8 @@ interface BoardListViewProps {
   cardsByColumn: Map<string, KanbanCard[]>
   onAddCard: (column: KanbanColumn) => void
   isCreatingCard: boolean
+  onCardSelect?: (card: KanbanCard) => void
+  selectedCardId?: string | null
 }
 
 const accentThemes = [
@@ -33,6 +35,8 @@ export function BoardListView({
   cardsByColumn,
   onAddCard,
   isCreatingCard,
+  onCardSelect,
+  selectedCardId,
 }: BoardListViewProps) {
   return (
     <div className="flex-1 space-y-6">
@@ -84,13 +88,22 @@ export function BoardListView({
                   const dueLabel = formatCardDueDate(card.dueDate)
                   const displayTags = card.tags.slice(0, 3)
                   const remainingTags = card.tags.length - displayTags.length
+                  const isSelected = selectedCardId === card.id
 
                   return (
-                    <div
+                    <button
+                      type="button"
+                      onClick={() => onCardSelect?.(card)}
                       key={card.id}
+                      aria-pressed={isSelected}
+                      aria-expanded={isSelected}
+                      aria-controls="task-details-panel"
                       className={cn(
-                        'flex flex-col gap-4 px-6 py-4 text-sm text-foreground md:grid md:grid-cols-[minmax(0,2.2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] md:items-center md:gap-4',
-                        rowIndex % 2 === 1 && 'bg-muted/30'
+                        'grid grid-cols-1 gap-4 px-6 py-4 text-left text-sm text-foreground transition-all duration-200 md:grid-cols-[minmax(0,2.2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] md:items-center md:gap-4',
+                        rowIndex % 2 === 1 && 'bg-muted/30',
+                        isSelected &&
+                          'border border-primary/80 bg-primary/10 ring-2 ring-primary/30',
+                        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 rounded-[1.5rem]'
                       )}
                     >
                       <div className="flex flex-col gap-1">
@@ -158,7 +171,7 @@ export function BoardListView({
                           </span>
                         )}
                       </div>
-                    </div>
+                    </button>
                   )
                 })
               ) : (

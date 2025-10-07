@@ -11,6 +11,7 @@ import type {
 import { useQueryClient } from '@tanstack/react-query'
 
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import {
   Dialog,
   DialogClose,
@@ -42,6 +43,8 @@ import {
 import { BoardKanbanView } from '@/components/kanban/views/BoardKanbanView'
 import { BoardListView } from '@/components/kanban/views/BoardListView'
 import { BoardTimelineView } from '@/components/kanban/views/BoardTimelineView'
+import { PriorityBadge } from '@/components/kanban/views/board-shared'
+import { formatCardDueDate } from '@/components/kanban/views/card-date'
 import type { KanbanBoard, KanbanCard, KanbanColumn } from '@/types/common'
 import {
   useCards,
@@ -52,7 +55,8 @@ import {
   useMoveCard,
   useMoveColumn,
 } from '@/services/kanban'
-import { Plus } from 'lucide-react'
+import { Plus, X } from 'lucide-react'
+import { useUpdateCard, type UpdateCardInput } from '@/services/kanban'
 
 const DEFAULT_COLUMN_TITLES = ['To-Do', 'In Progress', 'Done'] as const
 
@@ -93,6 +97,9 @@ export function BoardDetailView({
   )
   const { mutate: moveColumnMutate } = useMoveColumn(board.id)
   const { mutate: moveCardMutate } = useMoveCard(board.id)
+  const { mutateAsync: updateCard, isPending: isUpdatingCard } = useUpdateCard(
+    board.id
+  )
 
   const [internalViewMode, setInternalViewMode] = useState<BoardViewMode>(
     DEFAULT_BOARD_VIEW_MODE
@@ -148,6 +155,7 @@ export function BoardDetailView({
   const cardDescriptionId = useId()
   const cardDueDateId = useId()
   const [activeCardId, setActiveCardId] = useState<string | null>(null)
+  const [selectedCardId, setSelectedCardId] = useState<string | null>(null)
   const hasSeededDefaultColumns = useRef(false)
 
   const [columnOrder, setColumnOrder] = useState<string[]>([])
@@ -204,6 +212,17 @@ export function BoardDetailView({
     () => cards.find(card => card.id === activeCardId) ?? null,
     [activeCardId, cards]
   )
+  const selectedCard = useMemo(
+    () => cards.find(card => card.id === selectedCardId) ?? null,
+    [cards, selectedCardId]
+  )
+
+  useEffect(() => {
+    if (!selectedCardId) return
+    if (!cards.some(card => card.id === selectedCardId)) {
+      setSelectedCardId(null)
+    }
+  }, [cards, selectedCardId])
 
   const resetColumnForm = useCallback(() => {
     setColumnTitle('')
@@ -344,6 +363,24 @@ export function BoardDetailView({
   const handleDragCancel = useCallback((_: DragCancelEvent) => {
     setActiveCardId(null)
   }, [])
+
+  const handleCardSelect = useCallback((card: KanbanCard) => {
+    setSelectedCardId(card.id)
+  }, [])
+
+  const handleCloseDetails = useCallback(() => {
+    setSelectedCardId(null)
+  }, [])
+
+  const handleUpdateCard = useCallback(
+    async (
+      cardId: string,
+      updates: Omit<UpdateCardInput, 'id' | 'boardId'>
+    ) => {
+      await updateCard({ id: cardId, boardId: board.id, ...updates })
+    },
+    [board.id, updateCard]
+  )
 
   const resetCardForm = useCallback(() => {
     setCardTitle('')
@@ -628,30 +665,60 @@ export function BoardDetailView({
           </Button>
         </div>
       ) : isKanbanView ? (
-        <BoardKanbanView
-          columns={columns}
-          columnOrder={columnOrder}
-          cardsByColumn={cardsByColumn}
-          isCreatingCard={isCreatingCard}
-          onAddCard={column => {
-            setCardDialogColumn(column)
-            resetCardForm()
-          }}
-          onDragStart={handleDragStart}
-          onDragCancel={handleDragCancel}
-          onDragEnd={handleDragEnd}
-          activeCard={activeCard}
-        />
+        <div className="flex flex-1 flex-col gap-6 lg:flex-row lg:items-start lg:gap-8">
+          <div className="flex-1 overflow-hidden h-full">
+            <BoardKanbanView
+              columns={columns}
+              columnOrder={columnOrder}
+              cardsByColumn={cardsByColumn}
+              isCreatingCard={isCreatingCard}
+              onAddCard={column => {
+                setCardDialogColumn(column)
+                resetCardForm()
+              }}
+              onDragStart={handleDragStart}
+              onDragCancel={handleDragCancel}
+              onDragEnd={handleDragEnd}
+              activeCard={activeCard}
+              onCardSelect={handleCardSelect}
+              selectedCardId={selectedCardId}
+            />
+          </div>
+          {selectedCard ? (
+            <TaskDetailsPanel
+              card={selectedCard}
+              column={columnsById.get(selectedCard.columnId) ?? null}
+              onClose={handleCloseDetails}
+              onUpdate={updates => handleUpdateCard(selectedCard.id, updates)}
+              isUpdating={isUpdatingCard}
+            />
+          ) : null}
+        </div>
       ) : resolvedViewMode === 'list' ? (
-        <BoardListView
-          columns={sortedColumns}
-          cardsByColumn={cardsByColumn}
-          onAddCard={column => {
-            setCardDialogColumn(column)
-            resetCardForm()
-          }}
-          isCreatingCard={isCreatingCard}
-        />
+        <div className="flex flex-1 flex-col gap-6 lg:flex-row lg:items-start lg:gap-8">
+          <div className="flex-1">
+            <BoardListView
+              columns={sortedColumns}
+              cardsByColumn={cardsByColumn}
+              onAddCard={column => {
+                setCardDialogColumn(column)
+                resetCardForm()
+              }}
+              isCreatingCard={isCreatingCard}
+              onCardSelect={handleCardSelect}
+              selectedCardId={selectedCardId}
+            />
+          </div>
+          {selectedCard ? (
+            <TaskDetailsPanel
+              card={selectedCard}
+              column={columnsById.get(selectedCard.columnId) ?? null}
+              onClose={handleCloseDetails}
+              onUpdate={updates => handleUpdateCard(selectedCard.id, updates)}
+              isUpdating={isUpdatingCard}
+            />
+          ) : null}
+        </div>
       ) : (
         <BoardTimelineView cards={cards} columnsById={columnsById} />
       )}
@@ -752,3 +819,440 @@ export function BoardDetailView({
 }
 
 export default BoardDetailView
+interface TaskDetailsPanelProps {
+  card: KanbanCard
+  column: KanbanColumn | null
+  onClose: () => void
+  onUpdate: (updates: Omit<UpdateCardInput, 'id' | 'boardId'>) => Promise<void>
+  isUpdating?: boolean
+}
+
+type TaskDetailsSavingField = 'title' | 'description' | 'priority' | 'dueDate'
+
+function formatDateForInputValue(dueDate?: string | null): string {
+  if (!dueDate) return ''
+  const date = new Date(dueDate)
+  if (Number.isNaN(date.getTime())) return ''
+  const year = date.getUTCFullYear()
+  const month = String(date.getUTCMonth() + 1).padStart(2, '0')
+  const day = String(date.getUTCDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+function toIsoFromDateInput(value: string): string {
+  return new Date(`${value}T00:00:00Z`).toISOString()
+}
+
+function taskDetailsErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof Error && error.message) return error.message
+  if (typeof error === 'string' && error.length > 0) return error
+  return fallback
+}
+
+function TaskDetailsPanel({
+  card,
+  column,
+  onClose,
+  onUpdate,
+  isUpdating,
+}: TaskDetailsPanelProps) {
+  const dueDateLabel = formatCardDueDate(card.dueDate)
+  const [isEditingTitle, setIsEditingTitle] = useState(false)
+  const [titleDraft, setTitleDraft] = useState(card.title)
+  const [titleError, setTitleError] = useState<string | null>(null)
+  const [isEditingDescription, setIsEditingDescription] = useState(false)
+  const [descriptionDraft, setDescriptionDraft] = useState(
+    card.description ?? ''
+  )
+  const [dueDateDraft, setDueDateDraft] = useState(
+    formatDateForInputValue(card.dueDate)
+  )
+  const [savingField, setSavingField] = useState<TaskDetailsSavingField | null>(
+    null
+  )
+
+  useEffect(() => {
+    setTitleDraft(card.title)
+    setDescriptionDraft(card.description ?? '')
+    setDueDateDraft(formatDateForInputValue(card.dueDate))
+    setIsEditingTitle(false)
+    setIsEditingDescription(false)
+    setTitleError(null)
+    setSavingField(null)
+  }, [card.id, card.title, card.description, card.dueDate])
+
+  const handleTitleSubmit = useCallback(
+    async (event: FormEvent<HTMLFormElement>) => {
+      event.preventDefault()
+      if (savingField && savingField !== 'title') return
+      const nextTitle = titleDraft.trim()
+      if (!nextTitle) {
+        setTitleError('Inform a title for the card.')
+        return
+      }
+      if (nextTitle === card.title) {
+        setTitleError(null)
+        setIsEditingTitle(false)
+        return
+      }
+      setSavingField('title')
+      setTitleError(null)
+      try {
+        await onUpdate({ title: nextTitle })
+        setIsEditingTitle(false)
+      } catch (error) {
+        const message = taskDetailsErrorMessage(
+          error,
+          'Could not update the title.'
+        )
+        setTitleError(message)
+      } finally {
+        setSavingField(null)
+      }
+    },
+    [card.title, onUpdate, savingField, titleDraft]
+  )
+
+  const handleCancelTitle = useCallback(() => {
+    if (savingField === 'title') return
+    setIsEditingTitle(false)
+    setTitleDraft(card.title)
+    setTitleError(null)
+  }, [card.title, savingField])
+
+  const handleDescriptionSubmit = useCallback(
+    async (event: FormEvent<HTMLFormElement>) => {
+      event.preventDefault()
+      if (savingField && savingField !== 'description') return
+      const trimmed = descriptionDraft.trim()
+      const nextDescription = trimmed.length === 0 ? null : descriptionDraft
+      const previousDescription = card.description ?? null
+      if (nextDescription === previousDescription) {
+        setIsEditingDescription(false)
+        return
+      }
+      setSavingField('description')
+      try {
+        await onUpdate({ description: nextDescription })
+        setIsEditingDescription(false)
+      } catch (error) {
+        const message = taskDetailsErrorMessage(
+          error,
+          'Could not update the description.'
+        )
+        toast.error(message)
+      } finally {
+        setSavingField(null)
+      }
+    },
+    [card.description, descriptionDraft, onUpdate, savingField]
+  )
+
+  const handleCancelDescription = useCallback(() => {
+    if (savingField === 'description') return
+    setIsEditingDescription(false)
+    setDescriptionDraft(card.description ?? '')
+  }, [card.description, savingField])
+
+  const handleDueDateChange = useCallback(
+    async (value: string) => {
+      if (savingField && savingField !== 'dueDate') return
+      const nextDueDate = value ? toIsoFromDateInput(value) : null
+      const previousDueDate = card.dueDate ?? null
+      if (nextDueDate === previousDueDate) return
+      setSavingField('dueDate')
+      try {
+        await onUpdate({ dueDate: nextDueDate })
+      } catch {
+        setDueDateDraft(formatDateForInputValue(card.dueDate))
+      } finally {
+        setSavingField(null)
+      }
+    },
+    [card.dueDate, onUpdate, savingField]
+  )
+
+  const handlePriorityChange = useCallback(
+    async (value: string) => {
+      if (savingField && savingField !== 'priority') return
+      const nextPriority = value as KanbanCard['priority']
+      if (nextPriority === card.priority) return
+      setSavingField('priority')
+      try {
+        await onUpdate({ priority: nextPriority })
+      } finally {
+        setSavingField(null)
+      }
+    },
+    [card.priority, onUpdate, savingField]
+  )
+
+  const handleDueDateInputChange = useCallback(
+    (value: string) => {
+      setDueDateDraft(value)
+      if (value.length === 10 || value === '') void handleDueDateChange(value)
+    },
+    [handleDueDateChange]
+  )
+
+  const handleClearDueDate = useCallback(() => {
+    void handleDueDateChange('')
+  }, [handleDueDateChange])
+
+  const isBusy = savingField !== null || Boolean(isUpdating)
+
+  return (
+    <aside
+      id="task-details-panel"
+      className="w-full shrink-0 rounded-[2rem] border border-border bg-card p-6 shadow-sm lg:sticky lg:top-6 lg:w-[420px] xl:w-[480px] lg:min-h-[640px] xl:min-h-[720px] lg:max-h-[calc(100vh-48px)]"
+      aria-busy={isBusy}
+    >
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex flex-col gap-2">
+          <span className="text-xs font-semibold uppercase text-muted-foreground">
+            Task details
+          </span>
+          {isEditingTitle ? (
+            <form onSubmit={handleTitleSubmit} className="flex flex-col gap-3">
+              <Input
+                value={titleDraft}
+                onChange={event => setTitleDraft(event.target.value)}
+                autoFocus
+                disabled={savingField === 'title'}
+              />
+              {titleError ? (
+                <span className="text-xs text-destructive">{titleError}</span>
+              ) : null}
+              <div className="flex items-center gap-2">
+                <Button
+                  type="submit"
+                  size="sm"
+                  disabled={savingField === 'title'}
+                >
+                  Save
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleCancelTitle}
+                  disabled={savingField === 'title'}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </form>
+          ) : (
+            <div className="flex items-center gap-3">
+              <h2 className="text-lg font-semibold leading-snug text-foreground">
+                {card.title}
+              </h2>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="rounded-full px-3 py-1 text-xs font-semibold"
+                onClick={() => setIsEditingTitle(true)}
+                disabled={isBusy}
+              >
+                Edit
+              </Button>
+            </div>
+          )}
+        </div>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          onClick={onClose}
+          className="h-8 w-8 rounded-full"
+          aria-label="Close task details"
+          disabled={isBusy}
+        >
+          <X className="h-4 w-4" />
+        </Button>
+      </div>
+
+      <div className="mt-6 space-y-6 text-sm">
+        <div className="flex flex-col gap-2">
+          <span className="text-xs font-semibold uppercase text-muted-foreground">
+            Description
+          </span>
+          {isEditingDescription ? (
+            <form
+              onSubmit={handleDescriptionSubmit}
+              className="flex flex-col gap-3"
+            >
+              <Textarea
+                value={descriptionDraft}
+                onChange={event => setDescriptionDraft(event.target.value)}
+                rows={4}
+                autoFocus
+                disabled={savingField === 'description'}
+              />
+              <div className="flex items-center gap-2">
+                <Button
+                  type="submit"
+                  size="sm"
+                  disabled={savingField === 'description'}
+                >
+                  Save
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleCancelDescription}
+                  disabled={savingField === 'description'}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </form>
+          ) : card.description ? (
+            <div className="flex flex-col gap-3">
+              <div className="rounded-2xl border border-border bg-muted/60 p-4 text-muted-foreground">
+                {card.description}
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="w-fit rounded-full px-3 py-1 text-xs font-semibold"
+                onClick={() => setIsEditingDescription(true)}
+                disabled={isBusy}
+              >
+                Edit description
+              </Button>
+            </div>
+          ) : (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="w-fit rounded-full px-3 py-1 text-xs font-semibold"
+              onClick={() => setIsEditingDescription(true)}
+              disabled={isBusy}
+            >
+              Add description
+            </Button>
+          )}
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <span className="text-xs font-semibold uppercase text-muted-foreground">
+            Priority
+          </span>
+          <Select
+            value={card.priority}
+            onValueChange={handlePriorityChange}
+            disabled={isBusy}
+          >
+            <SelectTrigger className="w-fit min-w-[160px] justify-start rounded-full px-4 py-2">
+              <div className="flex items-center gap-2">
+                <PriorityBadge priority={card.priority} />
+              </div>
+            </SelectTrigger>
+            <SelectContent align="start">
+              <SelectItem value="low">Low</SelectItem>
+              <SelectItem value="medium">Medium</SelectItem>
+              <SelectItem value="high">High</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <span className="text-xs font-semibold uppercase text-muted-foreground">
+            Column
+          </span>
+          <div className="rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground">
+            {column ? column.title : 'Unknown column'}
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <span className="text-xs font-semibold uppercase text-muted-foreground">
+            Due date
+          </span>
+          <div className="flex flex-wrap items-center gap-2">
+            <Input
+              type="date"
+              value={dueDateDraft}
+              onChange={event => handleDueDateInputChange(event.target.value)}
+              disabled={isBusy}
+              className="w-full max-w-[200px]"
+            />
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="rounded-full px-3 py-1 text-xs font-semibold"
+              onClick={handleClearDueDate}
+              disabled={isBusy || dueDateDraft.length === 0}
+            >
+              Clear
+            </Button>
+          </div>
+          {dueDateLabel ? (
+            <div className="rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground">
+              {dueDateLabel}
+            </div>
+          ) : (
+            <span className="rounded-full border border-dashed border-border px-3 py-1 text-xs text-muted-foreground">
+              No due date
+            </span>
+          )}
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <span className="text-xs font-semibold uppercase text-muted-foreground">
+            Tags
+          </span>
+          {card.tags.length > 0 ? (
+            <div className="flex flex-wrap gap-2">
+              {card.tags.map(tag => (
+                <Badge
+                  key={tag}
+                  variant="secondary"
+                  className="rounded-full px-3 py-1 text-xs"
+                >
+                  {tag}
+                </Badge>
+              ))}
+            </div>
+          ) : (
+            <span className="rounded-full border border-dashed border-border px-3 py-1 text-xs text-muted-foreground">
+              No tags
+            </span>
+          )}
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <span className="text-xs font-semibold uppercase text-muted-foreground">
+            Metadata
+          </span>
+          <div className="grid gap-2 text-xs text-muted-foreground">
+            <span>
+              Created:{' '}
+              <time dateTime={card.createdAt}>
+                {new Intl.DateTimeFormat(undefined, {
+                  dateStyle: 'medium',
+                  timeStyle: 'short',
+                }).format(new Date(card.createdAt))}
+              </time>
+            </span>
+            <span>
+              Updated:{' '}
+              <time dateTime={card.updatedAt}>
+                {new Intl.DateTimeFormat(undefined, {
+                  dateStyle: 'medium',
+                  timeStyle: 'short',
+                }).format(new Date(card.updatedAt))}
+              </time>
+            </span>
+          </div>
+        </div>
+      </div>
+    </aside>
+  )
+}

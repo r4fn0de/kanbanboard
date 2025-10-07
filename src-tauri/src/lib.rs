@@ -3,7 +3,7 @@ use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use sqlx::{
-    Row, Sqlite, Transaction,
+    QueryBuilder, Row, Sqlite, Transaction,
     sqlite::{SqliteConnectOptions, SqliteJournalMode, SqlitePool, SqlitePoolOptions, SqliteRow},
 };
 use std::fs;
@@ -63,6 +63,116 @@ async fn establish_pool(app: &AppHandle) -> Result<DbPool, String> {
         .map_err(|e| format!("Failed to create SQLite pool: {e}"))?;
 
     Ok(pool)
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct UpdateCardArgs {
+    id: String,
+    board_id: String,
+    #[serde(default)]
+    title: Option<String>,
+    #[serde(default)]
+    description: Option<Option<String>>,
+    #[serde(default)]
+    priority: Option<String>,
+    #[serde(default)]
+    due_date: Option<Option<String>>,
+}
+
+#[tauri::command]
+async fn update_card(pool: State<'_, DbPool>, args: UpdateCardArgs) -> Result<(), String> {
+    if args.title.as_ref().is_some_and(|t| t.trim().is_empty()) {
+        return Err("O título do cartão não pode ser vazio.".to_string());
+    }
+
+    if let Some(ref priority) = args.priority {
+        validate_priority(priority)?;
+    }
+
+    let mut tx = pool
+        .begin()
+        .await
+        .map_err(|e| format!("Falha ao abrir transação: {e}"))?;
+
+    let existing = sqlx::query_as::<_, (String, String)>(
+        "SELECT board_id, column_id FROM kanban_cards WHERE id = ?",
+    )
+    .bind(&args.id)
+    .fetch_optional(&mut *tx)
+    .await
+    .map_err(|e| format!("Falha ao carregar cartão: {e}"))?;
+
+    let Some((board_id_db, _column_id)) = existing else {
+        return Err("Cartão não encontrado.".to_string());
+    };
+
+    if board_id_db != args.board_id {
+        return Err("O cartão não pertence ao quadro informado.".to_string());
+    }
+
+    let mut builder = QueryBuilder::<Sqlite>::new(
+        "UPDATE kanban_cards SET updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')",
+    );
+    let mut has_changes = false;
+
+    if let Some(title) = args.title {
+        let trimmed = title.trim().to_string();
+        if trimmed.is_empty() {
+            return Err("O título do cartão não pode ser vazio.".to_string());
+        }
+        validate_string_input(&trimmed, 200, "Título do cartão")?;
+        builder.push(", title = ").push_bind(trimmed);
+        has_changes = true;
+    }
+
+    if let Some(description) = args.description {
+        let normalized = match description {
+            Some(value) => normalize_optional_text(Some(value)),
+            None => None,
+        };
+        builder.push(", description = ").push_bind(normalized);
+        has_changes = true;
+    }
+
+    if let Some(priority) = args.priority {
+        builder.push(", priority = ").push_bind(priority);
+        has_changes = true;
+    }
+
+    if let Some(due_date) = args.due_date {
+        let normalized = match due_date {
+            Some(value) => {
+                let trimmed = value.trim();
+                if trimmed.is_empty() {
+                    None
+                } else {
+                    Some(trimmed.to_string())
+                }
+            }
+            None => None,
+        };
+        builder.push(", due_date = ").push_bind(normalized);
+        has_changes = true;
+    }
+
+    if !has_changes {
+        return Ok(());
+    }
+
+    builder.push(" WHERE id = ?").push_bind(args.id);
+
+    builder
+        .build()
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| format!("Falha ao atualizar cartão: {e}"))?;
+
+    tx.commit()
+        .await
+        .map_err(|e| format!("Falha ao confirmar transação: {e}"))?;
+
+    Ok(())
 }
 
 #[tauri::command]
@@ -1290,6 +1400,7 @@ pub fn run() {
             move_column,
             load_cards,
             create_card,
+            update_card,
             move_card
         ])
         .run(tauri::generate_context!())
