@@ -34,10 +34,7 @@ export function TitleBar({ className, title = 'Kanban' }: TitleBarProps) {
       : 'border-border bg-background'
   )
   return (
-    <div
-      data-tauri-drag-region
-      className={cn(barClasses, className)}
-    >
+    <div data-tauri-drag-region className={cn(barClasses, className)}>
       {/* Left side - Window Controls + Left Actions */}
       <div className="flex items-center">
         <MacOSWindowControls />

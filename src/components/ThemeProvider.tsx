@@ -33,7 +33,10 @@ export function ThemeProvider({
     (enabled: boolean) => {
       setTransparencyEnabledState(enabled)
       if (typeof window !== 'undefined') {
-        window.localStorage.setItem(transparencyStorageKey, enabled ? 'true' : 'false')
+        window.localStorage.setItem(
+          transparencyStorageKey,
+          enabled ? 'true' : 'false'
+        )
       }
     },
     [transparencyStorageKey]
@@ -96,7 +99,10 @@ export function ThemeProvider({
         __TAURI__?: unknown
       }
 
-      if (typeof window === 'undefined' || tauriWindow.__TAURI__ === undefined) {
+      if (
+        typeof window === 'undefined' ||
+        tauriWindow.__TAURI__ === undefined
+      ) {
         return
       }
 
@@ -104,7 +110,10 @@ export function ThemeProvider({
         const win = getCurrentWindow()
         const w = win as unknown as {
           setEffects?: (options: unknown) => Promise<void>
-          setTransparentTitlebar?: (visible: boolean, color?: string) => Promise<void>
+          setTransparentTitlebar?: (
+            visible: boolean,
+            color?: string
+          ) => Promise<void>
         }
 
         if (transparencyEnabled) {

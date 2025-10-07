@@ -25,12 +25,12 @@ export function BoardListView({
   onAddCard,
   isCreatingCard,
 }: BoardListViewProps) {
-
   return (
     <div className="flex-1 space-y-6">
       {columns.map((column, columnIndex) => {
         const columnCards = cardsByColumn.get(column.id) ?? []
-        const theme = accentThemes[columnIndex % accentThemes.length] ?? accentThemes[0]
+        const theme =
+          accentThemes[columnIndex % accentThemes.length] ?? accentThemes[0]
         return (
           <div
             key={column.id}

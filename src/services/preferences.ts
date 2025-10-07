@@ -58,7 +58,9 @@ export function useSavePreferences() {
       }
     },
     onMutate: async partialPrefs => {
-      await queryClient.cancelQueries({ queryKey: preferencesQueryKeys.preferences() })
+      await queryClient.cancelQueries({
+        queryKey: preferencesQueryKeys.preferences(),
+      })
       const previous = queryClient.getQueryData<AppPreferences>(
         preferencesQueryKeys.preferences()
       )

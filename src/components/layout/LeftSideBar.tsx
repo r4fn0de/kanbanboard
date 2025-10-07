@@ -307,9 +307,7 @@ export function LeftSideBar({ children, className }: LeftSideBarProps) {
             size="icon"
             className="h-6 w-6 text-foreground/70 hover:text-foreground"
             title={
-              rightSidebarVisible
-                ? 'Hide Right Sidebar'
-                : 'Show Right Sidebar'
+              rightSidebarVisible ? 'Hide Right Sidebar' : 'Show Right Sidebar'
             }
           >
             {rightSidebarVisible ? (
@@ -321,12 +319,14 @@ export function LeftSideBar({ children, className }: LeftSideBarProps) {
         </div>
       </div>
 
-      <nav className={cn(
-        "mt-1 flex flex-col gap-2 px-4 pb-4 text-sm",
-        transparencyEnabled
-          ? "text-gray-900 dark:text-gray-100"
-          : "text-foreground"
-      )}>
+      <nav
+        className={cn(
+          'mt-1 flex flex-col gap-2 px-4 pb-4 text-sm',
+          transparencyEnabled
+            ? 'text-gray-900 dark:text-gray-100'
+            : 'text-foreground'
+        )}
+      >
         <NavLink
           to="/"
           end
@@ -352,10 +352,10 @@ export function LeftSideBar({ children, className }: LeftSideBarProps) {
             type="button"
             onClick={() => setProjectsOpen(prev => !prev)}
             className={cn(
-              "flex items-center gap-3 rounded-xl px-4 py-3 text-left transition-all duration-200 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+              'flex items-center gap-3 rounded-xl px-4 py-3 text-left transition-all duration-200 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
               transparencyEnabled
-                ? "text-gray-800 hover:bg-white/15 dark:text-gray-200 dark:hover:bg-gray-800/30"
-                : "text-gray-600 hover:bg-gray-200/60 dark:text-gray-400 dark:hover:bg-gray-800/60"
+                ? 'text-gray-800 hover:bg-white/15 dark:text-gray-200 dark:hover:bg-gray-800/30'
+                : 'text-gray-600 hover:bg-gray-200/60 dark:text-gray-400 dark:hover:bg-gray-800/60'
             )}
           >
             {projectsOpen ? (
@@ -473,10 +473,10 @@ export function LeftSideBar({ children, className }: LeftSideBarProps) {
                 type="button"
                 variant="ghost"
                 className={cn(
-                  "mt-2 flex items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm transition-all duration-200 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                  'mt-2 flex items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm transition-all duration-200 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                   transparencyEnabled
-                    ? "text-gray-800 hover:bg-white/15 dark:text-gray-200 dark:hover:bg-gray-800/30"
-                    : "text-gray-600 hover:bg-gray-200/60 dark:text-gray-400 dark:hover:bg-gray-800/60"
+                    ? 'text-gray-800 hover:bg-white/15 dark:text-gray-200 dark:hover:bg-gray-800/30'
+                    : 'text-gray-600 hover:bg-gray-200/60 dark:text-gray-400 dark:hover:bg-gray-800/60'
                 )}
                 onClick={() => setCreateProjectOpen(true)}
               >

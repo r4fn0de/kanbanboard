@@ -41,7 +41,8 @@ const SettingsSection: React.FC<{
 )
 
 export const AppearancePane: React.FC = () => {
-  const { theme, setTheme, transparencyEnabled, setTransparencyEnabled } = useTheme()
+  const { theme, setTheme, transparencyEnabled, setTransparencyEnabled } =
+    useTheme()
   const savePreferences = useSavePreferences()
 
   const transparencyId = useId()
@@ -104,7 +105,9 @@ export const AppearancePane: React.FC = () => {
               disabled={savePreferences.isPending}
             />
             <Label htmlFor={transparencyId} className="text-sm">
-              {transparencyEnabled ? 'Transparency enabled' : 'Transparency disabled'}
+              {transparencyEnabled
+                ? 'Transparency enabled'
+                : 'Transparency disabled'}
             </Label>
           </div>
         </SettingsField>

@@ -9,7 +9,8 @@ export function ProjectsOverview() {
       </header>
       <div className="rounded-lg border border-border/60 bg-background p-6 text-sm text-muted-foreground">
         <p>
-          This is a placeholder view. Integrate your project list or dashboard here.
+          This is a placeholder view. Integrate your project list or dashboard
+          here.
         </p>
       </div>
     </div>

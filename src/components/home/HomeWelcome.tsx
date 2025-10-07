@@ -3,12 +3,12 @@ import { ArrowRight, Plus, Users, Target, Zap } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 
-function FeatureCard({ 
-  icon: Icon, 
-  title, 
-  description, 
-  accentIndex 
-}: { 
+function FeatureCard({
+  icon: Icon,
+  title,
+  description,
+  accentIndex,
+}: {
   icon: React.ComponentType<{ className?: string }>
   title: string
   description: string
@@ -16,39 +16,44 @@ function FeatureCard({
 }) {
   const accentThemes = [
     {
-      dot: "bg-gray-400",
-      accentBorder: "border-gray-200 dark:border-gray-700",
-      gradient: "",
+      dot: 'bg-gray-400',
+      accentBorder: 'border-gray-200 dark:border-gray-700',
+      gradient: '',
     },
     {
-      dot: "bg-gray-500",
-      accentBorder: "border-gray-200 dark:border-gray-700",
-      gradient: "",
+      dot: 'bg-gray-500',
+      accentBorder: 'border-gray-200 dark:border-gray-700',
+      gradient: '',
     },
     {
-      dot: "bg-gray-600",
-      accentBorder: "border-gray-200 dark:border-gray-700",
-      gradient: "",
+      dot: 'bg-gray-600',
+      accentBorder: 'border-gray-200 dark:border-gray-700',
+      gradient: '',
     },
     {
-      dot: "bg-gray-700",
-      accentBorder: "border-gray-200 dark:border-gray-700",
-      gradient: "",
+      dot: 'bg-gray-700',
+      accentBorder: 'border-gray-200 dark:border-gray-700',
+      gradient: '',
     },
-  ] as const;
+  ] as const
 
-  const theme = accentThemes[accentIndex % accentThemes.length] ?? accentThemes[0];
+  const theme =
+    accentThemes[accentIndex % accentThemes.length] ?? accentThemes[0]
 
   return (
-    <div className={cn(
-      "flex flex-col gap-5 rounded-[32px] border border-gray-200 bg-white p-6 transition-all duration-200 hover:scale-[1.02] dark:border-gray-700 dark:bg-gray-900",
-      theme.accentBorder
-    )}>
+    <div
+      className={cn(
+        'flex flex-col gap-5 rounded-[32px] border border-gray-200 bg-white p-6 transition-all duration-200 hover:scale-[1.02] dark:border-gray-700 dark:bg-gray-900',
+        theme.accentBorder
+      )}
+    >
       <div className="flex items-center gap-3">
-        <div className={cn(
-          "flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800",
-          theme.dot
-        )}>
+        <div
+          className={cn(
+            'flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800',
+            theme.dot
+          )}
+        >
           <Icon className="h-6 w-6 text-white" />
         </div>
         <h2 className="text-lg font-semibold text-foreground">{title}</h2>
@@ -57,7 +62,7 @@ function FeatureCard({
         {description}
       </p>
     </div>
-  );
+  )
 }
 
 export function HomeWelcome() {
