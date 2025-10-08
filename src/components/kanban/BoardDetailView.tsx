@@ -24,7 +24,12 @@ import { BoardKanbanView } from '@/components/kanban/views/BoardKanbanView'
 import { BoardListView } from '@/components/kanban/views/BoardListView'
 import { BoardTimelineView } from '@/components/kanban/views/BoardTimelineView'
 import { TaskDetailsPanel } from '@/components/kanban/TaskDetailsPanel'
-import type { KanbanBoard, KanbanCard, KanbanColumn, KanbanPriority } from '@/types/common'
+import type {
+  KanbanBoard,
+  KanbanCard,
+  KanbanColumn,
+  KanbanPriority,
+} from '@/types/common'
 import {
   useCards,
   useColumns,
@@ -34,7 +39,11 @@ import {
   useDeleteCard,
 } from '@/services/kanban'
 import { Plus, X } from 'lucide-react'
-import type { DragEndEvent, DragStartEvent, DragCancelEvent } from '@dnd-kit/core'
+import type {
+  DragEndEvent,
+  DragStartEvent,
+  DragCancelEvent,
+} from '@dnd-kit/core'
 
 interface BoardDetailViewProps {
   board: KanbanBoard
@@ -56,7 +65,9 @@ export function BoardDetailView({
   const [cardDescription, setCardDescription] = useState('')
   const [cardPriority, setCardPriority] = useState<KanbanPriority>('medium')
   const [cardDueDate, setCardDueDate] = useState('')
-  const [cardDialogColumn, setCardDialogColumn] = useState<KanbanColumn | null>(null)
+  const [cardDialogColumn, setCardDialogColumn] = useState<KanbanColumn | null>(
+    null
+  )
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null)
   const [activeDragCard, setActiveDragCard] = useState<KanbanCard | null>(null)
 
@@ -91,37 +102,37 @@ export function BoardDetailView({
   const parseColumnId = useCallback((id?: string | number | null) => {
     if (!id) return null
     let raw = id.toString()
-    
+
     // Remove 'column-' prefix if present
     if (raw.startsWith('column-')) {
       raw = raw.slice(7)
     }
-    
+
     // Remove '-cards' suffix if present
     if (raw.endsWith('-cards')) {
       raw = raw.slice(0, -6)
     }
-    
+
     // Remove '-end' suffix if present (for end drop zones)
     if (raw.endsWith('-end')) {
       raw = raw.slice(0, -4)
     }
-    
+
     // Also handle case where the ID is just the column ID without any prefix/suffix
     return raw || null
   }, [])
 
   const columnsById = useMemo(
-    () => new Map(columns.map((column) => [column.id, column])),
+    () => new Map(columns.map(column => [column.id, column])),
     [columns]
   )
 
   const sortedColumns = useMemo(
     () =>
       columns
-        .map((column) => ({
+        .map(column => ({
           ...column,
-          cardCount: cards.filter((card) => card.columnId === column.id).length,
+          cardCount: cards.filter(card => card.columnId === column.id).length,
         }))
         .sort((a, b) => a.position - b.position),
     [columns, cards]
@@ -130,21 +141,22 @@ export function BoardDetailView({
   const cardsByColumn = useMemo(
     () =>
       new Map(
-        sortedColumns.map((column) => [
+        sortedColumns.map(column => [
           column.id,
           cards
-            .filter((card) => card.columnId === column.id)
+            .filter(card => card.columnId === column.id)
             .sort((a, b) => {
               // Priority order: high > medium > low
-              const priorityOrder = { high: 3, medium: 2, low: 1 };
-              const priorityDiff = priorityOrder[b.priority] - priorityOrder[a.priority];
-              
+              const priorityOrder = { high: 3, medium: 2, low: 1 }
+              const priorityDiff =
+                priorityOrder[b.priority] - priorityOrder[a.priority]
+
               if (priorityDiff !== 0) {
-                return priorityDiff; // Higher priority first
+                return priorityDiff // Higher priority first
               }
-              
+
               // If same priority, sort by name alphabetically
-              return a.title.localeCompare(b.title);
+              return a.title.localeCompare(b.title)
             }),
         ])
       ),
@@ -188,11 +200,18 @@ export function BoardDetailView({
         })
         resetColumnForm()
         setIsColumnDialogOpen(false)
-      } catch (_error) {
+      } catch (error) {
+        console.error('Failed to create column', error)
         toast.error('Failed to create column')
       }
     },
-    [board.id, columnTitle, createColumnMutation, resetColumnForm, sortedColumns.length]
+    [
+      board.id,
+      columnTitle,
+      createColumnMutation,
+      resetColumnForm,
+      sortedColumns.length,
+    ]
   )
 
   const handleCreateCard = useCallback(
@@ -202,19 +221,21 @@ export function BoardDetailView({
 
       try {
         const columnCards = cardsByColumn.get(cardDialogColumn.id) || []
-        
+
         // Calculate position based on priority and name sorting
         const newCard = {
           title: cardTitle.trim(),
           priority: cardPriority,
         }
-        
+
         // Find the correct position for the new card in the sorted order
         let targetPosition = 0
         for (const existingCard of columnCards) {
           const priorityOrder = { high: 3, medium: 2, low: 1 }
-          const priorityDiff = priorityOrder[existingCard.priority] - priorityOrder[newCard.priority]
-          
+          const priorityDiff =
+            priorityOrder[existingCard.priority] -
+            priorityOrder[newCard.priority]
+
           if (priorityDiff > 0) {
             // Existing card has higher priority, new card goes before it
             break
@@ -232,7 +253,7 @@ export function BoardDetailView({
             break
           }
         }
-        
+
         await createCardMutation.mutateAsync({
           id: `temp-${Date.now()}`,
           boardId: board.id,
@@ -246,11 +267,22 @@ export function BoardDetailView({
         resetCardForm()
         setIsCardDialogOpen(false)
         setCardDialogColumn(null)
-      } catch (_error) {
+      } catch (error) {
+        console.error('Failed to create card', error)
         toast.error('Failed to create card')
       }
     },
-    [board.id, cardTitle, cardDescription, cardPriority, cardDueDate, cardDialogColumn, createCardMutation, resetCardForm, cardsByColumn]
+    [
+      board.id,
+      cardTitle,
+      cardDescription,
+      cardPriority,
+      cardDueDate,
+      cardDialogColumn,
+      createCardMutation,
+      resetCardForm,
+      cardsByColumn,
+    ]
   )
 
   const handleCardSelect = useCallback(
@@ -274,7 +306,8 @@ export function BoardDetailView({
         })
         setSelectedCardId(prev => (prev === card.id ? null : prev))
         toast.success('Task deleted')
-      } catch (_error) {
+      } catch (error) {
+        console.error('Failed to delete task', error)
         toast.error('Failed to delete task')
       }
     },
@@ -312,7 +345,9 @@ export function BoardDetailView({
       if (!activeCard) return
 
       // Enhanced parsing logic to handle different drop scenarios
-      const overData = over.data?.current as { sortable?: { containerId?: string | number; index: number } } | undefined
+      const overData = over.data?.current as
+        | { sortable?: { containerId?: string | number; index: number } }
+        | undefined
       let destinationColumnId: string | null = null
       let targetIndex = 0
 
@@ -320,7 +355,7 @@ export function BoardDetailView({
       if (overData?.sortable?.containerId) {
         destinationColumnId = parseColumnId(overData.sortable.containerId)
         targetIndex = overData.sortable.index ?? 0
-      } 
+      }
       // If no container, check if we're dropping on a card directly
       else if (over.id.toString().startsWith('card-')) {
         const overCardId = parseCardId(over.id)
@@ -337,7 +372,7 @@ export function BoardDetailView({
       else {
         destinationColumnId = parseColumnId(over.id)
         const columnCards = cardsByColumn.get(destinationColumnId ?? '') ?? []
-        
+
         // If dropping on end zone, always add to the end
         if (over.id.toString().endsWith('-end')) {
           targetIndex = columnCards.length
@@ -345,7 +380,7 @@ export function BoardDetailView({
           targetIndex = columnCards.length // Add to end if dropping on empty area
         }
       }
-      
+
       console.log('Drag end debug:', {
         activeId: active.id,
         overId: over.id,
@@ -353,9 +388,9 @@ export function BoardDetailView({
         destinationColumnId,
         targetIndex,
         availableColumns: columns.map(c => ({ id: c.id, title: c.title })),
-        activeCard: { id: activeCard.id, columnId: activeCard.columnId }
+        activeCard: { id: activeCard.id, columnId: activeCard.columnId },
       })
-      
+
       if (!destinationColumnId) {
         console.warn('Could not determine destination column ID')
         return
@@ -391,9 +426,9 @@ export function BoardDetailView({
           fromColumnId: activeCard.columnId,
           toColumnId: destinationColumnId,
           targetIndex,
-          columnCardsCount: columnCards.length
+          columnCardsCount: columnCards.length,
         })
-        
+
         await moveCardMutation.mutateAsync({
           boardId: board.id,
           cardId: activeCardId,
@@ -401,7 +436,7 @@ export function BoardDetailView({
           toColumnId: destinationColumnId,
           targetIndex,
         })
-        
+
         console.log('Card moved successfully')
       } catch (error) {
         console.error('Failed to move card:', {
@@ -409,16 +444,28 @@ export function BoardDetailView({
           cardId: activeCardId,
           fromColumnId: activeCard.columnId,
           toColumnId: destinationColumnId,
-          targetIndex
+          targetIndex,
         })
-        toast.error(`Failed to move card: ${error instanceof Error ? error.message : 'Unknown error'}`)
+        toast.error(
+          `Failed to move card: ${error instanceof Error ? error.message : 'Unknown error'}`
+        )
       }
     },
-    [board.id, cards, columns, cardsByColumn, moveCardMutation, parseCardId, parseColumnId]
+    [
+      board.id,
+      cards,
+      columns,
+      cardsByColumn,
+      moveCardMutation,
+      parseCardId,
+      parseColumnId,
+    ]
   )
 
   const isKanbanView = viewMode === 'kanban'
-  const resolvedViewMode = isBoardViewMode(viewMode) ? viewMode : DEFAULT_BOARD_VIEW_MODE
+  const resolvedViewMode = isBoardViewMode(viewMode)
+    ? viewMode
+    : DEFAULT_BOARD_VIEW_MODE
   const isCreatingColumn = createColumnMutation.isPending
   const isCreatingCard = createCardMutation.isPending
 
@@ -435,7 +482,10 @@ export function BoardDetailView({
               <Skeleton className="h-6 w-24" />
               <div className="space-y-2">
                 {Array.from({ length: 3 }).map((_, cardIndex) => (
-                  <Skeleton key={`card-skeleton-${cardIndex}`} className="h-20 w-full" />
+                  <Skeleton
+                    key={`card-skeleton-${cardIndex}`}
+                    className="h-20 w-full"
+                  />
                 ))}
               </div>
             </div>
@@ -451,7 +501,9 @@ export function BoardDetailView({
         <div className="text-center">
           <h2 className="text-lg font-semibold">Failed to load board</h2>
           <p className="text-muted-foreground">
-            {columnsError?.message || cardsError?.message || 'An error occurred'}
+            {columnsError?.message ||
+              cardsError?.message ||
+              'An error occurred'}
           </p>
         </div>
         <Button onClick={() => Promise.all([refetchColumns(), refetchCards()])}>
@@ -475,24 +527,28 @@ export function BoardDetailView({
             </p>
           </div>
         </div>
-        
+
         <div className="flex items-center gap-2">
           <ToggleGroup
             type="single"
             value={resolvedViewMode}
-            onValueChange={(value) => {
+            onValueChange={value => {
               if (value && onViewModeChange && isBoardViewMode(value)) {
                 onViewModeChange(value)
               }
             }}
           >
-            {BOARD_VIEW_OPTIONS.map((option) => (
-              <ToggleGroupItem key={option.value} value={option.value} aria-label={option.label}>
+            {BOARD_VIEW_OPTIONS.map(option => (
+              <ToggleGroupItem
+                key={option.value}
+                value={option.value}
+                aria-label={option.label}
+              >
                 <option.icon className="h-4 w-4" />
               </ToggleGroupItem>
             ))}
           </ToggleGroup>
-          
+
           <Button
             variant="outline"
             onClick={() => setIsColumnDialogOpen(true)}
@@ -536,16 +592,18 @@ export function BoardDetailView({
                 selectedCardId={selectedCardId}
                 boardId={board.id}
                 onDeleteTask={handleDeleteCard}
-                onCreateTask={async (task) => {
+                onCreateTask={async task => {
                   // Calculate position based on priority and name sorting
                   const columnCards = cardsByColumn.get(task.columnId) || []
-                  
+
                   // Find the correct position for the new card in the sorted order
                   let targetPosition = 0
                   for (const existingCard of columnCards) {
                     const priorityOrder = { high: 3, medium: 2, low: 1 }
-                    const priorityDiff = priorityOrder[existingCard.priority] - priorityOrder[task.priority]
-                    
+                    const priorityDiff =
+                      priorityOrder[existingCard.priority] -
+                      priorityOrder[task.priority]
+
                     if (priorityDiff > 0) {
                       // Existing card has higher priority, new card goes before it
                       break
@@ -563,7 +621,7 @@ export function BoardDetailView({
                       break
                     }
                   }
-                  
+
                   await createCardMutation.mutateAsync({
                     ...task,
                     description: task.description || undefined,
@@ -580,7 +638,7 @@ export function BoardDetailView({
                 selectedCardId={selectedCardId}
                 boardId={board.id}
                 onDeleteTask={handleDeleteCard}
-                onCreateTask={async (task) => {
+                onCreateTask={async task => {
                   await createCardMutation.mutateAsync({
                     ...task,
                     description: task.description || undefined,
@@ -620,7 +678,7 @@ export function BoardDetailView({
                     <Input
                       id={cardTitleId}
                       value={columnTitle}
-                      onChange={(e) => setColumnTitle(e.target.value)}
+                      onChange={e => setColumnTitle(e.target.value)}
                       placeholder="Enter column title"
                       disabled={isCreatingColumn}
                       autoFocus
@@ -639,7 +697,10 @@ export function BoardDetailView({
                   >
                     Cancel
                   </Button>
-                  <Button type="submit" disabled={isCreatingColumn || !columnTitle.trim()}>
+                  <Button
+                    type="submit"
+                    disabled={isCreatingColumn || !columnTitle.trim()}
+                  >
                     {isCreatingColumn ? 'Creating...' : 'Create Column'}
                   </Button>
                 </div>
@@ -664,7 +725,7 @@ export function BoardDetailView({
                     <Input
                       id={cardTitleId}
                       value={cardTitle}
-                      onChange={(e) => setCardTitle(e.target.value)}
+                      onChange={e => setCardTitle(e.target.value)}
                       placeholder="Enter task title"
                       disabled={isCreatingCard}
                       autoFocus
@@ -675,7 +736,7 @@ export function BoardDetailView({
                     <Textarea
                       id={cardDescriptionId}
                       value={cardDescription}
-                      onChange={(e) => setCardDescription(e.target.value)}
+                      onChange={e => setCardDescription(e.target.value)}
                       placeholder="Enter task description (optional)"
                       disabled={isCreatingCard}
                       rows={3}
@@ -685,7 +746,9 @@ export function BoardDetailView({
                     <Label htmlFor="card-priority">Priority</Label>
                     <Select
                       value={cardPriority}
-                      onValueChange={(value: KanbanPriority) => setCardPriority(value)}
+                      onValueChange={(value: KanbanPriority) =>
+                        setCardPriority(value)
+                      }
                       disabled={isCreatingCard}
                     >
                       <SelectTrigger>
@@ -704,7 +767,7 @@ export function BoardDetailView({
                       id={cardDueDateId}
                       type="date"
                       value={cardDueDate}
-                      onChange={(e) => setCardDueDate(e.target.value)}
+                      onChange={e => setCardDueDate(e.target.value)}
                       disabled={isCreatingCard}
                     />
                   </div>
@@ -722,7 +785,10 @@ export function BoardDetailView({
                   >
                     Cancel
                   </Button>
-                  <Button type="submit" disabled={isCreatingCard || !cardTitle.trim()}>
+                  <Button
+                    type="submit"
+                    disabled={isCreatingCard || !cardTitle.trim()}
+                  >
                     {isCreatingCard ? 'Creating...' : 'Create Task'}
                   </Button>
                 </div>

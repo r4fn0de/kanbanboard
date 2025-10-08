@@ -385,7 +385,7 @@ export async function updateCard(input: UpdateCardInput): Promise<void> {
     payload.due_date = input.dueDate
   }
 
-  console.log('Sending update_card request:', { args: payload });
+  console.log('Sending update_card request:', { args: payload })
   await invoke('update_card', { args: payload })
 }
 
@@ -487,9 +487,8 @@ export function useDeleteCard(boardId: string) {
       const previousCards = queryClient.getQueryData<KanbanCard[]>(cardsKey)
 
       if (previousCards) {
-        queryClient.setQueryData<KanbanCard[]>(
-          cardsKey,
-          cards => cards ? cards.filter(card => card.id !== input.id) : cards
+        queryClient.setQueryData<KanbanCard[]>(cardsKey, cards =>
+          cards ? cards.filter(card => card.id !== input.id) : cards
         )
       }
 

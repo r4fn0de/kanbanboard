@@ -25,20 +25,23 @@ export function ImageUpload({
   const [imageUrls, setImageUrls] = useState<Map<string, string>>(new Map())
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
 
-  const loadImageUrl = useCallback(async (filePath: string) => {
-    if (imageUrls.has(filePath)) {
-      return imageUrls.get(filePath)
-    }
+  const loadImageUrl = useCallback(
+    async (filePath: string) => {
+      if (imageUrls.has(filePath)) {
+        return imageUrls.get(filePath)
+      }
 
-    try {
-      const url = await invoke('get_attachment_url', { filePath }) as string
-      setImageUrls(prev => new Map(prev).set(filePath, url))
-      return url
-    } catch (error) {
-      console.error('Failed to load image URL:', error)
-      return null
-    }
-  }, [imageUrls])
+      try {
+        const url = (await invoke('get_attachment_url', { filePath })) as string
+        setImageUrls(prev => new Map(prev).set(filePath, url))
+        return url
+      } catch (error) {
+        console.error('Failed to load image URL:', error)
+        return null
+      }
+    },
+    [imageUrls]
+  )
 
   // Preload image URLs when attachments change
   useEffect(() => {
@@ -65,12 +68,12 @@ export function ImageUpload({
 
       setIsUploading(true)
       console.log('Starting upload for file:', selected)
-      
-      const response = await invoke('upload_image', {
+
+      const response = (await invoke('upload_image', {
         cardId,
         boardId,
         filePath: selected,
-      }) as { success: boolean; filePath: string; error?: string }
+      })) as { success: boolean; filePath: string; error?: string }
 
       console.log('Upload response:', response)
 
@@ -83,30 +86,35 @@ export function ImageUpload({
       }
     } catch (error) {
       console.error('Upload error:', error)
-      const message = error instanceof Error ? error.message : 'Failed to upload image'
+      const message =
+        error instanceof Error ? error.message : 'Failed to upload image'
       toast.error(message)
     } finally {
       setIsUploading(false)
     }
   }, [cardId, boardId, onUploadComplete])
 
-  const handleRemove = useCallback(async (filePath: string) => {
-    try {
-      setIsRemoving(filePath)
-      await invoke('remove_image', {
-        cardId,
-        boardId,
-        filePath,
-      })
-      toast.success('Image removed successfully')
-      onRemoveComplete?.(filePath)
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to remove image'
-      toast.error(message)
-    } finally {
-      setIsRemoving(null)
-    }
-  }, [cardId, boardId, onRemoveComplete])
+  const handleRemove = useCallback(
+    async (filePath: string) => {
+      try {
+        setIsRemoving(filePath)
+        await invoke('remove_image', {
+          cardId,
+          boardId,
+          filePath,
+        })
+        toast.success('Image removed successfully')
+        onRemoveComplete?.(filePath)
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : 'Failed to remove image'
+        toast.error(message)
+      } finally {
+        setIsRemoving(null)
+      }
+    },
+    [cardId, boardId, onRemoveComplete]
+  )
 
   if (!attachments || attachments.length === 0) {
     return (
@@ -140,21 +148,24 @@ export function ImageUpload({
           {isUploading ? 'Uploading...' : 'Add Image'}
         </Button>
       </div>
-      
+
       <div className="grid grid-cols-2 gap-3">
-        {attachments.map((filePath) => {
+        {attachments.map(filePath => {
           const imageUrl = imageUrls.get(filePath)
           const filename = filePath.split('/').pop() || filePath
-          
+
           return (
-            <div key={filePath} className="relative group border rounded-lg overflow-hidden">
+            <div
+              key={filePath}
+              className="relative group border rounded-lg overflow-hidden"
+            >
               <div className="aspect-square bg-muted flex items-center justify-center">
                 {imageUrl ? (
                   <button
                     type="button"
                     className="w-full h-full object-cover cursor-pointer hover:scale-105 transition-transform border-0 bg-transparent p-0"
                     onClick={() => setSelectedImage(filePath)}
-                    onKeyDown={(e) => {
+                    onKeyDown={e => {
                       if (e.key === 'Enter' || e.key === ' ') {
                         setSelectedImage(filePath)
                       }
@@ -173,7 +184,7 @@ export function ImageUpload({
                   </div>
                 )}
               </div>
-              
+
               <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
                 <Button
                   type="button"
@@ -186,7 +197,7 @@ export function ImageUpload({
                   <X className="h-3 w-3" />
                 </Button>
               </div>
-              
+
               <div className="p-2 bg-background">
                 <p className="text-xs truncate font-medium">{filename}</p>
               </div>
@@ -194,22 +205,22 @@ export function ImageUpload({
           )
         })}
       </div>
-      
+
       {selectedImage && (
         <Button
           type="button"
           variant="ghost"
           className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 hover:bg-black/80"
           onClick={() => setSelectedImage(null)}
-          onKeyDown={(e) => {
+          onKeyDown={e => {
             if (e.key === 'Escape') {
               setSelectedImage(null)
             }
           }}
         >
-          <div 
+          <div
             className="relative max-w-4xl max-h-full bg-background rounded-lg overflow-hidden"
-            onClick={(e) => e.stopPropagation()}
+            onClick={e => e.stopPropagation()}
           >
             <div className="absolute top-2 right-2 z-10">
               <Button
@@ -221,7 +232,7 @@ export function ImageUpload({
                 <X className="h-4 w-4" />
               </Button>
             </div>
-            
+
             <div className="max-h-[80vh] max-w-[80vw] overflow-auto">
               <img
                 src={imageUrls.get(selectedImage)}

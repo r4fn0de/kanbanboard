@@ -21,7 +21,9 @@ interface BoardListViewProps {
   onCardSelect?: (card: KanbanCard) => void
   selectedCardId?: string | null
   boardId: string
-  onCreateTask: (task: Omit<KanbanCard, 'createdAt' | 'updatedAt' | 'archivedAt'>) => Promise<void>
+  onCreateTask: (
+    task: Omit<KanbanCard, 'createdAt' | 'updatedAt' | 'archivedAt'>
+  ) => Promise<void>
   onDeleteTask?: (card: KanbanCard) => void
 }
 
@@ -51,16 +53,23 @@ export function BoardListView({
   onDeleteTask,
 }: BoardListViewProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [selectedColumn, setSelectedColumn] = useState<KanbanColumn | null>(null)
+  const [selectedColumn, setSelectedColumn] = useState<KanbanColumn | null>(
+    null
+  )
 
   const handleAddCard = useCallback((column: KanbanColumn) => {
     setSelectedColumn(column)
     setIsDialogOpen(true)
   }, [])
 
-  const handleCreateTask = useCallback(async (task: Omit<KanbanCard, 'createdAt' | 'updatedAt' | 'archivedAt'>) => {
-    await onCreateTask(task)
-  }, [onCreateTask])
+  const handleCreateTask = useCallback(
+    async (
+      task: Omit<KanbanCard, 'createdAt' | 'updatedAt' | 'archivedAt'>
+    ) => {
+      await onCreateTask(task)
+    },
+    [onCreateTask]
+  )
 
   return (
     <>
@@ -238,7 +247,9 @@ export function BoardListView({
         onOpenChange={setIsDialogOpen}
         column={selectedColumn}
         boardId={boardId}
-        cardsInColumn={selectedColumn ? cardsByColumn.get(selectedColumn.id) ?? [] : []}
+        cardsInColumn={
+          selectedColumn ? (cardsByColumn.get(selectedColumn.id) ?? []) : []
+        }
         onCreateTask={handleCreateTask}
       />
     </>

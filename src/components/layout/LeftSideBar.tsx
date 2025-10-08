@@ -282,10 +282,10 @@ export function LeftSideBar({ children, className }: LeftSideBarProps) {
             variant="ghost"
             size="icon"
             className={cn(
-              "h-6 w-6 hover:bg-accent/30",
+              'h-6 w-6 hover:bg-accent/30',
               transparencyEnabled
-                ? "text-gray-200 hover:text-gray-200"
-                : "text-foreground/70 hover:text-foreground"
+                ? 'text-gray-200 hover:text-gray-200'
+                : 'text-foreground/70 hover:text-foreground'
             )}
             title={
               leftSidebarVisible ? 'Hide Left Sidebar' : 'Show Left Sidebar'
@@ -302,10 +302,10 @@ export function LeftSideBar({ children, className }: LeftSideBarProps) {
             variant="ghost"
             size="icon"
             className={cn(
-              "h-6 w-6 hover:bg-accent/30",
+              'h-6 w-6 hover:bg-accent/30',
               transparencyEnabled
-                ? "text-gray-200 hover:text-gray-200"
-                : "text-foreground/70 hover:text-foreground"
+                ? 'text-gray-200 hover:text-gray-200'
+                : 'text-foreground/70 hover:text-foreground'
             )}
             title="Settings"
           >
@@ -316,10 +316,10 @@ export function LeftSideBar({ children, className }: LeftSideBarProps) {
             variant="ghost"
             size="icon"
             className={cn(
-              "h-6 w-6 hover:bg-accent/30",
+              'h-6 w-6 hover:bg-accent/30',
               transparencyEnabled
-                ? "text-gray-200 hover:text-gray-200"
-                : "text-foreground/70 hover:text-foreground"
+                ? 'text-gray-200 hover:text-gray-200'
+                : 'text-foreground/70 hover:text-foreground'
             )}
             title={
               rightSidebarVisible ? 'Hide Right Sidebar' : 'Show Right Sidebar'

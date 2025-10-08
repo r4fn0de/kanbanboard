@@ -27,7 +27,9 @@ interface AddTaskDialogProps {
   column: KanbanColumn | null
   boardId: string
   cardsInColumn: KanbanCard[]
-  onCreateTask: (task: Omit<KanbanCard, 'createdAt' | 'updatedAt' | 'archivedAt'>) => Promise<void>;
+  onCreateTask: (
+    task: Omit<KanbanCard, 'createdAt' | 'updatedAt' | 'archivedAt'>
+  ) => Promise<void>
 }
 
 export function AddTaskDialog({
@@ -76,7 +78,7 @@ export function AddTaskDialog({
       try {
         // Usar o comprimento da coluna + 1 para garantir uma posição única no final (sistema usa base 1)
         const position = cardsInColumn.length + 1
-        
+
         await onCreateTask({
           id: `temp-${Date.now()}`,
           boardId,
@@ -95,28 +97,48 @@ export function AddTaskDialog({
         toast.success('Task created successfully')
       } catch (error) {
         console.error('Failed to create task:', error)
-        toast.error(`Failed to create task: ${error instanceof Error ? error.message : 'Unknown error'}`)
+        toast.error(
+          `Failed to create task: ${error instanceof Error ? error.message : 'Unknown error'}`
+        )
       } finally {
         setIsCreating(false)
       }
     },
-    [title, description, priority, dueDate, tags, column, boardId, cardsInColumn, onCreateTask, resetForm, onOpenChange]
+    [
+      title,
+      description,
+      priority,
+      dueDate,
+      tags,
+      column,
+      boardId,
+      cardsInColumn,
+      onCreateTask,
+      resetForm,
+      onOpenChange,
+    ]
   )
 
-  const handleAddTag = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' || e.key === ',') {
-      e.preventDefault()
-      const newTag = tagInput.trim()
-      if (newTag && !tags.includes(newTag) && tags.length < 5) {
-        setTags([...tags, newTag])
-        setTagInput('')
+  const handleAddTag = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === 'Enter' || e.key === ',') {
+        e.preventDefault()
+        const newTag = tagInput.trim()
+        if (newTag && !tags.includes(newTag) && tags.length < 5) {
+          setTags([...tags, newTag])
+          setTagInput('')
+        }
       }
-    }
-  }, [tagInput, tags])
+    },
+    [tagInput, tags]
+  )
 
-  const handleRemoveTag = useCallback((tagToRemove: string) => {
-    setTags(tags.filter(tag => tag !== tagToRemove))
-  }, [tags])
+  const handleRemoveTag = useCallback(
+    (tagToRemove: string) => {
+      setTags(tags.filter(tag => tag !== tagToRemove))
+    },
+    [tags]
+  )
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
@@ -124,7 +146,8 @@ export function AddTaskDialog({
         <DialogHeader>
           <DialogTitle>Create New Task</DialogTitle>
           <DialogDescription>
-            Add a new task to <span className="font-medium">{column?.title}</span>
+            Add a new task to{' '}
+            <span className="font-medium">{column?.title}</span>
           </DialogDescription>
         </DialogHeader>
 
@@ -135,7 +158,7 @@ export function AddTaskDialog({
               <Input
                 id={titleId}
                 value={title}
-                onChange={(e) => setTitle(e.target.value)}
+                onChange={e => setTitle(e.target.value)}
                 placeholder="Enter task title"
                 disabled={isCreating}
                 autoFocus
@@ -148,7 +171,7 @@ export function AddTaskDialog({
               <Textarea
                 id={descriptionId}
                 value={description}
-                onChange={(e) => setDescription(e.target.value)}
+                onChange={e => setDescription(e.target.value)}
                 placeholder="Enter task description (optional)"
                 disabled={isCreating}
                 rows={3}
@@ -180,7 +203,7 @@ export function AddTaskDialog({
                   id={dueDateId}
                   type="date"
                   value={dueDate}
-                  onChange={(e) => setDueDate(e.target.value)}
+                  onChange={e => setDueDate(e.target.value)}
                   disabled={isCreating}
                 />
               </div>
@@ -209,7 +232,7 @@ export function AddTaskDialog({
               <Input
                 id={tagsId}
                 value={tagInput}
-                onChange={(e) => setTagInput(e.target.value)}
+                onChange={e => setTagInput(e.target.value)}
                 onKeyDown={handleAddTag}
                 placeholder="Add tags (press Enter or comma)"
                 disabled={isCreating || tags.length >= 5}
