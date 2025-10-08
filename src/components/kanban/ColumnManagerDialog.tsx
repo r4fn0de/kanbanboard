@@ -23,7 +23,6 @@ import {
 import {
 	COLUMN_ICON_OPTIONS,
 	getColumnIconComponent,
-	getColumnIconLabel,
 } from "@/components/kanban/column-icon-options";
 import {
 	Dialog,
@@ -52,8 +51,8 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import type { KanbanColumn } from "@/types/common";
-import { useMoveColumn, useUpdateColumn } from "@/services/kanban";
-import { Check, ChevronDown, GripVertical, Palette } from "lucide-react";
+import { useMoveColumn, useUpdateColumn, useCreateColumn } from "@/services/kanban";
+import { Check, GripVertical, Edit2, X, Plus } from "lucide-react";
 
 interface ColumnWithMeta extends KanbanColumn {
 	cardCount: number;
@@ -64,7 +63,6 @@ interface ColumnManagerDialogProps {
 	columns: ColumnWithMeta[];
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
-	onCreateColumn?: () => void;
 }
 
 function hexToRgba(hex: string | null | undefined, alpha: number) {
@@ -84,10 +82,15 @@ export function ColumnManagerDialog({
 	columns,
 	open,
 	onOpenChange,
-	onCreateColumn,
 }: ColumnManagerDialogProps) {
 	const moveColumn = useMoveColumn(boardId);
 	const updateColumn = useUpdateColumn(boardId);
+	const createColumn = useCreateColumn(boardId);
+
+	const [isCreatingNew, setIsCreatingNew] = useState(false);
+	const [newColumnTitle, setNewColumnTitle] = useState('');
+	const [newColumnColor, setNewColumnColor] = useState<string | null>(null);
+	const [newColumnIcon, setNewColumnIcon] = useState<string>(DEFAULT_COLUMN_ICON);
 
 	const sensors = useSensors(
 		useSensor(PointerSensor, {
@@ -146,6 +149,40 @@ export function ColumnManagerDialog({
 		[boardId, moveColumn, order],
 	);
 
+	const handleCreateColumn = useCallback(async () => {
+		if (!newColumnTitle.trim()) return;
+
+		try {
+			await createColumn.mutateAsync({
+				id: `temp-${Date.now()}`,
+				boardId,
+				title: newColumnTitle.trim(),
+				icon: newColumnIcon,
+				color: newColumnColor,
+				position: columns.length,
+			});
+			
+			// Reset form
+			setNewColumnTitle('');
+			setNewColumnColor(null);
+			setNewColumnIcon(DEFAULT_COLUMN_ICON);
+			setIsCreatingNew(false);
+			
+			toast.success('Column created successfully');
+		} catch (error) {
+			toast.error('Failed to create column', {
+				description: error instanceof Error ? error.message : 'Unknown error',
+			});
+		}
+	}, [newColumnTitle, newColumnColor, newColumnIcon, createColumn, boardId, columns.length]);
+
+	const handleCancelCreate = () => {
+		setNewColumnTitle('');
+		setNewColumnColor(null);
+		setNewColumnIcon(DEFAULT_COLUMN_ICON);
+		setIsCreatingNew(false);
+	};
+
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent className="max-w-96 sm:max-w-lg lg:max-w-xl">
@@ -162,12 +199,131 @@ export function ColumnManagerDialog({
 					</div>
 					<Button
 						variant="outline"
-						onClick={onCreateColumn}
-						disabled={!onCreateColumn}
+						onClick={() => setIsCreatingNew(!isCreatingNew)}
+						disabled={createColumn.isPending}
 					>
-						Add column
+						<Plus className="h-4 w-4 mr-2" />
+						{isCreatingNew ? 'Cancel' : 'Add column'}
 					</Button>
 				</div>
+
+				{isCreatingNew && (
+					<div className="space-y-4 p-4 border border-dashed border-border rounded-lg bg-muted/30">
+						<h4 className="text-sm font-medium">Create New Column</h4>
+						<div className="space-y-3">
+							<div className="flex items-center gap-3">
+								<Popover>
+									<PopoverTrigger asChild>
+										<button
+											type="button"
+											className="flex items-center justify-center w-10 h-10 rounded-lg border-2 hover:border-muted-foreground/30 transition-colors"
+											style={{ backgroundColor: newColumnColor ?? "transparent", borderColor: newColumnColor ?? "" }}
+											disabled={createColumn.isPending}
+										>
+											{(() => {
+												const IconComponent = getColumnIconComponent(newColumnIcon);
+												return (
+													<IconComponent 
+														className="h-5 w-5" 
+														style={{ color: newColumnColor ? "white" : "currentColor" }}
+													/>
+												);
+											})()}
+										</button>
+									</PopoverTrigger>
+									<PopoverContent className="w-80" align="start">
+										<div className="space-y-4">
+											<div>
+												<h4 className="text-sm font-medium mb-2">Color</h4>
+												<div className="flex flex-wrap gap-2">
+													{COLUMN_COLOR_OPTIONS.map((option) => (
+														<button
+															key={option}
+															type="button"
+															className={cn(
+																"h-8 w-8 rounded-full border-2 transition-all",
+																newColumnColor === option
+																	? "border-primary scale-110 shadow-sm"
+																	: "border-transparent hover:border-muted-foreground/30 hover:scale-105",
+															)}
+															style={{ backgroundColor: option }}
+															onClick={() => setNewColumnColor(option)}
+															disabled={createColumn.isPending}
+														/>
+													))}
+													<button
+														type="button"
+														className="h-8 w-16 rounded-full border-2 border-dashed border-muted-foreground/30 text-xs font-medium text-muted-foreground hover:border-muted-foreground/60 transition-all"
+														onClick={() => setNewColumnColor(null)}
+														disabled={createColumn.isPending}
+													>
+														Clear
+													</button>
+												</div>
+											</div>
+
+											<div>
+												<Command>
+													<CommandInput placeholder="Search icon..." />
+													<CommandList>
+														<CommandEmpty>No icons found</CommandEmpty>
+														<CommandGroup className="max-h-48 overflow-y-auto">
+															{COLUMN_ICON_OPTIONS.map((option) => (
+																<CommandItem
+																	key={option.value}
+																	value={option.value}
+																	onSelect={() => setNewColumnIcon(option.value)}
+																	className="flex items-center gap-2"
+																>
+																	<option.icon className="h-4 w-4" />
+																	<span className="flex-1 text-sm font-medium">
+																		{option.label}
+																	</span>
+																	{newColumnIcon === option.value ? (
+																		<Check className="h-4 w-4 text-primary" />
+																	) : null}
+																</CommandItem>
+															))}
+														</CommandGroup>
+													</CommandList>
+												</Command>
+											</div>
+										</div>
+									</PopoverContent>
+								</Popover>
+
+								<Input
+									value={newColumnTitle}
+									onChange={(e) => setNewColumnTitle(e.target.value)}
+									placeholder="Enter column name..."
+									disabled={createColumn.isPending}
+									className="flex-1"
+									autoFocus
+								/>
+							</div>
+
+							<div className="flex items-center justify-end gap-2">
+								<Button
+									type="button"
+									variant="outline"
+									size="sm"
+									onClick={handleCancelCreate}
+									disabled={createColumn.isPending}
+								>
+									Cancel
+								</Button>
+								<Button
+									type="button"
+									size="sm"
+									onClick={handleCreateColumn}
+									disabled={createColumn.isPending || !newColumnTitle.trim()}
+								>
+									{createColumn.isPending ? 'Creating...' : 'Create'}
+								</Button>
+							</div>
+						</div>
+					</div>
+				)}
 
 				<ScrollArea className="max-h-[420px] pr-4">
 					<DndContext sensors={sensors} onDragEnd={handleDragEnd}>
@@ -209,17 +365,17 @@ export function ColumnManagerDialog({
 	);
 }
 
-interface ColumnManagerRowProps {
-	column: ColumnWithMeta;
-	isUpdating: boolean;
-	onUpdate: (changes: Partial<ColumnManagerChanges>) => Promise<void>;
-}
-
 interface ColumnManagerChanges {
 	title?: string;
 	color?: string | null;
 	icon?: string | null;
 	isEnabled?: boolean;
+}
+
+interface ColumnManagerRowProps {
+	column: ColumnWithMeta;
+	isUpdating: boolean;
+	onUpdate: (changes: Partial<ColumnManagerChanges>) => Promise<void>;
 }
 
 function ColumnManagerRow({
@@ -231,6 +387,7 @@ function ColumnManagerRow({
 	const [color, setColor] = useState<string | null>(column.color ?? null);
 	const [icon, setIcon] = useState<string>(column.icon ?? DEFAULT_COLUMN_ICON);
 	const [isEnabled, setIsEnabled] = useState<boolean>(column.isEnabled);
+	const [isEditingTitle, setIsEditingTitle] = useState(false);
 
 	useEffect(() => {
 		setTitle(column.title);
@@ -263,26 +420,38 @@ function ColumnManagerRow({
 	};
 
 	const IconComponent = getColumnIconComponent(icon);
-	const iconLabel = useMemo(() => {
-		return (
-			COLUMN_ICON_OPTIONS.find((option) => option.value === icon)?.label ??
-			getColumnIconLabel(DEFAULT_COLUMN_ICON)
-		);
-	}, [icon]);
 	const accentColor = color ?? FALLBACK_COLUMN_COLORS[0];
 
 	const handleTitleBlur = async () => {
 		const trimmed = title.trim();
 		if (!trimmed || trimmed === column.title) {
 			setTitle(column.title);
+			setIsEditingTitle(false);
 			return;
 		}
 
 		setTitle(trimmed);
 		try {
 			await onUpdate({ title: trimmed });
+			setIsEditingTitle(false);
 		} catch {
 			setTitle(column.title);
+			setIsEditingTitle(false);
+		}
+	};
+
+	const handleTitleClick = () => {
+		if (!isEditingTitle && !isUpdating) {
+			setIsEditingTitle(true);
+		}
+	};
+
+	const handleTitleKeyDown = (event: React.KeyboardEvent) => {
+		if (event.key === 'Enter') {
+			handleTitleBlur();
+		} else if (event.key === 'Escape') {
+			setTitle(column.title);
+			setIsEditingTitle(false);
 		}
 	};
 
@@ -326,120 +495,142 @@ function ColumnManagerRow({
 			ref={setNodeRef}
 			style={style}
 			className={cn(
-				"flex items-center gap-3 rounded-2xl border border-border bg-card px-4 py-4 shadow-sm transition-opacity",
+				"flex items-center gap-4 rounded-lg border border-border bg-card px-4 py-3 shadow-sm transition-opacity",
 				isDragging && "opacity-70",
 			)}
 		>
 			<button
 				type="button"
-				className="flex h-10 w-10 items-center justify-center rounded-full border border-dashed border-muted-foreground/40 text-muted-foreground"
+				className="flex h-8 w-8 items-center justify-center rounded border border-dashed border-muted-foreground/40 text-muted-foreground hover:border-muted-foreground/60"
 				{...attributes}
 				{...listeners}
 			>
 				<GripVertical className="h-4 w-4" />
 			</button>
 
-			<div className="flex flex-1 items-center gap-3">
+			<div className="flex items-center gap-4 flex-1">
 				<Popover>
 					<PopoverTrigger asChild>
-						<Button
+						<button
 							type="button"
-							variant="outline"
-							className="flex items-center gap-2"
+							className="flex items-center justify-center w-10 h-10 rounded-lg border-2 hover:border-muted-foreground/30 transition-colors"
+							style={{ backgroundColor: color ?? "transparent", borderColor: color ?? "" }}
 							disabled={isUpdating}
 						>
-							<span
-								className="h-6 w-6 rounded-full border"
-								style={{ backgroundColor: color ?? "transparent" }}
+							<IconComponent 
+								className="h-5 w-5" 
+								style={{ color: color ? "white" : "currentColor" }}
 							/>
-							<Palette className="h-4 w-4" />
-							<ChevronDown className="h-4 w-4 opacity-70" />
-						</Button>
+						</button>
 					</PopoverTrigger>
-					<PopoverContent className="w-64" align="start">
-						<div className="flex flex-wrap gap-2">
-							{COLUMN_COLOR_OPTIONS.map((option) => (
-								<button
-									key={option}
-									type="button"
-									className={cn(
-										"h-9 w-9 rounded-full border-2 transition",
-										color === option
-											? "border-primary scale-105"
-											: "border-transparent hover:border-muted",
-									)}
-									style={{ backgroundColor: option }}
-									onClick={() => handleColorSelect(option)}
-									disabled={isUpdating}
-								/>
-							))}
-							<button
-								type="button"
-								className="h-9 w-20 rounded-full border border-dashed text-xs font-medium text-muted-foreground"
-								onClick={() => handleColorSelect(null)}
-								disabled={isUpdating}
-							>
-								Clear
-							</button>
+					<PopoverContent className="w-80" align="start">
+						<div className="space-y-4">
+							<div>
+								<h4 className="text-sm font-medium mb-2">Color</h4>
+								<div className="flex flex-wrap gap-2">
+									{COLUMN_COLOR_OPTIONS.map((option) => (
+										<button
+											key={option}
+											type="button"
+											className={cn(
+												"h-9 w-9 rounded-full border-2 transition-all",
+												color === option
+													? "border-primary scale-110 shadow-sm"
+													: "border-transparent hover:border-muted-foreground/30 hover:scale-105",
+											)}
+											style={{ backgroundColor: option }}
+											onClick={() => handleColorSelect(option)}
+											disabled={isUpdating}
+										/>
+									))}
+									<button
+										type="button"
+										className="h-9 w-16 rounded-full border-2 border-dashed border-muted-foreground/30 text-xs font-medium text-muted-foreground hover:border-muted-foreground/60 transition-all"
+										onClick={() => handleColorSelect(null)}
+										disabled={isUpdating}
+									>
+										Clear
+									</button>
+								</div>
+							</div>
+
+							<div>
+								<Command>
+									<CommandInput placeholder="Search icon..." />
+									<CommandList>
+										<CommandEmpty>No icons found</CommandEmpty>
+										<CommandGroup className="max-h-48 overflow-y-auto">
+											{COLUMN_ICON_OPTIONS.map((option) => (
+												<CommandItem
+													key={option.value}
+													value={option.value}
+													onSelect={() => handleIconSelect(option.value)}
+													className="flex items-center gap-2"
+												>
+													<option.icon className="h-4 w-4" />
+													<span className="flex-1 text-sm font-medium">
+														{option.label}
+													</span>
+													{icon === option.value ? (
+														<Check className="h-4 w-4 text-primary" />
+													) : null}
+												</CommandItem>
+											))}
+										</CommandGroup>
+									</CommandList>
+								</Command>
+							</div>
 						</div>
 					</PopoverContent>
 				</Popover>
 
-				<Popover>
-					<PopoverTrigger asChild>
+				{isEditingTitle ? (
+					<div className="flex items-center gap-2 flex-1">
+						<Input
+							value={title}
+							onChange={(event) => setTitle(event.target.value)}
+							onBlur={handleTitleBlur}
+							onKeyDown={handleTitleKeyDown}
+							placeholder="Column name"
+							disabled={isUpdating}
+							autoFocus
+							className="flex-1"
+						/>
 						<Button
 							type="button"
-							variant="outline"
-							className="flex items-center gap-2"
+							variant="ghost"
+							size="sm"
+							onClick={() => {
+								setTitle(column.title);
+								setIsEditingTitle(false);
+							}}
 							disabled={isUpdating}
 						>
-							<IconComponent className="h-4 w-4" />
-							<span className="text-sm font-medium">{iconLabel}</span>
-							<ChevronDown className="h-4 w-4 opacity-70" />
+							<X className="h-4 w-4" />
 						</Button>
-					</PopoverTrigger>
-					<PopoverContent className="w-72 p-0" align="start">
-						<Command>
-							<CommandInput placeholder="Search icon" />
-							<CommandList>
-								<CommandEmpty>No icons found</CommandEmpty>
-								<CommandGroup>
-									{COLUMN_ICON_OPTIONS.map((option) => (
-										<CommandItem
-											key={option.value}
-											value={option.value}
-											onSelect={handleIconSelect}
-										>
-											<option.icon className="mr-2 h-4 w-4" />
-											<span className="flex-1 text-sm font-medium">
-												{option.label}
-											</span>
-											{icon === option.value ? (
-												<Check className="h-4 w-4 text-primary" />
-											) : null}
-										</CommandItem>
-									))}
-								</CommandGroup>
-							</CommandList>
-						</Command>
-					</PopoverContent>
-				</Popover>
-
-				<div className="flex-1">
-					<Input
-						value={title}
-						onChange={(event) => setTitle(event.target.value)}
-						onBlur={handleTitleBlur}
-						placeholder="Column name"
+					</div>
+				) : (
+					<button
+						type="button"
+						className="flex-1 text-left hover:bg-muted/50 rounded px-3 py-2 transition-colors group"
+						onClick={handleTitleClick}
 						disabled={isUpdating}
-					/>
-				</div>
+					>
+						<span className="font-medium text-sm group-hover:text-primary transition-colors">
+							{title}
+						</span>
+						{!isUpdating && (
+							<Edit2 className="h-3 w-3 opacity-0 group-hover:opacity-50 transition-opacity ml-2 inline" />
+						)}
+					</button>
+				)}
 			</div>
 
 			<div className="flex items-center gap-4">
 				<div className="flex flex-col items-end">
 					<Badge
 						variant={column.cardCount > 0 ? "default" : "secondary"}
+						className="text-xs"
 						style={{
 							backgroundColor:
 								column.cardCount > 0
@@ -455,7 +646,7 @@ function ColumnManagerRow({
 						{column.cardCount} tasks
 					</Badge>
 					{!isEnabled ? (
-						<span className="text-xs text-muted-foreground">Hidden</span>
+						<span className="text-xs text-muted-foreground mt-1">Hidden</span>
 					) : null}
 				</div>
 				<Switch

@@ -35,7 +35,6 @@ import {
   useCards,
   useColumns,
   useCreateCard,
-  useCreateColumn,
   useMoveCard,
   useDeleteCard,
 } from '@/services/kanban'
@@ -59,10 +58,9 @@ export function BoardDetailView({
   viewMode = DEFAULT_BOARD_VIEW_MODE,
   onViewModeChange,
 }: BoardDetailViewProps) {
-  const [isColumnDialogOpen, setIsColumnDialogOpen] = useState(false)
   const [isColumnManagerOpen, setIsColumnManagerOpen] = useState(false)
   const [isCardDialogOpen, setIsCardDialogOpen] = useState(false)
-  const [columnTitle, setColumnTitle] = useState('')
+  
   const [cardTitle, setCardTitle] = useState('')
   const [cardDescription, setCardDescription] = useState('')
   const [cardPriority, setCardPriority] = useState<KanbanPriority>('medium')
@@ -91,7 +89,6 @@ export function BoardDetailView({
     refetch: refetchCards,
   } = useCards(board.id)
 
-  const createColumnMutation = useCreateColumn(board.id)
   const createCardMutation = useCreateCard(board.id)
   const moveCardMutation = useMoveCard(board.id)
   const deleteCardMutation = useDeleteCard(board.id)
@@ -198,9 +195,7 @@ export function BoardDetailView({
     }
   }, [visibleCards, selectedCardId])
 
-  const resetColumnForm = useCallback(() => {
-    setColumnTitle('')
-  }, [])
+  
 
   const resetCardForm = useCallback(() => {
     setCardTitle('')
@@ -209,33 +204,7 @@ export function BoardDetailView({
     setCardDueDate('')
   }, [])
 
-  const handleCreateColumn = useCallback(
-    async (event: React.FormEvent) => {
-      event.preventDefault()
-      if (!columnTitle.trim()) return
-
-      try {
-        await createColumnMutation.mutateAsync({
-          id: `temp-${Date.now()}`,
-          boardId: board.id,
-          title: columnTitle.trim(),
-          position: columnsWithCounts.length,
-        })
-        resetColumnForm()
-        setIsColumnDialogOpen(false)
-      } catch (error) {
-        console.error('Failed to create column', error)
-        toast.error('Failed to create column')
-      }
-    },
-    [
-      board.id,
-      columnTitle,
-      createColumnMutation,
-      resetColumnForm,
-      columnsWithCounts.length,
-    ]
-  )
+  
 
   const handleCreateCard = useCallback(
     async (event: React.FormEvent) => {
@@ -490,7 +459,7 @@ export function BoardDetailView({
   const resolvedViewMode = isBoardViewMode(viewMode)
     ? viewMode
     : DEFAULT_BOARD_VIEW_MODE
-  const isCreatingColumn = createColumnMutation.isPending
+  
   const isCreatingCard = createCardMutation.isPending
 
   if (isLoadingColumns || isLoadingCards) {
@@ -582,14 +551,7 @@ export function BoardDetailView({
             Manage Columns
           </Button>
 
-          <Button
-            variant="outline"
-            onClick={() => setIsColumnDialogOpen(true)}
-            disabled={isCreatingColumn}
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Add Column
-          </Button>
+          
         </div>
       </div>
 
@@ -602,10 +564,10 @@ export function BoardDetailView({
             </p>
           </div>
           <Button
-            onClick={() => setIsColumnDialogOpen(true)}
-            disabled={isCreatingColumn}
+            onClick={() => setIsColumnManagerOpen(true)}
           >
-            Create first column
+            <Plus className="h-4 w-4 mr-2" />
+            Create Column
           </Button>
         </div>
       ) : visibleColumns.length === 0 ? (
@@ -724,10 +686,6 @@ export function BoardDetailView({
         columns={columnsWithCounts}
         open={isColumnManagerOpen}
         onOpenChange={setIsColumnManagerOpen}
-        onCreateColumn={() => {
-          setIsColumnManagerOpen(false)
-          setIsColumnDialogOpen(true)
-        }}
       />
 
       {/* Task Details Panel */}
@@ -739,50 +697,7 @@ export function BoardDetailView({
         />
       ) : null}
 
-      {/* Create Column Dialog */}
-      {isColumnDialogOpen && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-background rounded-lg shadow-lg w-full max-w-md">
-            <div className="p-6">
-              <h2 className="text-lg font-semibold mb-4">Create Column</h2>
-              <form onSubmit={handleCreateColumn}>
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor={cardTitleId}>Title</Label>
-                    <Input
-                      id={cardTitleId}
-                      value={columnTitle}
-                      onChange={e => setColumnTitle(e.target.value)}
-                      placeholder="Enter column title"
-                      disabled={isCreatingColumn}
-                      autoFocus
-                    />
-                  </div>
-                </div>
-                <div className="flex justify-end gap-2 mt-6">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => {
-                      setIsColumnDialogOpen(false)
-                      resetColumnForm()
-                    }}
-                    disabled={isCreatingColumn}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    type="submit"
-                    disabled={isCreatingColumn || !columnTitle.trim()}
-                  >
-                    {isCreatingColumn ? 'Creating...' : 'Create Column'}
-                  </Button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-      )}
+      
 
       {/* Create Card Dialog */}
       {isCardDialogOpen && cardDialogColumn && (
