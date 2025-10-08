@@ -24,6 +24,7 @@ import { BoardKanbanView } from '@/components/kanban/views/BoardKanbanView'
 import { BoardListView } from '@/components/kanban/views/BoardListView'
 import { BoardTimelineView } from '@/components/kanban/views/BoardTimelineView'
 import { TaskDetailsPanel } from '@/components/kanban/TaskDetailsPanel'
+import { ColumnManagerDialog } from '@/components/kanban/ColumnManagerDialog'
 import type {
   KanbanBoard,
   KanbanCard,
@@ -38,7 +39,7 @@ import {
   useMoveCard,
   useDeleteCard,
 } from '@/services/kanban'
-import { Plus, X } from 'lucide-react'
+import { Plus, Settings2, X } from 'lucide-react'
 import type {
   DragEndEvent,
   DragStartEvent,
@@ -59,6 +60,7 @@ export function BoardDetailView({
   onViewModeChange,
 }: BoardDetailViewProps) {
   const [isColumnDialogOpen, setIsColumnDialogOpen] = useState(false)
+  const [isColumnManagerOpen, setIsColumnManagerOpen] = useState(false)
   const [isCardDialogOpen, setIsCardDialogOpen] = useState(false)
   const [columnTitle, setColumnTitle] = useState('')
   const [cardTitle, setCardTitle] = useState('')
@@ -83,7 +85,7 @@ export function BoardDetailView({
   } = useColumns(board.id)
 
   const {
-    data: cards = [],
+    data: allCards = [],
     isLoading: isLoadingCards,
     error: cardsError,
     refetch: refetchCards,
@@ -127,53 +129,74 @@ export function BoardDetailView({
     [columns]
   )
 
-  const sortedColumns = useMemo(
+  const columnsWithCounts = useMemo(
     () =>
       columns
         .map(column => ({
           ...column,
-          cardCount: cards.filter(card => card.columnId === column.id).length,
+          cardCount: allCards.filter(card => card.columnId === column.id)
+            .length,
         }))
         .sort((a, b) => a.position - b.position),
-    [columns, cards]
+    [columns, allCards]
+  )
+
+  const visibleColumns = useMemo(
+    () => columnsWithCounts.filter(column => column.isEnabled !== false),
+    [columnsWithCounts]
+  )
+
+  const hiddenColumnCount = columnsWithCounts.length - visibleColumns.length
+
+  const visibleColumnIds = useMemo(
+    () => new Set(visibleColumns.map(column => column.id)),
+    [visibleColumns]
+  )
+
+  const visibleCards = useMemo(
+    () => allCards.filter(card => visibleColumnIds.has(card.columnId)),
+    [allCards, visibleColumnIds]
+  )
+
+  const visibleColumnsById = useMemo(
+    () => new Map(visibleColumns.map(column => [column.id, column])),
+    [visibleColumns]
   )
 
   const cardsByColumn = useMemo(
     () =>
       new Map(
-        sortedColumns.map(column => [
+        visibleColumns.map(column => [
           column.id,
-          cards
+          visibleCards
             .filter(card => card.columnId === column.id)
             .sort((a, b) => {
-              // Priority order: high > medium > low
               const priorityOrder = { high: 3, medium: 2, low: 1 }
               const priorityDiff =
                 priorityOrder[b.priority] - priorityOrder[a.priority]
 
               if (priorityDiff !== 0) {
-                return priorityDiff // Higher priority first
+                return priorityDiff
               }
 
-              // If same priority, sort by name alphabetically
               return a.title.localeCompare(b.title)
             }),
         ])
       ),
-    [sortedColumns, cards]
+    [visibleColumns, visibleCards]
   )
 
   const selectedCard = useMemo(
-    () => cards.find(card => card.id === selectedCardId) ?? null,
-    [cards, selectedCardId]
+    () => visibleCards.find(card => card.id === selectedCardId) ?? null,
+    [visibleCards, selectedCardId]
   )
 
   useEffect(() => {
     if (!selectedCardId) return
-    if (!cards.some(card => card.id === selectedCardId)) {
+    if (!visibleCards.some(card => card.id === selectedCardId)) {
       setSelectedCardId(null)
     }
-  }, [cards, selectedCardId])
+  }, [visibleCards, selectedCardId])
 
   const resetColumnForm = useCallback(() => {
     setColumnTitle('')
@@ -196,7 +219,7 @@ export function BoardDetailView({
           id: `temp-${Date.now()}`,
           boardId: board.id,
           title: columnTitle.trim(),
-          position: sortedColumns.length,
+          position: columnsWithCounts.length,
         })
         resetColumnForm()
         setIsColumnDialogOpen(false)
@@ -210,7 +233,7 @@ export function BoardDetailView({
       columnTitle,
       createColumnMutation,
       resetColumnForm,
-      sortedColumns.length,
+      columnsWithCounts.length,
     ]
   )
 
@@ -321,10 +344,10 @@ export function BoardDetailView({
       if (!rawId.startsWith('card-')) return
 
       const cardId = parseCardId(rawId)
-      const card = cards.find(c => c.id === cardId) ?? null
+      const card = visibleCards.find(c => c.id === cardId) ?? null
       setActiveDragCard(card)
     },
-    [cards, parseCardId]
+    [visibleCards, parseCardId]
   )
 
   const handleDragCancel = useCallback((_: DragCancelEvent) => {
@@ -342,7 +365,7 @@ export function BoardDetailView({
       if (!rawActiveId.startsWith('card-')) return
 
       const activeCardId = parseCardId(rawActiveId)
-      const activeCard = cards.find(card => card.id === activeCardId)
+      const activeCard = visibleCards.find(card => card.id === activeCardId)
       if (!activeCard) return
 
       // Enhanced parsing logic to handle different drop scenarios
@@ -360,7 +383,7 @@ export function BoardDetailView({
       // If no container, check if we're dropping on a card directly
       else if (over.id.toString().startsWith('card-')) {
         const overCardId = parseCardId(over.id)
-        const overCard = cards.find(card => card.id === overCardId)
+        const overCard = visibleCards.find(card => card.id === overCardId)
         if (overCard) {
           destinationColumnId = overCard.columnId
           // Find the position of the card we're dropping on
@@ -454,7 +477,7 @@ export function BoardDetailView({
     },
     [
       board.id,
-      cards,
+      visibleCards,
       columns,
       cardsByColumn,
       moveCardMutation,
@@ -524,7 +547,8 @@ export function BoardDetailView({
           <div>
             <h1 className="text-2xl font-bold">{board.title}</h1>
             <p className="text-muted-foreground">
-              {columns.length} columns • {cards.length} tasks
+              {visibleColumns.length} columns • {visibleCards.length} tasks
+              {hiddenColumnCount > 0 ? ` • ${hiddenColumnCount} hidden` : ''}
             </p>
           </div>
         </div>
@@ -552,6 +576,14 @@ export function BoardDetailView({
 
           <Button
             variant="outline"
+            onClick={() => setIsColumnManagerOpen(true)}
+          >
+            <Settings2 className="mr-2 h-4 w-4" />
+            Manage Columns
+          </Button>
+
+          <Button
+            variant="outline"
             onClick={() => setIsColumnDialogOpen(true)}
             disabled={isCreatingColumn}
           >
@@ -561,7 +593,7 @@ export function BoardDetailView({
         </div>
       </div>
 
-      {columns.length === 0 ? (
+      {columnsWithCounts.length === 0 ? (
         <div className="flex flex-col items-center justify-center gap-4 py-12">
           <div className="text-center">
             <h2 className="text-lg font-semibold">No columns yet</h2>
@@ -576,13 +608,30 @@ export function BoardDetailView({
             Create first column
           </Button>
         </div>
+      ) : visibleColumns.length === 0 ? (
+        <div className="flex flex-col items-center justify-center gap-4 py-12">
+          <div className="text-center max-w-md">
+            <h2 className="text-lg font-semibold">All columns are hidden</h2>
+            <p className="text-muted-foreground">
+              Enable at least one column in the manager to view tasks on this
+              board.
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            onClick={() => setIsColumnManagerOpen(true)}
+          >
+            <Settings2 className="mr-2 h-4 w-4" />
+            Manage columns
+          </Button>
+        </div>
       ) : (
         <div className="flex flex-1 min-h-0 overflow-hidden">
           <div className="flex-1 min-h-0 overflow-hidden">
             {isKanbanView ? (
               <BoardKanbanView
-                columns={columns}
-                columnOrder={columns.map(col => col.id)}
+                columns={visibleColumns}
+                columnOrder={visibleColumns.map(col => col.id)}
                 cardsByColumn={cardsByColumn}
                 isCreatingCard={isCreatingCard}
                 onDragStart={handleDragStart}
@@ -638,7 +687,7 @@ export function BoardDetailView({
               />
             ) : resolvedViewMode === 'list' ? (
               <BoardListView
-                columns={sortedColumns}
+                columns={visibleColumns}
                 cardsByColumn={cardsByColumn}
                 isCreatingCard={isCreatingCard}
                 onCardSelect={handleCardSelect}
@@ -661,14 +710,25 @@ export function BoardDetailView({
               />
             ) : (
               <BoardTimelineView
-                cards={cards}
-                columnsById={columnsById}
+                cards={visibleCards}
+                columnsById={visibleColumnsById}
                 onDeleteTask={handleDeleteCard}
               />
             )}
           </div>
         </div>
       )}
+
+      <ColumnManagerDialog
+        boardId={board.id}
+        columns={columnsWithCounts}
+        open={isColumnManagerOpen}
+        onOpenChange={setIsColumnManagerOpen}
+        onCreateColumn={() => {
+          setIsColumnManagerOpen(false)
+          setIsColumnDialogOpen(true)
+        }}
+      />
 
       {/* Task Details Panel */}
       {selectedCard ? (

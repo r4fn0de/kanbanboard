@@ -19,12 +19,12 @@ export function getAccessibleTextColor(
 
   // Fórmula mais conservadora para melhor contraste
   const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
-  
+
   // No modo escuro, ser muito mais rigoroso para usar texto branco
   if (isDarkMode) {
     return luminance > 0.25 ? '#000000' : '#ffffff'
   }
-  
+
   return luminance > 0.5 ? '#000000' : '#ffffff'
 }
 

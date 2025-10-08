@@ -37,6 +37,29 @@ const ALLOWED_BOARD_ICONS: &[&str] = &[
     "PenTool",
 ];
 
+const DEFAULT_COLUMN_ICON: &str = "Circle";
+const ALLOWED_COLUMN_ICONS: &[&str] = &[
+    "Circle",
+    "Play",
+    "CheckCircle",
+    "Loader",
+    "AlarmClock",
+    "Bolt",
+    "Sparkles",
+    "Target",
+    "CalendarCheck",
+    "ClipboardList",
+    "Lightbulb",
+    "Flag",
+    "Timer",
+    "Ship",
+    "Kanban",
+    "TrendingUp",
+    "Zap",
+    "Rocket",
+    "BadgeCheck",
+];
+
 type DbPool = SqlitePool;
 
 async fn establish_pool(app: &AppHandle) -> Result<DbPool, String> {
@@ -90,6 +113,21 @@ struct CreateTagArgs {
     label: String,
     #[serde(default)]
     color: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct UpdateColumnArgs {
+    id: String,
+    board_id: String,
+    #[serde(default)]
+    title: Option<String>,
+    #[serde(default)]
+    color: Option<Option<String>>,
+    #[serde(default)]
+    icon: Option<Option<String>>,
+    #[serde(default)]
+    is_enabled: Option<bool>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -456,6 +494,7 @@ async fn initialize_schema(pool: &DbPool) -> Result<(), String> {
 
     ensure_board_icon_column(pool).await?;
     ensure_card_attachments_column(pool).await?;
+    ensure_column_customization_columns(pool).await?;
 
     Ok(())
 }
@@ -510,6 +549,67 @@ async fn ensure_card_attachments_column(pool: &DbPool) -> Result<(), String> {
     Ok(())
 }
 
+async fn ensure_column_customization_columns(pool: &DbPool) -> Result<(), String> {
+    let color_exists = sqlx::query_scalar::<_, Option<i64>>(
+        "SELECT 1 FROM pragma_table_info('kanban_columns') WHERE name = 'color' LIMIT 1",
+    )
+    .fetch_optional(pool)
+    .await
+    .map_err(|e| format!("Failed to inspect kanban_columns schema: {e}"))?
+    .flatten()
+    .is_some();
+
+    if !color_exists {
+        sqlx::query("ALTER TABLE kanban_columns ADD COLUMN color TEXT")
+            .execute(pool)
+            .await
+            .map_err(|e| format!("Failed to add color column to kanban_columns: {e}"))?;
+    }
+
+    let icon_exists = sqlx::query_scalar::<_, Option<i64>>(
+        "SELECT 1 FROM pragma_table_info('kanban_columns') WHERE name = 'icon' LIMIT 1",
+    )
+    .fetch_optional(pool)
+    .await
+    .map_err(|e| format!("Failed to inspect kanban_columns schema: {e}"))?
+    .flatten()
+    .is_some();
+
+    if !icon_exists {
+        sqlx::query("ALTER TABLE kanban_columns ADD COLUMN icon TEXT")
+            .execute(pool)
+            .await
+            .map_err(|e| format!("Failed to add icon column to kanban_columns: {e}"))?;
+    }
+
+    let is_enabled_exists = sqlx::query_scalar::<_, Option<i64>>(
+        "SELECT 1 FROM pragma_table_info('kanban_columns') WHERE name = 'is_enabled' LIMIT 1",
+    )
+    .fetch_optional(pool)
+    .await
+    .map_err(|e| format!("Failed to inspect kanban_columns schema: {e}"))?
+    .flatten()
+    .is_some();
+
+    if !is_enabled_exists {
+        sqlx::query("ALTER TABLE kanban_columns ADD COLUMN is_enabled INTEGER NOT NULL DEFAULT 1")
+            .execute(pool)
+            .await
+            .map_err(|e| format!("Failed to add is_enabled column to kanban_columns: {e}"))?;
+        sqlx::query("UPDATE kanban_columns SET is_enabled = 1 WHERE is_enabled IS NULL")
+            .execute(pool)
+            .await
+            .map_err(|e| format!("Failed to backfill is_enabled values in kanban_columns: {e}"))?;
+    } else {
+        sqlx::query("UPDATE kanban_columns SET is_enabled = 1 WHERE is_enabled IS NULL")
+            .execute(pool)
+            .await
+            .map_err(|e| format!("Failed to normalize is_enabled values in kanban_columns: {e}"))?;
+    }
+
+    Ok(())
+}
+
 fn map_board_row(row: SqliteRow) -> Result<Value, sqlx::Error> {
     Ok(json!({
         "id": row.try_get::<String, _>("id")?,
@@ -532,6 +632,15 @@ fn map_column_row(row: SqliteRow) -> Result<Value, sqlx::Error> {
         "title": row.try_get::<String, _>("title")?,
         "position": row.try_get::<i64, _>("position")?,
         "wipLimit": row.try_get::<Option<i64>, _>("wip_limit")?,
+        "color": row.try_get::<Option<String>, _>("color")?,
+        "icon": row
+            .try_get::<Option<String>, _>("icon")?
+            .filter(|icon| !icon.trim().is_empty())
+            .unwrap_or_else(|| DEFAULT_COLUMN_ICON.to_string()),
+        "isEnabled": row
+            .try_get::<Option<i64>, _>("is_enabled")?
+            .map(|value| value != 0)
+            .unwrap_or(true),
         "createdAt": row.try_get::<String, _>("created_at")?,
         "updatedAt": row.try_get::<String, _>("updated_at")?,
         "archivedAt": row.try_get::<Option<String>, _>("archived_at")?,
@@ -583,6 +692,40 @@ fn normalize_optional_text(value: Option<String>) -> Option<String> {
     value
         .map(|v| v.trim().to_string())
         .filter(|v| !v.is_empty())
+}
+
+fn normalize_column_color(color: Option<String>) -> Result<Option<String>, String> {
+    match color {
+        Some(value) => {
+            let trimmed = value.trim();
+            if trimmed.is_empty() {
+                Ok(None)
+            } else if trimmed.len() == 7
+                && trimmed.starts_with('#')
+                && trimmed.chars().skip(1).all(|c| c.is_ascii_hexdigit())
+            {
+                Ok(Some(trimmed.to_string()))
+            } else {
+                Err(
+                    "Cor da coluna inválida. Utilize o formato hexadecimal, por exemplo #6366F1."
+                        .to_string(),
+                )
+            }
+        }
+        None => Ok(None),
+    }
+}
+
+fn normalize_column_icon(icon: Option<String>) -> Result<Option<String>, String> {
+    match icon
+        .as_ref()
+        .map(|value| value.trim())
+        .filter(|value| !value.is_empty())
+    {
+        Some(value) if ALLOWED_COLUMN_ICONS.contains(&value) => Ok(Some(value.to_string())),
+        Some(_) => Err("Ícone inválido para a coluna.".to_string()),
+        None => Ok(None),
+    }
 }
 
 fn normalize_tag_color(color: Option<String>) -> Result<Option<String>, String> {
@@ -901,7 +1044,7 @@ async fn create_board(
 
 #[tauri::command]
 async fn load_columns(pool: State<'_, DbPool>, board_id: String) -> Result<Vec<Value>, String> {
-    sqlx::query("SELECT id, board_id, title, position, wip_limit, created_at, updated_at, archived_at FROM kanban_columns WHERE board_id = ? ORDER BY position ASC")
+    sqlx::query("SELECT id, board_id, title, position, color, icon, is_enabled, wip_limit, created_at, updated_at, archived_at FROM kanban_columns WHERE board_id = ? ORDER BY position ASC")
         .bind(board_id)
         .try_map(map_column_row)
         .fetch_all(&*pool)
@@ -919,6 +1062,9 @@ async fn create_column(
     board_id: String,
     mut title: String,
     position: i64,
+    color: Option<String>,
+    icon: Option<String>,
+    is_enabled: Option<bool>,
     wip_limit: Option<i64>,
 ) -> Result<(), String> {
     title = title.trim().to_string();
@@ -926,6 +1072,10 @@ async fn create_column(
         return Err("O nome da coluna não pode ser vazio.".to_string());
     }
     validate_string_input(&title, 200, "Nome da coluna")?;
+
+    let normalized_color = normalize_column_color(color)?;
+    let normalized_icon = normalize_column_icon(icon)?;
+    let normalized_is_enabled = is_enabled.unwrap_or(true);
 
     let normalized_wip_limit = match wip_limit {
         Some(limit) if limit < 1 => {
@@ -971,12 +1121,15 @@ async fn create_column(
     }
 
     sqlx::query(
-        "INSERT INTO kanban_columns (id, board_id, title, position, wip_limit, created_at, updated_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))",
+        "INSERT INTO kanban_columns (id, board_id, title, position, color, icon, is_enabled, wip_limit, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))",
     )
     .bind(&id)
     .bind(&board_id)
     .bind(&title)
     .bind(normalized_position)
+    .bind(normalized_color.as_deref())
+    .bind(normalized_icon.as_deref())
+    .bind(if normalized_is_enabled { 1 } else { 0 })
     .bind(normalized_wip_limit)
     .execute(&mut *tx)
     .await
@@ -985,6 +1138,89 @@ async fn create_column(
     normalize_column_positions_tx(&mut tx, &board_id)
         .await
         .map_err(|e| format!("Falha ao normalizar posições das colunas: {e}"))?;
+
+    tx.commit()
+        .await
+        .map_err(|e| format!("Falha ao confirmar transação: {e}"))?;
+
+    Ok(())
+}
+
+#[tauri::command]
+async fn update_column(pool: State<'_, DbPool>, args: UpdateColumnArgs) -> Result<(), String> {
+    let mut tx = pool
+        .begin()
+        .await
+        .map_err(|e| format!("Falha ao abrir transação: {e}"))?;
+
+    let existing_board =
+        sqlx::query_scalar::<_, Option<String>>("SELECT board_id FROM kanban_columns WHERE id = ?")
+            .bind(&args.id)
+            .fetch_one(&mut *tx)
+            .await
+            .map_err(|e| format!("Falha ao carregar coluna: {e}"))?
+            .ok_or_else(|| "Coluna não encontrada.".to_string())?;
+
+    if existing_board != args.board_id {
+        return Err("A coluna não pertence ao quadro informado.".to_string());
+    }
+
+    let mut builder = QueryBuilder::new(
+        "UPDATE kanban_columns SET updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')",
+    );
+    let mut has_changes = false;
+
+    if let Some(title) = args.title.as_ref() {
+        let trimmed = title.trim();
+        if trimmed.is_empty() {
+            return Err("O nome da coluna não pode ser vazio.".to_string());
+        }
+        validate_string_input(trimmed, 200, "Nome da coluna")?;
+        builder.push(", title = ");
+        builder.push_bind(trimmed.to_string());
+        has_changes = true;
+    }
+
+    if let Some(color_payload) = args.color {
+        let normalized_color = normalize_column_color(color_payload)?;
+        builder.push(", color = ");
+        if let Some(color) = normalized_color {
+            builder.push_bind(color);
+        } else {
+            builder.push("NULL");
+        }
+        has_changes = true;
+    }
+
+    if let Some(icon_payload) = args.icon {
+        let normalized_icon = normalize_column_icon(icon_payload)?;
+        builder.push(", icon = ");
+        if let Some(icon) = normalized_icon {
+            builder.push_bind(icon);
+        } else {
+            builder.push("NULL");
+        }
+        has_changes = true;
+    }
+
+    if let Some(is_enabled) = args.is_enabled {
+        builder.push(", is_enabled = ");
+        builder.push_bind(if is_enabled { 1 } else { 0 });
+        has_changes = true;
+    }
+
+    if !has_changes {
+        return Ok(());
+    }
+
+    builder.push(" WHERE id = ");
+    builder.push_bind(&args.id);
+
+    builder
+        .build()
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| format!("Falha ao atualizar coluna: {e}"))?;
 
     tx.commit()
         .await
@@ -1892,6 +2128,7 @@ pub fn run() {
             delete_board,
             load_columns,
             create_column,
+            update_column,
             move_column,
             load_cards,
             load_tags,

@@ -11,6 +11,23 @@ import {
   ContextMenuTrigger,
 } from '@/components/ui/context-menu'
 import { getTagBadgeStyle } from '../tags/utils'
+import { getColumnIconComponent } from '@/components/kanban/column-icon-options'
+import {
+  DEFAULT_COLUMN_ICON,
+  FALLBACK_COLUMN_COLORS,
+} from '@/constants/kanban-columns'
+
+function hexToRgba(hex: string | null | undefined, alpha: number) {
+  if (!hex || !/^#([0-9a-fA-F]{6})$/.test(hex)) {
+    return null
+  }
+
+  const value = hex.slice(1)
+  const r = parseInt(value.slice(0, 2), 16)
+  const g = parseInt(value.slice(2, 4), 16)
+  const b = parseInt(value.slice(4, 6), 16)
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`
+}
 
 interface BoardTimelineViewProps {
   cards: KanbanCard[]
@@ -27,6 +44,18 @@ export function BoardTimelineView({
     () => new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }),
     []
   )
+
+  const columnBaseColors = useMemo(() => {
+    const values = Array.from(columnsById.values())
+    return new Map(
+      values.map((column, index) => [
+        column.id,
+        column.color ??
+          FALLBACK_COLUMN_COLORS[index % FALLBACK_COLUMN_COLORS.length] ??
+          FALLBACK_COLUMN_COLORS[0],
+      ])
+    )
+  }, [columnsById])
 
   const groups = useMemo(() => {
     const map = new Map<
@@ -102,6 +131,13 @@ export function BoardTimelineView({
             <div className="flex-1 space-y-3">
               {group.cards.map(card => {
                 const column = columnsById.get(card.columnId)
+                const baseColor =
+                  columnBaseColors.get(card.columnId) ??
+                  FALLBACK_COLUMN_COLORS[0]
+                const iconBackground = hexToRgba(baseColor, 0.18) ?? undefined
+                const IconComponent = getColumnIconComponent(
+                  column?.icon ?? DEFAULT_COLUMN_ICON
+                )
                 const dueLabel = formatCardDueDate(card.dueDate)
                 const tagList = card.tags ?? []
                 const displayTags = tagList.slice(0, 3)
@@ -115,7 +151,18 @@ export function BoardTimelineView({
                             <span className="text-sm font-semibold text-foreground">
                               {card.title}
                             </span>
-                            <span className="text-xs uppercase tracking-wide text-muted-foreground">
+                            <span className="flex items-center gap-2 text-xs uppercase tracking-wide text-muted-foreground">
+                              <span
+                                className="flex h-6 w-6 items-center justify-center rounded-full border"
+                                style={{
+                                  backgroundColor: iconBackground,
+                                  borderColor:
+                                    hexToRgba(baseColor, 0.35) ?? undefined,
+                                  color: baseColor,
+                                }}
+                              >
+                                <IconComponent className="h-3.5 w-3.5" />
+                              </span>
                               {column?.title ?? 'Unassigned'}
                             </span>
                           </div>
@@ -131,14 +178,14 @@ export function BoardTimelineView({
                             <Badge
                               key={tag.id}
                               variant="secondary"
-                            className="rounded-full px-3 py-1 text-xs font-semibold leading-none opacity-100"
+                              className="rounded-full px-3 py-1 text-xs font-semibold leading-none opacity-100"
                               style={
                                 tag.color
                                   ? {
                                       backgroundColor: tag.color,
                                       color: getTagBadgeStyle(tag)?.color,
-                                    borderColor: tag.color,
-                                    opacity: 1,
+                                      borderColor: tag.color,
+                                      opacity: 1,
                                     }
                                   : undefined
                               }
@@ -155,7 +202,14 @@ export function BoardTimelineView({
                             </Badge>
                           ) : null}
                           {dueLabel ? (
-                            <span className="rounded-full bg-secondary px-2 py-1 font-medium text-secondary-foreground">
+                            <span
+                              className="rounded-full px-2 py-1 font-medium"
+                              style={{
+                                backgroundColor:
+                                  hexToRgba(baseColor, 0.12) ?? undefined,
+                                color: baseColor,
+                              }}
+                            >
                               Due {dueLabel}
                             </span>
                           ) : null}

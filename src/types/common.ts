@@ -18,6 +18,9 @@ export interface KanbanColumn {
   title: string
   position: number
   wipLimit?: number | null
+  color?: string | null
+  icon?: string | null
+  isEnabled: boolean
   createdAt: string
   updatedAt: string
   archivedAt?: string | null
@@ -83,6 +86,9 @@ CREATE TABLE IF NOT EXISTS kanban_columns (
   board_id TEXT NOT NULL REFERENCES kanban_boards(id) ON DELETE CASCADE,
   title TEXT NOT NULL,
   position INTEGER NOT NULL,
+  color TEXT,
+  icon TEXT,
+  is_enabled INTEGER NOT NULL DEFAULT 1,
   wip_limit INTEGER,
   created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
   updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),

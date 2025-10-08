@@ -66,8 +66,11 @@ export function TagSelector({
   const labelInputId = useId()
   const { theme } = useTheme()
   // Detectar modo escuro de forma mais robusta
-  const isDarkMode = theme === 'dark' || 
-    (typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)')?.matches && theme === 'system')
+  const isDarkMode =
+    theme === 'dark' ||
+    (typeof window !== 'undefined' &&
+      window.matchMedia('(prefers-color-scheme: dark)')?.matches &&
+      theme === 'system')
   const { data: tags = [], isLoading } = useTags(boardId)
   const createTag = useCreateTag()
   const updateTag = useUpdateTag()
@@ -114,7 +117,6 @@ export function TagSelector({
       onChange([...selectedTagIds, tagId])
     }
   }
-
 
   const handleCreateTag = async () => {
     if (!label.trim()) {
@@ -275,7 +277,10 @@ export function TagSelector({
               ) : tags.length > 0 ? (
                 tags.map(tag => {
                   const selected = selectedTagIds.includes(tag.id)
-                  const textColor = getAccessibleTextColor(tag.color, isDarkMode)
+                  const textColor = getAccessibleTextColor(
+                    tag.color,
+                    isDarkMode
+                  )
 
                   return (
                     <button

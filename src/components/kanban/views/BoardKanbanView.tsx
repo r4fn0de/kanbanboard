@@ -25,10 +25,15 @@ import {
 } from '@/components/ui/context-menu'
 import { cn } from '@/lib/utils'
 import type { KanbanCard, KanbanColumn } from '@/types/common'
-import { Plus, Circle, Play, CheckCircle, Trash2 } from 'lucide-react'
+import { Plus, Trash2 } from 'lucide-react'
 import { useMemo, useState, useCallback } from 'react'
 import { CardContent } from './board-shared'
 import { AddTaskDialog } from '../AddTaskDialog'
+import { getColumnIconComponent } from '@/components/kanban/column-icon-options'
+import {
+  DEFAULT_COLUMN_ICON,
+  FALLBACK_COLUMN_COLORS,
+} from '@/constants/kanban-columns'
 
 interface BoardKanbanViewProps {
   columns: KanbanColumn[]
@@ -50,26 +55,17 @@ interface BoardKanbanViewProps {
   onDeleteTask?: (card: KanbanCard) => void
 }
 
-const accentThemes = [
-  {
-    dot: 'bg-gray-400',
-    count: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
-    accentBorder: 'border-gray-200 dark:border-gray-700',
-    icon: Circle,
-  },
-  {
-    dot: 'bg-gray-500',
-    count: 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300',
-    accentBorder: 'border-gray-200 dark:border-gray-700',
-    icon: Play,
-  },
-  {
-    dot: 'bg-gray-600',
-    count: 'bg-gray-300 text-gray-700 dark:bg-gray-600 dark:text-gray-300',
-    accentBorder: 'border-gray-200 dark:border-gray-700',
-    icon: CheckCircle,
-  },
-] as const
+function hexToRgba(hex: string | null | undefined, alpha: number) {
+  if (!hex || !/^#([0-9a-fA-F]{6})$/.test(hex)) {
+    return null
+  }
+
+  const value = hex.slice(1)
+  const r = parseInt(value.slice(0, 2), 16)
+  const g = parseInt(value.slice(2, 4), 16)
+  const b = parseInt(value.slice(4, 6), 16)
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`
+}
 
 export function BoardKanbanView({
   columns,
@@ -224,8 +220,16 @@ function DraggableColumn({
     willChange: 'transform',
   }
 
-  const theme =
-    accentThemes[accentIndex % accentThemes.length] ?? accentThemes[0]
+  const fallbackColor =
+    FALLBACK_COLUMN_COLORS[accentIndex % FALLBACK_COLUMN_COLORS.length] ??
+    FALLBACK_COLUMN_COLORS[0]
+  const baseColor = column.color ?? fallbackColor
+  const headerBackground = hexToRgba(baseColor, 0.14) ?? undefined
+  const headerBorder = hexToRgba(baseColor, 0.35) ?? undefined
+  const countBackground = hexToRgba(baseColor, 0.18) ?? undefined
+  const countColor = baseColor
+  const iconBackground = hexToRgba(baseColor, 0.18) ?? undefined
+  const ColumnIcon = getColumnIconComponent(column.icon ?? DEFAULT_COLUMN_ICON)
 
   return (
     <div
@@ -235,23 +239,36 @@ function DraggableColumn({
     >
       <div
         className={cn(
-          'flex items-center justify-between gap-3 rounded-3xl border bg-card px-5 py-4',
-          theme.accentBorder
+          'flex items-center justify-between gap-3 rounded-3xl border bg-card px-5 py-4'
         )}
+        style={{
+          borderColor: headerBorder,
+          backgroundColor: headerBackground,
+        }}
       >
         <div className="flex items-center gap-3" {...attributes} {...listeners}>
           <div className="flex items-center gap-2">
-            <theme.icon className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+            <span
+              className="flex h-8 w-8 items-center justify-center rounded-full border"
+              style={{
+                backgroundColor: iconBackground,
+                borderColor: headerBorder,
+                color: countColor,
+              }}
+            >
+              <ColumnIcon className="h-4 w-4" />
+            </span>
           </div>
           <h2 className="text-lg font-semibold text-foreground">
             {column.title}
           </h2>
         </div>
         <span
-          className={cn(
-            'rounded-full px-3 py-1 text-xs font-semibold',
-            theme.count
-          )}
+          className={cn('rounded-full px-3 py-1 text-xs font-semibold')}
+          style={{
+            backgroundColor: countBackground,
+            color: countColor,
+          }}
         >
           {columnCards.length}
         </span>
@@ -259,6 +276,7 @@ function DraggableColumn({
       <div
         ref={setDroppableRef}
         className="flex flex-1 flex-col gap-4 overflow-y-auto overflow-x-visible p-3 min-h-0 rounded-xl border-2 border-transparent transition-all duration-200"
+        style={{ borderColor: hexToRgba(baseColor, 0.08) ?? undefined }}
       >
         {columnCards.length > 0 ? (
           <>
@@ -272,10 +290,10 @@ function DraggableColumn({
               />
             ))}
             {/* Drop zone at the end of cards */}
-            <ColumnEndDropZone columnId={column.id} />
+            <ColumnEndDropZone columnId={column.id} accentColor={baseColor} />
           </>
         ) : (
-          <EmptyColumnDropZone columnId={column.id} />
+          <EmptyColumnDropZone columnId={column.id} accentColor={baseColor} />
         )}
       </div>
       <Button
@@ -283,6 +301,11 @@ function DraggableColumn({
         onClick={onAddCard}
         disabled={isCreatingCard}
         className="flex items-center justify-center gap-2 rounded-2xl bg-card py-3 text-sm font-medium text-card-foreground transition disabled:cursor-not-allowed disabled:opacity-60"
+        style={{
+          borderColor: headerBorder,
+          color: countColor,
+          backgroundColor: hexToRgba(baseColor, 0.12) ?? undefined,
+        }}
       >
         <Plus className="h-4 w-4" />
         Add Task
@@ -360,24 +383,51 @@ function DraggableCard({
   )
 }
 
-function EmptyColumnDropZone({ columnId }: { columnId: string }) {
+function EmptyColumnDropZone({
+  columnId,
+  accentColor,
+}: {
+  columnId: string
+  accentColor: string
+}) {
   const { isOver, setNodeRef } = useDroppable({
     id: `column-${columnId}-cards`,
   })
+
+  const highlightBg = hexToRgba(accentColor, 0.18)
+  const highlightBorder = hexToRgba(accentColor, 0.4)
+  const highlightText = accentColor
 
   return (
     <div
       ref={setNodeRef}
       className={cn(
         'flex flex-col items-center justify-center rounded-3xl border border-dashed border-border bg-card/70 p-8 text-center text-sm text-muted-foreground transition-all duration-300 min-h-[160px] m-2',
-        isOver &&
-          'bg-primary/10 border-primary border-solid scale-[1.02] shadow-lg'
+        isOver && 'border-solid scale-[1.02] shadow-lg'
       )}
+      style={
+        isOver
+          ? {
+              backgroundColor: highlightBg ?? undefined,
+              borderColor: highlightBorder ?? undefined,
+              color: highlightText,
+            }
+          : undefined
+      }
     >
       {isOver ? (
         <div className="flex flex-col items-center gap-4">
-          <div className="h-0.5 w-16 rounded-full bg-primary" />
-          <span className="text-primary font-semibold text-base bg-primary/10 px-4 py-2 rounded-full">
+          <div
+            className="h-0.5 w-16 rounded-full"
+            style={{ backgroundColor: highlightText }}
+          />
+          <span
+            className="font-semibold text-base rounded-full px-4 py-2"
+            style={{
+              backgroundColor: hexToRgba(accentColor, 0.12) ?? undefined,
+              color: highlightText,
+            }}
+          >
             Drop card here
           </span>
         </div>
@@ -393,25 +443,51 @@ function EmptyColumnDropZone({ columnId }: { columnId: string }) {
   )
 }
 
-function ColumnEndDropZone({ columnId }: { columnId: string }) {
+function ColumnEndDropZone({
+  columnId,
+  accentColor,
+}: {
+  columnId: string
+  accentColor: string
+}) {
   const { isOver, setNodeRef } = useDroppable({
     id: `column-${columnId}-end`,
   })
+
+  const highlightBg = hexToRgba(accentColor, 0.12)
+  const highlightBorder = hexToRgba(accentColor, 0.4)
+  const highlightText = accentColor
 
   return (
     <div
       ref={setNodeRef}
       className={cn(
         'mt-4 min-h-[20px] transition-all duration-300 rounded-2xl border-2 border-transparent',
-        isOver &&
-          'bg-primary/5 border-primary/30 min-h-[60px] shadow-lg scale-[1.02]'
+        isOver && 'min-h-[60px] shadow-lg scale-[1.02]'
       )}
+      style={
+        isOver
+          ? {
+              backgroundColor: highlightBg ?? undefined,
+              borderColor: highlightBorder ?? undefined,
+            }
+          : undefined
+      }
     >
       {isOver && (
         <div className="flex items-center justify-center h-full py-3">
           <div className="flex flex-col items-center gap-2">
-            <div className="h-0.5 w-16 rounded-full bg-primary" />
-            <span className="text-primary font-medium text-sm bg-primary/10 px-3 py-1 rounded-full">
+            <div
+              className="h-0.5 w-16 rounded-full"
+              style={{ backgroundColor: highlightText }}
+            />
+            <span
+              className="font-medium text-sm rounded-full px-3 py-1"
+              style={{
+                backgroundColor: hexToRgba(accentColor, 0.12) ?? undefined,
+                color: highlightText,
+              }}
+            >
               Drop here
             </span>
           </div>

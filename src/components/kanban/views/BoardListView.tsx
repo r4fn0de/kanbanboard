@@ -9,11 +9,16 @@ import {
 } from '@/components/ui/context-menu'
 import { cn } from '@/lib/utils'
 import type { KanbanCard, KanbanColumn } from '@/types/common'
-import { Plus, Circle, Play, CheckCircle, Trash2 } from 'lucide-react'
+import { Plus, Trash2 } from 'lucide-react'
 import { PriorityBadge } from './board-shared'
 import { formatCardDueDate } from './card-date'
 import { AddTaskDialog } from '../AddTaskDialog'
 import { getTagBadgeStyle } from '../tags/utils'
+import { getColumnIconComponent } from '@/components/kanban/column-icon-options'
+import {
+  DEFAULT_COLUMN_ICON,
+  FALLBACK_COLUMN_COLORS,
+} from '@/constants/kanban-columns'
 
 interface BoardListViewProps {
   columns: KanbanColumn[]
@@ -30,20 +35,17 @@ interface BoardListViewProps {
   onDeleteTask?: (card: KanbanCard) => void
 }
 
-const accentThemes = [
-  {
-    dot: 'bg-gray-400',
-    icon: Circle,
-  },
-  {
-    dot: 'bg-gray-500',
-    icon: Play,
-  },
-  {
-    dot: 'bg-gray-600',
-    icon: CheckCircle,
-  },
-] as const
+function hexToRgba(hex: string | null | undefined, alpha: number) {
+  if (!hex || !/^#([0-9a-fA-F]{6})$/.test(hex)) {
+    return null
+  }
+
+  const value = hex.slice(1)
+  const r = parseInt(value.slice(0, 2), 16)
+  const g = parseInt(value.slice(2, 4), 16)
+  const b = parseInt(value.slice(4, 6), 16)
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`
+}
 
 export function BoardListView({
   columns,
@@ -81,16 +83,41 @@ export function BoardListView({
       <div className="flex-1 space-y-6 overflow-y-auto px-1 py-2 scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent h-full">
         {columns.map((column, columnIndex) => {
           const columnCards = cardsByColumn.get(column.id) ?? []
-          const theme =
-            accentThemes[columnIndex % accentThemes.length] ?? accentThemes[0]
+          const fallbackColor =
+            FALLBACK_COLUMN_COLORS[
+              columnIndex % FALLBACK_COLUMN_COLORS.length
+            ] ?? FALLBACK_COLUMN_COLORS[0]
+          const baseColor = column.color ?? fallbackColor
+          const headerBorder = hexToRgba(baseColor, 0.35) ?? undefined
+          const headerBackground = hexToRgba(baseColor, 0.14)
+          const iconBackground = hexToRgba(baseColor, 0.18) ?? undefined
+          const iconColor = baseColor
+          const IconComponent = getColumnIconComponent(
+            column.icon ?? DEFAULT_COLUMN_ICON
+          )
           return (
             <div
               key={column.id}
               className="overflow-hidden rounded-[2rem] border border-border bg-muted"
             >
-              <div className="flex flex-col gap-4 border-b border-border bg-card px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
+              <div
+                className="flex flex-col gap-4 border-b border-border bg-card px-6 py-5 sm:flex-row sm:items-center sm:justify-between"
+                style={{
+                  borderColor: headerBorder,
+                  backgroundColor: headerBackground ?? undefined,
+                }}
+              >
                 <div className="flex items-center gap-3">
-                  <theme.icon className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+                  <span
+                    className="flex h-9 w-9 items-center justify-center rounded-full border"
+                    style={{
+                      backgroundColor: iconBackground,
+                      borderColor: headerBorder,
+                      color: iconColor,
+                    }}
+                  >
+                    <IconComponent className="h-4 w-4" />
+                  </span>
                   <div className="flex flex-col">
                     <p className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
                       {column.title}
@@ -108,6 +135,11 @@ export function BoardListView({
                   onClick={() => handleAddCard(column)}
                   disabled={isCreatingCard}
                   className="flex items-center justify-center gap-2 rounded-2xl bg-card py-3 text-sm font-medium text-card-foreground transition disabled:cursor-not-allowed disabled:opacity-60"
+                  style={{
+                    borderColor: headerBorder,
+                    color: iconColor,
+                    backgroundColor: hexToRgba(baseColor, 0.12) ?? undefined,
+                  }}
                 >
                   <Plus className="mr-2 h-4 w-4" />
                   Add Task
@@ -180,7 +212,8 @@ export function BoardListView({
                                           tag.color
                                             ? {
                                                 backgroundColor: tag.color,
-                                                color: getTagBadgeStyle(tag)?.color,
+                                                color:
+                                                  getTagBadgeStyle(tag)?.color,
                                                 borderColor: tag.color,
                                               }
                                             : undefined
@@ -210,7 +243,14 @@ export function BoardListView({
                                 Due date
                               </span>
                               {dueLabel ? (
-                                <span className="text-sm font-medium text-foreground">
+                                <span
+                                  className="rounded-full px-3 py-1 text-xs font-medium"
+                                  style={{
+                                    backgroundColor:
+                                      hexToRgba(baseColor, 0.12) ?? undefined,
+                                    color: iconColor,
+                                  }}
+                                >
                                   {dueLabel}
                                 </span>
                               ) : (

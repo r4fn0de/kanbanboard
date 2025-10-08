@@ -1,6 +1,7 @@
 import { invoke } from '@tauri-apps/api/core'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
+import { DEFAULT_COLUMN_ICON } from '@/constants/kanban-columns'
 import type {
   KanbanBoard,
   KanbanCard,
@@ -378,13 +379,58 @@ export interface CreateColumnInput {
   title: string
   position: number
   wipLimit?: number | null
+  color?: string | null
+  icon?: string | null
+  isEnabled?: boolean
 }
 
 export async function createColumn(input: CreateColumnInput): Promise<void> {
+  const isEnabled = input.isEnabled ?? true
   await invoke('create_column', {
     ...input,
     wipLimit: input.wipLimit ?? null,
+    color: input.color ?? null,
+    icon: input.icon ?? null,
+    isEnabled,
   })
+}
+
+export interface UpdateColumnInput {
+  id: string
+  boardId: string
+  title?: string
+  color?: string | null
+  icon?: string | null
+  isEnabled?: boolean
+}
+
+export async function updateColumn(input: UpdateColumnInput): Promise<void> {
+  const payload: Record<string, unknown> = {
+    id: input.id,
+    boardId: input.boardId,
+  }
+
+  if (Object.hasOwn(input, 'title')) {
+    payload.title = input.title
+  }
+
+  if (Object.hasOwn(input, 'color')) {
+    payload.color = input.color ?? null
+  }
+
+  if (Object.hasOwn(input, 'icon')) {
+    payload.icon = input.icon ?? null
+  }
+
+  if (Object.hasOwn(input, 'isEnabled')) {
+    payload.isEnabled = input.isEnabled
+  }
+
+  if (Object.keys(payload).length <= 2) {
+    return
+  }
+
+  await invoke('update_column', { args: payload })
 }
 
 export interface MoveColumnInput {
@@ -696,6 +742,9 @@ export function useCreateColumn(boardId: string) {
         title: input.title,
         position: input.position,
         wipLimit: input.wipLimit ?? null,
+        color: input.color ?? null,
+        icon: input.icon ?? DEFAULT_COLUMN_ICON,
+        isEnabled: input.isEnabled ?? true,
         createdAt: now,
         updatedAt: now,
         archivedAt: null,
@@ -720,6 +769,71 @@ export function useCreateColumn(boardId: string) {
         queryKey: kanbanQueryKeys.columns(boardId),
       })
       queryClient.invalidateQueries({ queryKey: kanbanQueryKeys.boards() })
+    },
+  })
+}
+
+export function useUpdateColumn(boardId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: updateColumn,
+    onMutate: async input => {
+      const columnsKey = kanbanQueryKeys.columns(boardId)
+
+      await queryClient.cancelQueries({ queryKey: columnsKey })
+
+      const previousColumns =
+        queryClient.getQueryData<KanbanColumn[]>(columnsKey)
+
+      if (previousColumns) {
+        const now = new Date().toISOString()
+
+        const updatedColumns = previousColumns.map(column => {
+          if (column.id !== input.id) {
+            return column
+          }
+
+          const nextColumn: KanbanColumn = {
+            ...column,
+            updatedAt: now,
+          }
+
+          if (Object.hasOwn(input, 'title')) {
+            nextColumn.title = input.title ?? column.title
+          }
+
+          if (Object.hasOwn(input, 'color')) {
+            nextColumn.color = input.color ?? null
+          }
+
+          if (Object.hasOwn(input, 'icon')) {
+            nextColumn.icon = input.icon ?? DEFAULT_COLUMN_ICON
+          }
+
+          if (Object.hasOwn(input, 'isEnabled')) {
+            nextColumn.isEnabled = input.isEnabled ?? true
+          }
+
+          return nextColumn
+        })
+
+        queryClient.setQueryData<KanbanColumn[]>(columnsKey, updatedColumns)
+      }
+
+      return { previousColumns }
+    },
+    onError: (_error, _variables, context) => {
+      if (context?.previousColumns) {
+        queryClient.setQueryData(
+          kanbanQueryKeys.columns(boardId),
+          context.previousColumns
+        )
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({
+        queryKey: kanbanQueryKeys.columns(boardId),
+      })
     },
   })
 }
