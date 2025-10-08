@@ -216,8 +216,12 @@ export function ColumnManagerDialog({
 									<PopoverTrigger asChild>
 										<button
 											type="button"
-											className="flex items-center justify-center w-10 h-10 rounded-lg border-2 hover:border-muted-foreground/30 transition-colors"
-											style={{ backgroundColor: newColumnColor ?? "transparent", borderColor: newColumnColor ?? "" }}
+											className="flex items-center justify-center w-10 h-10 rounded-lg border-2 hover:border-muted-foreground/30"
+											style={{ 
+												backgroundColor: newColumnColor ?? "transparent", 
+												borderColor: newColumnColor ?? "",
+												transition: 'border-color 150ms ease-in-out'
+											}}
 											disabled={createColumn.isPending}
 										>
 											{(() => {
@@ -414,10 +418,7 @@ function ColumnManagerRow({
 		isDragging,
 	} = useSortable({ id: column.id });
 
-	const style: React.CSSProperties = {
-		transform: transform ? CSS.Transform.toString(transform) : undefined,
-		transition: isDragging ? "none" : transition,
-	};
+	
 
 	const IconComponent = getColumnIconComponent(icon);
 	const accentColor = color ?? FALLBACK_COLUMN_COLORS[0];
@@ -493,19 +494,23 @@ function ColumnManagerRow({
 	return (
 		<div
 			ref={setNodeRef}
-			style={style}
+			style={{
+				transform: transform ? CSS.Translate.toString(transform) : undefined,
+				transition: isDragging ? "none" : transition,
+			}}
 			className={cn(
-				"flex items-center gap-4 rounded-lg border border-border bg-card px-4 py-3 shadow-sm transition-opacity",
+				"flex items-center gap-4 rounded-lg border border-border bg-card px-4 py-3 shadow-sm",
 				isDragging && "opacity-70",
 			)}
 		>
 			<button
 				type="button"
 				className="flex h-8 w-8 items-center justify-center rounded border border-dashed border-muted-foreground/40 text-muted-foreground hover:border-muted-foreground/60"
+				style={{ touchAction: 'none' }}
 				{...attributes}
 				{...listeners}
 			>
-				<GripVertical className="h-4 w-4" />
+				<GripVertical className="h-4 w-4 pointer-events-none" />
 			</button>
 
 			<div className="flex items-center gap-4 flex-1">
@@ -513,8 +518,12 @@ function ColumnManagerRow({
 					<PopoverTrigger asChild>
 						<button
 							type="button"
-							className="flex items-center justify-center w-10 h-10 rounded-lg border-2 hover:border-muted-foreground/30 transition-colors"
-							style={{ backgroundColor: color ?? "transparent", borderColor: color ?? "" }}
+							className="flex items-center justify-center w-10 h-10 rounded-lg border-2 hover:border-muted-foreground/30"
+							style={{ 
+								backgroundColor: color ?? "transparent", 
+								borderColor: color ?? "",
+								transition: 'border-color 150ms ease-in-out'
+							}}
 							disabled={isUpdating}
 						>
 							<IconComponent 
@@ -595,6 +604,7 @@ function ColumnManagerRow({
 							disabled={isUpdating}
 							autoFocus
 							className="flex-1"
+							style={{ outline: 'none' }}
 						/>
 						<Button
 							type="button"
@@ -612,15 +622,16 @@ function ColumnManagerRow({
 				) : (
 					<button
 						type="button"
-						className="flex-1 text-left hover:bg-muted/50 rounded px-3 py-2 transition-colors group"
+						className="flex-1 text-left hover:bg-muted/50 rounded px-3 py-2 group"
 						onClick={handleTitleClick}
 						disabled={isUpdating}
+						style={{ transition: 'background-color 150ms ease-in-out' }}
 					>
-						<span className="font-medium text-sm group-hover:text-primary transition-colors">
+						<span className="font-medium text-sm group-hover:text-primary" style={{ transition: 'color 150ms ease-in-out' }}>
 							{title}
 						</span>
 						{!isUpdating && (
-							<Edit2 className="h-3 w-3 opacity-0 group-hover:opacity-50 transition-opacity ml-2 inline" />
+							<Edit2 className="h-3 w-3 opacity-0 group-hover:opacity-50 ml-2 inline" style={{ transition: 'opacity 150ms ease-in-out' }} />
 						)}
 					</button>
 				)}
