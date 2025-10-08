@@ -33,58 +33,61 @@ export function usePreferences() {
 }
 
 export function useSavePreferences() {
-  const queryClient = useQueryClient()
+  const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (partialPrefs: Partial<AppPreferences>) => {
       const current =
         queryClient.getQueryData<AppPreferences>(
           preferencesQueryKeys.preferences()
-        ) ?? defaultPreferences
+        ) ?? defaultPreferences;
       const preferences: AppPreferences = {
         ...current,
         ...partialPrefs,
-      }
+      };
       try {
-        logger.debug('Saving preferences to backend', { preferences })
-        await invoke('save_preferences', { preferences })
-        logger.info('Preferences saved successfully')
+        logger.debug('Saving preferences to backend', { preferences });
+        await invoke('save_preferences', { preferences });
+        logger.info('Preferences saved successfully');
+        return preferences;
       } catch (error) {
         const message =
-          error instanceof Error ? error.message : 'Unknown error occurred'
-        logger.error('Failed to save preferences', { error, preferences })
-        toast.error('Failed to save preferences', { description: message })
-        throw error
+          error instanceof Error ? error.message : 'Unknown error occurred';
+        logger.error('Failed to save preferences', { error, preferences });
+        toast.error('Failed to save preferences', { description: message });
+        throw error;
       }
     },
-    onMutate: async partialPrefs => {
+    onMutate: async (partialPrefs) => {
       await queryClient.cancelQueries({
         queryKey: preferencesQueryKeys.preferences(),
-      })
+      });
       const previous = queryClient.getQueryData<AppPreferences>(
         preferencesQueryKeys.preferences()
-      )
+      );
 
       const merged: AppPreferences = {
         ...(previous ?? defaultPreferences),
         ...partialPrefs,
-      }
+      };
 
-      queryClient.setQueryData(preferencesQueryKeys.preferences(), merged)
+      queryClient.setQueryData(preferencesQueryKeys.preferences(), merged);
 
-      return { previous }
+      return { previous, merged };
     },
     onError: (_error, _variables, context) => {
       if (context?.previous) {
         queryClient.setQueryData(
           preferencesQueryKeys.preferences(),
           context.previous
-        )
+        );
       }
     },
-    onSuccess: (_data, _variables, _context) => {
-      logger.info('Preferences cache updated')
-      toast.success('Preferences saved')
+    onSuccess: (data) => {
+      if (data) {
+        queryClient.setQueryData(preferencesQueryKeys.preferences(), data);
+      }
+      logger.info('Preferences cache updated');
     },
-  })
+  });
 }

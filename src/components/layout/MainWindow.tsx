@@ -13,12 +13,31 @@ import { useTheme } from '@/hooks/use-theme'
 import { useUIStore } from '@/store/ui-store'
 import { useMainWindowEventListeners } from '@/hooks/useMainWindowEventListeners'
 import { cn } from '@/lib/utils'
-import { useCallback } from 'react'
+import { useCallback } from 'react';
+import { usePreferences, useSavePreferences } from '@/services/preferences'
+
+// A simple debounce function
+function debounce<T extends (...args: any[]) => void>(
+  func: T,
+  wait: number
+): (...args: Parameters<T>) => void {
+  let timeout: ReturnType<typeof setTimeout> | null = null
+  return function (this: ThisParameterType<T>, ...args: Parameters<T>) {
+    if (timeout) {
+      clearTimeout(timeout)
+    }
+    timeout = setTimeout(() => {
+      func.apply(this, args)
+    }, wait)
+  }
+}
 
 export function MainWindow() {
   const { theme, transparencyEnabled } = useTheme()
   const { leftSidebarVisible, rightSidebarVisible, toggleLeftSidebar } =
     useUIStore()
+  const { data: preferences } = usePreferences()
+  const { mutate: savePreferences } = useSavePreferences()
 
   // Set up global event listeners (keyboard shortcuts, etc.)
   useMainWindowEventListeners()
@@ -36,6 +55,19 @@ export function MainWindow() {
     }
   }, [leftSidebarVisible, toggleLeftSidebar])
 
+  const debouncedSaveLayout = useCallback(
+    debounce((layout: number[]) => {
+      savePreferences({ sidebarLayout: layout });
+    }, 500),
+    [savePreferences]
+  );
+
+
+
+  const handleLayout = (sizes: number[]) => {
+    debouncedSaveLayout(sizes);
+  };
+
   return (
     <div className="relative flex h-screen w-full flex-col overflow-hidden rounded-[12px] supports-[backdrop-filter]:rounded-[12px]">
       {!leftSidebarVisible ? (
@@ -49,13 +81,17 @@ export function MainWindow() {
 
       {/* Main Content Area with Resizable Panels */}
       <div className={contentClasses}>
-        <ResizablePanelGroup direction="horizontal">
+        <ResizablePanelGroup
+          direction="horizontal"
+          onLayout={handleLayout}
+          autoSaveId="app-layout"
+        >
           {/* Left Sidebar */}
           <ResizablePanel
-            defaultSize={rightSidebarVisible ? 20 : 18}
-            minSize={rightSidebarVisible ? 15 : 12}
-            maxSize={40}
+            minSize={10}
+            maxSize={15}
             className={cn(!leftSidebarVisible && 'hidden')}
+            defaultSize={preferences?.sidebarLayout?.[0] ?? 15}
           >
             <LeftSideBar />
           </ResizablePanel>
@@ -63,7 +99,7 @@ export function MainWindow() {
           <ResizableHandle className={cn(!leftSidebarVisible && 'hidden')} />
 
           {/* Main Content */}
-          <ResizablePanel defaultSize={60} minSize={30}>
+          <ResizablePanel minSize={30} defaultSize={preferences?.sidebarLayout?.[1] ?? 65}>
             <MainWindowContent />
           </ResizablePanel>
 
@@ -71,10 +107,10 @@ export function MainWindow() {
 
           {/* Right Sidebar */}
           <ResizablePanel
-            defaultSize={20}
             minSize={15}
             maxSize={40}
             className={cn(!rightSidebarVisible && 'hidden')}
+            defaultSize={preferences?.sidebarLayout?.[2] ?? 20}
           >
             <RightSideBar />
           </ResizablePanel>
@@ -86,9 +122,7 @@ export function MainWindow() {
       <PreferencesDialog />
       <Toaster
         position="bottom-right"
-        theme={
-          theme === 'dark' ? 'dark' : theme === 'light' ? 'light' : 'system'
-        }
+        theme={theme === 'dark' ? 'dark' : theme === 'light' ? 'light' : 'system'}
         className="toaster group rounded-[16px]"
         toastOptions={{
           classNames: {

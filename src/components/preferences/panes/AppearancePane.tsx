@@ -16,13 +16,13 @@ import { useSavePreferences } from '@/services/preferences'
 const SettingsField: React.FC<{
   label: string
   children: ReactNode
-  description?: string
+  description?: ReactNode
 }> = ({ label, children, description }) => (
   <div className="space-y-2">
     <Label className="text-sm font-medium text-foreground">{label}</Label>
     {children}
     {description && (
-      <p className="text-sm text-muted-foreground">{description}</p>
+      <div className="text-sm text-muted-foreground">{description}</div>
     )}
   </div>
 )
@@ -95,7 +95,14 @@ export const AppearancePane: React.FC = () => {
       <SettingsSection title="Window Effects">
         <SettingsField
           label="Enable Transparency"
-          description="Toggle the macOS-style translucent glass effect applied to sidebars and panels"
+          description={
+            <div>
+              <p>Toggle the macOS-style translucent glass effect applied to sidebars and panels</p>
+              <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                ⚠️ Beta feature - May contain bugs and performance issues
+              </p>
+            </div>
+          }
         >
           <div className="flex items-center gap-3">
             <Switch
