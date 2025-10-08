@@ -1,7 +1,12 @@
 import { invoke } from '@tauri-apps/api/core'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
-import type { KanbanBoard, KanbanCard, KanbanColumn } from '@/types/common'
+import type {
+  KanbanBoard,
+  KanbanCard,
+  KanbanColumn,
+  KanbanTag,
+} from '@/types/common'
 
 const KANBAN_DB_KEY = 'kanban'
 
@@ -12,10 +17,16 @@ export const kanbanQueryKeys = {
     [...kanbanQueryKeys.boards(), 'columns', boardId] as const,
   cards: (boardId: string) =>
     [...kanbanQueryKeys.boards(), 'cards', boardId] as const,
+  tags: (boardId: string) =>
+    [...kanbanQueryKeys.boards(), 'tags', boardId] as const,
 }
 
 export async function fetchBoards(): Promise<KanbanBoard[]> {
   return invoke<KanbanBoard[]>('load_boards')
+}
+
+export async function fetchTags(boardId: string): Promise<KanbanTag[]> {
+  return invoke<KanbanTag[]>('load_tags', { boardId })
 }
 
 export interface CreateBoardInput {
@@ -68,6 +79,62 @@ export async function updateBoardIcon(
   await invoke('update_board_icon', {
     id: input.id,
     icon: input.icon,
+  })
+}
+
+export interface CreateTagInput {
+  id: string
+  boardId: string
+  label: string
+  color?: string | null
+}
+
+export async function createTag(input: CreateTagInput): Promise<KanbanTag> {
+  return invoke<KanbanTag>('create_tag', {
+    args: {
+      id: input.id,
+      boardId: input.boardId,
+      label: input.label,
+      color: input.color ?? null,
+    },
+  })
+}
+
+export interface UpdateTagInput {
+  id: string
+  boardId: string
+  label?: string
+  color?: string | null
+}
+
+export async function updateTag(input: UpdateTagInput): Promise<KanbanTag> {
+  const payload: Record<string, unknown> = {
+    id: input.id,
+    boardId: input.boardId,
+  }
+
+  if (Object.hasOwn(input, 'label')) {
+    payload.label = input.label
+  }
+
+  if (Object.hasOwn(input, 'color')) {
+    payload.color = input.color ?? null
+  }
+
+  return invoke<KanbanTag>('update_tag', { args: payload })
+}
+
+export interface DeleteTagInput {
+  id: string
+  boardId: string
+}
+
+export async function deleteTag(input: DeleteTagInput): Promise<void> {
+  await invoke('delete_tag', {
+    args: {
+      id: input.id,
+      boardId: input.boardId,
+    },
   })
 }
 
@@ -347,6 +414,7 @@ export interface CreateCardInput {
   position: number
   priority: KanbanCard['priority']
   dueDate?: string | null
+  tagIds?: string[]
 }
 
 export async function createCard(input: CreateCardInput): Promise<void> {
@@ -354,6 +422,7 @@ export async function createCard(input: CreateCardInput): Promise<void> {
     ...input,
     description: input.description ?? null,
     dueDate: input.dueDate ?? null,
+    tagIds: input.tagIds ?? [],
   })
 }
 
@@ -399,6 +468,24 @@ export async function deleteCard(input: DeleteCardInput): Promise<void> {
   await invoke('delete_card', {
     id: input.id,
     boardId: input.boardId,
+  })
+}
+
+export interface UpdateCardTagsInput {
+  cardId: string
+  boardId: string
+  tagIds: string[]
+}
+
+export async function updateCardTags(
+  input: UpdateCardTagsInput
+): Promise<KanbanTag[]> {
+  return invoke<KanbanTag[]>('set_card_tags', {
+    args: {
+      cardId: input.cardId,
+      boardId: input.boardId,
+      tagIds: input.tagIds,
+    },
   })
 }
 
@@ -655,6 +742,12 @@ export function useCreateCard(boardId: string) {
       await queryClient.cancelQueries({ queryKey: cardsKey })
 
       const previousCards = queryClient.getQueryData<KanbanCard[]>(cardsKey)
+      const availableTags =
+        queryClient.getQueryData<KanbanTag[]>(kanbanQueryKeys.tags(boardId)) ??
+        []
+      const selectedTags = (input.tagIds ?? [])
+        .map(tagId => availableTags.find(tag => tag.id === tagId))
+        .filter((tag): tag is KanbanTag => Boolean(tag))
 
       const now = new Date().toISOString()
       const optimisticCard: KanbanCard = {
@@ -666,7 +759,7 @@ export function useCreateCard(boardId: string) {
         position: input.position,
         priority: input.priority,
         dueDate: input.dueDate ?? null,
-        tags: [],
+        tags: selectedTags,
         createdAt: now,
         updatedAt: now,
         archivedAt: null,
@@ -739,6 +832,165 @@ export function useUpdateBoardIcon() {
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: kanbanQueryKeys.boards() })
+    },
+  })
+}
+
+export function useTags(boardId: string) {
+  return useQuery({
+    queryKey: kanbanQueryKeys.tags(boardId),
+    queryFn: () => fetchTags(boardId),
+    enabled: Boolean(boardId),
+  })
+}
+
+export function useCreateTag() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: createTag,
+    onSuccess: createdTag => {
+      queryClient.setQueryData<KanbanTag[]>(
+        kanbanQueryKeys.tags(createdTag.boardId),
+        tags => (tags ? [...tags, createdTag] : [createdTag])
+      )
+    },
+    onSettled: (_result, _error, variables) => {
+      if (variables?.boardId) {
+        queryClient.invalidateQueries({
+          queryKey: kanbanQueryKeys.tags(variables.boardId),
+        })
+      }
+    },
+  })
+}
+
+export function useUpdateTag() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: updateTag,
+    onSuccess: (updatedTag, variables) => {
+      const boardId = updatedTag.boardId
+      const tagsKey = kanbanQueryKeys.tags(boardId)
+      const cardsKey = kanbanQueryKeys.cards(boardId)
+
+      queryClient.setQueryData<KanbanTag[]>(tagsKey, tags =>
+        tags
+          ? tags.map(tag => (tag.id === updatedTag.id ? updatedTag : tag))
+          : tags
+      )
+
+      queryClient.setQueryData<KanbanCard[]>(cardsKey, cards =>
+        cards
+          ? cards.map(card =>
+              card.tags.some(tag => tag.id === updatedTag.id)
+                ? {
+                    ...card,
+                    tags: card.tags.map(tag =>
+                      tag.id === updatedTag.id ? updatedTag : tag
+                    ),
+                  }
+                : card
+            )
+          : cards
+      )
+
+      if (variables?.boardId) {
+        queryClient.invalidateQueries({ queryKey: tagsKey })
+        queryClient.invalidateQueries({ queryKey: cardsKey })
+      }
+    },
+  })
+}
+
+export function useDeleteTag() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: deleteTag,
+    onSuccess: (_result, variables) => {
+      const boardId = variables.boardId
+      const tagsKey = kanbanQueryKeys.tags(boardId)
+      const cardsKey = kanbanQueryKeys.cards(boardId)
+
+      queryClient.setQueryData<KanbanTag[]>(tagsKey, tags =>
+        tags ? tags.filter(tag => tag.id !== variables.id) : tags
+      )
+
+      queryClient.setQueryData<KanbanCard[]>(cardsKey, cards =>
+        cards
+          ? cards.map(card =>
+              card.tags.some(tag => tag.id === variables.id)
+                ? {
+                    ...card,
+                    tags: card.tags.filter(tag => tag.id !== variables.id),
+                  }
+                : card
+            )
+          : cards
+      )
+
+      queryClient.invalidateQueries({ queryKey: tagsKey })
+      queryClient.invalidateQueries({ queryKey: cardsKey })
+    },
+  })
+}
+
+export function useUpdateCardTags(boardId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: updateCardTags,
+    onMutate: async input => {
+      const cardsKey = kanbanQueryKeys.cards(boardId)
+      const tagsKey = kanbanQueryKeys.tags(boardId)
+
+      await queryClient.cancelQueries({ queryKey: cardsKey })
+
+      const previousCards = queryClient.getQueryData<KanbanCard[]>(cardsKey)
+      const availableTags = queryClient.getQueryData<KanbanTag[]>(tagsKey) ?? []
+
+      if (previousCards) {
+        const tagMap = new Map(availableTags.map(tag => [tag.id, tag]))
+        const selectedTags = input.tagIds
+          .map(tagId => tagMap.get(tagId))
+          .filter((tag): tag is KanbanTag => Boolean(tag))
+        const now = new Date().toISOString()
+
+        queryClient.setQueryData<KanbanCard[]>(cardsKey, cards =>
+          cards
+            ? cards.map(card =>
+                card.id === input.cardId
+                  ? { ...card, tags: selectedTags, updatedAt: now }
+                  : card
+              )
+            : cards
+        )
+      }
+
+      return { previousCards }
+    },
+    onError: (_error, _variables, context) => {
+      if (context?.previousCards) {
+        queryClient.setQueryData(
+          kanbanQueryKeys.cards(boardId),
+          context.previousCards
+        )
+      }
+    },
+    onSuccess: (updatedTags, variables) => {
+      const cardsKey = kanbanQueryKeys.cards(boardId)
+      queryClient.setQueryData<KanbanCard[]>(cardsKey, cards =>
+        cards
+          ? cards.map(card =>
+              card.id === variables.cardId
+                ? { ...card, tags: updatedTags }
+                : card
+            )
+          : cards
+      )
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({
+        queryKey: kanbanQueryKeys.cards(boardId),
+      })
     },
   })
 }

@@ -43,7 +43,9 @@ interface BoardKanbanViewProps {
   selectedCardId?: string | null
   boardId: string
   onCreateTask: (
-    task: Omit<KanbanCard, 'createdAt' | 'updatedAt' | 'archivedAt'>
+    task: Omit<KanbanCard, 'createdAt' | 'updatedAt' | 'archivedAt'> & {
+      tagIds?: string[]
+    }
   ) => Promise<void>
   onDeleteTask?: (card: KanbanCard) => void
 }
@@ -107,7 +109,9 @@ export function BoardKanbanView({
 
   const handleCreateTask = useCallback(
     async (
-      task: Omit<KanbanCard, 'createdAt' | 'updatedAt' | 'archivedAt'>
+      task: Omit<KanbanCard, 'createdAt' | 'updatedAt' | 'archivedAt'> & {
+        tagIds?: string[]
+      }
     ) => {
       await onCreateTask(task)
     },

@@ -7,8 +7,13 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { PriorityBadge } from './views/board-shared'
-import { kanbanQueryKeys, useUpdateCard } from '@/services/kanban'
+import {
+  kanbanQueryKeys,
+  useUpdateCard,
+  useUpdateCardTags,
+} from '@/services/kanban'
 import { ImageUpload } from '@/components/ui/image-upload'
+import { TagSelector } from '@/components/kanban/tags/TagSelector'
 
 import type { KanbanCard, KanbanColumn } from '@/types/common'
 
@@ -27,6 +32,7 @@ export function TaskDetailsPanel({
 }: TaskDetailsPanelProps) {
   const queryClient = useQueryClient()
   const updateCard = useUpdateCard(card?.boardId || '')
+  const updateCardTagsMutation = useUpdateCardTags(card?.boardId ?? '')
   const [isEditingTitle, setIsEditingTitle] = useState(false)
   const [titleDraft, setTitleDraft] = useState(card?.title || '')
   const [titleError, setTitleError] = useState<string | null>(null)
@@ -36,10 +42,14 @@ export function TaskDetailsPanel({
   )
 
   const [previousCardId, setPreviousCardId] = useState<string | null>(null)
+  const [selectedTagIds, setSelectedTagIds] = useState<string[]>(
+    card?.tags.map(tag => tag.id) ?? []
+  )
 
   useEffect(() => {
     if (!card) {
       setPreviousCardId(null)
+      setSelectedTagIds([])
       return
     }
 
@@ -54,6 +64,7 @@ export function TaskDetailsPanel({
       setIsEditingDescription(false)
       setTitleError(null)
     }
+    setSelectedTagIds(card.tags.map(tag => tag.id))
     setPreviousCardId(card.id)
   }, [card, isEditingTitle, isEditingDescription, previousCardId])
 
@@ -175,6 +186,32 @@ export function TaskDetailsPanel({
     [card, updateCard]
   )
 
+  const handleTagChange = useCallback(
+    (tagIds: string[]) => {
+      if (!card || !card.boardId) {
+        return
+      }
+
+      setSelectedTagIds(tagIds)
+      updateCardTagsMutation.mutate(
+        {
+          cardId: card.id,
+          boardId: card.boardId,
+          tagIds,
+        },
+        {
+          onError: error => {
+            setSelectedTagIds(card.tags.map(tag => tag.id))
+            toast.error(
+              error instanceof Error ? error.message : 'Failed to update tags'
+            )
+          },
+        }
+      )
+    },
+    [card, updateCardTagsMutation]
+  )
+
   if (!card || !column) {
     return null
   }
@@ -294,6 +331,18 @@ export function TaskDetailsPanel({
                 )}
               </button>
             )}
+          </div>
+
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">Tags</Label>
+            <TagSelector
+              boardId={card.boardId}
+              selectedTagIds={selectedTagIds}
+              onChange={handleTagChange}
+              disabled={
+                updateCard.isPending || updateCardTagsMutation.isPending
+              }
+            />
           </div>
 
           {/* Due Date */}

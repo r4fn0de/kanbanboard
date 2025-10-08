@@ -13,6 +13,7 @@ import { Plus, Circle, Play, CheckCircle, Trash2 } from 'lucide-react'
 import { PriorityBadge } from './board-shared'
 import { formatCardDueDate } from './card-date'
 import { AddTaskDialog } from '../AddTaskDialog'
+import { getTagBadgeStyle } from '../tags/utils'
 
 interface BoardListViewProps {
   columns: KanbanColumn[]
@@ -22,7 +23,9 @@ interface BoardListViewProps {
   selectedCardId?: string | null
   boardId: string
   onCreateTask: (
-    task: Omit<KanbanCard, 'createdAt' | 'updatedAt' | 'archivedAt'>
+    task: Omit<KanbanCard, 'createdAt' | 'updatedAt' | 'archivedAt'> & {
+      tagIds?: string[]
+    }
   ) => Promise<void>
   onDeleteTask?: (card: KanbanCard) => void
 }
@@ -64,7 +67,9 @@ export function BoardListView({
 
   const handleCreateTask = useCallback(
     async (
-      task: Omit<KanbanCard, 'createdAt' | 'updatedAt' | 'archivedAt'>
+      task: Omit<KanbanCard, 'createdAt' | 'updatedAt' | 'archivedAt'> & {
+        tagIds?: string[]
+      }
     ) => {
       await onCreateTask(task)
     },
@@ -168,17 +173,26 @@ export function BoardListView({
                                   <>
                                     {displayTags.map(tag => (
                                       <Badge
-                                        key={tag}
+                                        key={tag.id}
                                         variant="secondary"
-                                        className="rounded-full px-3 py-1 text-xs"
+                                        className="rounded-full px-3 py-1 text-xs font-semibold leading-none opacity-100"
+                                        style={
+                                          tag.color
+                                            ? {
+                                                backgroundColor: tag.color,
+                                                color: getTagBadgeStyle(tag)?.color,
+                                                borderColor: tag.color,
+                                              }
+                                            : undefined
+                                        }
                                       >
-                                        {tag}
+                                        {tag.label}
                                       </Badge>
                                     ))}
                                     {remainingTags > 0 ? (
                                       <Badge
                                         variant="secondary"
-                                        className="rounded-full px-3 py-1 text-xs"
+                                        className="rounded-full px-3 py-1 text-xs font-semibold leading-none"
                                       >
                                         +{remainingTags}
                                       </Badge>

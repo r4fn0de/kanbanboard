@@ -1,3 +1,4 @@
+import { Badge } from '@/components/ui/badge'
 import type { KanbanCard, KanbanColumn } from '@/types/common'
 import { CalendarClock, Trash2 } from 'lucide-react'
 import { useMemo } from 'react'
@@ -9,6 +10,7 @@ import {
   ContextMenuItem,
   ContextMenuTrigger,
 } from '@/components/ui/context-menu'
+import { getTagBadgeStyle } from '../tags/utils'
 
 interface BoardTimelineViewProps {
   cards: KanbanCard[]
@@ -101,6 +103,9 @@ export function BoardTimelineView({
               {group.cards.map(card => {
                 const column = columnsById.get(card.columnId)
                 const dueLabel = formatCardDueDate(card.dueDate)
+                const tagList = card.tags ?? []
+                const displayTags = tagList.slice(0, 3)
+                const remainingTags = tagList.length - displayTags.length
                 return (
                   <ContextMenu key={card.id}>
                     <ContextMenuTrigger asChild>
@@ -122,6 +127,33 @@ export function BoardTimelineView({
                           </p>
                         ) : null}
                         <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                          {displayTags.map(tag => (
+                            <Badge
+                              key={tag.id}
+                              variant="secondary"
+                            className="rounded-full px-3 py-1 text-xs font-semibold leading-none opacity-100"
+                              style={
+                                tag.color
+                                  ? {
+                                      backgroundColor: tag.color,
+                                      color: getTagBadgeStyle(tag)?.color,
+                                    borderColor: tag.color,
+                                    opacity: 1,
+                                    }
+                                  : undefined
+                              }
+                            >
+                              {tag.label}
+                            </Badge>
+                          ))}
+                          {remainingTags > 0 ? (
+                            <Badge
+                              variant="secondary"
+                              className="rounded-full px-3 py-1 text-xs font-semibold leading-none"
+                            >
+                              +{remainingTags}
+                            </Badge>
+                          ) : null}
                           {dueLabel ? (
                             <span className="rounded-full bg-secondary px-2 py-1 font-medium text-secondary-foreground">
                               Due {dueLabel}

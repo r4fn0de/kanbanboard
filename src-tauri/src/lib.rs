@@ -8,6 +8,7 @@ use sqlx::{
     QueryBuilder, Row, Sqlite, Transaction,
     sqlite::{SqliteConnectOptions, SqliteJournalMode, SqlitePool, SqlitePoolOptions, SqliteRow},
 };
+use std::collections::{BTreeSet, HashMap};
 use std::fs;
 use std::path::PathBuf;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
@@ -79,6 +80,42 @@ struct UpdateCardArgs {
     priority: Option<String>,
     #[serde(default)]
     due_date: Option<Option<String>>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct CreateTagArgs {
+    id: String,
+    board_id: String,
+    label: String,
+    #[serde(default)]
+    color: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct UpdateTagArgs {
+    id: String,
+    board_id: String,
+    #[serde(default)]
+    label: Option<String>,
+    #[serde(default)]
+    color: Option<Option<String>>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct SetCardTagsArgs {
+    card_id: String,
+    board_id: String,
+    tag_ids: Vec<String>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct DeleteTagArgs {
+    id: String,
+    board_id: String,
 }
 
 #[tauri::command]
@@ -501,12 +538,29 @@ fn map_column_row(row: SqliteRow) -> Result<Value, sqlx::Error> {
     }))
 }
 
+fn map_tag_row(row: SqliteRow) -> Result<Value, sqlx::Error> {
+    Ok(json!({
+        "id": row.try_get::<String, _>("id")?,
+        "boardId": row.try_get::<String, _>("board_id")?,
+        "label": row.try_get::<String, _>("label")?,
+        "color": row.try_get::<Option<String>, _>("color")?,
+        "createdAt": row.try_get::<String, _>("created_at")?,
+        "updatedAt": row.try_get::<String, _>("updated_at")?,
+    }))
+}
+
 fn map_card_row(row: SqliteRow) -> Result<Value, sqlx::Error> {
     let attachments_json: Option<String> = row.try_get("attachments")?;
     let attachments: Option<Vec<String>> = match attachments_json {
         Some(json_str) => serde_json::from_str(&json_str).ok(),
         None => None,
     };
+
+    let tags_json: Option<String> = row.try_get("tags_json")?;
+    let tags: Vec<Value> = tags_json
+        .as_deref()
+        .and_then(|json_str| serde_json::from_str(json_str).ok())
+        .unwrap_or_default();
 
     Ok(json!({
         "id": row.try_get::<String, _>("id")?,
@@ -521,7 +575,7 @@ fn map_card_row(row: SqliteRow) -> Result<Value, sqlx::Error> {
         "createdAt": row.try_get::<String, _>("created_at")?,
         "updatedAt": row.try_get::<String, _>("updated_at")?,
         "archivedAt": row.try_get::<Option<String>, _>("archived_at")?,
-        "tags": Vec::<String>::new(),
+        "tags": tags,
     }))
 }
 
@@ -529,6 +583,28 @@ fn normalize_optional_text(value: Option<String>) -> Option<String> {
     value
         .map(|v| v.trim().to_string())
         .filter(|v| !v.is_empty())
+}
+
+fn normalize_tag_color(color: Option<String>) -> Result<Option<String>, String> {
+    match color {
+        Some(value) => {
+            let trimmed = value.trim();
+            if trimmed.is_empty() {
+                Ok(None)
+            } else if trimmed.len() == 7
+                && trimmed.starts_with('#')
+                && trimmed.chars().skip(1).all(|c| c.is_ascii_hexdigit())
+            {
+                Ok(Some(trimmed.to_string()))
+            } else {
+                Err(
+                    "Cor da tag inválida. Utilize o formato hexadecimal, por exemplo #FF5733."
+                        .to_string(),
+                )
+            }
+        }
+        None => Ok(None),
+    }
 }
 
 fn normalize_board_icon(icon: Option<String>) -> Result<String, String> {
@@ -596,6 +672,106 @@ async fn normalize_card_positions_tx(
     }
 
     Ok(())
+}
+
+async fn set_card_tags_tx(
+    tx: &mut Transaction<'_, Sqlite>,
+    card_id: &str,
+    board_id: &str,
+    tag_ids: &[String],
+) -> Result<Vec<Value>, String> {
+    let unique_ids: BTreeSet<String> = tag_ids
+        .iter()
+        .map(|id| id.trim().to_string())
+        .filter(|id| !id.is_empty())
+        .collect();
+    let ordered_ids: Vec<String> = unique_ids.into_iter().collect();
+
+    if !ordered_ids.is_empty() {
+        let mut builder = QueryBuilder::new("SELECT id FROM kanban_tags WHERE board_id = ");
+        builder.push_bind(board_id);
+        builder.push(" AND id IN (");
+        let mut separated = builder.separated(", ");
+        for tag_id in &ordered_ids {
+            separated.push_bind(tag_id);
+        }
+        builder.push(")");
+
+        let rows = builder
+            .build()
+            .fetch_all(&mut **tx)
+            .await
+            .map_err(|e| format!("Falha ao validar tags informadas: {e}"))?;
+
+        if rows.len() != ordered_ids.len() {
+            return Err("Algumas tags informadas não existem neste quadro.".to_string());
+        }
+    }
+
+    sqlx::query("DELETE FROM kanban_card_tags WHERE card_id = ?")
+        .bind(card_id)
+        .execute(&mut **tx)
+        .await
+        .map_err(|e| format!("Falha ao limpar tags do cartão: {e}"))?;
+
+    for tag_id in &ordered_ids {
+        sqlx::query("INSERT INTO kanban_card_tags (card_id, tag_id) VALUES (?, ?)")
+            .bind(card_id)
+            .bind(tag_id)
+            .execute(&mut **tx)
+            .await
+            .map_err(|e| format!("Falha ao associar tag ao cartão: {e}"))?;
+    }
+
+    sqlx::query(
+        "UPDATE kanban_cards SET updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?",
+    )
+    .bind(card_id)
+    .execute(&mut **tx)
+    .await
+    .map_err(|e| format!("Falha ao atualizar cartão: {e}"))?;
+
+    if ordered_ids.is_empty() {
+        return Ok(Vec::new());
+    }
+
+    let mut fetch_builder = QueryBuilder::new(
+        "SELECT id, board_id, label, color, created_at, updated_at FROM kanban_tags WHERE board_id = ",
+    );
+    fetch_builder.push_bind(board_id);
+    fetch_builder.push(" AND id IN (");
+    let mut separated = fetch_builder.separated(", ");
+    for tag_id in &ordered_ids {
+        separated.push_bind(tag_id);
+    }
+    fetch_builder.push(")");
+
+    let rows = fetch_builder
+        .build()
+        .fetch_all(&mut **tx)
+        .await
+        .map_err(|e| format!("Falha ao carregar tags atualizadas: {e}"))?;
+
+    let mut tag_map = HashMap::new();
+    for row in rows {
+        let value = map_tag_row(row).map_err(|e| format!("Falha ao mapear tag: {e}"))?;
+        let id = value
+            .get("id")
+            .and_then(|v| v.as_str())
+            .ok_or_else(|| "Tag inválida encontrada".to_string())?
+            .to_string();
+        tag_map.insert(id, value);
+    }
+
+    let mut ordered_values = Vec::with_capacity(ordered_ids.len());
+    for tag_id in &ordered_ids {
+        let value = tag_map
+            .remove(tag_id)
+            .ok_or_else(|| "Algumas tags informadas não existem neste quadro.".to_string())?;
+        ordered_values.push(value);
+    }
+
+    Ok(ordered_values)
 }
 
 #[tauri::command]
@@ -819,17 +995,230 @@ async fn create_column(
 
 #[tauri::command]
 async fn load_cards(pool: State<'_, DbPool>, board_id: String) -> Result<Vec<Value>, String> {
-    sqlx::query("SELECT id, board_id, column_id, title, description, position, priority, due_date, attachments, created_at, updated_at, archived_at FROM kanban_cards WHERE board_id = ? ORDER BY position ASC")
-        .bind(board_id)
-        .try_map(map_card_row)
-        .fetch_all(&*pool)
-        .await
-        .map_err(|e| {
-            log::error!("Failed to load cards: {e}");
-            e.to_string()
-        })
+    sqlx::query(
+        "SELECT
+            c.id,
+            c.board_id,
+            c.column_id,
+            c.title,
+            c.description,
+            c.position,
+            c.priority,
+            c.due_date,
+            c.attachments,
+            c.created_at,
+            c.updated_at,
+            c.archived_at,
+            (
+                SELECT json_group_array(
+                    json_object(
+                        'id', t.id,
+                        'boardId', t.board_id,
+                        'label', t.label,
+                        'color', t.color,
+                        'createdAt', t.created_at,
+                        'updatedAt', t.updated_at
+                    )
+                )
+                FROM kanban_card_tags ct
+                JOIN kanban_tags t ON t.id = ct.tag_id
+                WHERE ct.card_id = c.id
+            ) AS tags_json
+        FROM kanban_cards c
+        WHERE c.board_id = ?
+        ORDER BY c.position ASC",
+    )
+    .bind(&board_id)
+    .try_map(map_card_row)
+    .fetch_all(&*pool)
+    .await
+    .map_err(|e| {
+        log::error!("Failed to load cards: {e}");
+        e.to_string()
+    })
 }
 
+#[tauri::command]
+async fn load_tags(pool: State<'_, DbPool>, board_id: String) -> Result<Vec<Value>, String> {
+    sqlx::query(
+        "SELECT id, board_id, label, color, created_at, updated_at FROM kanban_tags WHERE board_id = ? ORDER BY label COLLATE NOCASE ASC",
+    )
+    .bind(&board_id)
+    .try_map(map_tag_row)
+    .fetch_all(&*pool)
+    .await
+    .map_err(|e| {
+        log::error!("Failed to load tags: {e}");
+        e.to_string()
+    })
+}
+
+#[tauri::command]
+async fn create_tag(pool: State<'_, DbPool>, args: CreateTagArgs) -> Result<Value, String> {
+    let mut label = args.label.trim().to_string();
+    if label.is_empty() {
+        return Err("O nome da tag não pode ser vazio.".to_string());
+    }
+    validate_string_input(&label, 100, "Nome da tag")?;
+
+    let normalized_color = normalize_tag_color(args.color)?;
+
+    sqlx::query(
+        "INSERT INTO kanban_tags (id, board_id, label, color, created_at, updated_at) VALUES (?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))",
+    )
+    .bind(&args.id)
+    .bind(&args.board_id)
+    .bind(&label)
+    .bind(normalized_color.as_deref())
+    .execute(&*pool)
+    .await
+    .map_err(|e| {
+        log::error!("Failed to create tag: {e}");
+        e.to_string()
+    })?;
+
+    sqlx::query(
+        "SELECT id, board_id, label, color, created_at, updated_at FROM kanban_tags WHERE id = ?",
+    )
+    .bind(&args.id)
+    .fetch_one(&*pool)
+    .await
+    .map_err(|e| {
+        log::error!("Failed to load created tag: {e}");
+        e.to_string()
+    })
+    .and_then(|row| map_tag_row(row).map_err(|e| e.to_string()))
+}
+
+#[tauri::command]
+async fn update_tag(pool: State<'_, DbPool>, args: UpdateTagArgs) -> Result<Value, String> {
+    let mut builder = QueryBuilder::<Sqlite>::new(
+        "UPDATE kanban_tags SET updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')",
+    );
+    let mut has_changes = false;
+
+    if let Some(label) = args.label.as_ref() {
+        let trimmed = label.trim();
+        if trimmed.is_empty() {
+            return Err("O nome da tag não pode ser vazio.".to_string());
+        }
+        validate_string_input(trimmed, 100, "Nome da tag")?;
+        builder.push(", label = ");
+        builder.push_bind(trimmed);
+        has_changes = true;
+    }
+
+    let mut color_binding: Option<Option<String>> = None;
+    if let Some(color_payload) = args.color.clone() {
+        let normalized = normalize_tag_color(color_payload)?;
+        color_binding = Some(normalized);
+        has_changes = true;
+    }
+
+    if let Some(normalized_color) = color_binding.as_ref() {
+        builder.push(", color = ");
+        builder.push_bind(normalized_color.as_deref());
+    }
+
+    if has_changes {
+        builder.push(" WHERE id = ");
+        builder.push_bind(&args.id);
+        builder.push(" AND board_id = ");
+        builder.push_bind(&args.board_id);
+
+        let result = builder.build().execute(&*pool).await.map_err(|e| {
+            log::error!("Failed to update tag: {e}");
+            e.to_string()
+        })?;
+
+        if result.rows_affected() == 0 {
+            return Err("Tag não encontrada.".to_string());
+        }
+    } else {
+        // Nothing to update, but ensure tag exists
+        let exists = sqlx::query_scalar::<_, Option<i64>>(
+            "SELECT 1 FROM kanban_tags WHERE id = ? AND board_id = ? LIMIT 1",
+        )
+        .bind(&args.id)
+        .bind(&args.board_id)
+        .fetch_optional(&*pool)
+        .await
+        .map_err(|e| {
+            log::error!("Failed to validate tag existence: {e}");
+            e.to_string()
+        })?
+        .flatten()
+        .is_some();
+
+        if !exists {
+            return Err("Tag não encontrada.".to_string());
+        }
+    }
+
+    sqlx::query(
+        "SELECT id, board_id, label, color, created_at, updated_at FROM kanban_tags WHERE id = ?",
+    )
+    .bind(&args.id)
+    .fetch_one(&*pool)
+    .await
+    .map_err(|e| {
+        log::error!("Failed to load updated tag: {e}");
+        e.to_string()
+    })
+    .and_then(|row| map_tag_row(row).map_err(|e| e.to_string()))
+}
+
+#[tauri::command]
+async fn delete_tag(pool: State<'_, DbPool>, args: DeleteTagArgs) -> Result<(), String> {
+    let result = sqlx::query("DELETE FROM kanban_tags WHERE id = ? AND board_id = ?")
+        .bind(&args.id)
+        .bind(&args.board_id)
+        .execute(&*pool)
+        .await
+        .map_err(|e| {
+            log::error!("Failed to delete tag: {e}");
+            e.to_string()
+        })?;
+
+    if result.rows_affected() == 0 {
+        return Err("Tag não encontrada.".to_string());
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
+async fn set_card_tags(
+    pool: State<'_, DbPool>,
+    args: SetCardTagsArgs,
+) -> Result<Vec<Value>, String> {
+    let mut tx = pool
+        .begin()
+        .await
+        .map_err(|e| format!("Falha ao abrir transação: {e}"))?;
+
+    let existing_board =
+        sqlx::query_scalar::<_, Option<String>>("SELECT board_id FROM kanban_cards WHERE id = ?")
+            .bind(&args.card_id)
+            .fetch_one(&mut *tx)
+            .await
+            .map_err(|e| format!("Falha ao carregar cartão: {e}"))?
+            .ok_or_else(|| "Cartão não encontrado.".to_string())?;
+
+    if existing_board != args.board_id {
+        return Err("O cartão não pertence ao quadro informado.".to_string());
+    }
+
+    let tags = set_card_tags_tx(&mut tx, &args.card_id, &args.board_id, &args.tag_ids)
+        .await
+        .map_err(|e| format!("Falha ao atualizar tags do cartão: {e}"))?;
+
+    tx.commit()
+        .await
+        .map_err(|e| format!("Falha ao confirmar transação: {e}"))?;
+
+    Ok(tags)
+}
 #[tauri::command]
 async fn create_card(
     pool: State<'_, DbPool>,
@@ -841,6 +1230,7 @@ async fn create_card(
     position: i64,
     priority: String,
     due_date: Option<String>,
+    tag_ids: Option<Vec<String>>,
 ) -> Result<(), String> {
     title = title.trim().to_string();
     if title.is_empty() {
@@ -917,6 +1307,11 @@ async fn create_card(
     normalize_card_positions_tx(&mut tx, &column_id)
         .await
         .map_err(|e| format!("Falha ao normalizar posições dos cartões: {e}"))?;
+
+    let tag_ids_vec = tag_ids.unwrap_or_default();
+    set_card_tags_tx(&mut tx, &id, &board_id, &tag_ids_vec)
+        .await
+        .map_err(|e| format!("Falha ao associar tags ao cartão: {e}"))?;
 
     tx.commit()
         .await
@@ -1499,6 +1894,11 @@ pub fn run() {
             create_column,
             move_column,
             load_cards,
+            load_tags,
+            create_tag,
+            update_tag,
+            delete_tag,
+            set_card_tags,
             create_card,
             delete_card,
             update_card,

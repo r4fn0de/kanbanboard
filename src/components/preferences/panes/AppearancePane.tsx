@@ -97,7 +97,10 @@ export const AppearancePane: React.FC = () => {
           label="Enable Transparency"
           description={
             <div>
-              <p>Toggle the macOS-style translucent glass effect applied to sidebars and panels</p>
+              <p>
+                Toggle the macOS-style translucent glass effect applied to
+                sidebars and panels
+              </p>
               <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
                 ⚠️ Beta feature - May contain bugs and performance issues
               </p>

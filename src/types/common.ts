@@ -35,7 +35,7 @@ export interface KanbanCard {
   priority: KanbanPriority
   dueDate?: string | null
   attachments?: string[] | null
-  tags: string[]
+  tags: KanbanTag[]
   createdAt: string
   updatedAt: string
   archivedAt?: string | null

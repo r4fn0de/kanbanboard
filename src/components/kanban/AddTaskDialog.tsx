@@ -19,6 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { TagSelector } from '@/components/kanban/tags/TagSelector'
 import type { KanbanCard, KanbanColumn, KanbanPriority } from '@/types/common'
 
 interface AddTaskDialogProps {
@@ -28,7 +29,9 @@ interface AddTaskDialogProps {
   boardId: string
   cardsInColumn: KanbanCard[]
   onCreateTask: (
-    task: Omit<KanbanCard, 'createdAt' | 'updatedAt' | 'archivedAt'>
+    task: Omit<KanbanCard, 'createdAt' | 'updatedAt' | 'archivedAt'> & {
+      tagIds?: string[]
+    }
   ) => Promise<void>
 }
 
@@ -44,23 +47,20 @@ export function AddTaskDialog({
   const [description, setDescription] = useState('')
   const [priority, setPriority] = useState<KanbanPriority>('medium')
   const [dueDate, setDueDate] = useState('')
-  const [tags, setTags] = useState<string[]>([])
-  const [tagInput, setTagInput] = useState('')
+  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([])
   const [isCreating, setIsCreating] = useState(false)
 
   const titleId = useId()
   const descriptionId = useId()
   const priorityId = useId()
   const dueDateId = useId()
-  const tagsId = useId()
 
   const resetForm = useCallback(() => {
     setTitle('')
     setDescription('')
     setPriority('medium')
     setDueDate('')
-    setTags([])
-    setTagInput('')
+    setSelectedTagIds([])
   }, [])
 
   const handleClose = useCallback(() => {
@@ -87,7 +87,8 @@ export function AddTaskDialog({
           description: description.trim() || undefined,
           priority,
           dueDate: dueDate || undefined,
-          tags,
+          tags: [],
+          tagIds: selectedTagIds,
           position,
           attachments: null,
         })
@@ -109,7 +110,7 @@ export function AddTaskDialog({
       description,
       priority,
       dueDate,
-      tags,
+      selectedTagIds,
       column,
       boardId,
       cardsInColumn,
@@ -117,27 +118,6 @@ export function AddTaskDialog({
       resetForm,
       onOpenChange,
     ]
-  )
-
-  const handleAddTag = useCallback(
-    (e: React.KeyboardEvent) => {
-      if (e.key === 'Enter' || e.key === ',') {
-        e.preventDefault()
-        const newTag = tagInput.trim()
-        if (newTag && !tags.includes(newTag) && tags.length < 5) {
-          setTags([...tags, newTag])
-          setTagInput('')
-        }
-      }
-    },
-    [tagInput, tags]
-  )
-
-  const handleRemoveTag = useCallback(
-    (tagToRemove: string) => {
-      setTags(tags.filter(tag => tag !== tagToRemove))
-    },
-    [tags]
   )
 
   return (
@@ -210,32 +190,12 @@ export function AddTaskDialog({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor={tagsId}>Tags (max 5)</Label>
-              <div className="flex flex-wrap gap-2 mb-2">
-                {tags.map(tag => (
-                  <span
-                    key={tag}
-                    className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-secondary text-secondary-foreground text-sm"
-                  >
-                    {tag}
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveTag(tag)}
-                      className="ml-1 text-muted-foreground hover:text-foreground"
-                      disabled={isCreating}
-                    >
-                      ×
-                    </button>
-                  </span>
-                ))}
-              </div>
-              <Input
-                id={tagsId}
-                value={tagInput}
-                onChange={e => setTagInput(e.target.value)}
-                onKeyDown={handleAddTag}
-                placeholder="Add tags (press Enter or comma)"
-                disabled={isCreating || tags.length >= 5}
+              <Label>Tags</Label>
+              <TagSelector
+                boardId={boardId}
+                selectedTagIds={selectedTagIds}
+                onChange={setSelectedTagIds}
+                disabled={isCreating}
               />
             </div>
           </div>

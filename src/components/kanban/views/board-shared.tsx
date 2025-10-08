@@ -4,6 +4,7 @@ import type { KanbanCard } from '@/types/common'
 import { ArrowDown, ArrowUp, Minus, Paperclip } from 'lucide-react'
 import type { ComponentType } from 'react'
 import { formatCardDueDate } from './card-date'
+import { getTagBadgeStyle } from '../tags/utils'
 
 export function PriorityBadge({
   priority,
@@ -55,18 +56,46 @@ export function PriorityBadge({
 }
 
 export function CardContent({ card }: { card: KanbanCard }) {
-  const firstTag = card.tags?.[0]
+  const tagList = card.tags ?? []
+  const displayTags = tagList.slice(0, 2)
+  const remainingTags = tagList.length - displayTags.length
   const dueDateLabel = formatCardDueDate(card.dueDate)
   const hasAttachments = card.attachments && card.attachments.length > 0
 
   return (
     <div className="flex flex-col gap-5">
       <div className="flex items-start justify-between gap-3">
-        {firstTag && (
-          <span className="rounded-full bg-gray-200 px-3 py-1 text-xs font-semibold text-gray-700 dark:bg-gray-700 dark:text-gray-300">
-            {firstTag}
-          </span>
-        )}
+        <div className="flex flex-wrap items-center gap-2">
+          {displayTags.map(tag => {
+            const badgeStyle = getTagBadgeStyle(tag)
+            return (
+              <Badge
+                key={tag.id}
+                className="rounded-full px-3 py-1 text-xs font-semibold leading-none opacity-100"
+                style={
+                  tag.color
+                    ? {
+                        backgroundColor: tag.color,
+                        color: badgeStyle?.color,
+                        borderColor: tag.color,
+                        opacity: 1,
+                      }
+                    : undefined
+                }
+              >
+                {tag.label}
+              </Badge>
+            )
+          })}
+          {remainingTags > 0 ? (
+            <Badge
+              variant="secondary"
+              className="rounded-full px-3 py-1 text-xs font-semibold leading-none"
+            >
+              +{remainingTags}
+            </Badge>
+          ) : null}
+        </div>
         <div className="flex items-center gap-2">
           {hasAttachments && (
             <div className="rounded-full bg-blue-100 p-1 text-blue-600 dark:bg-blue-900/50 dark:text-blue-300">

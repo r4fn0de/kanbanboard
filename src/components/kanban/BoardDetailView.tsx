@@ -263,6 +263,7 @@ export function BoardDetailView({
           priority: cardPriority,
           dueDate: cardDueDate || undefined,
           position: targetPosition,
+          tagIds: [],
         })
         resetCardForm()
         setIsCardDialogOpen(false)
@@ -623,9 +624,15 @@ export function BoardDetailView({
                   }
 
                   await createCardMutation.mutateAsync({
-                    ...task,
+                    id: task.id,
+                    boardId: task.boardId,
+                    columnId: task.columnId,
+                    title: task.title,
                     description: task.description || undefined,
+                    priority: task.priority,
+                    dueDate: task.dueDate ?? undefined,
                     position: targetPosition,
+                    tagIds: task.tagIds ?? [],
                   })
                 }}
               />
@@ -640,8 +647,15 @@ export function BoardDetailView({
                 onDeleteTask={handleDeleteCard}
                 onCreateTask={async task => {
                   await createCardMutation.mutateAsync({
-                    ...task,
+                    id: task.id,
+                    boardId: task.boardId,
+                    columnId: task.columnId,
+                    title: task.title,
                     description: task.description || undefined,
+                    priority: task.priority,
+                    dueDate: task.dueDate ?? undefined,
+                    position: task.position,
+                    tagIds: task.tagIds ?? [],
                   })
                 }}
               />
