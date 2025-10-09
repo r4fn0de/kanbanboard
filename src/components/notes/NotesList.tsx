@@ -1,0 +1,139 @@
+import { Pin, Calendar } from 'lucide-react'
+import { cn } from '@/lib/utils'
+import type { Note } from '@/services/notes'
+import { useNotes } from '@/services/notes'
+import { formatDistanceToNow } from 'date-fns'
+
+interface NotesListProps {
+  boardId: string
+  onSelectNote: (note: Note) => void
+  searchQuery: string
+}
+
+export function NotesList({ boardId, onSelectNote, searchQuery }: NotesListProps) {
+  const { data: notes = [], isLoading } = useNotes(boardId)
+
+  const filteredNotes = notes.filter((note) =>
+    note.title.toLowerCase().includes(searchQuery.toLowerCase())
+  )
+
+  const pinnedNotes = filteredNotes.filter((note) => note.pinned)
+  const unpinnedNotes = filteredNotes.filter((note) => !note.pinned)
+
+  return (
+    <div className="flex h-full flex-col">
+      {/* Notes List */}
+      <div className="flex-1 overflow-auto">
+        {isLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="text-muted-foreground">Loading notes...</div>
+          </div>
+        ) : filteredNotes.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12 px-6 text-center">
+            <div className="text-muted-foreground">
+              {searchQuery
+                ? 'No notes found matching your search'
+                : 'No notes yet. Click "New Note" to get started.'}
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-6 p-6">
+            {/* Pinned Notes */}
+            {pinnedNotes.length > 0 && (
+              <div>
+                <div className="flex items-center gap-2 mb-3 text-sm font-semibold text-muted-foreground">
+                  <Pin className="h-3.5 w-3.5" />
+                  Pinned
+                </div>
+                <div className="space-y-2">
+                  {pinnedNotes.map((note) => (
+                    <NoteCard
+                      key={note.id}
+                      note={note}
+                      onClick={() => onSelectNote(note)}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Other Notes */}
+            {unpinnedNotes.length > 0 && (
+              <div>
+                {pinnedNotes.length > 0 && (
+                  <div className="flex items-center gap-2 mb-3 text-sm font-semibold text-muted-foreground">
+                    All Notes
+                  </div>
+                )}
+                <div className="space-y-2">
+                  {unpinnedNotes.map((note) => (
+                    <NoteCard
+                      key={note.id}
+                      note={note}
+                      onClick={() => onSelectNote(note)}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+interface NoteCardProps {
+  note: Note
+  onClick: () => void
+}
+
+function NoteCard({ note, onClick }: NoteCardProps) {
+  // Extract plain text from content for preview
+  const getPreviewText = (content: string): string => {
+    try {
+      const parsed = JSON.parse(content)
+      const extractText = (nodes: unknown[]): string => {
+        return nodes
+          .map((node: unknown) => {
+            const n = node as { text?: string; children?: unknown[] }
+            if (n.text) return n.text
+            if (n.children) return extractText(n.children)
+            return ''
+          })
+          .join(' ')
+      }
+      return extractText(parsed).trim() || 'No content'
+    } catch {
+      return content || 'No content'
+    }
+  }
+
+  const preview = getPreviewText(note.content)
+  const updatedAt = formatDistanceToNow(new Date(note.updatedAt), {
+    addSuffix: true,
+  })
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        'w-full rounded-lg border bg-card p-4 text-left transition-all hover:bg-accent/50 hover:shadow-sm',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
+      )}
+    >
+      <div className="flex items-start justify-between gap-3 mb-2">
+        <h3 className="font-semibold line-clamp-1">{note.title}</h3>
+        {note.pinned && <Pin className="h-3.5 w-3.5 text-primary flex-shrink-0" />}
+      </div>
+      <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
+        {preview}
+      </p>
+      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+        <Calendar className="h-3 w-3" />
+        <span>{updatedAt}</span>
+      </div>
+    </button>
+  )
+}

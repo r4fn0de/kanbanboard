@@ -495,6 +495,7 @@ async fn initialize_schema(pool: &DbPool) -> Result<(), String> {
     ensure_board_icon_column(pool).await?;
     ensure_card_attachments_column(pool).await?;
     ensure_column_customization_columns(pool).await?;
+    ensure_notes_board_id_column(pool).await?;
 
     Ok(())
 }
@@ -1990,6 +1991,217 @@ fn create_app_menu(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error
     Ok(())
 }
 
+async fn ensure_notes_board_id_column(pool: &DbPool) -> Result<(), String> {
+    let column_exists = sqlx::query_scalar::<_, Option<i64>>(
+        "SELECT 1 FROM pragma_table_info('notes') WHERE name = 'board_id' LIMIT 1",
+    )
+    .fetch_optional(pool)
+    .await
+    .map_err(|e| format!("Failed to inspect notes schema: {e}"))?
+    .flatten()
+    .is_some();
+
+    if !column_exists {
+        sqlx::query("ALTER TABLE notes ADD COLUMN board_id TEXT")
+            .execute(pool)
+            .await
+            .map_err(|e| format!("Failed to add board_id column to notes: {e}"))?;
+
+        // Set board_id to the first board for existing notes
+        sqlx::query(
+            "UPDATE notes SET board_id = (SELECT id FROM kanban_boards LIMIT 1) WHERE board_id IS NULL"
+        )
+        .execute(pool)
+        .await
+        .map_err(|e| format!("Failed to update existing notes with board_id: {e}"))?;
+    }
+
+    // Create indexes for notes table (safe to run multiple times)
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_notes_board_updated ON notes(board_id, updated_at DESC)")
+        .execute(pool)
+        .await
+        .map_err(|e| format!("Failed to create idx_notes_board_updated: {e}"))?;
+
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_notes_board_pinned ON notes(board_id, pinned DESC, updated_at DESC)")
+        .execute(pool)
+        .await
+        .map_err(|e| format!("Failed to create idx_notes_board_pinned: {e}"))?;
+
+    Ok(())
+}
+
+// ============================================================================
+// NOTES COMMANDS
+// ============================================================================
+
+#[derive(Debug, Deserialize)]
+struct CreateNoteArgs {
+    id: String,
+    board_id: String,
+    title: String,
+    #[serde(default)]
+    content: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+struct UpdateNoteArgs {
+    id: String,
+    board_id: String,
+    #[serde(default)]
+    title: Option<String>,
+    #[serde(default)]
+    content: Option<String>,
+    #[serde(default)]
+    pinned: Option<bool>,
+}
+
+#[tauri::command]
+async fn load_notes(pool: State<'_, DbPool>, board_id: String) -> Result<Vec<Value>, String> {
+    let rows = sqlx::query(
+        "SELECT id, board_id, title, content, created_at, updated_at, archived_at, pinned, tags 
+         FROM notes 
+         WHERE board_id = ? AND archived_at IS NULL 
+         ORDER BY pinned DESC, updated_at DESC"
+    )
+    .bind(&board_id)
+    .fetch_all(&*pool)
+    .await
+    .map_err(|e| format!("Failed to load notes: {e}"))?;
+
+    let notes: Vec<Value> = rows
+        .iter()
+        .map(|row| {
+            json!({
+                "id": row.get::<String, _>("id"),
+                "boardId": row.get::<String, _>("board_id"),
+                "title": row.get::<String, _>("title"),
+                "content": row.get::<String, _>("content"),
+                "createdAt": row.get::<String, _>("created_at"),
+                "updatedAt": row.get::<String, _>("updated_at"),
+                "archivedAt": row.get::<Option<String>, _>("archived_at"),
+                "pinned": row.get::<i64, _>("pinned") != 0,
+                "tags": row.get::<Option<String>, _>("tags")
+                    .and_then(|s: String| serde_json::from_str::<Vec<String>>(&s).ok())
+                    .unwrap_or_default(),
+            })
+        })
+        .collect();
+
+    Ok(notes)
+}
+
+#[tauri::command]
+async fn create_note(pool: State<'_, DbPool>, args: CreateNoteArgs) -> Result<Value, String> {
+    let content = args.content.unwrap_or_else(|| String::from(""));
+    
+    sqlx::query(
+        "INSERT INTO notes (id, board_id, title, content) VALUES (?, ?, ?, ?)"
+    )
+    .bind(&args.id)
+    .bind(&args.board_id)
+    .bind(&args.title)
+    .bind(&content)
+    .execute(&*pool)
+    .await
+    .map_err(|e| format!("Failed to create note: {e}"))?;
+
+    let row = sqlx::query(
+        "SELECT id, board_id, title, content, created_at, updated_at, archived_at, pinned, tags 
+         FROM notes WHERE id = ? AND board_id = ?"
+    )
+    .bind(&args.id)
+    .bind(&args.board_id)
+    .fetch_one(&*pool)
+    .await
+    .map_err(|e| format!("Failed to fetch created note: {e}"))?;
+
+    Ok(json!({
+        "id": row.get::<String, _>("id"),
+        "boardId": row.get::<String, _>("board_id"),
+        "title": row.get::<String, _>("title"),
+        "content": row.get::<String, _>("content"),
+        "createdAt": row.get::<String, _>("created_at"),
+        "updatedAt": row.get::<String, _>("updated_at"),
+        "archivedAt": row.get::<Option<String>, _>("archived_at"),
+        "pinned": row.get::<i64, _>("pinned") != 0,
+        "tags": row.get::<Option<String>, _>("tags")
+            .and_then(|s: String| serde_json::from_str::<Vec<String>>(&s).ok())
+            .unwrap_or_default(),
+    }))
+}
+
+#[tauri::command]
+async fn update_note(pool: State<'_, DbPool>, args: UpdateNoteArgs) -> Result<(), String> {
+    let mut query_parts = vec!["UPDATE notes SET updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')"];
+    let mut bindings: Vec<String> = vec![];
+
+    if let Some(ref title) = args.title {
+        query_parts.push("title = ?");
+        bindings.push(title.clone());
+    }
+
+    if let Some(ref content) = args.content {
+        query_parts.push("content = ?");
+        bindings.push(content.clone());
+    }
+
+    if let Some(pinned) = args.pinned {
+        query_parts.push("pinned = ?");
+        bindings.push(if pinned { "1" } else { "0" }.to_string());
+    }
+
+    if bindings.is_empty() {
+        return Ok(());
+    }
+
+    query_parts.push("WHERE id = ? AND board_id = ?");
+    bindings.push(args.id.clone());
+    bindings.push(args.board_id.clone());
+
+    let query_str = query_parts.join(", ").replace(", WHERE", " WHERE");
+    
+    let mut query = sqlx::query(&query_str);
+    for binding in bindings {
+        query = query.bind(binding);
+    }
+
+    query
+        .execute(&*pool)
+        .await
+        .map_err(|e| format!("Failed to update note: {e}"))?;
+
+    Ok(())
+}
+
+#[tauri::command]
+async fn delete_note(pool: State<'_, DbPool>, id: String, board_id: String) -> Result<(), String> {
+    sqlx::query("DELETE FROM notes WHERE id = ? AND board_id = ?")
+        .bind(&id)
+        .bind(&board_id)
+        .execute(&*pool)
+        .await
+        .map_err(|e| format!("Failed to delete note: {e}"))?;
+
+    Ok(())
+}
+
+#[tauri::command]
+async fn archive_note(pool: State<'_, DbPool>, id: String, board_id: String) -> Result<(), String> {
+    sqlx::query(
+        "UPDATE notes 
+         SET archived_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now'),
+             updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+         WHERE id = ? AND board_id = ?"
+    )
+    .bind(&id)
+    .bind(&board_id)
+    .execute(&*pool)
+    .await
+    .map_err(|e| format!("Failed to archive note: {e}"))?;
+
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -2142,7 +2354,12 @@ pub fn run() {
             move_card,
             upload_image,
             remove_image,
-            get_attachment_url
+            get_attachment_url,
+            load_notes,
+            create_note,
+            update_note,
+            delete_note,
+            archive_note
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

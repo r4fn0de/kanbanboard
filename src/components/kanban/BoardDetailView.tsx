@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useId, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
@@ -57,6 +58,7 @@ export function BoardDetailView({
   viewMode = DEFAULT_BOARD_VIEW_MODE,
   onViewModeChange,
 }: BoardDetailViewProps) {
+  const navigate = useNavigate()
   const [isColumnManagerOpen, setIsColumnManagerOpen] = useState(false)
   const [isCardDialogOpen, setIsCardDialogOpen] = useState(false)
   
@@ -70,6 +72,14 @@ export function BoardDetailView({
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null)
   const [activeDragCard, setActiveDragCard] = useState<KanbanCard | null>(null)
   const [activeNavTab, setActiveNavTab] = useState('tasks')
+
+  const handleTabChange = useCallback((tab: string) => {
+    if (tab === 'notes') {
+      navigate(`/projects/${board.id}/notes`)
+    } else {
+      setActiveNavTab(tab)
+    }
+  }, [board.id, navigate])
 
   const cardTitleId = useId()
   const cardDescriptionId = useId()
@@ -544,7 +554,7 @@ export function BoardDetailView({
       <BoardNavbar
         boardTitle={board.title}
         activeTab={activeNavTab}
-        onTabChange={setActiveNavTab}
+        onTabChange={handleTabChange}
         taskControls={taskControls}
       />
 
