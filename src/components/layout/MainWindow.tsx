@@ -13,8 +13,9 @@ import { useTheme } from '@/hooks/use-theme'
 import { useUIStore } from '@/store/ui-store'
 import { useMainWindowEventListeners } from '@/hooks/useMainWindowEventListeners'
 import { cn } from '@/lib/utils'
-import { useCallback, useMemo } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { usePreferences, useSavePreferences } from '@/services/preferences'
+import { motion, AnimatePresence } from 'framer-motion'
 
 // A simple debounce function
 function debounce<Args extends unknown[]>(
@@ -38,6 +39,7 @@ export function MainWindow() {
     useUIStore()
   const { data: preferences } = usePreferences()
   const { mutate: savePreferences } = useSavePreferences()
+  const [isHoveringEdge, setIsHoveringEdge] = useState(false)
 
   // Set up global event listeners (keyboard shortcuts, etc.)
   useMainWindowEventListeners()
@@ -66,12 +68,42 @@ export function MainWindow() {
   return (
     <div className="relative flex h-screen w-full flex-col overflow-hidden rounded-[12px] supports-[backdrop-filter]:rounded-[12px]">
       {!leftSidebarVisible ? (
-        <button
-          type="button"
-          onClick={handleEdgeActivate}
-          aria-label="Show left sidebar"
-          className="absolute left-0 top-0 z-20 h-full w-2 cursor-pointer bg-transparent"
-        />
+        <>
+          {/* Hover trigger area */}
+          <div
+            onMouseEnter={() => setIsHoveringEdge(true)}
+            onMouseLeave={() => setIsHoveringEdge(false)}
+            onClick={handleEdgeActivate}
+            aria-label="Show left sidebar"
+            className="absolute left-0 top-0 z-20 h-full w-8 cursor-pointer bg-transparent"
+          />
+          
+          {/* Floating sidebar on hover */}
+          <AnimatePresence>
+            {isHoveringEdge && (
+              <motion.div
+                initial={{ x: -256, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                exit={{ x: -256, opacity: 0 }}
+                transition={{ duration: 0.2, ease: 'easeOut' }}
+                onMouseEnter={() => setIsHoveringEdge(true)}
+                onMouseLeave={() => setIsHoveringEdge(false)}
+                className={cn(
+                  'absolute left-2 top-2 bottom-2 z-30 w-64 shadow-2xl rounded-[12px] overflow-hidden',
+                  transparencyEnabled
+                    ? 'bg-white/70 dark:bg-black/70 backdrop-blur-3xl'
+                    : 'bg-background'
+                )}
+              >
+                <div className={cn(
+                  transparencyEnabled && 'text-foreground [&_*]:!text-foreground'
+                )}>
+                  <LeftSideBar />
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </>
       ) : null}
 
       {/* Main Content Area with Resizable Panels */}

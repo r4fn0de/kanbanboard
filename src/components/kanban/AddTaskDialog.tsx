@@ -1,12 +1,10 @@
-import { useState, useCallback, useId } from 'react'
+import { useState, useCallback, useId, useMemo } from 'react'
 import { toast } from 'sonner'
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
-  DialogTitle,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -20,6 +18,17 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { TagSelector } from '@/components/kanban/tags/TagSelector'
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from '@/components/ui/breadcrumb'
+import { getColumnIconComponent } from '@/components/kanban/column-icon-options'
+import { FALLBACK_COLUMN_COLORS } from '@/constants/kanban-columns'
+import { CalendarDays, Columns3, ArrowDown, ArrowUp, Minus } from 'lucide-react'
 import type { KanbanCard, KanbanColumn, KanbanPriority } from '@/types/common'
 
 interface AddTaskDialogProps {
@@ -55,6 +64,12 @@ export function AddTaskDialog({
   const priorityId = useId()
   const dueDateId = useId()
 
+  const columnAccent = column?.color ?? FALLBACK_COLUMN_COLORS[0]
+  const ColumnIcon = useMemo(
+    () => getColumnIconComponent(column?.icon ?? null),
+    [column?.icon]
+  )
+
   const resetForm = useCallback(() => {
     setTitle('')
     setDescription('')
@@ -63,11 +78,23 @@ export function AddTaskDialog({
     setSelectedTagIds([])
   }, [])
 
-  const handleClose = useCallback(() => {
+  const handleResetAndClose = useCallback(() => {
     if (isCreating) return
     onOpenChange(false)
     resetForm()
   }, [isCreating, onOpenChange, resetForm])
+
+  const handleOpenChange = useCallback(
+    (open: boolean) => {
+      if (open) {
+        onOpenChange(true)
+        return
+      }
+
+      handleResetAndClose()
+    },
+    [handleResetAndClose, onOpenChange]
+  )
 
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
@@ -121,100 +148,148 @@ export function AddTaskDialog({
   )
 
   return (
-    <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader>
-          <DialogTitle>Create New Task</DialogTitle>
-          <DialogDescription>
-            Add a new task to{' '}
-            <span className="font-medium">{column?.title}</span>
-          </DialogDescription>
+    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
+      <DialogContent className="sm:max-w-[760px] overflow-hidden rounded-2xl border bg-background p-0">
+        <DialogHeader className="border-b px-6 py-4">
+          <Breadcrumb>
+            <BreadcrumbList className="items-center gap-1 text-xs font-medium text-muted-foreground">
+              <BreadcrumbItem>
+                <BreadcrumbLink href="#" className="flex items-center gap-2">
+                  <Columns3 className="h-4 w-4" />
+                  Tasks
+                </BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbLink href="#">
+                  {column ? column.title : 'Select column'}
+                </BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbPage className="text-foreground">New task</BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor={titleId}>Title *</Label>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-6 px-6 py-6">
+          <div className="space-y-3">
+            <Label htmlFor={titleId} className="sr-only">
+              Title
+            </Label>
+            <Input
+              id={titleId}
+              value={title}
+              onChange={e => setTitle(e.target.value)}
+              placeholder="Task title"
+              disabled={isCreating}
+              autoFocus
+              required
+              className="border-none bg-transparent px-0 text-2xl font-semibold shadow-none focus-visible:ring-0"
+            />
+
+            <Label htmlFor={descriptionId} className="sr-only">
+              Description
+            </Label>
+            <Textarea
+              id={descriptionId}
+              value={description}
+              onChange={e => setDescription(e.target.value)}
+              placeholder="Add a task description"
+              disabled={isCreating}
+              className="min-h-[96px] border-none bg-transparent px-0 text-sm text-muted-foreground shadow-none focus-visible:ring-0"
+            />
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <div
+              className="flex items-center gap-2 rounded-full border px-3 py-2 text-sm"
+            >
+              <ColumnIcon className="h-4 w-4" style={{ color: columnAccent }} />
+              <span className="font-medium text-foreground">
+                {column ? column.title : 'Column'}
+              </span>
+            </div>
+
+            <Label htmlFor={priorityId} className="sr-only">
+              Priority
+            </Label>
+            <Select
+              value={priority}
+              onValueChange={(value: KanbanPriority) => setPriority(value)}
+              disabled={isCreating}
+            >
+              <SelectTrigger className="h-auto w-28 border-none bg-transparent px-2 py-0 text-sm font-medium shadow-none focus:ring-0 focus:ring-offset-0">
+                <SelectValue placeholder="Priority" />
+              </SelectTrigger>
+                <SelectContent align="end">
+                  <SelectItem value="low">
+                    <div className="flex items-center gap-2">
+                      <ArrowDown className="h-3 w-3 text-emerald-700 dark:text-emerald-300" />
+                      Low
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="medium">
+                    <div className="flex items-center gap-2">
+                      <Minus className="h-3 w-3 text-amber-700 dark:text-amber-300" />
+                      Medium
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="high">
+                    <div className="flex items-center gap-2">
+                      <ArrowUp className="h-3 w-3 text-rose-700 dark:text-rose-300" />
+                      High
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+
+            <div className="flex items-center gap-2 rounded-full border px-3 py-2 text-sm">
+              <CalendarDays className="h-4 w-4" />
+              <Label htmlFor={dueDateId} className="sr-only">
+                Due date
+              </Label>
               <Input
-                id={titleId}
-                value={title}
-                onChange={e => setTitle(e.target.value)}
-                placeholder="Enter task title"
+                id={dueDateId}
+                type="date"
+                value={dueDate}
+                onChange={e => setDueDate(e.target.value)}
                 disabled={isCreating}
-                autoFocus
-                required
+                className="h-auto w-auto border-none bg-transparent px-0 py-0 text-sm shadow-none focus-visible:ring-0"
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor={descriptionId}>Description</Label>
-              <Textarea
-                id={descriptionId}
-                value={description}
-                onChange={e => setDescription(e.target.value)}
-                placeholder="Enter task description (optional)"
-                disabled={isCreating}
-                rows={3}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor={priorityId}>Priority</Label>
-                <Select
-                  value={priority}
-                  onValueChange={(value: KanbanPriority) => setPriority(value)}
-                  disabled={isCreating}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="low">Low</SelectItem>
-                    <SelectItem value="medium">Medium</SelectItem>
-                    <SelectItem value="high">High</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor={dueDateId}>Due Date</Label>
-                <Input
-                  id={dueDateId}
-                  type="date"
-                  value={dueDate}
-                  onChange={e => setDueDate(e.target.value)}
-                  disabled={isCreating}
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Tags</Label>
+            <div className="min-w-[160px]">
               <TagSelector
                 boardId={boardId}
                 selectedTagIds={selectedTagIds}
                 onChange={setSelectedTagIds}
                 disabled={isCreating}
+                className="space-y-0 [&>div:first-child]:hidden [&>div:nth-child(2)_button]:w-auto [&>div:nth-child(2)_button]:bg-transparent [&>div:nth-child(2)_button]:px-2 [&>div:nth-child(2)_button]:py-0 [&>div:nth-child(2)_button]:text-sm [&>div:nth-child(2)_button]:font-medium [&>div:nth-child(2)_button]:shadow-none [&>div:nth-child(2)_button]:focus:ring-0 [&>div:nth-child(2)_button]:focus:ring-offset-0 [&>div:nth-child(2)_button]:hover:bg-transparent [&>div:nth-child(2)_button]:border-foreground/20 [&>div:nth-child(2)_button]:text-foreground"
               />
             </div>
           </div>
 
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleClose}
-              disabled={isCreating}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              disabled={isCreating || !title.trim() || !column}
-            >
-              {isCreating ? 'Creating...' : 'Create Task'}
-            </Button>
+          <DialogFooter className="border-t px-0 pt-4">
+            <div className="flex w-full items-center justify-between">
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={handleResetAndClose}
+                disabled={isCreating}
+                className="px-4"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={isCreating || !title.trim() || !column}
+                className="rounded-full px-6"
+              >
+                {isCreating ? 'Creating…' : 'Create Task'}
+              </Button>
+            </div>
           </DialogFooter>
         </form>
       </DialogContent>

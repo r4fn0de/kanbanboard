@@ -182,8 +182,8 @@ export function LeftSideBar({ children, className }: LeftSideBarProps) {
   const sidebarClasses = cn(
     'flex h-full flex-col rounded-l-[12px]',
     transparencyEnabled
-      ? 'border-border/20 bg-background/5 backdrop-blur-xl supports-[backdrop-filter]:bg-background/3 supports-[backdrop-filter]:backdrop-blur-2xl'
-      : 'border-border bg-background'
+      ? 'bg-background/5 backdrop-blur-xl supports-[backdrop-filter]:bg-background/3 supports-[backdrop-filter]:backdrop-blur-2xl'
+      : 'bg-background'
   )
 
   const handleConfirmDelete = () => {

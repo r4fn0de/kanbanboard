@@ -234,7 +234,7 @@ export function TagSelector({
         )}
       </div>
 
-      <Popover open={popoverOpen} onOpenChange={setPopoverOpen} modal={true}>
+      <Popover open={popoverOpen} onOpenChange={setPopoverOpen} modal={false}>
         <PopoverTrigger asChild>
           <Button
             variant="outline"
