@@ -25,6 +25,7 @@ import { BoardListView } from '@/components/kanban/views/BoardListView'
 import { BoardTimelineView } from '@/components/kanban/views/BoardTimelineView'
 import { TaskDetailsPanel } from '@/components/kanban/TaskDetailsPanel'
 import { ColumnManagerDialog } from '@/components/kanban/ColumnManagerDialog'
+import { BoardNavbar } from '@/components/kanban/BoardNavbar'
 import type {
   KanbanBoard,
   KanbanCard,
@@ -38,7 +39,7 @@ import {
   useMoveCard,
   useDeleteCard,
 } from '@/services/kanban'
-import { Plus, Settings2, X } from 'lucide-react'
+import { Plus, Settings2 } from 'lucide-react'
 import type {
   DragEndEvent,
   DragStartEvent,
@@ -47,14 +48,12 @@ import type {
 
 interface BoardDetailViewProps {
   board: KanbanBoard
-  onBack: () => void
   viewMode?: BoardViewMode
   onViewModeChange?: (mode: BoardViewMode) => void
 }
 
 export function BoardDetailView({
   board,
-  onBack,
   viewMode = DEFAULT_BOARD_VIEW_MODE,
   onViewModeChange,
 }: BoardDetailViewProps) {
@@ -70,6 +69,7 @@ export function BoardDetailView({
   )
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null)
   const [activeDragCard, setActiveDragCard] = useState<KanbanCard | null>(null)
+  const [activeNavTab, setActiveNavTab] = useState('tasks')
 
   const cardTitleId = useId()
   const cardDescriptionId = useId()
@@ -143,7 +143,7 @@ export function BoardDetailView({
     [columnsWithCounts]
   )
 
-  const hiddenColumnCount = columnsWithCounts.length - visibleColumns.length
+  // const hiddenColumnCount = columnsWithCounts.length - visibleColumns.length
 
   const visibleColumnIds = useMemo(
     () => new Set(visibleColumns.map(column => column.id)),
@@ -506,55 +506,52 @@ export function BoardDetailView({
     )
   }
 
+  const taskControls = (
+    <>
+      <ToggleGroup
+        type="single"
+        value={resolvedViewMode}
+        onValueChange={value => {
+          if (value && onViewModeChange && isBoardViewMode(value)) {
+            onViewModeChange(value)
+          }
+        }}
+      >
+        {BOARD_VIEW_OPTIONS.map(option => (
+          <ToggleGroupItem
+            key={option.value}
+            value={option.value}
+            aria-label={option.label}
+          >
+            <option.icon className="h-4 w-4" />
+          </ToggleGroupItem>
+        ))}
+      </ToggleGroup>
+
+      <Button
+        variant="outline"
+        onClick={() => setIsColumnManagerOpen(true)}
+      >
+        <Settings2 className="mr-2 h-4 w-4" />
+        Manage Columns
+      </Button>
+    </>
+  )
+
   return (
-    <div className="flex flex-col gap-6 p-6 h-screen max-h-screen overflow-hidden">
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={onBack}>
-            <X className="h-4 w-4" />
-          </Button>
-          <div>
-            <h1 className="text-2xl font-bold">{board.title}</h1>
-            <p className="text-muted-foreground">
-              {visibleColumns.length} columns • {visibleCards.length} tasks
-              {hiddenColumnCount > 0 ? ` • ${hiddenColumnCount} hidden` : ''}
-            </p>
-          </div>
-        </div>
+    <div className="flex flex-col h-screen max-h-screen overflow-hidden">
+      {/* Navbar */}
+      <BoardNavbar
+        boardTitle={board.title}
+        activeTab={activeNavTab}
+        onTabChange={setActiveNavTab}
+        taskControls={taskControls}
+      />
 
-        <div className="flex items-center gap-2">
-          <ToggleGroup
-            type="single"
-            value={resolvedViewMode}
-            onValueChange={value => {
-              if (value && onViewModeChange && isBoardViewMode(value)) {
-                onViewModeChange(value)
-              }
-            }}
-          >
-            {BOARD_VIEW_OPTIONS.map(option => (
-              <ToggleGroupItem
-                key={option.value}
-                value={option.value}
-                aria-label={option.label}
-              >
-                <option.icon className="h-4 w-4" />
-              </ToggleGroupItem>
-            ))}
-          </ToggleGroup>
-
-          <Button
-            variant="outline"
-            onClick={() => setIsColumnManagerOpen(true)}
-          >
-            <Settings2 className="mr-2 h-4 w-4" />
-            Manage Columns
-          </Button>
-
-          
-        </div>
-      </div>
-
+      {/* Main Content */}
+      <div className="flex flex-col gap-6 p-6 flex-1 overflow-hidden">
+      {activeNavTab === 'tasks' ? (
+        <>
       {columnsWithCounts.length === 0 ? (
         <div className="flex flex-col items-center justify-center gap-4 py-12">
           <div className="text-center">
@@ -680,6 +677,17 @@ export function BoardDetailView({
           </div>
         </div>
       )}
+        </>
+      ) : (
+        <div className="flex flex-col items-center justify-center gap-4 py-12 flex-1">
+          <div className="text-center">
+            <h2 className="text-lg font-semibold capitalize">{activeNavTab}</h2>
+            <p className="text-muted-foreground">
+              This section is coming soon
+            </p>
+          </div>
+        </div>
+      )}
 
       <ColumnManagerDialog
         boardId={board.id}
@@ -786,6 +794,7 @@ export function BoardDetailView({
           </div>
         </div>
       )}
+      </div>
     </div>
   )
 }

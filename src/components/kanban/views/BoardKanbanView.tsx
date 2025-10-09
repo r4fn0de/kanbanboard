@@ -150,7 +150,9 @@ export function BoardKanbanView({
             })}
           </div>
         </SortableContext>
-        <DragOverlay dropAnimation={null}>
+        <DragOverlay 
+          dropAnimation={null}
+        >
           {activeCard ? <CardOverlay card={activeCard} /> : null}
         </DragOverlay>
       </DndContext>
@@ -171,7 +173,11 @@ export function BoardKanbanView({
 
 function CardOverlay({ card }: { card: KanbanCard }) {
   return (
-    <div className="pointer-events-none flex w-[300px] max-w-full flex-col rounded-[1.75rem] border border-border bg-card p-5">
+    <div className="pointer-events-none flex w-[300px] max-w-full flex-col rounded-[1.75rem] border border-border bg-card p-5 shadow-xl" 
+         style={{
+           // Move even further left for cursor alignment
+           marginLeft: '-250px', // Further reduced offset
+         }}>
       <CardContent card={card} />
     </div>
   )
@@ -361,7 +367,7 @@ function DraggableCard({
           className={cn(
             'flex flex-col rounded-[1.75rem] border border-border bg-card p-5 text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 active:cursor-grabbing w-full',
             isSelected && 'bg-primary/10 dark:bg-primary/15',
-            isDragging && 'shadow-lg scale-105'
+            isDragging && 'shadow-lg'
           )}
         >
           <CardContent card={card} />

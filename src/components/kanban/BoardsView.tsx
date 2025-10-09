@@ -121,9 +121,6 @@ export function BoardsView() {
     [handleSelectBoard]
   )
 
-  const handleBackToBoards = useCallback(() => {
-    setSelectedBoard(null)
-  }, [])
 
   const handleEmptyStateCreate = useCallback(() => {
     setIsDialogOpen(true)
@@ -132,7 +129,7 @@ export function BoardsView() {
   const hasBoards = boards.length > 0
 
   if (selectedBoard) {
-    return <BoardDetailView board={selectedBoard} onBack={handleBackToBoards} />
+    return <BoardDetailView board={selectedBoard} />
   }
 
   if (isLoading) {

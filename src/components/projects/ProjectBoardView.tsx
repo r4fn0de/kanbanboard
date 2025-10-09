@@ -120,7 +120,6 @@ export function ProjectBoardView() {
   return (
     <BoardDetailView
       board={board}
-      onBack={handleBack}
       viewMode={viewMode}
       onViewModeChange={handleViewModeChange}
     />
