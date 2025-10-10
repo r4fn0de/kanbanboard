@@ -24,10 +24,25 @@ export function NotesView() {
   )
 
   const handleTabChange = (tab: string) => {
+    if (!boardId) {
+      return
+    }
+
     if (tab === 'tasks') {
       navigate(`/projects/${boardId}`)
+      return
     }
-    // Outros tabs podem ser implementados aqui
+
+    if (tab === 'draws') {
+      navigate(`/projects/${boardId}/draws`)
+      return
+    }
+
+    if (tab === 'notes') {
+      return
+    }
+
+    navigate(`/projects/${boardId}`)
   }
 
   const handleCreateNote = () => {

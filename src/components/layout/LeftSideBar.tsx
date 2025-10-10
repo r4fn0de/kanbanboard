@@ -76,6 +76,7 @@ import { useUIStore } from '@/store/ui-store'
 interface LeftSideBarProps {
   children?: React.ReactNode
   className?: string
+  forceSolidStyle?: boolean
 }
 
 interface ProjectIconOption {
@@ -141,7 +142,7 @@ const PROJECT_ICON_MAP = PROJECT_ICON_OPTIONS.reduce<
 
 const DEFAULT_PROJECT_ICON = PROJECT_ICON_OPTIONS[0]?.value ?? 'Folder'
 
-export function LeftSideBar({ children, className }: LeftSideBarProps) {
+export function LeftSideBar({ children, className, forceSolidStyle = false }: LeftSideBarProps) {
   const { transparencyEnabled } = useTheme()
   const [projectsOpen, setProjectsOpen] = useState(true)
   const [createProjectOpen, setCreateProjectOpen] = useState(false)
@@ -179,9 +180,11 @@ export function LeftSideBar({ children, className }: LeftSideBarProps) {
     isError: isBoardsError,
   } = useBoards()
 
+  const useTransparentStyle = transparencyEnabled && !forceSolidStyle
+
   const sidebarClasses = cn(
     'flex h-full flex-col rounded-l-[12px]',
-    transparencyEnabled
+    useTransparentStyle
       ? 'bg-background/5 backdrop-blur-xl supports-[backdrop-filter]:bg-background/3 supports-[backdrop-filter]:backdrop-blur-2xl'
       : 'bg-background'
   )
@@ -280,7 +283,7 @@ export function LeftSideBar({ children, className }: LeftSideBarProps) {
             size="icon"
             className={cn(
               'h-6 w-6 hover:bg-accent/30',
-              transparencyEnabled
+              useTransparentStyle
                 ? 'text-gray-200 hover:text-gray-200'
                 : 'text-foreground/70 hover:text-foreground'
             )}
@@ -300,7 +303,7 @@ export function LeftSideBar({ children, className }: LeftSideBarProps) {
             size="icon"
             className={cn(
               'h-6 w-6 hover:bg-accent/30',
-              transparencyEnabled
+              useTransparentStyle
                 ? 'text-gray-200 hover:text-gray-200'
                 : 'text-foreground/70 hover:text-foreground'
             )}
@@ -314,7 +317,7 @@ export function LeftSideBar({ children, className }: LeftSideBarProps) {
             size="icon"
             className={cn(
               'h-6 w-6 hover:bg-accent/30',
-              transparencyEnabled
+              useTransparentStyle
                 ? 'text-gray-200 hover:text-gray-200'
                 : 'text-foreground/70 hover:text-foreground'
             )}
@@ -334,7 +337,7 @@ export function LeftSideBar({ children, className }: LeftSideBarProps) {
       <nav
         className={cn(
           'mt-1 flex flex-col gap-2 px-4 pb-4 text-sm',
-          transparencyEnabled
+          useTransparentStyle
             ? 'text-gray-200 dark:text-gray-100'
             : 'text-foreground'
         )}
@@ -345,7 +348,7 @@ export function LeftSideBar({ children, className }: LeftSideBarProps) {
           className={({ isActive }) =>
             cn(
               'flex items-center gap-3 rounded-xl px-4 py-3 text-left transition-all duration-200 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-              transparencyEnabled
+              useTransparentStyle
                 ? isActive
                   ? 'bg-white/30 text-gray-200 shadow-sm backdrop-blur-sm'
                   : 'text-gray-200 hover:bg-white/30'
@@ -365,7 +368,7 @@ export function LeftSideBar({ children, className }: LeftSideBarProps) {
             onClick={() => setProjectsOpen(prev => !prev)}
             className={cn(
               'flex items-center gap-3 rounded-xl px-4 py-3 text-left transition-all duration-200 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-              transparencyEnabled
+              useTransparentStyle
                 ? 'text-gray-200 hover:bg-white/30'
                 : 'text-foreground hover:bg-accent/80'
             )}
@@ -400,7 +403,7 @@ export function LeftSideBar({ children, className }: LeftSideBarProps) {
                         className={({ isActive }) =>
                           cn(
                             'flex grow items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm transition-all duration-200 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                            transparencyEnabled
+                            useTransparentStyle
                               ? isActive
                                 ? 'bg-white/30 text-gray-200 shadow-sm backdrop-blur-sm'
                                 : 'text-gray-200 hover:bg-white/30'
@@ -486,7 +489,7 @@ export function LeftSideBar({ children, className }: LeftSideBarProps) {
                 variant="ghost"
                 className={cn(
                   'mt-2 flex items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm transition-all duration-200 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                  transparencyEnabled
+                  useTransparentStyle
                     ? 'text-gray-200 hover:text-gray-200 hover:bg-white/30'
                     : 'text-foreground hover:bg-accent/80'
                 )}

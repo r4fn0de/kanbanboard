@@ -75,7 +75,7 @@ export function MainWindow() {
             onMouseLeave={() => setIsHoveringEdge(false)}
             onClick={handleEdgeActivate}
             aria-label="Show left sidebar"
-            className="absolute left-0 top-0 z-20 h-full w-8 cursor-pointer bg-transparent"
+            className="absolute left-0 top-0 z-30 h-full w-2 cursor-pointer bg-transparent"
           />
           
           {/* Floating sidebar on hover */}
@@ -89,17 +89,10 @@ export function MainWindow() {
                 onMouseEnter={() => setIsHoveringEdge(true)}
                 onMouseLeave={() => setIsHoveringEdge(false)}
                 className={cn(
-                  'absolute left-2 top-2 bottom-2 z-30 w-64 shadow-2xl rounded-[12px] overflow-hidden',
-                  transparencyEnabled
-                    ? 'bg-white/70 dark:bg-black/70 backdrop-blur-3xl'
-                    : 'bg-background'
+                  'absolute left-0 top-0 bottom-0 z-20 w-64 shadow-2xl rounded-r-[12px] overflow-hidden bg-background'
                 )}
               >
-                <div className={cn(
-                  transparencyEnabled && 'text-foreground [&_*]:!text-foreground'
-                )}>
-                  <LeftSideBar />
-                </div>
+                <LeftSideBar className="h-full bg-background" forceSolidStyle />
               </motion.div>
             )}
           </AnimatePresence>

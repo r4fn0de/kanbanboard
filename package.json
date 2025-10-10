@@ -120,6 +120,8 @@
     "@tauri-apps/plugin-opener": "^2.4.0",
     "@tauri-apps/plugin-process": "^2.3.0",
     "@tauri-apps/plugin-updater": "^2.9.0",
+    "@tldraw/assets": "^4.0.3",
+    "@tldraw/tldraw": "^4.0.3",
     "@udecode/cn": "^49.0.15",
     "@uploadthing/react": "^7.3.3",
     "ai": "^5.0.28",

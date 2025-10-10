@@ -6,6 +6,7 @@ import { BoardsView } from '@/components/kanban/BoardsView'
 import { HomeWelcome } from '@/components/home/HomeWelcome'
 import { ProjectBoardView } from '@/components/projects/ProjectBoardView'
 import { NotesView } from '@/components/notes/NotesView'
+import { BoardDrawView } from '@/components/draws/BoardDrawView'
 
 export const appRouter = createHashRouter([
   {
@@ -35,6 +36,10 @@ export const appRouter = createHashRouter([
       {
         path: 'projects/:boardId/notes',
         element: <NotesView />,
+      },
+      {
+        path: 'projects/:boardId/draws',
+        element: <BoardDrawView />,
       },
     ],
   },

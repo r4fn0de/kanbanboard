@@ -76,9 +76,15 @@ export function BoardDetailView({
   const handleTabChange = useCallback((tab: string) => {
     if (tab === 'notes') {
       navigate(`/projects/${board.id}/notes`)
-    } else {
-      setActiveNavTab(tab)
+      return
     }
+
+    if (tab === 'draws') {
+      navigate(`/projects/${board.id}/draws`)
+      return
+    }
+
+    setActiveNavTab(tab)
   }, [board.id, navigate])
 
   const cardTitleId = useId()
