@@ -39,6 +39,7 @@
     "@ai-sdk/openai": "^2.0.23",
     "@ai-sdk/react": "^2.0.28",
     "@ariakit/react": "^0.4.19",
+    "@ark-ui/react": "^5.26.0",
     "@base-ui-components/react": "^1.0.0-beta.4",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/modifiers": "^9.0.0",

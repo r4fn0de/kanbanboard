@@ -4,22 +4,12 @@ import { Check, ChevronsUpDown, Pencil, Plus, Trash2 } from 'lucide-react'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Checkbox } from '@/components/ui/checkbox'
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
+import { Checkbox } from '@base-ui-components/react/checkbox'
+import { Dialog } from '@base-ui-components/react/dialog'
+import { Popover } from '@base-ui-components/react/popover'
+import { ScrollArea } from '@base-ui-components/react/scroll-area'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import { useTheme } from '@/hooks/use-theme'
 import { cn } from '@/lib/utils'
 import {
@@ -65,7 +55,6 @@ export function TagSelector({
 }: TagSelectorProps) {
   const labelInputId = useId()
   const { theme } = useTheme()
-  // Detectar modo escuro de forma mais robusta
   const isDarkMode =
     theme === 'dark' ||
     (typeof window !== 'undefined' &&
@@ -234,142 +223,173 @@ export function TagSelector({
         )}
       </div>
 
-      <Popover open={popoverOpen} onOpenChange={setPopoverOpen} modal={false}>
-        <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            type="button"
-            disabled={disabled}
-            className="w-full justify-between"
-            aria-expanded={popoverOpen}
-          >
-            <span className="truncate">
-              {selectedTags.length > 0
-                ? `${selectedTags.length} tag${
-                    selectedTags.length === 1 ? '' : 's'
-                  } selected`
-                : 'Select tags'}
-            </span>
-            <ChevronsUpDown className="h-4 w-4 opacity-50" />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-72 p-0" align="start">
-          <div className="flex items-center justify-between border-b px-3 py-2">
-            <p className="text-sm font-medium">Tags</p>
+      <Popover.Root open={popoverOpen} onOpenChange={setPopoverOpen}>
+        <Popover.Trigger
+          render={({
+            ref,
+            className: triggerClassName,
+            ...triggerProps
+          }) => (
             <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                setPopoverOpen(false)
-                setEditorState({ mode: 'create' })
-              }}
+              asChild
+              variant="outline"
+              className={cn('w-full justify-between', triggerClassName)}
+              disabled={disabled}
             >
-              <Plus className="mr-1 h-4 w-4" />
-              New
+              <button
+                ref={ref}
+                type="button"
+                aria-expanded={popoverOpen}
+                disabled={disabled}
+                {...triggerProps}
+              >
+                <span className="truncate">
+                  {selectedTags.length > 0
+                    ? `${selectedTags.length} tag${
+                        selectedTags.length === 1 ? '' : 's'
+                      } selected`
+                    : 'Select tags'}
+                </span>
+                <ChevronsUpDown className="h-4 w-4 opacity-50" />
+              </button>
             </Button>
-          </div>
-          <ScrollArea className="max-h-64">
-            <div className="flex flex-col gap-1 p-2">
-              {isLoading ? (
-                <div className="py-6 text-center text-sm text-muted-foreground">
-                  Loading tags…
-                </div>
-              ) : tags.length > 0 ? (
-                tags.map(tag => {
-                  const selected = selectedTagIds.includes(tag.id)
-                  const textColor = getAccessibleTextColor(
-                    tag.color,
-                    isDarkMode
-                  )
+          )}
+        />
+  <Popover.Portal>
+    <Popover.Positioner 
+      sideOffset={5}
+      className="z-50"
+      side="bottom"
+      align="start"
+    >
+      <Popover.Popup className="w-72 p-0 bg-background border rounded-md shadow-lg">
+              <div className="flex items-center justify-between border-b px-3 py-2">
+                <p className="text-sm font-medium">Tags</p>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setPopoverOpen(false)
+                    setEditorState({ mode: 'create' })
+                  }}
+                >
+                  <Plus className="mr-1 h-4 w-4" />
+                  New
+                </Button>
+              </div>
+              <ScrollArea.Root className="max-h-64">
+                <ScrollArea.Viewport className="max-h-64 p-2">
+                  <div className="flex flex-col gap-1">
+                    {isLoading ? (
+                      <div className="py-6 text-center text-sm text-muted-foreground">
+                        Loading tags…
+                      </div>
+                    ) : tags.length > 0 ? (
+                      tags.map(tag => {
+                        const selected = selectedTagIds.includes(tag.id)
+                        const textColor = getAccessibleTextColor(
+                          tag.color,
+                          isDarkMode
+                        )
 
-                  return (
-                    <button
-                      key={tag.id}
-                      type="button"
-                      onClick={() => toggleTag(tag.id)}
-                      className="flex items-center justify-between rounded-lg px-2 py-2 text-left text-sm hover:bg-muted"
-                    >
-                      <div className="flex items-center gap-2">
-                        <Checkbox
-                          checked={selected}
-                          onCheckedChange={() => toggleTag(tag.id)}
-                          onClick={event => event.stopPropagation()}
-                          disabled={disabled}
-                        />
-                        <span className="flex items-center gap-2">
-                          <span
-                            className="h-3 w-3 rounded-full border"
-                            style={
-                              tag.color
-                                ? {
-                                    backgroundColor: tag.color,
-                                    borderColor: tag.color,
-                                  }
-                                : undefined
-                            }
-                          />
-                          <span
-                            className={cn(
-                              'truncate font-semibold leading-none rounded-full px-3 py-1 text-xs',
-                              selected && !tag.color && 'font-bold'
-                            )}
-                            style={
-                              tag.color
-                                ? {
-                                    backgroundColor: tag.color,
-                                    color: textColor,
-                                    borderColor: tag.color,
-                                  }
-                                : undefined
-                            }
+                        return (
+                          <button
+                            key={tag.id}
+                            type="button"
+                            onClick={() => toggleTag(tag.id)}
+                            className="flex items-center justify-between rounded-lg px-2 py-2 text-left text-sm hover:bg-muted"
                           >
-                            {tag.label}
-                          </span>
-                        </span>
+                            <div className="flex items-center gap-2">
+                              <Checkbox.Root
+                                checked={selected}
+                                onCheckedChange={() => toggleTag(tag.id)}
+                                disabled={disabled}
+                                className="flex h-4 w-4 items-center justify-center rounded border border-input bg-background"
+                              >
+                                <Checkbox.Indicator className="text-primary">
+                                  <Check className="h-3 w-3" />
+                                </Checkbox.Indicator>
+                              </Checkbox.Root>
+                              <span className="flex items-center gap-2">
+                                <span
+                                  className="h-3 w-3 rounded-full border"
+                                  style={
+                                    tag.color
+                                      ? {
+                                          backgroundColor: tag.color,
+                                          borderColor: tag.color,
+                                        }
+                                      : undefined
+                                  }
+                                />
+                                <span
+                                  className={cn(
+                                    'truncate font-semibold leading-none rounded-full px-3 py-1 text-xs',
+                                    selected && !tag.color && 'font-bold'
+                                  )}
+                                  style={
+                                    tag.color
+                                      ? {
+                                          backgroundColor: tag.color,
+                                          color: textColor,
+                                          borderColor: tag.color,
+                                        }
+                                      : undefined
+                                  }
+                                >
+                                  {tag.label}
+                                </span>
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7"
+                                onClick={event => {
+                                  event.stopPropagation()
+                                  setPopoverOpen(false)
+                                  setEditorState({ mode: 'edit', tag })
+                                }}
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 text-destructive"
+                                onClick={event => {
+                                  event.stopPropagation()
+                                  handleDeleteTag(tag)
+                                }}
+                                disabled={isDeleting}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </button>
+                        )
+                      })
+                    ) : (
+                      <div className="py-6 text-center text-sm text-muted-foreground">
+                        No tags yet. Create one to get started.
                       </div>
-                      <div className="flex items-center gap-1">
-                        {selected ? (
-                          <Check className="h-4 w-4 text-primary" />
-                        ) : null}
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7"
-                          onClick={event => {
-                            event.stopPropagation()
-                            setPopoverOpen(false)
-                            setEditorState({ mode: 'edit', tag })
-                          }}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7 text-destructive"
-                          onClick={event => {
-                            event.stopPropagation()
-                            handleDeleteTag(tag)
-                          }}
-                          disabled={isDeleting}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </button>
-                  )
-                })
-              ) : (
-                <div className="py-6 text-center text-sm text-muted-foreground">
-                  No tags yet. Create one to get started.
-                </div>
-              )}
-            </div>
-          </ScrollArea>
-        </PopoverContent>
-      </Popover>
+                    )}
+                  </div>
+                </ScrollArea.Viewport>
+                <ScrollArea.Scrollbar
+                  orientation="vertical"
+                  className="flex w-2.5 touch-none select-none border-l border-l-transparent p-px transition-colors"
+                >
+                  <ScrollArea.Thumb className="relative flex-1 rounded-full bg-border" />
+                </ScrollArea.Scrollbar>
+              </ScrollArea.Root>
+            </Popover.Popup>
+          </Popover.Positioner>
+        </Popover.Portal>
+      </Popover.Root>
 
-      <Dialog
+      <Dialog.Root
         open={Boolean(editorState)}
         onOpenChange={open => {
           if (!open) {
@@ -377,88 +397,104 @@ export function TagSelector({
           }
         }}
       >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
+        <Dialog.Portal>
+          <Dialog.Backdrop className="fixed inset-0 bg-black/50 z-50" />
+          <Dialog.Popup className="fixed left-1/2 top-1/2 z-50 max-w-md w-full -translate-x-1/2 -translate-y-1/2 bg-background border rounded-md shadow-lg p-6">
+            <Dialog.Title className="text-lg font-semibold mb-1">
               {editorState?.mode === 'edit' ? 'Edit tag' : 'Create tag'}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor={labelInputId}>Name</Label>
-              <Input
-                id={labelInputId}
-                value={label}
-                onChange={event => setLabel(event.target.value)}
-                placeholder="e.g. Priority"
-                disabled={isSaving}
-                autoFocus
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Color</Label>
-              <div className="flex flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setColor(null)}
-                  className={cn(
-                    'flex h-9 items-center justify-center rounded-full border px-3 text-sm transition-colors',
-                    color === null
-                      ? 'border-primary text-primary'
-                      : 'border-border'
-                  )}
+            </Dialog.Title>
+            <Dialog.Description className="text-sm text-muted-foreground mb-4">
+              {editorState?.mode === 'edit'
+                ? 'Edit the tag details below.'
+                : 'Create a new tag to organize your tasks.'}
+            </Dialog.Description>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor={labelInputId}>Name</Label>
+                <Input
+                  id={labelInputId}
+                  value={label}
+                  onChange={event => setLabel(event.target.value)}
+                  placeholder="e.g. Priority"
                   disabled={isSaving}
-                >
-                  None
-                </button>
-                {TAG_COLOR_OPTIONS.map(option => (
+                  autoFocus
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Color</Label>
+                <div className="flex flex-wrap items-center gap-2">
                   <button
-                    key={option}
                     type="button"
-                    onClick={() => setColor(option)}
+                    onClick={() => setColor(null)}
                     className={cn(
-                      'h-8 w-8 rounded-full border-2 transition',
-                      color === option
-                        ? 'border-primary scale-105'
-                        : 'border-transparent'
+                      'flex h-9 items-center justify-center rounded-full border px-3 text-sm transition-colors',
+                      color === null
+                        ? 'border-primary text-primary'
+                        : 'border-border'
                     )}
-                    style={{ backgroundColor: option }}
                     disabled={isSaving}
-                    aria-label={`Select ${option} color`}
-                  />
-                ))}
+                  >
+                    None
+                  </button>
+                  {TAG_COLOR_OPTIONS.map(option => (
+                    <button
+                      key={option}
+                      type="button"
+                      onClick={() => setColor(option)}
+                      className={cn(
+                        'h-8 w-8 rounded-full border-2 transition',
+                        color === option
+                          ? 'border-primary scale-105'
+                          : 'border-transparent'
+                      )}
+                      style={{ backgroundColor: option }}
+                      disabled={isSaving}
+                      aria-label={`Select ${option} color`}
+                    />
+                  ))}
+                </div>
               </div>
             </div>
-          </div>
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setEditorState(null)}
-              disabled={isSaving}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              onClick={async () => {
-                if (!editorState) {
-                  return
+            <div className="flex justify-end gap-2">
+              <Dialog.Close
+                render={
+                  <Button type="button" variant="outline" disabled={isSaving}>
+                    Cancel
+                  </Button>
                 }
+              />
+              <Button
+                type="button"
+                onClick={async () => {
+                  if (!editorState) {
+                    return
+                  }
 
-                if (editorState.mode === 'edit' && editorState.tag) {
-                  await handleUpdateTag(editorState.tag)
-                } else {
-                  await handleCreateTag()
-                }
-              }}
-              disabled={isSaving}
-            >
-              {isSaving ? 'Saving…' : 'Save'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+                  if (editorState.mode === 'edit' && editorState.tag) {
+                    await handleUpdateTag(editorState.tag)
+                  } else {
+                    await handleCreateTag()
+                  }
+                }}
+                disabled={isSaving}
+              >
+                {isSaving ? 'Saving…' : 'Save'}
+              </Button>
+            </div>
+            <Dialog.Close
+              render={
+                <button
+                  type="button"
+                  className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none text-2xl leading-none"
+                  aria-label="Close"
+                >
+                  ×
+                </button>
+              }
+            />
+          </Dialog.Popup>
+        </Dialog.Portal>
+      </Dialog.Root>
     </div>
   )
 }
