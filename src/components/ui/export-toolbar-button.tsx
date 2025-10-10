@@ -2,20 +2,12 @@
 
 import * as React from 'react';
 
-import type { DropdownMenuProps } from '@radix-ui/react-dropdown-menu';
-
+import { Menu } from '@base-ui-components/react/menu';
 import { MarkdownPlugin } from '@platejs/markdown';
 import { ArrowDownToLineIcon } from 'lucide-react';
 import { createSlateEditor, serializeHtml } from 'platejs';
 import { useEditorRef } from 'platejs/react';
 
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { BaseEditorKit } from '@/components/editor/editor-base-kit';
 
 import { EditorStatic } from './editor-static';
@@ -23,7 +15,14 @@ import { ToolbarButton } from './toolbar';
 
 const siteUrl = 'https://platejs.org';
 
-export function ExportToolbarButton(props: DropdownMenuProps) {
+interface ExportToolbarButtonProps {
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  defaultOpen?: boolean;
+  disabled?: boolean;
+}
+
+export function ExportToolbarButton(props: ExportToolbarButtonProps) {
   const editor = useEditorRef();
   const [open, setOpen] = React.useState(false);
 
@@ -147,29 +146,57 @@ export function ExportToolbarButton(props: DropdownMenuProps) {
   };
 
   return (
-    <DropdownMenu open={open} onOpenChange={setOpen} modal={false} {...props}>
-      <DropdownMenuTrigger asChild>
+    <Menu.Root open={open} onOpenChange={setOpen} modal={false} {...props}>
+      <Menu.Trigger>
         <ToolbarButton pressed={open} tooltip="Export" isDropdown>
           <ArrowDownToLineIcon className="size-4" />
         </ToolbarButton>
-      </DropdownMenuTrigger>
+      </Menu.Trigger>
 
-      <DropdownMenuContent align="start">
-        <DropdownMenuGroup>
-          <DropdownMenuItem onSelect={exportToHtml}>
-            Export as HTML
-          </DropdownMenuItem>
-          <DropdownMenuItem onSelect={exportToPdf}>
-            Export as PDF
-          </DropdownMenuItem>
-          <DropdownMenuItem onSelect={exportToImage}>
-            Export as Image
-          </DropdownMenuItem>
-          <DropdownMenuItem onSelect={exportToMarkdown}>
-            Export as Markdown
-          </DropdownMenuItem>
-        </DropdownMenuGroup>
-      </DropdownMenuContent>
-    </DropdownMenu>
+      <Menu.Portal>
+        <Menu.Positioner sideOffset={5} align="center" className="z-50">
+          <Menu.Popup className="rounded-md border bg-popover p-1 shadow-md">
+            <Menu.Group>
+              <Menu.Item
+                onClick={() => {
+                  exportToHtml();
+                  setOpen(false);
+                }}
+                className="relative flex cursor-pointer select-none items-center rounded-sm px-1.5 py-1 outline-none hover:bg-accent focus:bg-accent data-[disabled]:pointer-events-none data-[disabled]:opacity-50 min-w-[160px]"
+              >
+                <span className="text-sm">Export as HTML</span>
+              </Menu.Item>
+              <Menu.Item
+                onClick={() => {
+                  exportToPdf();
+                  setOpen(false);
+                }}
+                className="relative flex cursor-pointer select-none items-center rounded-sm px-1.5 py-1 outline-none hover:bg-accent focus:bg-accent data-[disabled]:pointer-events-none data-[disabled]:opacity-50 min-w-[160px]"
+              >
+                <span className="text-sm">Export as PDF</span>
+              </Menu.Item>
+              <Menu.Item
+                onClick={() => {
+                  exportToImage();
+                  setOpen(false);
+                }}
+                className="relative flex cursor-pointer select-none items-center rounded-sm px-1.5 py-1 outline-none hover:bg-accent focus:bg-accent data-[disabled]:pointer-events-none data-[disabled]:opacity-50 min-w-[160px]"
+              >
+                <span className="text-sm">Export as Image</span>
+              </Menu.Item>
+              <Menu.Item
+                onClick={() => {
+                  exportToMarkdown();
+                  setOpen(false);
+                }}
+                className="relative flex cursor-pointer select-none items-center rounded-sm px-1.5 py-1 outline-none hover:bg-accent focus:bg-accent data-[disabled]:pointer-events-none data-[disabled]:opacity-50 min-w-[160px]"
+              >
+                <span className="text-sm">Export as Markdown</span>
+              </Menu.Item>
+            </Menu.Group>
+          </Menu.Popup>
+        </Menu.Positioner>
+      </Menu.Portal>
+    </Menu.Root>
   );
 }

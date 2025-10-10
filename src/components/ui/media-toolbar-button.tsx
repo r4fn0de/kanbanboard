@@ -2,9 +2,7 @@
 
 import * as React from 'react';
 
-import type { DropdownMenuProps } from '@radix-ui/react-dropdown-menu';
-
-import { PlaceholderPlugin } from '@platejs/media/react';
+import { Menu } from '@base-ui-components/react/menu';
 import {
   AudioLinesIcon,
   FileUpIcon,
@@ -27,13 +25,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 
 import {
@@ -77,10 +68,18 @@ const MEDIA_CONFIG: Record<
   },
 };
 
+interface MediaToolbarButtonProps {
+  nodeType: string;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  defaultOpen?: boolean;
+  disabled?: boolean;
+}
+
 export function MediaToolbarButton({
   nodeType,
   ...props
-}: DropdownMenuProps & { nodeType: string }) {
+}: MediaToolbarButtonProps) {
   const currentConfig = MEDIA_CONFIG[nodeType];
 
   const editor = useEditorRef();
@@ -113,33 +112,52 @@ export function MediaToolbarButton({
           {currentConfig.icon}
         </ToolbarSplitButtonPrimary>
 
-        <DropdownMenu
+        <Menu.Root
           open={open}
           onOpenChange={setOpen}
           modal={false}
           {...props}
         >
-          <DropdownMenuTrigger asChild>
+          <Menu.Trigger>
             <ToolbarSplitButtonSecondary />
-          </DropdownMenuTrigger>
+          </Menu.Trigger>
 
-          <DropdownMenuContent
-            onClick={(e) => e.stopPropagation()}
-            align="start"
-            alignOffset={-32}
-          >
-            <DropdownMenuGroup>
-              <DropdownMenuItem onSelect={() => openFilePicker()}>
-                {currentConfig.icon}
-                Upload from computer
-              </DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => setDialogOpen(true)}>
-                <LinkIcon />
-                Insert via URL
-              </DropdownMenuItem>
-            </DropdownMenuGroup>
-          </DropdownMenuContent>
-        </DropdownMenu>
+          <Menu.Portal>
+            <Menu.Positioner
+              sideOffset={5}
+              align="center"
+              className="z-50"
+            >
+              <Menu.Popup
+                className="rounded-md border bg-popover p-1 shadow-md"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <Menu.Group>
+                  <Menu.Item
+                    onClick={() => {
+                      openFilePicker();
+                      setOpen(false);
+                    }}
+                    className="relative flex cursor-pointer select-none items-center rounded-sm px-1.5 py-1 outline-none hover:bg-accent focus:bg-accent data-[disabled]:pointer-events-none data-[disabled]:opacity-50 min-w-[160px]"
+                  >
+                    {currentConfig.icon}
+                    <span className="text-sm ml-2">Upload from computer</span>
+                  </Menu.Item>
+                  <Menu.Item
+                    onClick={() => {
+                      setDialogOpen(true);
+                      setOpen(false);
+                    }}
+                    className="relative flex cursor-pointer select-none items-center rounded-sm px-1.5 py-1 outline-none hover:bg-accent focus:bg-accent data-[disabled]:pointer-events-none data-[disabled]:opacity-50 min-w-[160px]"
+                  >
+                    <LinkIcon className="size-4" />
+                    <span className="text-sm ml-2">Insert via URL</span>
+                  </Menu.Item>
+                </Menu.Group>
+              </Menu.Popup>
+            </Menu.Positioner>
+          </Menu.Portal>
+        </Menu.Root>
       </ToolbarSplitButton>
 
       <AlertDialog

@@ -2,27 +2,25 @@
 
 import * as React from 'react';
 
-import type { DropdownMenuProps } from '@radix-ui/react-dropdown-menu';
-
+import { Menu } from '@base-ui-components/react/menu';
 import { MarkdownPlugin } from '@platejs/markdown';
 import { ArrowUpToLineIcon } from 'lucide-react';
 import { getEditorDOMFromHtmlString } from 'platejs';
 import { useEditorRef } from 'platejs/react';
 import { useFilePicker } from 'use-file-picker';
 
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-
 import { ToolbarButton } from './toolbar';
 
 type ImportType = 'html' | 'markdown';
 
-export function ImportToolbarButton(props: DropdownMenuProps) {
+interface ImportToolbarButtonProps {
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  defaultOpen?: boolean;
+  disabled?: boolean;
+}
+
+export function ImportToolbarButton(props: ImportToolbarButtonProps) {
   const editor = useEditorRef();
   const [open, setOpen] = React.useState(false);
 
@@ -68,32 +66,40 @@ export function ImportToolbarButton(props: DropdownMenuProps) {
   });
 
   return (
-    <DropdownMenu open={open} onOpenChange={setOpen} modal={false} {...props}>
-      <DropdownMenuTrigger asChild>
+    <Menu.Root open={open} onOpenChange={setOpen} modal={false} {...props}>
+      <Menu.Trigger>
         <ToolbarButton pressed={open} tooltip="Import" isDropdown>
           <ArrowUpToLineIcon className="size-4" />
         </ToolbarButton>
-      </DropdownMenuTrigger>
+      </Menu.Trigger>
 
-      <DropdownMenuContent align="start">
-        <DropdownMenuGroup>
-          <DropdownMenuItem
-            onSelect={() => {
-              openHtmlFilePicker();
-            }}
-          >
-            Import from HTML
-          </DropdownMenuItem>
+      <Menu.Portal>
+        <Menu.Positioner sideOffset={5} align="center" className="z-50">
+          <Menu.Popup className="rounded-md border bg-popover p-1 shadow-md">
+            <Menu.Group>
+              <Menu.Item
+                onClick={() => {
+                  openHtmlFilePicker();
+                  setOpen(false);
+                }}
+                className="relative flex cursor-pointer select-none items-center rounded-sm px-1.5 py-1 outline-none hover:bg-accent focus:bg-accent data-[disabled]:pointer-events-none data-[disabled]:opacity-50 min-w-[160px]"
+              >
+                <span className="text-sm">Import from HTML</span>
+              </Menu.Item>
 
-          <DropdownMenuItem
-            onSelect={() => {
-              openMdFilePicker();
-            }}
-          >
-            Import from Markdown
-          </DropdownMenuItem>
-        </DropdownMenuGroup>
-      </DropdownMenuContent>
-    </DropdownMenu>
+              <Menu.Item
+                onClick={() => {
+                  openMdFilePicker();
+                  setOpen(false);
+                }}
+                className="relative flex cursor-pointer select-none items-center rounded-sm px-1.5 py-1 outline-none hover:bg-accent focus:bg-accent data-[disabled]:pointer-events-none data-[disabled]:opacity-50 min-w-[160px]"
+              >
+                <span className="text-sm">Import from Markdown</span>
+              </Menu.Item>
+            </Menu.Group>
+          </Menu.Popup>
+        </Menu.Positioner>
+      </Menu.Portal>
+    </Menu.Root>
   );
 }

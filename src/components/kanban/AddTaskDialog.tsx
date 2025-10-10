@@ -1,22 +1,11 @@
 import { useState, useCallback, useId, useMemo } from 'react'
 import { toast } from 'sonner'
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-} from '@/components/ui/dialog'
+import { Dialog } from '@base-ui-components/react/dialog'
+import { Select } from '@base-ui-components/react/select'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { TagSelector } from '@/components/kanban/tags/TagSelector'
 import {
   Breadcrumb,
@@ -28,7 +17,7 @@ import {
 } from '@/components/ui/breadcrumb'
 import { getColumnIconComponent } from '@/components/kanban/column-icon-options'
 import { FALLBACK_COLUMN_COLORS } from '@/constants/kanban-columns'
-import { CalendarDays, Columns3, ArrowDown, ArrowUp, Minus } from 'lucide-react'
+import { CalendarDays, Columns3, ArrowDown, ArrowUp, Minus, Check } from 'lucide-react'
 import type { KanbanCard, KanbanColumn, KanbanPriority } from '@/types/common'
 
 interface AddTaskDialogProps {
@@ -43,6 +32,12 @@ interface AddTaskDialogProps {
     }
   ) => Promise<void>
 }
+
+const priorityItems = [
+  { value: 'low', label: 'Low' },
+  { value: 'medium', label: 'Medium' },
+  { value: 'high', label: 'High' },
+] as const
 
 export function AddTaskDialog({
   isOpen,
@@ -103,7 +98,6 @@ export function AddTaskDialog({
 
       setIsCreating(true)
       try {
-        // Usar o comprimento da coluna + 1 para garantir uma posição única no final (sistema usa base 1)
         const position = cardsInColumn.length + 1
 
         await onCreateTask({
@@ -147,141 +141,167 @@ export function AddTaskDialog({
     ]
   )
 
+  const getPriorityIcon = (value: KanbanPriority) => {
+    switch (value) {
+      case 'low':
+        return <ArrowDown className="h-3 w-3 text-emerald-700 dark:text-emerald-300" />
+      case 'high':
+        return <ArrowUp className="h-3 w-3 text-rose-700 dark:text-rose-300" />
+      default:
+        return <Minus className="h-3 w-3 text-amber-700 dark:text-amber-300" />
+    }
+  }
+
   return (
-    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-[760px] overflow-hidden rounded-2xl border bg-background p-0">
-        <DialogHeader className="border-b px-6 py-4">
-          <Breadcrumb>
-            <BreadcrumbList className="items-center gap-1 text-xs font-medium text-muted-foreground">
-              <BreadcrumbItem>
-                <BreadcrumbLink href="#" className="flex items-center gap-2">
-                  <Columns3 className="h-4 w-4" />
-                  Tasks
-                </BreadcrumbLink>
-              </BreadcrumbItem>
-              <BreadcrumbSeparator />
-              <BreadcrumbItem>
-                <BreadcrumbLink href="#">
-                  {column ? column.title : 'Select column'}
-                </BreadcrumbLink>
-              </BreadcrumbItem>
-              <BreadcrumbSeparator />
-              <BreadcrumbItem>
-                <BreadcrumbPage className="text-foreground">New task</BreadcrumbPage>
-              </BreadcrumbItem>
-            </BreadcrumbList>
-          </Breadcrumb>
-        </DialogHeader>
-
-        <form onSubmit={handleSubmit} className="flex flex-col gap-6 px-6 py-6">
-          <div className="space-y-3">
-            <Label htmlFor={titleId} className="sr-only">
-              Title
-            </Label>
-            <Input
-              id={titleId}
-              value={title}
-              onChange={e => setTitle(e.target.value)}
-              placeholder="Task title"
-              disabled={isCreating}
-              autoFocus
-              required
-              className="border-none bg-transparent px-0 text-2xl font-semibold shadow-none focus-visible:ring-0"
-            />
-
-            <Label htmlFor={descriptionId} className="sr-only">
-              Description
-            </Label>
-            <Textarea
-              id={descriptionId}
-              value={description}
-              onChange={e => setDescription(e.target.value)}
-              placeholder="Add a task description"
-              disabled={isCreating}
-              className="min-h-[96px] border-none bg-transparent px-0 text-sm text-muted-foreground shadow-none focus-visible:ring-0"
-            />
+    <Dialog.Root open={isOpen} onOpenChange={handleOpenChange}>
+      <Dialog.Portal>
+        <Dialog.Backdrop className="fixed inset-0 bg-black/50 z-50" />
+        <Dialog.Popup className="fixed left-1/2 top-1/2 z-50 w-full max-w-[760px] -translate-x-1/2 -translate-y-1/2 rounded-2xl border bg-background shadow-lg">
+          <div className="border-b px-6 py-4">
+            <Breadcrumb>
+              <BreadcrumbList className="items-center gap-1 text-xs font-medium text-muted-foreground">
+                <BreadcrumbItem>
+                  <BreadcrumbLink href="#" className="flex items-center gap-2">
+                    <Columns3 className="h-4 w-4" />
+                    Tasks
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  <BreadcrumbLink href="#">
+                    {column ? column.title : 'Select column'}
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  <BreadcrumbPage className="text-foreground">New task</BreadcrumbPage>
+                </BreadcrumbItem>
+              </BreadcrumbList>
+            </Breadcrumb>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
-            <div
-              className="flex items-center gap-2 rounded-full border px-3 py-2 text-sm"
-            >
-              <ColumnIcon className="h-4 w-4" style={{ color: columnAccent }} />
-              <span className="font-medium text-foreground">
-                {column ? column.title : 'Column'}
-              </span>
-            </div>
-
-            <Label htmlFor={priorityId} className="sr-only">
-              Priority
-            </Label>
-            <Select
-              value={priority}
-              onValueChange={(value: KanbanPriority) => setPriority(value)}
-              disabled={isCreating}
-            >
-              <SelectTrigger className="h-auto w-28 border-none bg-transparent px-2 py-0 text-sm font-medium shadow-none focus:ring-0 focus:ring-offset-0">
-                <SelectValue placeholder="Priority" />
-              </SelectTrigger>
-                <SelectContent align="end">
-                  <SelectItem value="low">
-                    <div className="flex items-center gap-2">
-                      <ArrowDown className="h-3 w-3 text-emerald-700 dark:text-emerald-300" />
-                      Low
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="medium">
-                    <div className="flex items-center gap-2">
-                      <Minus className="h-3 w-3 text-amber-700 dark:text-amber-300" />
-                      Medium
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="high">
-                    <div className="flex items-center gap-2">
-                      <ArrowUp className="h-3 w-3 text-rose-700 dark:text-rose-300" />
-                      High
-                    </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-
-            <div className="flex items-center gap-2 rounded-full border px-3 py-2 text-sm">
-              <CalendarDays className="h-4 w-4" />
-              <Label htmlFor={dueDateId} className="sr-only">
-                Due date
+          <form onSubmit={handleSubmit} className="flex flex-col gap-6 px-6 py-6">
+            <div className="space-y-3">
+              <Label htmlFor={titleId} className="sr-only">
+                Title
               </Label>
               <Input
-                id={dueDateId}
-                type="date"
-                value={dueDate}
-                onChange={e => setDueDate(e.target.value)}
+                id={titleId}
+                value={title}
+                onChange={e => setTitle(e.target.value)}
+                placeholder="Task title"
                 disabled={isCreating}
-                className="h-auto w-auto border-none bg-transparent px-0 py-0 text-sm shadow-none focus-visible:ring-0"
+                autoFocus
+                required
+                className="border-none bg-transparent px-0 text-2xl font-semibold shadow-none focus-visible:ring-0"
+              />
+
+              <Label htmlFor={descriptionId} className="sr-only">
+                Description
+              </Label>
+              <Textarea
+                id={descriptionId}
+                value={description}
+                onChange={e => setDescription(e.target.value)}
+                placeholder="Add a task description"
+                disabled={isCreating}
+                className="min-h-[96px] border-none bg-transparent px-0 text-sm text-muted-foreground shadow-none focus-visible:ring-0"
               />
             </div>
 
-            <div className="min-w-[160px]">
-              <TagSelector
-                boardId={boardId}
-                selectedTagIds={selectedTagIds}
-                onChange={setSelectedTagIds}
-                disabled={isCreating}
-                className="space-y-0 [&>div:first-child]:hidden [&>div:nth-child(2)_button]:w-auto [&>div:nth-child(2)_button]:bg-transparent [&>div:nth-child(2)_button]:px-2 [&>div:nth-child(2)_button]:py-0 [&>div:nth-child(2)_button]:text-sm [&>div:nth-child(2)_button]:font-medium [&>div:nth-child(2)_button]:shadow-none [&>div:nth-child(2)_button]:focus:ring-0 [&>div:nth-child(2)_button]:focus:ring-offset-0 [&>div:nth-child(2)_button]:hover:bg-transparent [&>div:nth-child(2)_button]:border-foreground/20 [&>div:nth-child(2)_button]:text-foreground"
-              />
-            </div>
-          </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex items-center gap-2 rounded-full border px-3 py-2 text-sm">
+                <ColumnIcon className="h-4 w-4" style={{ color: columnAccent }} />
+                <span className="font-medium text-foreground">
+                  {column ? column.title : 'Column'}
+                </span>
+              </div>
 
-          <DialogFooter className="border-t px-0 pt-4">
-            <div className="flex w-full items-center justify-between">
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={handleResetAndClose}
+              <Label htmlFor={priorityId} className="sr-only">
+                Priority
+              </Label>
+              <Select.Root
+                value={priority}
+                onValueChange={(value) => setPriority(value as KanbanPriority)}
                 disabled={isCreating}
-                className="px-4"
+                items={priorityItems}
               >
-                Cancel
-              </Button>
+                <Select.Trigger className="h-auto w-28 border-none bg-transparent px-2 py-0 text-sm font-medium shadow-none focus:ring-0 focus:ring-offset-0">
+                  <Select.Value>
+                    {(value: KanbanPriority) => (
+                      <div className="flex items-center gap-2">
+                        {getPriorityIcon(value)}
+                        {priorityItems.find(item => item.value === value)?.label}
+                      </div>
+                    )}
+                  </Select.Value>
+                </Select.Trigger>
+                <Select.Portal>
+                  <Select.Positioner sideOffset={5} className="z-50">
+                    <Select.Popup className="rounded-md border bg-popover p-1 shadow-md">
+                      <Select.List>
+                        {priorityItems.map(item => (
+                          <Select.Item
+                            key={item.value}
+                            value={item.value}
+                            className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent focus:bg-accent data-[disabled]:pointer-events-none data-[disabled]:opacity-50"
+                          >
+                            <Select.ItemIndicator className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
+                              <Check className="h-4 w-4" />
+                            </Select.ItemIndicator>
+                            <Select.ItemText className="pl-6">
+                              <div className="flex items-center gap-2">
+                                {getPriorityIcon(item.value as KanbanPriority)}
+                                {item.label}
+                              </div>
+                            </Select.ItemText>
+                          </Select.Item>
+                        ))}
+                      </Select.List>
+                    </Select.Popup>
+                  </Select.Positioner>
+                </Select.Portal>
+              </Select.Root>
+
+              <div className="flex items-center gap-2 rounded-full border px-3 py-2 text-sm">
+                <CalendarDays className="h-4 w-4" />
+                <Label htmlFor={dueDateId} className="sr-only">
+                  Due date
+                </Label>
+                <Input
+                  id={dueDateId}
+                  type="date"
+                  value={dueDate}
+                  onChange={e => setDueDate(e.target.value)}
+                  disabled={isCreating}
+                  className="h-auto w-auto border-none bg-transparent px-0 py-0 text-sm shadow-none focus-visible:ring-0"
+                />
+              </div>
+
+              <div className="min-w-[160px]">
+                <TagSelector
+                  boardId={boardId}
+                  selectedTagIds={selectedTagIds}
+                  onChange={setSelectedTagIds}
+                  disabled={isCreating}
+                  className="space-y-0 [&>div:first-child]:hidden [&>div:nth-child(2)_button]:w-auto [&>div:nth-child(2)_button]:bg-transparent [&>div:nth-child(2)_button]:px-2 [&>div:nth-child(2)_button]:py-0 [&>div:nth-child(2)_button]:text-sm [&>div:nth-child(2)_button]:font-medium [&>div:nth-child(2)_button]:shadow-none [&>div:nth-child(2)_button]:focus:ring-0 [&>div:nth-child(2)_button]:focus:ring-offset-0 [&>div:nth-child(2)_button]:hover:bg-transparent [&>div:nth-child(2)_button]:border-foreground/20 [&>div:nth-child(2)_button]:text-foreground"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between border-t px-0 pt-4">
+              <Dialog.Close
+                render={
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    disabled={isCreating}
+                    className="px-4"
+                  >
+                    Cancel
+                  </Button>
+                }
+              />
               <Button
                 type="submit"
                 disabled={isCreating || !title.trim() || !column}
@@ -290,9 +310,9 @@ export function AddTaskDialog({
                 {isCreating ? 'Creating…' : 'Create Task'}
               </Button>
             </div>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+          </form>
+        </Dialog.Popup>
+      </Dialog.Portal>
+    </Dialog.Root>
   )
 }

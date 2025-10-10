@@ -2,10 +2,7 @@
 
 import * as React from 'react';
 
-import type { DropdownMenuProps } from '@radix-ui/react-dropdown-menu';
-import type { TElement } from 'platejs';
-
-import { DropdownMenuItemIndicator } from '@radix-ui/react-dropdown-menu';
+import { Menu } from '@base-ui-components/react/menu';
 import {
   CheckIcon,
   ChevronRightIcon,
@@ -26,18 +23,13 @@ import {
 import { KEYS } from 'platejs';
 import { useEditorRef, useSelectionFragmentProp } from 'platejs/react';
 
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuRadioItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+import type { TElement } from 'platejs';
 import {
   getBlockType,
   setBlockType,
 } from '@/components/editor/transforms';
 
-import { ToolbarButton, ToolbarMenuGroup } from './toolbar';
+import { ToolbarButton } from './toolbar';
 
 export const turnIntoItems = [
   {
@@ -125,7 +117,14 @@ export const turnIntoItems = [
   },
 ];
 
-export function TurnIntoToolbarButton(props: DropdownMenuProps) {
+interface TurnIntoToolbarButtonProps {
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  defaultOpen?: boolean;
+  disabled?: boolean;
+}
+
+export function TurnIntoToolbarButton(props: TurnIntoToolbarButtonProps) {
   const editor = useEditorRef();
   const [open, setOpen] = React.useState(false);
 
@@ -141,50 +140,48 @@ export function TurnIntoToolbarButton(props: DropdownMenuProps) {
   );
 
   return (
-    <DropdownMenu open={open} onOpenChange={setOpen} modal={false} {...props}>
-      <DropdownMenuTrigger asChild>
+    <Menu.Root open={open} onOpenChange={setOpen} modal={false} {...props}>
+      <Menu.Trigger>
         <ToolbarButton
           className="min-w-[125px]"
           pressed={open}
           tooltip="Turn into"
           isDropdown
         >
-          {selectedItem.label}
+          {selectedItem?.label || 'Text'}
         </ToolbarButton>
-      </DropdownMenuTrigger>
+      </Menu.Trigger>
 
-      <DropdownMenuContent
-        className="ignore-click-outside/toolbar min-w-0"
-        onCloseAutoFocus={(e) => {
-          e.preventDefault();
-          editor.tf.focus();
-        }}
-        align="start"
-      >
-        <ToolbarMenuGroup
-          value={value}
-          onValueChange={(type) => {
-            setBlockType(editor, type);
-          }}
-          label="Turn into"
-        >
-          {turnIntoItems.map(({ icon, label, value: itemValue }) => (
-            <DropdownMenuRadioItem
-              key={itemValue}
-              className="min-w-[180px] pl-2 *:first:[span]:hidden"
-              value={itemValue}
+      <Menu.Portal>
+        <Menu.Positioner sideOffset={5} align="start" side="bottom" className="z-50">
+          <Menu.Popup className="min-w-0 rounded-md border bg-popover p-1 shadow-md">
+            <Menu.RadioGroup
+              value={value}
+              onValueChange={(type) => {
+                setBlockType(editor, type);
+                editor.tf.focus();
+                setOpen(false);
+              }}
             >
-              <span className="pointer-events-none absolute right-2 flex size-3.5 items-center justify-center">
-                <DropdownMenuItemIndicator>
-                  <CheckIcon />
-                </DropdownMenuItemIndicator>
-              </span>
-              {icon}
-              {label}
-            </DropdownMenuRadioItem>
-          ))}
-        </ToolbarMenuGroup>
-      </DropdownMenuContent>
-    </DropdownMenu>
+              {turnIntoItems.map(({ icon, label, value: itemValue }) => (
+                <Menu.RadioItem
+                  key={itemValue}
+                  value={itemValue}
+                  className="relative flex cursor-pointer select-none items-center rounded-sm px-1.5 py-1 outline-none hover:bg-accent focus:bg-accent data-[disabled]:pointer-events-none data-[disabled]:opacity-50 min-w-[160px]"
+                >
+                  <Menu.RadioItemIndicator className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center opacity-0 data-[checked]:opacity-100">
+                    <CheckIcon className="size-3.5" />
+                  </Menu.RadioItemIndicator>
+                  <div className="flex items-center gap-2 pl-6">
+                    <div className="size-4 flex items-center justify-center">{icon}</div>
+                    <span className="text-sm">{label}</span>
+                  </div>
+                </Menu.RadioItem>
+              ))}
+            </Menu.RadioGroup>
+          </Menu.Popup>
+        </Menu.Positioner>
+      </Menu.Portal>
+    </Menu.Root>
   );
 }

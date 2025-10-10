@@ -2,8 +2,8 @@
 
 import * as React from 'react';
 
-import type { DropdownMenuProps } from '@radix-ui/react-dropdown-menu';
-
+import { Menu } from '@base-ui-components/react/menu';
+import { ScrollArea } from '@base-ui-components/react/scroll-area';
 import {
   CalendarIcon,
   ChevronRightIcon,
@@ -31,22 +31,16 @@ import { KEYS } from 'platejs';
 import { type PlateEditor, useEditorRef } from 'platejs/react';
 
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import {
   insertBlock,
   insertInlineElement,
 } from '@/components/editor/transforms';
 
-import { ToolbarButton, ToolbarMenuGroup } from './toolbar';
+import { ToolbarButton } from './toolbar';
 
-type Group = {
+interface Group {
   group: string;
   items: Item[];
-};
+}
 
 interface Item {
   icon: React.ReactNode;
@@ -217,40 +211,72 @@ const groups: Group[] = [
   },
 ];
 
-export function InsertToolbarButton(props: DropdownMenuProps) {
+interface InsertToolbarButtonProps {
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  defaultOpen?: boolean;
+  disabled?: boolean;
+}
+
+export function InsertToolbarButton(props: InsertToolbarButtonProps) {
   const editor = useEditorRef();
   const [open, setOpen] = React.useState(false);
 
   return (
-    <DropdownMenu open={open} onOpenChange={setOpen} modal={false} {...props}>
-      <DropdownMenuTrigger asChild>
+    <Menu.Root open={open} onOpenChange={setOpen} modal={false} {...props}>
+      <Menu.Trigger>
         <ToolbarButton pressed={open} tooltip="Insert" isDropdown>
           <PlusIcon />
         </ToolbarButton>
-      </DropdownMenuTrigger>
+      </Menu.Trigger>
 
-      <DropdownMenuContent
-        className="flex max-h-[500px] min-w-0 flex-col overflow-y-auto"
-        align="start"
-      >
-        {groups.map(({ group, items: nestedItems }) => (
-          <ToolbarMenuGroup key={group} label={group}>
-            {nestedItems.map(({ icon, label, value, onSelect }) => (
-              <DropdownMenuItem
-                key={value}
-                className="min-w-[180px]"
-                onSelect={() => {
-                  onSelect(editor, value);
-                  editor.tf.focus();
-                }}
+      <Menu.Portal>
+        <Menu.Positioner sideOffset={5} align="start" className="z-50">
+          <Menu.Popup className="w-[200px] rounded-md border bg-popover shadow-md overflow-hidden">
+            <ScrollArea.Root className="h-[500px]">
+              <ScrollArea.Viewport className="h-full w-full">
+                <div className="p-1">
+                  {groups.map(({ group, items: nestedItems }, groupIndex) => (
+                    <div key={group}>
+                      {groupIndex > 0 && (
+                        <div className="my-1 h-px bg-border" />
+                      )}
+                      <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground select-none">
+                        {group}
+                      </div>
+                      {nestedItems.map(({ icon, label, value, onSelect }) => (
+                        <button
+                          key={value}
+                          type="button"
+                          className="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent focus:bg-accent transition-colors disabled:pointer-events-none disabled:opacity-50"
+                          onClick={() => {
+                            onSelect(editor, value);
+                            editor.tf.focus();
+                            setOpen(false);
+                          }}
+                        >
+                          <div className="flex items-center gap-2">
+                            <div className="size-4 flex items-center justify-center [&>svg]:size-4">
+                              {icon}
+                            </div>
+                            <span>{label}</span>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea.Viewport>
+              <ScrollArea.Scrollbar
+                orientation="vertical"
+                className="flex w-2.5 touch-none select-none border-l border-l-transparent p-px transition-colors bg-transparent hover:bg-muted/30"
               >
-                {icon}
-                {label}
-              </DropdownMenuItem>
-            ))}
-          </ToolbarMenuGroup>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
+                <ScrollArea.Thumb className="relative flex-1 rounded-full bg-border hover:bg-muted-foreground/50 transition-colors" />
+              </ScrollArea.Scrollbar>
+            </ScrollArea.Root>
+          </Menu.Popup>
+        </Menu.Positioner>
+      </Menu.Portal>
+    </Menu.Root>
   );
 }

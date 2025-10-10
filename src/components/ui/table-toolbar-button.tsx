@@ -2,9 +2,7 @@
 
 import * as React from 'react';
 
-import type { DropdownMenuProps } from '@radix-ui/react-dropdown-menu';
-
-import { TablePlugin, useTableMergeState } from '@platejs/table/react';
+import { Menu } from '@base-ui-components/react/menu';
 import {
   ArrowDown,
   ArrowLeft,
@@ -15,26 +13,24 @@ import {
   Table,
   Trash2Icon,
   Ungroup,
-  XIcon,
+  X,
 } from 'lucide-react';
 import { KEYS } from 'platejs';
+import { TablePlugin, useTableMergeState } from '@platejs/table/react';
 import { useEditorPlugin, useEditorSelector } from 'platejs/react';
 
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 
 import { ToolbarButton } from './toolbar';
 
-export function TableToolbarButton(props: DropdownMenuProps) {
+interface TableToolbarButtonProps {
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  defaultOpen?: boolean;
+  disabled?: boolean;
+}
+
+export function TableToolbarButton(props: TableToolbarButtonProps) {
   const tableSelected = useEditorSelector(
     (editor) => editor.api.some({ match: { type: KEYS.table } }),
     []
@@ -45,166 +41,198 @@ export function TableToolbarButton(props: DropdownMenuProps) {
   const mergeState = useTableMergeState();
 
   return (
-    <DropdownMenu open={open} onOpenChange={setOpen} modal={false} {...props}>
-      <DropdownMenuTrigger asChild>
+    <Menu.Root open={open} onOpenChange={setOpen} modal={false} {...props}>
+      <Menu.Trigger>
         <ToolbarButton pressed={open} tooltip="Table" isDropdown>
           <Table />
         </ToolbarButton>
-      </DropdownMenuTrigger>
+      </Menu.Trigger>
 
-      <DropdownMenuContent
-        className="flex w-[180px] min-w-0 flex-col"
-        align="start"
-      >
-        <DropdownMenuGroup>
-          <DropdownMenuSub>
-            <DropdownMenuSubTrigger className="gap-2 data-[disabled]:pointer-events-none data-[disabled]:opacity-50">
-              <Grid3x3Icon className="size-4" />
-              <span>Table</span>
-            </DropdownMenuSubTrigger>
-            <DropdownMenuSubContent className="m-0 p-0">
-              <TablePicker />
-            </DropdownMenuSubContent>
-          </DropdownMenuSub>
+      <Menu.Portal>
+        <Menu.Positioner sideOffset={5} align="start" className="z-50">
+          <Menu.Popup className="flex w-[180px] min-w-0 flex-col rounded-md border bg-popover p-1 shadow-md">
+            <Menu.Group>
+              <Menu.SubmenuRoot>
+                <Menu.SubmenuTrigger className="relative flex cursor-pointer select-none items-center gap-2 rounded-sm px-1.5 py-1 outline-none hover:bg-accent focus:bg-accent data-[disabled]:pointer-events-none data-[disabled]:opacity-50">
+                  <Grid3x3Icon className="size-4" />
+                  <span className="text-sm">Table</span>
+                </Menu.SubmenuTrigger>
+                <Menu.Portal>
+                  <Menu.Positioner sideOffset={5} align="start" className="z-50">
+                    <Menu.Popup className="m-0 rounded-md border bg-popover p-0 shadow-md">
+                      <TablePicker />
+                    </Menu.Popup>
+                  </Menu.Positioner>
+                </Menu.Portal>
+              </Menu.SubmenuRoot>
 
-          <DropdownMenuSub>
-            <DropdownMenuSubTrigger
-              className="gap-2 data-[disabled]:pointer-events-none data-[disabled]:opacity-50"
-              disabled={!tableSelected}
-            >
-              <div className="size-4" />
-              <span>Cell</span>
-            </DropdownMenuSubTrigger>
-            <DropdownMenuSubContent>
-              <DropdownMenuItem
-                className="min-w-[180px]"
-                disabled={!mergeState.canMerge}
-                onSelect={() => {
-                  tf.table.merge();
-                  editor.tf.focus();
-                }}
-              >
-                <Combine />
-                Merge cells
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                className="min-w-[180px]"
-                disabled={!mergeState.canSplit}
-                onSelect={() => {
-                  tf.table.split();
-                  editor.tf.focus();
-                }}
-              >
-                <Ungroup />
-                Split cell
-              </DropdownMenuItem>
-            </DropdownMenuSubContent>
-          </DropdownMenuSub>
+              <Menu.SubmenuRoot>
+                <Menu.SubmenuTrigger
+                  className={cn(
+                    "relative flex cursor-pointer select-none items-center gap-2 rounded-sm px-1.5 py-1 outline-none hover:bg-accent focus:bg-accent",
+                    !tableSelected && "cursor-not-allowed opacity-50"
+                  )}
+                >
+                  <div className="size-4" />
+                  <span className="text-sm">Cell</span>
+                </Menu.SubmenuTrigger>
+                <Menu.Portal>
+                  <Menu.Positioner sideOffset={5} align="start" className="z-50">
+                    <Menu.Popup className="rounded-md border bg-popover p-1 shadow-md">
+                      <Menu.Item
+                        onClick={() => {
+                          tf.table.merge();
+                          editor.tf.focus();
+                          setOpen(false);
+                        }}
+                        className="relative flex cursor-pointer select-none items-center rounded-sm px-1.5 py-1 outline-none hover:bg-accent focus:bg-accent data-[disabled]:pointer-events-none data-[disabled]:opacity-50 min-w-[160px]"
+                        disabled={!mergeState.canMerge}
+                      >
+                        <Combine className="size-4" />
+                        <span className="text-sm ml-2">Merge cells</span>
+                      </Menu.Item>
+                      <Menu.Item
+                        onClick={() => {
+                          tf.table.split();
+                          editor.tf.focus();
+                          setOpen(false);
+                        }}
+                        className="relative flex cursor-pointer select-none items-center rounded-sm px-1.5 py-1 outline-none hover:bg-accent focus:bg-accent data-[disabled]:pointer-events-none data-[disabled]:opacity-50 min-w-[160px]"
+                        disabled={!mergeState.canSplit}
+                      >
+                        <Ungroup className="size-4" />
+                        <span className="text-sm ml-2">Split cell</span>
+                      </Menu.Item>
+                    </Menu.Popup>
+                  </Menu.Positioner>
+                </Menu.Portal>
+              </Menu.SubmenuRoot>
 
-          <DropdownMenuSub>
-            <DropdownMenuSubTrigger
-              className="gap-2 data-[disabled]:pointer-events-none data-[disabled]:opacity-50"
-              disabled={!tableSelected}
-            >
-              <div className="size-4" />
-              <span>Row</span>
-            </DropdownMenuSubTrigger>
-            <DropdownMenuSubContent>
-              <DropdownMenuItem
-                className="min-w-[180px]"
-                disabled={!tableSelected}
-                onSelect={() => {
-                  tf.insert.tableRow({ before: true });
-                  editor.tf.focus();
-                }}
-              >
-                <ArrowUp />
-                Insert row before
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                className="min-w-[180px]"
-                disabled={!tableSelected}
-                onSelect={() => {
-                  tf.insert.tableRow();
-                  editor.tf.focus();
-                }}
-              >
-                <ArrowDown />
-                Insert row after
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                className="min-w-[180px]"
-                disabled={!tableSelected}
-                onSelect={() => {
-                  tf.remove.tableRow();
-                  editor.tf.focus();
-                }}
-              >
-                <XIcon />
-                Delete row
-              </DropdownMenuItem>
-            </DropdownMenuSubContent>
-          </DropdownMenuSub>
+              <Menu.SubmenuRoot>
+                <Menu.SubmenuTrigger
+                  className={cn(
+                    "relative flex cursor-pointer select-none items-center gap-2 rounded-sm px-1.5 py-1 outline-none hover:bg-accent focus:bg-accent",
+                    !tableSelected && "cursor-not-allowed opacity-50"
+                  )}
+                >
+                  <div className="size-4" />
+                  <span className="text-sm">Row</span>
+                </Menu.SubmenuTrigger>
+                <Menu.Portal>
+                  <Menu.Positioner sideOffset={5} align="start" className="z-50">
+                    <Menu.Popup className="rounded-md border bg-popover p-1 shadow-md">
+                      <Menu.Item
+                        onClick={() => {
+                          tf.insert.tableRow({ before: true });
+                          editor.tf.focus();
+                          setOpen(false);
+                        }}
+                        className="relative flex cursor-pointer select-none items-center rounded-sm px-1.5 py-1 outline-none hover:bg-accent focus:bg-accent data-[disabled]:pointer-events-none data-[disabled]:opacity-50 min-w-[160px]"
+                        disabled={!tableSelected}
+                      >
+                        <ArrowUp className="size-4" />
+                        <span className="text-sm ml-2">Insert row before</span>
+                      </Menu.Item>
+                      <Menu.Item
+                        onClick={() => {
+                          tf.insert.tableRow();
+                          editor.tf.focus();
+                          setOpen(false);
+                        }}
+                        className="relative flex cursor-pointer select-none items-center rounded-sm px-1.5 py-1 outline-none hover:bg-accent focus:bg-accent data-[disabled]:pointer-events-none data-[disabled]:opacity-50 min-w-[160px]"
+                        disabled={!tableSelected}
+                      >
+                        <ArrowDown className="size-4" />
+                        <span className="text-sm ml-2">Insert row after</span>
+                      </Menu.Item>
+                      <Menu.Item
+                        onClick={() => {
+                          tf.remove.tableRow();
+                          editor.tf.focus();
+                          setOpen(false);
+                        }}
+                        className="relative flex cursor-pointer select-none items-center rounded-sm px-1.5 py-1 outline-none hover:bg-accent focus:bg-accent data-[disabled]:pointer-events-none data-[disabled]:opacity-50 min-w-[160px]"
+                        disabled={!tableSelected}
+                      >
+                        <X className="size-4" />
+                        <span className="text-sm ml-2">Delete row</span>
+                      </Menu.Item>
+                    </Menu.Popup>
+                  </Menu.Positioner>
+                </Menu.Portal>
+              </Menu.SubmenuRoot>
 
-          <DropdownMenuSub>
-            <DropdownMenuSubTrigger
-              className="gap-2 data-[disabled]:pointer-events-none data-[disabled]:opacity-50"
-              disabled={!tableSelected}
-            >
-              <div className="size-4" />
-              <span>Column</span>
-            </DropdownMenuSubTrigger>
-            <DropdownMenuSubContent>
-              <DropdownMenuItem
-                className="min-w-[180px]"
-                disabled={!tableSelected}
-                onSelect={() => {
-                  tf.insert.tableColumn({ before: true });
-                  editor.tf.focus();
-                }}
-              >
-                <ArrowLeft />
-                Insert column before
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                className="min-w-[180px]"
-                disabled={!tableSelected}
-                onSelect={() => {
-                  tf.insert.tableColumn();
-                  editor.tf.focus();
-                }}
-              >
-                <ArrowRight />
-                Insert column after
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                className="min-w-[180px]"
-                disabled={!tableSelected}
-                onSelect={() => {
-                  tf.remove.tableColumn();
-                  editor.tf.focus();
-                }}
-              >
-                <XIcon />
-                Delete column
-              </DropdownMenuItem>
-            </DropdownMenuSubContent>
-          </DropdownMenuSub>
+              <Menu.SubmenuRoot>
+                <Menu.SubmenuTrigger
+                  className={cn(
+                    "relative flex cursor-pointer select-none items-center gap-2 rounded-sm px-1.5 py-1 outline-none hover:bg-accent focus:bg-accent",
+                    !tableSelected && "cursor-not-allowed opacity-50"
+                  )}
+                >
+                  <div className="size-4" />
+                  <span className="text-sm">Column</span>
+                </Menu.SubmenuTrigger>
+                <Menu.Portal>
+                  <Menu.Positioner sideOffset={5} align="start" className="z-50">
+                    <Menu.Popup className="rounded-md border bg-popover p-1 shadow-md">
+                      <Menu.Item
+                        onClick={() => {
+                          tf.insert.tableColumn({ before: true });
+                          editor.tf.focus();
+                          setOpen(false);
+                        }}
+                        className="relative flex cursor-pointer select-none items-center rounded-sm px-1.5 py-1 outline-none hover:bg-accent focus:bg-accent data-[disabled]:pointer-events-none data-[disabled]:opacity-50 min-w-[160px]"
+                        disabled={!tableSelected}
+                      >
+                        <ArrowLeft className="size-4" />
+                        <span className="text-sm ml-2">Insert column before</span>
+                      </Menu.Item>
+                      <Menu.Item
+                        onClick={() => {
+                          tf.insert.tableColumn();
+                          editor.tf.focus();
+                          setOpen(false);
+                        }}
+                        className="relative flex cursor-pointer select-none items-center rounded-sm px-1.5 py-1 outline-none hover:bg-accent focus:bg-accent data-[disabled]:pointer-events-none data-[disabled]:opacity-50 min-w-[160px]"
+                        disabled={!tableSelected}
+                      >
+                        <ArrowRight className="size-4" />
+                        <span className="text-sm ml-2">Insert column after</span>
+                      </Menu.Item>
+                      <Menu.Item
+                        onClick={() => {
+                          tf.remove.tableColumn();
+                          editor.tf.focus();
+                          setOpen(false);
+                        }}
+                        className="relative flex cursor-pointer select-none items-center rounded-sm px-1.5 py-1 outline-none hover:bg-accent focus:bg-accent data-[disabled]:pointer-events-none data-[disabled]:opacity-50 min-w-[160px]"
+                        disabled={!tableSelected}
+                      >
+                        <X className="size-4" />
+                        <span className="text-sm ml-2">Delete column</span>
+                      </Menu.Item>
+                    </Menu.Popup>
+                  </Menu.Positioner>
+                </Menu.Portal>
+              </Menu.SubmenuRoot>
 
-          <DropdownMenuItem
-            className="min-w-[180px]"
-            disabled={!tableSelected}
-            onSelect={() => {
-              tf.remove.table();
-              editor.tf.focus();
-            }}
-          >
-            <Trash2Icon />
-            Delete table
-          </DropdownMenuItem>
-        </DropdownMenuGroup>
-      </DropdownMenuContent>
-    </DropdownMenu>
+              <Menu.Item
+                onClick={() => {
+                  tf.remove.table();
+                  editor.tf.focus();
+                  setOpen(false);
+                }}
+                className="relative flex cursor-pointer select-none items-center rounded-sm px-1.5 py-1 outline-none hover:bg-accent focus:bg-accent data-[disabled]:pointer-events-none data-[disabled]:opacity-50 min-w-[160px]"
+                disabled={!tableSelected}
+              >
+                <Trash2Icon className="size-4" />
+                <span className="text-sm ml-2">Delete table</span>
+              </Menu.Item>
+            </Menu.Group>
+          </Menu.Popup>
+        </Menu.Positioner>
+      </Menu.Portal>
+    </Menu.Root>
   );
 }
 

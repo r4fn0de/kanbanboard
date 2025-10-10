@@ -3,24 +3,20 @@
 import * as React from 'react';
 
 import { SuggestionPlugin } from '@platejs/suggestion/react';
-import {
-  type DropdownMenuProps,
-  DropdownMenuItemIndicator,
-} from '@radix-ui/react-dropdown-menu';
+import { Menu } from '@base-ui-components/react/menu';
 import { CheckIcon, EyeIcon, PencilLineIcon, PenIcon } from 'lucide-react';
 import { useEditorRef, usePlateState, usePluginOption } from 'platejs/react';
 
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-
 import { ToolbarButton } from './toolbar';
 
-export function ModeToolbarButton(props: DropdownMenuProps) {
+interface ModeToolbarButtonProps {
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  defaultOpen?: boolean;
+  disabled?: boolean;
+}
+
+export function ModeToolbarButton(props: ModeToolbarButtonProps) {
   const editor = useEditorRef();
   const [readOnly, setReadOnly] = usePlateState('readOnly');
   const [open, setOpen] = React.useState(false);
@@ -49,79 +45,81 @@ export function ModeToolbarButton(props: DropdownMenuProps) {
   };
 
   return (
-    <DropdownMenu open={open} onOpenChange={setOpen} modal={false} {...props}>
-      <DropdownMenuTrigger asChild>
+    <Menu.Root open={open} onOpenChange={setOpen} modal={false} {...props}>
+      <Menu.Trigger>
         <ToolbarButton pressed={open} tooltip="Editing mode" isDropdown>
-          {item[value].icon}
-          <span className="hidden lg:inline">{item[value].label}</span>
+          {item[value]?.icon}
+          <span className="hidden lg:inline">{item[value]?.label}</span>
         </ToolbarButton>
-      </DropdownMenuTrigger>
+      </Menu.Trigger>
 
-      <DropdownMenuContent className="min-w-[180px]" align="start">
-        <DropdownMenuRadioGroup
-          value={value}
-          onValueChange={(newValue) => {
-            if (newValue === 'viewing') {
-              setReadOnly(true);
+      <Menu.Portal>
+        <Menu.Positioner sideOffset={5} align="center" className="z-50">
+          <Menu.Popup className="min-w-[180px] rounded-md border bg-popover p-1 shadow-md">
+            <Menu.RadioGroup
+              value={value}
+              onValueChange={(newValue: string) => {
+                if (newValue === 'viewing') {
+                  setReadOnly(true);
+                  setOpen(false);
+                  return;
+                } else {
+                  setReadOnly(false);
+                }
 
-              return;
-            } else {
-              setReadOnly(false);
-            }
+                if (newValue === 'suggestion') {
+                  editor.setOption(SuggestionPlugin, 'isSuggesting', true);
+                  setOpen(false);
+                  return;
+                } else {
+                  editor.setOption(SuggestionPlugin, 'isSuggesting', false);
+                }
 
-            if (newValue === 'suggestion') {
-              editor.setOption(SuggestionPlugin, 'isSuggesting', true);
+                if (newValue === 'editing') {
+                  editor.tf.focus();
+                  setOpen(false);
+                  return;
+                }
+              }}
+            >
+              <Menu.RadioItem
+                className="relative flex cursor-pointer select-none items-center rounded-sm px-1.5 py-2 outline-none hover:bg-accent focus:bg-accent data-[disabled]:pointer-events-none data-[disabled]:opacity-50 min-w-[160px] pl-2 *:[svg]:text-muted-foreground"
+                value="editing"
+              >
+                <Indicator value={value} itemValue="editing" />
+                <PenIcon className="mr-2 size-4 text-muted-foreground" />
+                <span className="text-sm">{item.editing?.label}</span>
+              </Menu.RadioItem>
 
-              return;
-            } else {
-              editor.setOption(SuggestionPlugin, 'isSuggesting', false);
-            }
+              <Menu.RadioItem
+                className="relative flex cursor-pointer select-none items-center rounded-sm px-1.5 py-2 outline-none hover:bg-accent focus:bg-accent data-[disabled]:pointer-events-none data-[disabled]:opacity-50 min-w-[160px] pl-2 *:[svg]:text-muted-foreground"
+                value="viewing"
+              >
+                <Indicator value={value} itemValue="viewing" />
+                <EyeIcon className="mr-2 size-4 text-muted-foreground" />
+                <span className="text-sm">{item.viewing?.label}</span>
+              </Menu.RadioItem>
 
-            if (newValue === 'editing') {
-              editor.tf.focus();
-
-              return;
-            }
-          }}
-        >
-          <DropdownMenuRadioItem
-            className="pl-2 *:first:[span]:hidden *:[svg]:text-muted-foreground"
-            value="editing"
-          >
-            <Indicator />
-            {item.editing.icon}
-            {item.editing.label}
-          </DropdownMenuRadioItem>
-
-          <DropdownMenuRadioItem
-            className="pl-2 *:first:[span]:hidden *:[svg]:text-muted-foreground"
-            value="viewing"
-          >
-            <Indicator />
-            {item.viewing.icon}
-            {item.viewing.label}
-          </DropdownMenuRadioItem>
-
-          <DropdownMenuRadioItem
-            className="pl-2 *:first:[span]:hidden *:[svg]:text-muted-foreground"
-            value="suggestion"
-          >
-            <Indicator />
-            {item.suggestion.icon}
-            {item.suggestion.label}
-          </DropdownMenuRadioItem>
-        </DropdownMenuRadioGroup>
-      </DropdownMenuContent>
-    </DropdownMenu>
+              <Menu.RadioItem
+                className="relative flex cursor-pointer select-none items-center rounded-sm px-1.5 py-2 outline-none hover:bg-accent focus:bg-accent data-[disabled]:pointer-events-none data-[disabled]:opacity-50 min-w-[160px] pl-2 *:[svg]:text-muted-foreground"
+                value="suggestion"
+              >
+                <Indicator value={value} itemValue="suggestion" />
+                <PencilLineIcon className="mr-2 size-4 text-muted-foreground" />
+                <span className="text-sm">{item.suggestion?.label}</span>
+              </Menu.RadioItem>
+            </Menu.RadioGroup>
+          </Menu.Popup>
+        </Menu.Positioner>
+      </Menu.Portal>
+    </Menu.Root>
   );
 }
 
-function Indicator() {
+function Indicator({ value, itemValue }: { value: string; itemValue: string }) {
   return (
     <span className="pointer-events-none absolute right-2 flex size-3.5 items-center justify-center">
-      <DropdownMenuItemIndicator>
-        <CheckIcon />
-      </DropdownMenuItemIndicator>
+      {value === itemValue && <CheckIcon className="size-3" />}
     </span>
   );
 }

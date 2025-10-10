@@ -10,13 +10,7 @@ import {
 import { List, ListOrdered, ListTodoIcon } from 'lucide-react';
 import { useEditorRef, useEditorSelector } from 'platejs/react';
 
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+import { Menu } from '@base-ui-components/react/menu';
 
 import {
   ToolbarButton,
@@ -53,52 +47,59 @@ export function BulletedListToolbarButton() {
         <List className="size-4" />
       </ToolbarSplitButtonPrimary>
 
-      <DropdownMenu open={open} onOpenChange={setOpen} modal={false}>
-        <DropdownMenuTrigger asChild>
+      <Menu.Root open={open} onOpenChange={setOpen} modal={false}>
+        <Menu.Trigger>
           <ToolbarSplitButtonSecondary />
-        </DropdownMenuTrigger>
+        </Menu.Trigger>
 
-        <DropdownMenuContent align="start" alignOffset={-32}>
-          <DropdownMenuGroup>
-            <DropdownMenuItem
-              onClick={() =>
-                toggleList(editor, {
-                  listStyleType: ListStyleType.Disc,
-                })
-              }
-            >
-              <div className="flex items-center gap-2">
-                <div className="size-2 rounded-full border border-current bg-current" />
-                Default
-              </div>
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() =>
-                toggleList(editor, {
-                  listStyleType: ListStyleType.Circle,
-                })
-              }
-            >
-              <div className="flex items-center gap-2">
-                <div className="size-2 rounded-full border border-current" />
-                Circle
-              </div>
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() =>
-                toggleList(editor, {
-                  listStyleType: ListStyleType.Square,
-                })
-              }
-            >
-              <div className="flex items-center gap-2">
-                <div className="size-2 border border-current bg-current" />
-                Square
-              </div>
-            </DropdownMenuItem>
-          </DropdownMenuGroup>
-        </DropdownMenuContent>
-      </DropdownMenu>
+        <Menu.Portal>
+          <Menu.Positioner sideOffset={5} align="center" className="z-50">
+            <Menu.Popup className="rounded-md border bg-popover p-1 shadow-md">
+              <Menu.Group>
+                <Menu.Item
+                  onClick={() =>
+                    toggleList(editor, {
+                      listStyleType: ListStyleType.Disc,
+                    })
+                  }
+                  className="relative flex cursor-pointer select-none items-center rounded-sm px-1.5 py-1 outline-none hover:bg-accent focus:bg-accent data-[disabled]:pointer-events-none data-[disabled]:opacity-50 min-w-[140px]"
+                >
+                  <div className="flex items-center gap-2">
+                    <div className="size-2 rounded-full border border-current bg-current" />
+                    <span className="text-sm">Default</span>
+                  </div>
+                </Menu.Item>
+                <Menu.Item
+                  onClick={() =>
+                    toggleList(editor, {
+                      listStyleType: ListStyleType.Circle,
+                    })
+                  }
+                  className="relative flex cursor-pointer select-none items-center rounded-sm px-1.5 py-1 outline-none hover:bg-accent focus:bg-accent data-[disabled]:pointer-events-none data-[disabled]:opacity-50 min-w-[140px]"
+                >
+                  <div className="flex items-center gap-2">
+                    <div className="size-2 rounded-full border border-current" />
+                    <span className="text-sm">Circle</span>
+                  </div>
+                </Menu.Item>
+                <Menu.Item
+                  onClick={() =>
+                    toggleList(editor, {
+                      listStyleType: ListStyleType.Square,
+                    })
+                  }
+                  className="relative flex cursor-pointer select-none items-center rounded-sm px-1.5 py-1 outline-none hover:bg-accent focus:bg-accent data-[disabled]:pointer-events-none data-[disabled]:opacity-50 min-w-[140px]"
+                >
+                  <div className="flex items-center gap-2">
+                    <div className="size-2 border border-current bg-current" />
+                    <span className="text-sm">Square</span>
+                  </div>
+                </Menu.Item>
+              </Menu.Group>
+            </Menu.Popup>
+          </Menu.Positioner>
+        </Menu.Portal>
+      </Menu.Root>
     </ToolbarSplitButton>
   );
 }
@@ -133,61 +134,70 @@ export function NumberedListToolbarButton() {
         <ListOrdered className="size-4" />
       </ToolbarSplitButtonPrimary>
 
-      <DropdownMenu open={open} onOpenChange={setOpen} modal={false}>
-        <DropdownMenuTrigger asChild>
+      <Menu.Root open={open} onOpenChange={setOpen} modal={false}>
+        <Menu.Trigger>
           <ToolbarSplitButtonSecondary />
-        </DropdownMenuTrigger>
+        </Menu.Trigger>
 
-        <DropdownMenuContent align="start" alignOffset={-32}>
-          <DropdownMenuGroup>
-            <DropdownMenuItem
-              onSelect={() =>
-                toggleList(editor, {
-                  listStyleType: ListStyleType.Decimal,
-                })
-              }
-            >
-              Decimal (1, 2, 3)
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onSelect={() =>
-                toggleList(editor, {
-                  listStyleType: ListStyleType.LowerAlpha,
-                })
-              }
-            >
-              Lower Alpha (a, b, c)
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onSelect={() =>
-                toggleList(editor, {
-                  listStyleType: ListStyleType.UpperAlpha,
-                })
-              }
-            >
-              Upper Alpha (A, B, C)
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onSelect={() =>
-                toggleList(editor, {
-                  listStyleType: ListStyleType.LowerRoman,
-                })
-              }
-            >
-              Lower Roman (i, ii, iii)
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onSelect={() =>
-                toggleList(editor, {
-                  listStyleType: ListStyleType.UpperRoman,
-                })
-              }
-            >
-              Upper Roman (I, II, III)
-            </DropdownMenuItem>
-          </DropdownMenuGroup>
-        </DropdownMenuContent>
-      </DropdownMenu>
+        <Menu.Portal>
+          <Menu.Positioner sideOffset={5} align="center" className="z-50">
+            <Menu.Popup className="rounded-md border bg-popover p-1 shadow-md">
+              <Menu.Group>
+                <Menu.Item
+                  onClick={() =>
+                    toggleList(editor, {
+                      listStyleType: ListStyleType.Decimal,
+                    })
+                  }
+                  className="relative flex cursor-pointer select-none items-center rounded-sm px-1.5 py-1 outline-none hover:bg-accent focus:bg-accent data-[disabled]:pointer-events-none data-[disabled]:opacity-50 min-w-[160px]"
+                >
+                  <span className="text-sm">Decimal (1, 2, 3)</span>
+                </Menu.Item>
+                <Menu.Item
+                  onClick={() =>
+                    toggleList(editor, {
+                      listStyleType: ListStyleType.LowerAlpha,
+                    })
+                  }
+                  className="relative flex cursor-pointer select-none items-center rounded-sm px-1.5 py-1 outline-none hover:bg-accent focus:bg-accent data-[disabled]:pointer-events-none data-[disabled]:opacity-50 min-w-[160px]"
+                >
+                  <span className="text-sm">Lower Alpha (a, b, c)</span>
+                </Menu.Item>
+                <Menu.Item
+                  onClick={() =>
+                    toggleList(editor, {
+                      listStyleType: ListStyleType.UpperAlpha,
+                    })
+                  }
+                  className="relative flex cursor-pointer select-none items-center rounded-sm px-1.5 py-1 outline-none hover:bg-accent focus:bg-accent data-[disabled]:pointer-events-none data-[disabled]:opacity-50 min-w-[160px]"
+                >
+                  <span className="text-sm">Upper Alpha (A, B, C)</span>
+                </Menu.Item>
+                <Menu.Item
+                  onClick={() =>
+                    toggleList(editor, {
+                      listStyleType: ListStyleType.LowerRoman,
+                    })
+                  }
+                  className="relative flex cursor-pointer select-none items-center rounded-sm px-1.5 py-1 outline-none hover:bg-accent focus:bg-accent data-[disabled]:pointer-events-none data-[disabled]:opacity-50 min-w-[160px]"
+                >
+                  <span className="text-sm">Lower Roman (i, ii, iii)</span>
+                </Menu.Item>
+                <Menu.Item
+                  onClick={() =>
+                    toggleList(editor, {
+                      listStyleType: ListStyleType.UpperRoman,
+                    })
+                  }
+                  className="relative flex cursor-pointer select-none items-center rounded-sm px-1.5 py-1 outline-none hover:bg-accent focus:bg-accent data-[disabled]:pointer-events-none data-[disabled]:opacity-50 min-w-[160px]"
+                >
+                  <span className="text-sm">Upper Roman (I, II, III)</span>
+                </Menu.Item>
+              </Menu.Group>
+            </Menu.Popup>
+          </Menu.Positioner>
+        </Menu.Portal>
+      </Menu.Root>
     </ToolbarSplitButton>
   );
 }

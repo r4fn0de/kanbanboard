@@ -15,7 +15,7 @@ import {
   type UseEmojiPickerType,
   useEmojiDropdownMenuState,
 } from '@platejs/emoji/react';
-import * as Popover from '@radix-ui/react-popover';
+import { Popover } from '@base-ui-components/react/popover';
 import {
   AppleIcon,
   ClockIcon,
@@ -82,10 +82,12 @@ export function EmojiPopover({
 }) {
   return (
     <Popover.Root open={isOpen} onOpenChange={setIsOpen}>
-      <Popover.Trigger asChild>{control}</Popover.Trigger>
+      <Popover.Trigger>{control}</Popover.Trigger>
 
       <Popover.Portal>
-        <Popover.Content className="z-100">{children}</Popover.Content>
+        <Popover.Positioner className="z-50">
+          <Popover.Popup className="z-100">{children}</Popover.Popup>
+        </Popover.Positioner>
       </Popover.Portal>
     </Popover.Root>
   );
