@@ -9,6 +9,7 @@ import {
   type DragCancelEvent,
   type DragEndEvent,
   type DragStartEvent,
+  type Modifier,
 } from '@dnd-kit/core'
 import {
   SortableContext,
@@ -65,6 +66,24 @@ function hexToRgba(hex: string | null | undefined, alpha: number) {
   const g = parseInt(value.slice(2, 4), 16)
   const b = parseInt(value.slice(4, 6), 16)
   return `rgba(${r}, ${g}, ${b}, ${alpha})`
+}
+
+// Custom modifier to center overlay on cursor
+const snapCenterToCursor: Modifier = ({ activatorEvent, draggingNodeRect, transform }) => {
+  if (draggingNodeRect && activatorEvent) {
+    const activatorCoordinates = {
+      x: (activatorEvent as MouseEvent).clientX,
+      y: (activatorEvent as MouseEvent).clientY,
+    }
+
+    return {
+      ...transform,
+      x: transform.x + activatorCoordinates.x - draggingNodeRect.left - draggingNodeRect.width / 2,
+      y: transform.y + activatorCoordinates.y - draggingNodeRect.top - draggingNodeRect.height / 2,
+    }
+  }
+
+  return transform
 }
 
 export function BoardKanbanView({
@@ -152,6 +171,7 @@ export function BoardKanbanView({
         </SortableContext>
         <DragOverlay 
           dropAnimation={null}
+          modifiers={[snapCenterToCursor]}
         >
           {activeCard ? <CardOverlay card={activeCard} /> : null}
         </DragOverlay>
@@ -173,7 +193,7 @@ export function BoardKanbanView({
 
 function CardOverlay({ card }: { card: KanbanCard }) {
   return (
-    <div className="pointer-events-none flex w-[300px] max-w-full flex-col rounded-[1.75rem] border border-border bg-card p-5 shadow-xl rotate-3 opacity-90">
+    <div className="pointer-events-none flex w-[280px] flex-col rounded-[1.75rem] border border-border bg-card p-5 shadow-2xl">
       <CardContent card={card} />
     </div>
   )
@@ -277,8 +297,7 @@ function DraggableColumn({
       </div>
       <div
         ref={setDroppableRef}
-        className="flex flex-1 flex-col gap-4 overflow-y-auto overflow-x-visible p-3 min-h-0 rounded-xl border-2 border-transparent transition-all duration-200"
-        style={{ borderColor: hexToRgba(baseColor, 0.08) ?? undefined }}
+        className="flex flex-1 flex-col gap-4 overflow-y-auto overflow-x-visible min-h-0 rounded-xl transition-all duration-200"
       >
         {columnCards.length > 0 ? (
           <>

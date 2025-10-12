@@ -64,8 +64,8 @@ export function CardContent({ card }: { card: KanbanCard }) {
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-2">
+      <div className="flex items-start gap-3">
+        <div className="flex flex-wrap items-center gap-2 flex-1 min-w-0">
           {displayTags.map(tag => {
             const badgeStyle = getTagBadgeStyle(tag)
             return (
@@ -96,7 +96,7 @@ export function CardContent({ card }: { card: KanbanCard }) {
             </Badge>
           ) : null}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-shrink-0">
           {hasAttachments && (
             <div className="rounded-full bg-blue-100 p-1 text-blue-600 dark:bg-blue-900/50 dark:text-blue-300">
               <Paperclip className="h-3 w-3" />
