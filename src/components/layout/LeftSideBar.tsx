@@ -1,8 +1,13 @@
 import { cn } from '@/lib/utils'
 import { useTheme } from '@/hooks/use-theme'
 import type { FormEvent } from 'react'
-import { useMemo, useState, useId } from 'react'
+import { useCallback, useEffect, useMemo, useState, useId } from 'react'
 import type { LucideIcon } from 'lucide-react'
+import type { Workspace } from '@/types/common'
+import { invoke } from '@tauri-apps/api/core'
+import { open } from '@tauri-apps/plugin-dialog'
+import { readFile } from '@tauri-apps/plugin-fs'
+import { ImageCropper } from '@/components/ui/image-cropper'
 import {
   Home,
   Folder,
@@ -28,6 +33,8 @@ import {
   // PanelRightClose,
   Plus,
   Settings,
+  Image as ImageIcon,
+  Loader2,
 } from 'lucide-react'
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import {
@@ -61,15 +68,27 @@ import {
   useUpdateBoardIcon,
 } from '@/services/kanban'
 import {
+  useWorkspaces,
+  useCreateWorkspace,
+} from '@/services/workspaces'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { MacOSWindowControls } from '@/components/titlebar/MacOSWindowControls'
 import { executeCommand, useCommandContext } from '@/lib/commands'
 import { useUIStore } from '@/store/ui-store'
+import { useWorkspaceStore } from '@/store/workspace-store'
 
 interface LeftSideBarProps {
   children?: React.ReactNode
@@ -139,6 +158,7 @@ const PROJECT_ICON_MAP = PROJECT_ICON_OPTIONS.reduce<
 }, {})
 
 const DEFAULT_PROJECT_ICON = PROJECT_ICON_OPTIONS[0]?.value ?? 'Folder'
+const DEFAULT_WORKSPACE_COLOR = '#6366F1'
 
 export function LeftSideBar({ children, className, forceSolidStyle = false }: LeftSideBarProps) {
   const { transparencyEnabled } = useTheme()
@@ -158,14 +178,52 @@ export function LeftSideBar({ children, className, forceSolidStyle = false }: Le
   )
   const [changeIconValue, setChangeIconValue] =
     useState<string>(DEFAULT_PROJECT_ICON)
+  const [createWorkspaceOpen, setCreateWorkspaceOpen] = useState(false)
+  const [workspaceName, setWorkspaceName] = useState('')
+  const [workspaceColor, setWorkspaceColor] =
+    useState<string>(DEFAULT_WORKSPACE_COLOR)
+  const [workspaceIconPath, setWorkspaceIconPath] = useState<string | null>(
+    null
+  )
+  const [workspaceIconPreview, setWorkspaceIconPreview] =
+    useState<string | null>(null)
+  const [workspaceError, setWorkspaceError] = useState<string | null>(null)
+  const [workspaceIconMap, setWorkspaceIconMap] = useState<Record<string, string>>({})
+  const [cropperOpen, setCropperOpen] = useState(false)
+  const [originalImageSrc, setOriginalImageSrc] = useState<string | null>(null)
+  const [croppedImageBlob, setCroppedImageBlob] = useState<Blob | null>(null)
   const projectNameId = useId()
   const projectDescriptionId = useId()
   const renameProjectNameId = useId()
   const renameProjectDescriptionId = useId()
+  const workspaceNameId = useId()
+  const workspaceColorId = useId()
   const navigate = useNavigate()
   const location = useLocation()
   const commandContext = useCommandContext()
   const { leftSidebarVisible, toggleLeftSidebar } = useUIStore()
+  const selectedWorkspaceId = useWorkspaceStore(
+    state => state.selectedWorkspaceId
+  )
+  const setSelectedWorkspaceId = useWorkspaceStore(
+    state => state.setSelectedWorkspaceId
+  )
+
+  const {
+    data: workspaces = [],
+    isLoading: isLoadingWorkspaces,
+    isError: isWorkspacesError,
+    refetch: refetchWorkspaces,
+  } = useWorkspaces()
+  const {
+    mutateAsync: createWorkspaceMutation,
+    isPending: isCreatingWorkspace,
+  } = useCreateWorkspace()
+
+  const currentWorkspace = useMemo(() => {
+    if (!selectedWorkspaceId) return null
+    return workspaces.find(workspace => workspace.id === selectedWorkspaceId) ?? null
+  }, [selectedWorkspaceId, workspaces])
 
   const createBoard = useCreateBoard()
   const renameBoard = useRenameBoard()
@@ -176,6 +234,61 @@ export function LeftSideBar({ children, className, forceSolidStyle = false }: Le
     isLoading: isLoadingBoards,
     isError: isBoardsError,
   } = useBoards()
+
+  useEffect(() => {
+    if (isLoadingWorkspaces) {
+      return
+    }
+
+    if (!workspaces.length) {
+      setSelectedWorkspaceId(null)
+      return
+    }
+
+    if (!selectedWorkspaceId || !workspaces.some(ws => ws.id === selectedWorkspaceId)) {
+      setSelectedWorkspaceId(workspaces[0]?.id ?? null)
+    }
+  }, [
+    isLoadingWorkspaces,
+    selectedWorkspaceId,
+    setSelectedWorkspaceId,
+    workspaces,
+  ])
+
+  useEffect(() => {
+    workspaces.forEach(workspace => {
+      if (!workspace.iconPath) {
+        if (workspaceIconMap[workspace.id]) {
+          setWorkspaceIconMap(prev => {
+            if (!(workspace.id in prev)) {
+              return prev
+            }
+            const { [workspace.id]: _removed, ...rest } = prev
+            return rest
+          })
+        }
+        return
+      }
+
+      if (workspaceIconMap[workspace.id]) {
+        return
+      }
+
+      invoke<string>('get_attachment_url', { filePath: workspace.iconPath })
+        .then(url => {
+          setWorkspaceIconMap(prev => ({ ...prev, [workspace.id]: url }))
+        })
+        .catch(() => {
+          setWorkspaceIconMap(prev => {
+            if (!(workspace.id in prev)) {
+              return prev
+            }
+            const { [workspace.id]: _removed, ...rest } = prev
+            return rest
+          })
+        })
+    })
+  }, [workspaces, workspaceIconMap])
 
   const useTransparentStyle = transparencyEnabled && !forceSolidStyle
 
@@ -254,20 +367,236 @@ export function LeftSideBar({ children, className, forceSolidStyle = false }: Le
     )
   }
 
+  const resetWorkspaceForm = useCallback(() => {
+    // Revoke object URLs to prevent memory leaks
+    if (originalImageSrc) {
+      URL.revokeObjectURL(originalImageSrc)
+    }
+    if (workspaceIconPreview) {
+      URL.revokeObjectURL(workspaceIconPreview)
+    }
+    setWorkspaceName('')
+    setWorkspaceColor(DEFAULT_WORKSPACE_COLOR)
+    setWorkspaceIconPath(null)
+    setWorkspaceIconPreview(null)
+    setWorkspaceError(null)
+    setCropperOpen(false)
+    setOriginalImageSrc(null)
+    setCroppedImageBlob(null)
+  }, [originalImageSrc, workspaceIconPreview])
+
+  const handleWorkspaceDialogChange = useCallback(
+    (open: boolean) => {
+      setCreateWorkspaceOpen(open)
+      if (!open) {
+        resetWorkspaceForm()
+      }
+    },
+    [resetWorkspaceForm]
+  )
+
+  const handleSelectWorkspaceIcon = useCallback(async () => {
+    try {
+      const selected = await open({
+        multiple: false,
+        filters: [
+          {
+            name: 'Images',
+            extensions: ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'bmp'],
+          },
+        ],
+      })
+
+      if (!selected) {
+        return
+      }
+
+      const filePath = Array.isArray(selected) ? selected[0] : selected
+      if (!filePath) {
+        return
+      }
+
+      // Read the file as bytes and convert to blob URL for the cropper
+      const fileBytes = await readFile(filePath)
+      
+      // Detect MIME type from file extension
+      const extension = filePath.split('.').pop()?.toLowerCase()
+      const mimeTypes: Record<string, string> = {
+        'png': 'image/png',
+        'jpg': 'image/jpeg',
+        'jpeg': 'image/jpeg',
+        'gif': 'image/gif',
+        'webp': 'image/webp',
+        'svg': 'image/svg+xml',
+        'bmp': 'image/bmp'
+      }
+      const mimeType = mimeTypes[extension ?? ''] ?? 'image/png'
+      
+      const blob = new Blob([fileBytes], { type: mimeType })
+      const dataUrl = URL.createObjectURL(blob)
+      
+      setOriginalImageSrc(dataUrl)
+      setWorkspaceIconPath(filePath)
+      setCropperOpen(true)
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Failed to select image'
+      toast.error(message)
+    }
+  }, [])
+
+  const handleClearWorkspaceIcon = useCallback(() => {
+    setWorkspaceIconPath(null)
+    setWorkspaceIconPreview(null)
+    setCroppedImageBlob(null)
+  }, [])
+
+  const handleCropComplete = useCallback((croppedBlob: Blob) => {
+    setCroppedImageBlob(croppedBlob)
+    setWorkspaceIconPreview(URL.createObjectURL(croppedBlob))
+    setCropperOpen(false)
+  }, [])
+
+  const handleCropCancel = useCallback(() => {
+    // Revoke object URL to prevent memory leaks
+    if (originalImageSrc) {
+      URL.revokeObjectURL(originalImageSrc)
+    }
+    setOriginalImageSrc(null)
+    setWorkspaceIconPath(null)
+    setCroppedImageBlob(null)
+    setCropperOpen(false)
+  }, [originalImageSrc])
+
+  const handleCreateWorkspaceSubmit = useCallback(
+    async (event: FormEvent<HTMLFormElement>) => {
+      event.preventDefault()
+      if (isCreatingWorkspace) {
+        return
+      }
+
+      const trimmedName = workspaceName.trim()
+      if (!trimmedName) {
+        setWorkspaceError('Workspace name is required')
+        return
+      }
+
+      setWorkspaceError(null)
+
+      try {
+        let finalIconPath = workspaceIconPath
+        const workspaceId = globalThis.crypto?.randomUUID?.() ?? `${Date.now()}`
+
+        // If we have a cropped image, save it using the new Tauri command
+        if (croppedImageBlob) {
+          const arrayBuffer = await croppedImageBlob.arrayBuffer()
+          const uint8Array = new Uint8Array(arrayBuffer)
+          
+          // Save the cropped image and get the relative path
+          finalIconPath = await invoke<string>('save_cropped_workspace_icon', {
+            workspaceId,
+            imageData: Array.from(uint8Array)
+          })
+        }
+
+        const workspace = await createWorkspaceMutation({
+          id: workspaceId,
+          name: trimmedName,
+          color: workspaceColor?.trim() ? workspaceColor : null,
+          iconPath: finalIconPath,
+        })
+
+        toast.success('Workspace created')
+        setSelectedWorkspaceId(workspace.id)
+        handleWorkspaceDialogChange(false)
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : 'Failed to create workspace'
+        setWorkspaceError(message)
+        toast.error(message)
+      }
+    },
+    [
+      createWorkspaceMutation,
+      handleWorkspaceDialogChange,
+      isCreatingWorkspace,
+      setSelectedWorkspaceId,
+      workspaceColor,
+      workspaceIconPath,
+      workspaceName,
+    ]
+  )
+
   const projectLinks = useMemo(() => {
-    if (isLoadingBoards) {
+    if (isLoadingBoards || isLoadingWorkspaces) {
       return null
     }
 
-    if (isBoardsError) {
+    if (isBoardsError || isWorkspacesError) {
       return []
     }
 
-    return boards
-  }, [boards, isBoardsError, isLoadingBoards])
+    if (!selectedWorkspaceId) {
+      return []
+    }
+
+    return boards.filter(board => board.workspaceId === selectedWorkspaceId)
+  }, [
+    boards,
+    isBoardsError,
+    isLoadingBoards,
+    isLoadingWorkspaces,
+    isWorkspacesError,
+    selectedWorkspaceId,
+  ])
+
+  const renderWorkspaceBadge = useCallback(
+    (workspace: Workspace, size: 'sm' | 'md' = 'md') => {
+      const iconUrl = workspace.iconPath
+        ? workspaceIconMap[workspace.id]
+        : null
+
+      const dimensionClass = size === 'sm' ? 'h-5 w-5' : 'h-6 w-6'
+
+      if (iconUrl) {
+        return (
+          <img
+            src={iconUrl}
+            alt={workspace.name}
+            className={cn('rounded-full object-cover', dimensionClass)}
+          />
+        )
+      }
+
+      return (
+        <span
+          className={cn(
+            'rounded-full border border-border/40',
+            dimensionClass
+          )}
+          style={{
+            backgroundColor: workspace.color ?? DEFAULT_WORKSPACE_COLOR,
+          }}
+        />
+      )
+    },
+    [workspaceIconMap]
+  )
 
   return (
-    <div className={cn(sidebarClasses, className)}>
+    <motion.div 
+      className={cn(sidebarClasses, className)}
+      initial={false}
+      animate={{
+        backgroundColor: useTransparentStyle 
+          ? 'rgba(255, 255, 255, 0.05)' 
+          : 'hsl(var(--background))'
+      }}
+      transition={{
+        duration: 0.5,
+        ease: [0.25, 0.1, 0.25, 1.0] // Custom easing similar to Apple
+      }}
+    >
       <div
         data-tauri-drag-region
         className="flex items-center justify-between px-4 pt-4 pb-3"
@@ -331,24 +660,154 @@ export function LeftSideBar({ children, className, forceSolidStyle = false }: Le
         </div>
       </div>
 
-      <nav
+      <div className="px-4 pb-3">
+        <motion.div
+          className={cn(
+            'flex items-center gap-2 rounded-2xl border px-3 py-2',
+            useTransparentStyle
+              ? 'border-white/10 bg-white/5 backdrop-blur-md shadow-lg shadow-black/10'
+              : 'border-border/60 bg-muted/40'
+          )}
+          initial={false}
+          animate={{
+            opacity: 1,
+            filter: useTransparentStyle ? 'blur(0px)' : 'blur(0px)'
+          }}
+          transition={{
+            duration: 0.4,
+            ease: [0.4, 0.0, 0.2, 1.0],
+            opacity: { duration: 0.3 },
+            filter: { duration: 0.5 }
+          }}
+        >
+          {isLoadingWorkspaces ? (
+            <div className="flex flex-1 items-center gap-2 text-xs text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Loading workspaces…
+            </div>
+          ) : isWorkspacesError ? (
+            <div className="flex flex-1 items-center justify-between gap-2 text-xs text-destructive">
+              <span>Failed to load workspaces</span>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-7 px-2"
+                onClick={() => void refetchWorkspaces()}
+              >
+                Retry
+              </Button>
+            </div>
+          ) : workspaces.length === 0 ? (
+            <div className="flex flex-1 items-center gap-2 text-xs text-muted-foreground">
+              <ImageIcon className="h-4 w-4" />
+              No workspaces found
+            </div>
+          ) : (
+            <Select
+              value={selectedWorkspaceId ?? undefined}
+              onValueChange={value => setSelectedWorkspaceId(value)}
+            >
+              <SelectTrigger 
+                className={cn(
+                  "flex-1 border-0 bg-transparent px-0 py-0 text-left shadow-none focus:ring-0 focus:ring-offset-0 min-w-0",
+                  useTransparentStyle && "text-white hover:text-white"
+                )}
+              >
+                <AnimatePresence mode="wait">
+                  {currentWorkspace ? (
+                    <motion.div 
+                      key={currentWorkspace.id}
+                      className="flex items-center gap-2 min-w-0 flex-1"
+                      initial={{ opacity: 0, filter: 'blur(4px)', x: -10 }}
+                      animate={{ opacity: 1, filter: 'blur(0px)', x: 0 }}
+                      exit={{ opacity: 0, filter: 'blur(4px)', x: 10 }}
+                      transition={{
+                        type: 'spring',
+                        stiffness: 300,
+                        damping: 30,
+                        opacity: { duration: 0.2 },
+                        filter: { duration: 0.3 }
+                      }}
+                    >
+                      <div className="flex-shrink-0">
+                        {renderWorkspaceBadge(currentWorkspace)}
+                      </div>
+                      <span className={cn(
+                        "truncate text-sm font-medium",
+                        useTransparentStyle && "text-white"
+                      )}>
+                        {currentWorkspace.name}
+                      </span>
+                    </motion.div>
+                  ) : (
+                    <SelectValue placeholder="Select workspace" />
+                  )}
+                </AnimatePresence>
+              </SelectTrigger>
+              <SelectContent className="min-w-[240px]">
+                {workspaces.map(workspace => (
+                  <SelectItem key={workspace.id} value={workspace.id}>
+                    <div className="flex items-center gap-2 py-1">
+                      <div className="flex-shrink-0">
+                        {renderWorkspaceBadge(workspace, 'sm')}
+                      </div>
+                      <span className="truncate text-sm font-medium">
+                        {workspace.name}
+                      </span>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className={cn(
+              "h-7 w-7 flex-shrink-0 transition-colors",
+              useTransparentStyle
+                ? "text-white/70 hover:text-white hover:bg-white/10"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+            onClick={() => handleWorkspaceDialogChange(true)}
+            disabled={isLoadingWorkspaces}
+          >
+            <Plus className="h-4 w-4" />
+            <span className="sr-only">Create workspace</span>
+          </Button>
+        </motion.div>
+      </div>
+
+      <motion.nav
         className={cn(
           'mt-1 flex flex-col gap-2 px-4 pb-4 text-sm',
           useTransparentStyle
             ? 'text-gray-200 dark:text-gray-100'
             : 'text-foreground'
         )}
+        initial={false}
+        animate={{
+          opacity: 1,
+          filter: 'blur(0px)'
+        }}
+        transition={{
+          duration: 0.4,
+          delay: 0.1,
+          ease: [0.25, 0.1, 0.25, 1.0]
+        }}
       >
         <NavLink
           to="/"
           end
           className={({ isActive }) =>
             cn(
-              'flex items-center gap-3 rounded-xl px-4 py-3 text-left transition-all duration-200 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+              'flex items-center gap-3 rounded-xl px-4 py-3 text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
               useTransparentStyle
                 ? isActive
-                  ? 'bg-white/30 text-gray-200 shadow-sm backdrop-blur-sm'
-                  : 'text-gray-200 hover:bg-white/30'
+                  ? 'bg-white/20 text-white shadow-lg shadow-black/10 backdrop-blur-md border border-white/10'
+                  : 'text-white/90 hover:bg-white/10 hover:backdrop-blur-sm'
                 : isActive
                   ? 'bg-accent text-accent-foreground shadow-sm'
                   : 'text-foreground hover:bg-accent/80'
@@ -364,38 +823,86 @@ export function LeftSideBar({ children, className, forceSolidStyle = false }: Le
             className={cn(
               'flex items-center gap-3 rounded-xl px-4 py-3 text-left transition-all duration-200',
               useTransparentStyle
-                ? 'text-gray-200'
+                ? 'text-white/90'
                 : 'text-foreground'
             )}
           >
             <span className="font-medium">Projects</span>
           </div>
 
-          <div className="mt-2 flex flex-col gap-2 ml-6">
-              {isLoadingBoards ? (
-                <div className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-gray-500 dark:text-gray-400">
-                  <div className="h-3 w-3 animate-pulse rounded-full bg-muted-foreground/50"></div>
-                  <span>Loading…</span>
-                </div>
+          <motion.div 
+            className="mt-2 flex flex-col gap-2 ml-6"
+            initial={false}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.3, delay: 0.15 }}
+          >
+            <AnimatePresence mode="wait">
+              {isLoadingBoards || isLoadingWorkspaces ? (
+                <motion.div
+                  key="loading"
+                  initial={{ opacity: 0, filter: 'blur(4px)' }}
+                  animate={{ opacity: 1, filter: 'blur(0px)' }}
+                  exit={{ opacity: 0, filter: 'blur(4px)' }}
+                  transition={{ duration: 0.3 }}
+                >
+                <div className={cn(
+                  "flex items-center gap-3 rounded-lg px-3 py-2 text-sm",
+                  useTransparentStyle
+                    ? "text-white/60"
+                    : "text-gray-500 dark:text-gray-400"
+                )}>
+                  <div className={cn(
+                    "h-3 w-3 animate-pulse rounded-full",
+                    useTransparentStyle
+                      ? "bg-white/30"
+                      : "bg-muted-foreground/50"
+                  )}></div>
+                    <span>Loading…</span>
+                  </div>
+                </motion.div>
+              ) : isBoardsError || isWorkspacesError ? (
+                <motion.div
+                  key="error"
+                  initial={{ opacity: 0, filter: 'blur(4px)' }}
+                  animate={{ opacity: 1, filter: 'blur(0px)' }}
+                  exit={{ opacity: 0, filter: 'blur(4px)' }}
+                  transition={{ duration: 0.3 }}
+                >
+                <div className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-destructive">
+                  <div className="h-2 w-2 rounded-full bg-destructive/60"></div>
+                    <span>Failed to load projects</span>
+                  </div>
+                </motion.div>
               ) : projectLinks?.length ? (
-                projectLinks.map(board => {
+                projectLinks.map((board, index) => {
                   const IconComponent =
                     PROJECT_ICON_MAP[board.icon ?? ''] ?? Folder
 
                   return (
-                    <div
+                    <motion.div
                       key={board.id}
                       className="group relative flex items-center rounded-lg"
+                      initial={{ opacity: 0, filter: 'blur(4px)', y: -10 }}
+                      animate={{ opacity: 1, filter: 'blur(0px)', y: 0 }}
+                      exit={{ opacity: 0, filter: 'blur(4px)', y: 10 }}
+                      transition={{
+                        type: 'spring',
+                        stiffness: 300,
+                        damping: 30,
+                        delay: index * 0.03,
+                        opacity: { duration: 0.2 },
+                        filter: { duration: 0.3 }
+                      }}
                     >
                       <NavLink
                         to={`/projects/${board.id}`}
                         className={({ isActive }) =>
                           cn(
-                            'flex grow items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm transition-all duration-200 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                            'flex grow items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                             useTransparentStyle
                               ? isActive
-                                ? 'bg-white/30 text-gray-200 shadow-sm backdrop-blur-sm'
-                                : 'text-gray-200 hover:bg-white/30'
+                                ? 'bg-white/20 text-white shadow-lg shadow-black/10 backdrop-blur-md border border-white/10'
+                                : 'text-white/90 hover:bg-white/10 hover:backdrop-blur-sm'
                               : isActive
                                 ? 'bg-accent text-accent-foreground shadow-sm'
                                 : 'text-foreground hover:bg-accent/80'
@@ -415,9 +922,12 @@ export function LeftSideBar({ children, className, forceSolidStyle = false }: Le
                             whileTap={{ scale: 0.92 }}
                             transition={{ duration: 0.18, ease: 'easeOut' }}
                             className={cn(
-                              'absolute right-2 top-1/2 -translate-y-1/2 flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground opacity-0 pointer-events-none transition-all duration-200 hover:bg-accent/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                              'absolute right-2 top-1/2 -translate-y-1/2 flex h-6 w-6 items-center justify-center rounded-md opacity-0 pointer-events-none transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                               'group-hover:opacity-100 group-hover:pointer-events-auto',
-                              'data-[state=open]:opacity-100 data-[state=open]:pointer-events-auto data-[state=open]:bg-accent data-[state=open]:text-accent-foreground'
+                              'data-[state=open]:opacity-100 data-[state=open]:pointer-events-auto',
+                              useTransparentStyle
+                                ? 'text-white/70 hover:bg-white/20 hover:text-white data-[state=open]:bg-white/20 data-[state=open]:text-white'
+                                : 'text-muted-foreground hover:bg-accent/20 data-[state=open]:bg-accent data-[state=open]:text-accent-foreground'
                             )}
                             aria-label={`Open actions for ${board.title}`}
                           >
@@ -464,34 +974,166 @@ export function LeftSideBar({ children, className, forceSolidStyle = false }: Le
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
-                    </div>
+                    </motion.div>
                   )
                 })
               ) : (
-                <div className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-gray-500 dark:text-gray-400">
-                  <div className="h-2 w-2 rounded-full bg-muted-foreground/50"></div>
-                  <span>No projects yet</span>
-                </div>
+                <motion.div
+                  key="empty"
+                  initial={{ opacity: 0, filter: 'blur(4px)' }}
+                  animate={{ opacity: 1, filter: 'blur(0px)' }}
+                  exit={{ opacity: 0, filter: 'blur(4px)' }}
+                  transition={{ duration: 0.3 }}
+                >
+                <div className={cn(
+                  "flex items-center gap-3 rounded-lg px-3 py-2 text-sm",
+                  useTransparentStyle
+                    ? "text-white/60"
+                    : "text-gray-500 dark:text-gray-400"
+                )}>
+                  <div className={cn(
+                    "h-2 w-2 rounded-full",
+                    useTransparentStyle
+                      ? "bg-white/30"
+                      : "bg-muted-foreground/50"
+                  )}></div>
+                    <span>No projects yet</span>
+                  </div>
+                </motion.div>
               )}
+            </AnimatePresence>
               <Button
                 type="button"
                 variant="ghost"
                 className={cn(
-                  'mt-2 flex items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm transition-all duration-200 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                  'mt-2 flex items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                   useTransparentStyle
-                    ? 'text-gray-200 hover:text-gray-200 hover:bg-white/30'
+                    ? 'text-white/90 hover:text-white hover:bg-white/10 hover:backdrop-blur-sm'
                     : 'text-foreground hover:bg-accent/80'
                 )}
                 onClick={() => setCreateProjectOpen(true)}
+              disabled={!selectedWorkspaceId || isLoadingWorkspaces}
               >
                 <Plus className="h-4 w-4" />
                 <span className="font-medium">New Project</span>
               </Button>
-            </div>
+          </motion.div>
         </div>
-      </nav>
+      </motion.nav>
 
       {children}
+
+      <Dialog
+        open={createWorkspaceOpen}
+        onOpenChange={handleWorkspaceDialogChange}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create workspace</DialogTitle>
+            <DialogDescription>
+              Group related projects under a workspace with a custom color and
+              icon.
+            </DialogDescription>
+          </DialogHeader>
+          <form className="space-y-4" onSubmit={handleCreateWorkspaceSubmit}>
+            <div className="space-y-2">
+              <Label htmlFor={workspaceNameId}>Workspace name</Label>
+              <Input
+                id={workspaceNameId}
+                value={workspaceName}
+                onChange={event => setWorkspaceName(event.target.value)}
+                placeholder="e.g. Product Team"
+                autoFocus
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor={workspaceColorId}>Color</Label>
+              <div className="flex items-center gap-3">
+                <Input
+                  id={workspaceColorId}
+                  type="color"
+                  value={workspaceColor}
+                  onChange={event => setWorkspaceColor(event.target.value)}
+                  className="h-10 w-16 cursor-pointer border border-border/60 bg-transparent p-1"
+                />
+                <span className="text-xs text-muted-foreground">
+                  Used when no icon is set.
+                </span>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Icon (optional)</Label>
+              <div className="flex items-center gap-3">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full border border-dashed border-border/60 bg-background">
+                  {workspaceIconPreview ? (
+                    <img
+                      src={workspaceIconPreview}
+                      alt="Workspace icon preview"
+                      className="h-12 w-12 rounded-full object-cover"
+                    />
+                  ) : (
+                    <span
+                      className="h-8 w-8 rounded-full border border-border/40"
+                      style={{
+                        backgroundColor:
+                          workspaceColor || DEFAULT_WORKSPACE_COLOR,
+                      }}
+                    />
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleSelectWorkspaceIcon}
+                    disabled={isCreatingWorkspace}
+                  >
+                    Choose image
+                  </Button>
+                  {workspaceIconPath ? (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleClearWorkspaceIcon}
+                      disabled={isCreatingWorkspace}
+                    >
+                      Remove
+                    </Button>
+                  ) : null}
+                </div>
+              </div>
+              {workspaceIconPath ? (
+                <p className="truncate text-xs text-muted-foreground">
+                  {workspaceIconPath}
+                </p>
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  PNG, JPG, SVG or WebP files work best. Recommended size: 64x64px for optimal display.
+                </p>
+              )}
+            </div>
+            {workspaceError ? (
+              <p className="text-sm text-destructive">{workspaceError}</p>
+            ) : null}
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => handleWorkspaceDialogChange(false)}
+                disabled={isCreatingWorkspace}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isCreatingWorkspace}>
+                {isCreatingWorkspace ? 'Creating…' : 'Create workspace'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       <Dialog
         open={renameProjectOpen}
@@ -690,11 +1332,17 @@ export function LeftSideBar({ children, className, forceSolidStyle = false }: Le
                 return
               }
 
+              if (!selectedWorkspaceId) {
+                toast.error('Select a workspace before creating a project')
+                return
+              }
+
               const id = globalThis.crypto?.randomUUID?.() ?? `${Date.now()}`
 
               createBoard.mutate(
                 {
                   id,
+                  workspaceId: selectedWorkspaceId,
                   title: trimmedName,
                   description: projectDescription.trim() || undefined,
                   icon: DEFAULT_PROJECT_ICON,
@@ -793,7 +1441,20 @@ export function LeftSideBar({ children, className, forceSolidStyle = false }: Le
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+
+      {/* Image Cropper Dialog */}
+      {originalImageSrc && (
+        <ImageCropper
+          open={cropperOpen}
+          onOpenChange={setCropperOpen}
+          imageSrc={originalImageSrc}
+          onCropComplete={handleCropComplete}
+          onCancel={handleCropCancel}
+          aspectRatio={1}
+          recommendedSize="64x64px"
+        />
+      )}
+    </motion.div>
   )
 }
 

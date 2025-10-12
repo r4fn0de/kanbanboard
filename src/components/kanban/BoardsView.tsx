@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useState } from 'react'
+import { useCallback, useEffect, useId, useMemo, useState } from 'react'
 import type { FormEvent, KeyboardEvent } from 'react'
 import { toast } from 'sonner'
 
@@ -25,10 +25,14 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import type { KanbanBoard } from '@/types/common'
 import { useBoards, useCreateBoard } from '@/services/kanban'
+import { useWorkspaceStore } from '@/store/workspace-store'
 
 export function BoardsView() {
   const { data: boards = [], isLoading, isError, error, refetch } = useBoards()
   const { mutateAsync: createBoard, isPending } = useCreateBoard()
+  const selectedWorkspaceId = useWorkspaceStore(
+    state => state.selectedWorkspaceId
+  )
 
   const [selectedBoard, setSelectedBoard] = useState<KanbanBoard | null>(null)
 
@@ -40,21 +44,39 @@ export function BoardsView() {
   const titleInputId = useId()
   const descriptionInputId = useId()
 
+  const filteredBoards = useMemo(() => {
+    if (!selectedWorkspaceId) {
+      return boards
+    }
+
+    return boards.filter(board => board.workspaceId === selectedWorkspaceId)
+  }, [boards, selectedWorkspaceId])
+
   useEffect(() => {
     if (!selectedBoard) {
       return
     }
 
     const updated = boards.find(board => board.id === selectedBoard.id)
+
+    if (!updated) {
+      setSelectedBoard(null)
+      return
+    }
+
+    if (selectedWorkspaceId && updated.workspaceId !== selectedWorkspaceId) {
+      setSelectedBoard(null)
+      return
+    }
+
     if (
-      updated &&
-      (updated.title !== selectedBoard.title ||
-        updated.description !== selectedBoard.description ||
-        (updated.icon ?? null) !== (selectedBoard.icon ?? null))
+      updated.title !== selectedBoard.title ||
+      updated.description !== selectedBoard.description ||
+      (updated.icon ?? null) !== (selectedBoard.icon ?? null)
     ) {
       setSelectedBoard(updated)
     }
-  }, [boards, selectedBoard])
+  }, [boards, selectedBoard, selectedWorkspaceId])
 
   const resetForm = useCallback(() => {
     setTitle('')
@@ -85,9 +107,15 @@ export function BoardsView() {
 
       const trimmedDescription = description.trim()
 
+      if (!selectedWorkspaceId) {
+        toast.error('Select a workspace before creating a board')
+        return
+      }
+
       try {
         await createBoard({
           id: crypto.randomUUID(),
+          workspaceId: selectedWorkspaceId,
           title: trimmedTitle,
           description: trimmedDescription ? trimmedDescription : undefined,
           icon: 'Folder',
@@ -104,7 +132,7 @@ export function BoardsView() {
         setFormError(message)
       }
     },
-    [createBoard, description, resetForm, title]
+    [createBoard, description, resetForm, selectedWorkspaceId, title]
   )
 
   const handleSelectBoard = useCallback((board: KanbanBoard) => {
@@ -126,7 +154,15 @@ export function BoardsView() {
     setIsDialogOpen(true)
   }, [])
 
-  const hasBoards = boards.length > 0
+  const hasBoards = filteredBoards.length > 0
+
+  if (!selectedWorkspaceId) {
+    return (
+      <div className="flex h-full items-center justify-center p-8 text-sm text-muted-foreground">
+        Select a workspace to view its boards.
+      </div>
+    )
+  }
 
   if (selectedBoard) {
     return <BoardDetailView board={selectedBoard} />
@@ -210,7 +246,11 @@ export function BoardsView() {
             </p>
           </div>
           <DialogTrigger asChild>
-            <Button disabled={isPending} size="lg" className="px-6">
+            <Button
+              disabled={isPending || !selectedWorkspaceId}
+              size="lg"
+              className="px-6"
+            >
               New board
             </Button>
           </DialogTrigger>
@@ -218,7 +258,7 @@ export function BoardsView() {
 
         {hasBoards ? (
           <div className="grid flex-1 gap-6 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-            {boards.map(board => (
+            {filteredBoards.map(board => (
               <Card
                 key={board.id}
                 role="button"

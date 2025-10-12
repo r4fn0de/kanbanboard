@@ -18,6 +18,10 @@ use tauri::{AppHandle, Emitter, Manager, State};
 const KANBAN_SCHEMA: &str = include_str!("../schema/kanban.sql");
 const DATABASE_FILE: &str = "flowspace.db";
 const DEFAULT_BOARD_ICON: &str = "Folder";
+const DEFAULT_WORKSPACE_ID: &str = "workspace-default";
+const DEFAULT_WORKSPACE_NAME: &str = "Workspace Padrão";
+const DEFAULT_WORKSPACE_COLOR: &str = "#6366F1";
+const WORKSPACE_ICON_DIR: &str = "workspace-icons";
 const ALLOWED_BOARD_ICONS: &[&str] = &[
     "Folder",
     "LayoutDashboard",
@@ -154,6 +158,27 @@ struct SetCardTagsArgs {
 struct DeleteTagArgs {
     id: String,
     board_id: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct CreateWorkspaceArgs {
+    id: String,
+    name: String,
+    #[serde(default)]
+    color: Option<String>,
+    #[serde(default)]
+    icon_path: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct UpdateWorkspaceArgs {
+    id: String,
+    #[serde(default)]
+    name: Option<String>,
+    #[serde(default)]
+    color: Option<Option<String>>,
 }
 
 #[tauri::command]
@@ -492,6 +517,7 @@ async fn initialize_schema(pool: &DbPool) -> Result<(), String> {
             .map_err(|e| format!("Failed to execute schema statement `{sql}`: {e}"))?;
     }
 
+    ensure_workspace_support(pool).await?;
     ensure_board_icon_column(pool).await?;
     ensure_card_attachments_column(pool).await?;
     ensure_column_customization_columns(pool).await?;
@@ -611,9 +637,75 @@ async fn ensure_column_customization_columns(pool: &DbPool) -> Result<(), String
     Ok(())
 }
 
+async fn ensure_workspace_support(pool: &DbPool) -> Result<(), String> {
+    sqlx::query("CREATE TABLE IF NOT EXISTS workspaces (id TEXT PRIMARY KEY, name TEXT NOT NULL, color TEXT, icon_path TEXT, created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')), updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')), archived_at TEXT)")
+        .execute(pool)
+        .await
+        .map_err(|e| format!("Failed to ensure workspaces table: {e}"))?;
+
+    let workspace_column_exists = sqlx::query_scalar::<_, Option<i64>>(
+        "SELECT 1 FROM pragma_table_info('kanban_boards') WHERE name = 'workspace_id' LIMIT 1",
+    )
+    .fetch_optional(pool)
+    .await
+    .map_err(|e| format!("Failed to inspect kanban_boards schema: {e}"))?
+    .flatten()
+    .is_some();
+
+    if !workspace_column_exists {
+        sqlx::query("ALTER TABLE kanban_boards ADD COLUMN workspace_id TEXT")
+            .execute(pool)
+            .await
+            .map_err(|e| format!("Failed to add workspace_id column to kanban_boards: {e}"))?;
+    }
+
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_boards_workspace ON kanban_boards(workspace_id)")
+        .execute(pool)
+        .await
+        .map_err(|e| format!("Failed to ensure workspace index on boards: {e}"))?;
+
+    sqlx::query("INSERT INTO workspaces (id, name, color, icon_path, created_at, updated_at) VALUES (?, ?, ?, NULL, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), strftime('%Y-%m-%dT%H:%M:%fZ', 'now')) ON CONFLICT(id) DO NOTHING")
+        .bind(DEFAULT_WORKSPACE_ID)
+        .bind(DEFAULT_WORKSPACE_NAME)
+        .bind(Some(DEFAULT_WORKSPACE_COLOR.to_string()))
+        .execute(pool)
+        .await
+        .map_err(|e| format!("Failed to insert default workspace: {e}"))?;
+
+    sqlx::query("UPDATE workspaces SET name = ?, color = COALESCE(color, ?), updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ? AND (name != ? OR name IS NULL)")
+        .bind(DEFAULT_WORKSPACE_NAME)
+        .bind(DEFAULT_WORKSPACE_COLOR)
+        .bind(DEFAULT_WORKSPACE_ID)
+        .bind(DEFAULT_WORKSPACE_NAME)
+        .execute(pool)
+        .await
+        .map_err(|e| format!("Failed to normalize default workspace metadata: {e}"))?;
+
+    sqlx::query("UPDATE kanban_boards SET workspace_id = ? WHERE workspace_id IS NULL OR TRIM(workspace_id) = ''")
+        .bind(DEFAULT_WORKSPACE_ID)
+        .execute(pool)
+        .await
+        .map_err(|e| format!("Failed to backfill workspace ids for boards: {e}"))?;
+
+    Ok(())
+}
+
+fn map_workspace_row(row: SqliteRow) -> Result<Value, sqlx::Error> {
+    Ok(json!({
+        "id": row.try_get::<String, _>("id")?,
+        "name": row.try_get::<String, _>("name")?,
+        "color": row.try_get::<Option<String>, _>("color")?,
+        "iconPath": row.try_get::<Option<String>, _>("icon_path")?,
+        "createdAt": row.try_get::<String, _>("created_at")?,
+        "updatedAt": row.try_get::<String, _>("updated_at")?,
+        "archivedAt": row.try_get::<Option<String>, _>("archived_at")?,
+    }))
+}
+
 fn map_board_row(row: SqliteRow) -> Result<Value, sqlx::Error> {
     Ok(json!({
         "id": row.try_get::<String, _>("id")?,
+        "workspaceId": row.try_get::<String, _>("workspace_id")?,
         "title": row.try_get::<String, _>("title")?,
         "description": row.try_get::<Option<String>, _>("description")?,
         "icon": row
@@ -710,6 +802,27 @@ fn normalize_column_color(color: Option<String>) -> Result<Option<String>, Strin
                 Err(
                     "Cor da coluna inválida. Utilize o formato hexadecimal, por exemplo #6366F1."
                         .to_string(),
+                )
+            }
+        }
+        None => Ok(None),
+    }
+}
+
+fn normalize_workspace_color(color: Option<String>) -> Result<Option<String>, String> {
+    match color {
+        Some(value) => {
+            let trimmed = value.trim();
+            if trimmed.is_empty() {
+                Ok(None)
+            } else if trimmed.len() == 7
+                && trimmed.starts_with('#')
+                && trimmed.chars().skip(1).all(|c| c.is_ascii_hexdigit())
+            {
+                Ok(Some(trimmed.to_string()))
+            } else {
+                Err(
+                    "Cor do workspace inválida. Utilize o formato hexadecimal, por exemplo #6366F1.".to_string(),
                 )
             }
         }
@@ -920,7 +1033,7 @@ async fn set_card_tags_tx(
 
 #[tauri::command]
 async fn load_boards(pool: State<'_, DbPool>) -> Result<Vec<Value>, String> {
-    sqlx::query("SELECT id, title, description, icon, created_at, updated_at, archived_at FROM kanban_boards ORDER BY created_at ASC")
+    sqlx::query("SELECT id, workspace_id, title, description, icon, created_at, updated_at, archived_at FROM kanban_boards ORDER BY created_at ASC")
         .try_map(map_board_row)
         .fetch_all(&*pool)
         .await
@@ -1014,10 +1127,32 @@ async fn delete_board(pool: State<'_, DbPool>, id: String) -> Result<(), String>
 async fn create_board(
     pool: State<'_, DbPool>,
     id: String,
+    workspace_id: String,
     mut title: String,
     description: Option<String>,
     icon: Option<String>,
 ) -> Result<(), String> {
+    let workspace_id = workspace_id.trim().to_string();
+    if workspace_id.is_empty() {
+        return Err("O workspace informado é inválido.".to_string());
+    }
+
+    let workspace_exists = sqlx::query_scalar::<_, Option<i64>>(
+        "SELECT 1 FROM workspaces WHERE id = ? LIMIT 1",
+    )
+    .bind(&workspace_id)
+    .fetch_optional(&*pool)
+    .await
+    .map_err(|e| {
+        log::error!("Falha ao verificar workspace ao criar quadro: {e}");
+        e.to_string()
+    })?
+    .is_some();
+
+    if !workspace_exists {
+        return Err("Workspace não encontrado.".to_string());
+    }
+
     title = title.trim().to_string();
     if title.is_empty() {
         return Err("O nome do quadro não pode ser vazio.".to_string());
@@ -1028,9 +1163,10 @@ async fn create_board(
     let normalized_icon = normalize_board_icon(icon)?;
 
     sqlx::query(
-        "INSERT INTO kanban_boards (id, title, description, icon, created_at, updated_at) VALUES (?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))",
+        "INSERT INTO kanban_boards (id, workspace_id, title, description, icon, created_at, updated_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))",
     )
     .bind(id)
+    .bind(workspace_id)
     .bind(title)
     .bind(normalized_description)
     .bind(normalized_icon)
@@ -1041,6 +1177,289 @@ async fn create_board(
         log::error!("Failed to create board: {e}");
         e.to_string()
     })
+}
+
+#[tauri::command]
+async fn load_workspaces(pool: State<'_, DbPool>) -> Result<Vec<Value>, String> {
+    sqlx::query("SELECT id, name, color, icon_path, created_at, updated_at, archived_at FROM workspaces ORDER BY created_at ASC")
+        .try_map(map_workspace_row)
+        .fetch_all(&*pool)
+        .await
+        .map_err(|e| {
+            log::error!("Failed to load workspaces: {e}");
+            e.to_string()
+        })
+}
+
+#[tauri::command]
+async fn create_workspace(
+    app: AppHandle,
+    pool: State<'_, DbPool>,
+    args: CreateWorkspaceArgs,
+) -> Result<Value, String> {
+    let workspace_id = args.id.trim();
+    if workspace_id.is_empty() {
+        return Err("Identificador do workspace inválido.".to_string());
+    }
+
+    let mut name = args.name.trim().to_string();
+    if name.is_empty() {
+        return Err("O nome do workspace não pode ser vazio.".to_string());
+    }
+    validate_string_input(&name, 200, "Nome do workspace")?;
+
+    let normalized_color = normalize_workspace_color(args.color)?;
+
+    let icon_path = match args.icon_path.as_ref() {
+        Some(path) if !path.trim().is_empty() => match copy_workspace_icon(&app, workspace_id, path) {
+            Ok(relative) => Some(relative),
+            Err(error) => return Err(error),
+        },
+        _ => None,
+    };
+
+    let insert_result = sqlx::query(
+        "INSERT INTO workspaces (id, name, color, icon_path, created_at, updated_at) VALUES (?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))",
+    )
+    .bind(workspace_id)
+    .bind(&name)
+    .bind(normalized_color)
+    .bind(&icon_path)
+    .execute(&*pool)
+    .await;
+
+    if let Err(error) = insert_result {
+        if let Some(relative) = icon_path.as_ref() {
+            let _ = remove_workspace_icon_file(&app, relative);
+        }
+        log::error!("Failed to create workspace {workspace_id}: {error}");
+        return Err(error.to_string());
+    }
+
+    sqlx::query("SELECT id, name, color, icon_path, created_at, updated_at, archived_at FROM workspaces WHERE id = ?")
+        .bind(workspace_id)
+        .try_map(map_workspace_row)
+        .fetch_one(&*pool)
+        .await
+        .map_err(|e| {
+            log::error!("Failed to load created workspace {workspace_id}: {e}");
+            e.to_string()
+        })
+}
+
+#[tauri::command]
+async fn update_workspace(
+    pool: State<'_, DbPool>,
+    args: UpdateWorkspaceArgs,
+) -> Result<(), String> {
+    let workspace_id = args.id.trim();
+    if workspace_id.is_empty() {
+        return Err("Identificador do workspace inválido.".to_string());
+    }
+
+    let mut builder = QueryBuilder::<Sqlite>::new(
+        "UPDATE workspaces SET updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')",
+    );
+    let mut has_changes = false;
+
+    if let Some(name) = args.name.as_ref() {
+        let trimmed = name.trim();
+        if trimmed.is_empty() {
+            return Err("O nome do workspace não pode ser vazio.".to_string());
+        }
+        validate_string_input(trimmed, 200, "Nome do workspace")?;
+        builder.push(", name = ");
+        builder.push_bind(trimmed.to_string());
+        has_changes = true;
+    }
+
+    if let Some(color_payload) = args.color {
+        let normalized_color = normalize_workspace_color(color_payload)?;
+        builder.push(", color = ");
+        if let Some(color) = normalized_color {
+            builder.push_bind(color);
+        } else {
+            builder.push("NULL");
+        }
+        has_changes = true;
+    }
+
+    if !has_changes {
+        return Ok(());
+    }
+
+    builder.push(" WHERE id = ");
+    builder.push_bind(workspace_id.to_string());
+
+    let result = builder
+        .build()
+        .execute(&*pool)
+        .await
+        .map_err(|e| {
+            log::error!("Failed to update workspace {workspace_id}: {e}");
+            e.to_string()
+        })?;
+
+    if result.rows_affected() == 0 {
+        return Err("Workspace não encontrado.".to_string());
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
+async fn delete_workspace(app: AppHandle, pool: State<'_, DbPool>, id: String) -> Result<(), String> {
+    let workspace_id = id.trim();
+    if workspace_id.is_empty() {
+        return Err("Identificador do workspace inválido.".to_string());
+    }
+
+    if workspace_id == DEFAULT_WORKSPACE_ID {
+        return Err("Não é possível remover o workspace padrão.".to_string());
+    }
+
+    let board_count = sqlx::query_scalar::<_, Option<i64>>(
+        "SELECT COUNT(*) FROM kanban_boards WHERE workspace_id = ?",
+    )
+    .bind(workspace_id)
+    .fetch_one(&*pool)
+    .await
+    .map_err(|e| format!("Falha ao verificar quadros do workspace: {e}"))?
+    .unwrap_or(0);
+
+    if board_count > 0 {
+        return Err("Remova ou mova os quadros antes de excluir o workspace.".to_string());
+    }
+
+    let existing_icon: Option<String> = sqlx::query_scalar(
+        "SELECT icon_path FROM workspaces WHERE id = ?",
+    )
+    .bind(workspace_id)
+    .fetch_optional(&*pool)
+    .await
+    .map_err(|e| format!("Falha ao carregar ícone do workspace: {e}"))?
+    .flatten();
+
+    let result = sqlx::query("DELETE FROM workspaces WHERE id = ?")
+        .bind(workspace_id)
+        .execute(&*pool)
+        .await
+        .map_err(|e| {
+            log::error!("Failed to delete workspace {workspace_id}: {e}");
+            e.to_string()
+        })?;
+
+    if result.rows_affected() == 0 {
+        return Err("Workspace não encontrado.".to_string());
+    }
+
+    if let Some(relative) = existing_icon {
+        let _ = remove_workspace_icon_file(&app, &relative);
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
+async fn update_workspace_icon(
+    app: AppHandle,
+    pool: State<'_, DbPool>,
+    workspace_id: String,
+    file_path: String,
+) -> Result<Value, String> {
+    let workspace_id = workspace_id.trim();
+    if workspace_id.is_empty() {
+        return Err("Identificador do workspace inválido.".to_string());
+    }
+
+    let existing_icon: Option<String> = sqlx::query_scalar(
+        "SELECT icon_path FROM workspaces WHERE id = ?",
+    )
+    .bind(workspace_id)
+    .fetch_optional(&*pool)
+    .await
+    .map_err(|e| format!("Falha ao carregar workspace: {e}"))?
+    .flatten();
+
+    let new_icon = copy_workspace_icon(&app, workspace_id, &file_path)?;
+
+    let update_result = sqlx::query(
+        "UPDATE workspaces SET icon_path = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?",
+    )
+    .bind(&new_icon)
+    .bind(workspace_id)
+    .execute(&*pool)
+    .await;
+
+    if let Err(error) = update_result {
+        let _ = remove_workspace_icon_file(&app, &new_icon);
+        log::error!("Failed to update workspace icon for {workspace_id}: {error}");
+        return Err(error.to_string());
+    }
+
+    if let Some(previous) = existing_icon {
+        let _ = remove_workspace_icon_file(&app, &previous);
+    }
+
+    sqlx::query("SELECT id, name, color, icon_path, created_at, updated_at, archived_at FROM workspaces WHERE id = ?")
+        .bind(workspace_id)
+        .try_map(map_workspace_row)
+        .fetch_one(&*pool)
+        .await
+        .map_err(|e| {
+            log::error!("Failed to load workspace after icon update {workspace_id}: {e}");
+            e.to_string()
+        })
+}
+
+#[tauri::command]
+async fn remove_workspace_icon(
+    app: AppHandle,
+    pool: State<'_, DbPool>,
+    workspace_id: String,
+) -> Result<Value, String> {
+    let workspace_id = workspace_id.trim();
+    if workspace_id.is_empty() {
+        return Err("Identificador do workspace inválido.".to_string());
+    }
+
+    let existing_icon: Option<String> = sqlx::query_scalar(
+        "SELECT icon_path FROM workspaces WHERE id = ?",
+    )
+    .bind(workspace_id)
+    .fetch_optional(&*pool)
+    .await
+    .map_err(|e| format!("Falha ao carregar workspace: {e}"))?
+    .flatten();
+
+    let result = sqlx::query(
+        "UPDATE workspaces SET icon_path = NULL, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?",
+    )
+    .bind(workspace_id)
+    .execute(&*pool)
+    .await
+    .map_err(|e| {
+        log::error!("Failed to clear workspace icon for {workspace_id}: {e}");
+        e.to_string()
+    })?;
+
+    if result.rows_affected() == 0 {
+        return Err("Workspace não encontrado.".to_string());
+    }
+
+    if let Some(relative) = existing_icon {
+        let _ = remove_workspace_icon_file(&app, &relative);
+    }
+
+    sqlx::query("SELECT id, name, color, icon_path, created_at, updated_at, archived_at FROM workspaces WHERE id = ?")
+        .bind(workspace_id)
+        .try_map(map_workspace_row)
+        .fetch_one(&*pool)
+        .await
+        .map_err(|e| {
+            log::error!("Failed to load workspace after icon removal {workspace_id}: {e}");
+            e.to_string()
+        })
 }
 
 #[tauri::command]
@@ -2333,6 +2752,13 @@ pub fn run() {
             save_emergency_data,
             load_emergency_data,
             cleanup_old_recovery_files,
+            load_workspaces,
+            create_workspace,
+            update_workspace,
+            delete_workspace,
+            update_workspace_icon,
+            remove_workspace_icon,
+            save_cropped_workspace_icon,
             load_boards,
             create_board,
             rename_board,
@@ -2371,6 +2797,119 @@ struct UploadImageResponse {
     success: bool,
     file_path: String,
     error: Option<String>,
+}
+
+fn copy_workspace_icon(app: &AppHandle, workspace_id: &str, file_path: &str) -> Result<String, String> {
+    let app_data_dir = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| format!("Failed to resolve app data directory: {e}"))?;
+
+    let icons_dir = app_data_dir.join(WORKSPACE_ICON_DIR);
+    fs::create_dir_all(&icons_dir)
+        .map_err(|e| format!("Failed to create workspace icon directory: {e}"))?;
+
+    let source_path = PathBuf::from(file_path);
+    if !source_path.exists() {
+        return Err("Arquivo selecionado não existe.".to_string());
+    }
+
+    let extension = source_path
+        .extension()
+        .and_then(|ext| ext.to_str())
+        .unwrap_or("")
+        .to_lowercase();
+
+    let mime_type = mime_guess::from_path(&source_path).first_or_octet_stream();
+    let is_image_by_mime = mime_type.essence_str().starts_with("image/");
+    let is_image_by_extension = matches!(
+        extension.as_str(),
+        "jpg" | "jpeg" | "png" | "gif" | "webp" | "svg" | "bmp" | "ico" | "tiff" | "tif"
+    );
+
+    if !is_image_by_mime && !is_image_by_extension {
+        return Err(format!(
+            "Arquivo selecionado não é uma imagem válida. MIME detectado: {}",
+            mime_type
+        ));
+    }
+
+    let timestamp = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_err(|e| format!("System time error: {e}"))?
+        .as_secs();
+
+    let filename = if extension.is_empty() {
+        format!("{workspace_id}_{timestamp}")
+    } else {
+        format!("{workspace_id}_{timestamp}.{extension}")
+    };
+
+    let destination_path = icons_dir.join(&filename);
+    fs::copy(&source_path, &destination_path)
+        .map_err(|e| format!("Falha ao copiar arquivo de ícone: {e}"))?;
+
+    Ok(format!("{WORKSPACE_ICON_DIR}/{filename}"))
+}
+
+fn remove_workspace_icon_file(app: &AppHandle, relative_path: &str) -> Result<(), String> {
+    if relative_path.trim().is_empty() {
+        return Ok(());
+    }
+
+    let app_data_dir = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| format!("Failed to resolve app data directory: {e}"))?;
+
+    let full_path = app_data_dir.join(relative_path);
+    if full_path.exists() {
+        fs::remove_file(&full_path)
+            .map_err(|e| format!("Falha ao remover arquivo de ícone antigo: {e}"))?;
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
+async fn save_cropped_workspace_icon(
+    app: AppHandle,
+    workspace_id: String,
+    image_data: Vec<u8>,
+) -> Result<String, String> {
+    let workspace_id = workspace_id.trim();
+    if workspace_id.is_empty() {
+        return Err("Invalid workspace ID".to_string());
+    }
+
+    if image_data.is_empty() {
+        return Err("No image data provided".to_string());
+    }
+
+    let app_data_dir = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| format!("Failed to resolve app data directory: {e}"))?;
+
+    let workspace_icon_dir = app_data_dir.join(WORKSPACE_ICON_DIR);
+    fs::create_dir_all(&workspace_icon_dir)
+        .map_err(|e| format!("Failed to create workspace icon directory: {e}"))?;
+
+    // Generate a unique filename for the cropped image
+    let timestamp = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or(Duration::from_secs(0))
+        .as_millis();
+    let filename = format!("{}_cropped_{}.png", workspace_id, timestamp);
+    let full_path = workspace_icon_dir.join(&filename);
+
+    // Write the image data to file
+    fs::write(&full_path, &image_data)
+        .map_err(|e| format!("Failed to write cropped image file: {e}"))?;
+
+    // Return the relative path
+    let relative_path = format!("{}/{}", WORKSPACE_ICON_DIR, filename);
+    Ok(relative_path)
 }
 
 #[tauri::command]

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { NotesList } from './NotesList'
 import { NoteEditor } from './NoteEditor'
@@ -9,6 +9,7 @@ import { Plus, Search } from 'lucide-react'
 import { useBoards } from '@/services/kanban'
 import { useCreateNote } from '@/services/notes'
 import type { Note } from '@/services/notes'
+import { useWorkspaceStore } from '@/store/workspace-store'
 
 export function NotesView() {
   const { boardId } = useParams<{ boardId: string }>()
@@ -17,11 +18,20 @@ export function NotesView() {
   const [searchQuery, setSearchQuery] = useState('')
   const { data: boards = [] } = useBoards()
   const createNote = useCreateNote(boardId || '')
+  const setSelectedWorkspaceId = useWorkspaceStore(
+    state => state.setSelectedWorkspaceId
+  )
 
   const board = useMemo(
     () => boards.find(item => item.id === boardId),
     [boards, boardId]
   )
+
+  useEffect(() => {
+    if (board?.workspaceId) {
+      setSelectedWorkspaceId(board.workspaceId)
+    }
+  }, [board, setSelectedWorkspaceId])
 
   const handleTabChange = (tab: string) => {
     if (!boardId) {

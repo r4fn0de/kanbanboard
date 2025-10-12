@@ -32,6 +32,7 @@ export async function fetchTags(boardId: string): Promise<KanbanTag[]> {
 
 export interface CreateBoardInput {
   id: string
+  workspaceId: string
   title: string
   description?: string
   icon?: string
@@ -39,9 +40,11 @@ export interface CreateBoardInput {
 
 export async function createBoard(input: CreateBoardInput): Promise<void> {
   await invoke('create_board', {
-    ...input,
+    id: input.id,
+    title: input.title,
     description: input.description ?? null,
     icon: input.icon ?? 'Folder',
+    workspace_id: input.workspaceId,
   })
 }
 
@@ -685,6 +688,7 @@ export function useCreateBoard() {
       const now = new Date().toISOString()
       const optimisticBoard: KanbanBoard = {
         id: input.id,
+        workspaceId: input.workspaceId,
         title: input.title,
         description: input.description ?? null,
         icon: input.icon ?? 'Folder',

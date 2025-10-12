@@ -10,12 +10,16 @@ import {
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useBoards } from '@/services/kanban'
+import { useWorkspaceStore } from '@/store/workspace-store'
 
 export function ProjectBoardView() {
   const { boardId } = useParams<{ boardId: string }>()
   const [searchParams, setSearchParams] = useSearchParams()
   const navigate = useNavigate()
   const { data: boards = [], isLoading, isError, error, refetch } = useBoards()
+  const setSelectedWorkspaceId = useWorkspaceStore(
+    state => state.setSelectedWorkspaceId
+  )
 
   const viewParam = searchParams.get('view')
   const viewMode = useMemo<BoardViewMode>(() => {
@@ -29,6 +33,12 @@ export function ProjectBoardView() {
     () => boards.find(item => item.id === boardId),
     [boards, boardId]
   )
+
+  useEffect(() => {
+    if (board?.workspaceId) {
+      setSelectedWorkspaceId(board.workspaceId)
+    }
+  }, [board, setSelectedWorkspaceId])
 
   useEffect(() => {
     if (viewParam && !isBoardViewMode(viewParam)) {

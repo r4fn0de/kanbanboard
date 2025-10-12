@@ -8,6 +8,7 @@ import { BoardNavbar } from '@/components/kanban/BoardNavbar'
 import { useBoards } from '@/services/kanban'
 import { Button } from '@/components/ui/button'
 import { useUIStore } from '@/store/ui-store'
+import { useWorkspaceStore } from '@/store/workspace-store'
 
 const assetUrls: TldrawProps['assetUrls'] = getAssetUrls({ baseUrl: '/tldraw-assets' })
 
@@ -23,6 +24,9 @@ export function BoardDrawView() {
   } = useBoards()
 
   const setLeftSidebarVisible = useUIStore(state => state.setLeftSidebarVisible)
+  const setSelectedWorkspaceId = useWorkspaceStore(
+    state => state.setSelectedWorkspaceId
+  )
 
   useEffect(() => {
     const { leftSidebarVisible } = useUIStore.getState()
@@ -43,6 +47,12 @@ export function BoardDrawView() {
     () => boards.find(item => item.id === boardId) ?? null,
     [boards, boardId]
   )
+
+  useEffect(() => {
+    if (board?.workspaceId) {
+      setSelectedWorkspaceId(board.workspaceId)
+    }
+  }, [board, setSelectedWorkspaceId])
 
   const handleTabChange = useCallback(
     (tab: string) => {
