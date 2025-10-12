@@ -35,6 +35,7 @@ import {
   Settings,
   Image as ImageIcon,
   Loader2,
+  GripVertical,
 } from 'lucide-react'
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import {
@@ -70,11 +71,14 @@ import {
 import {
   useWorkspaces,
   useCreateWorkspace,
+  useUpdateWorkspace,
+  useDeleteWorkspace,
 } from '@/services/workspaces'
 import {
   Select,
   SelectContent,
   SelectItem,
+  SelectSeparator,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
@@ -84,6 +88,14 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import {
+  Menu,
+  MenuTrigger,
+  MenuPortal,
+  MenuPositioner,
+  MenuPopup,
+  MenuItem,
+} from '@/components/ui/base-ui-menu'
 import { motion, AnimatePresence } from 'framer-motion'
 import { MacOSWindowControls } from '@/components/titlebar/MacOSWindowControls'
 import { executeCommand, useCommandContext } from '@/lib/commands'
@@ -192,6 +204,14 @@ export function LeftSideBar({ children, className, forceSolidStyle = false }: Le
   const [cropperOpen, setCropperOpen] = useState(false)
   const [originalImageSrc, setOriginalImageSrc] = useState<string | null>(null)
   const [croppedImageBlob, setCroppedImageBlob] = useState<Blob | null>(null)
+  // Workspace edit/delete states
+  const [editWorkspaceOpen, setEditWorkspaceOpen] = useState(false)
+  const [editWorkspaceId, setEditWorkspaceId] = useState<string | null>(null)
+  const [editWorkspaceName, setEditWorkspaceName] = useState('')
+  const [editWorkspaceColor, setEditWorkspaceColor] = useState(DEFAULT_WORKSPACE_COLOR)
+  const [deleteWorkspaceOpen, setDeleteWorkspaceOpen] = useState(false)
+  const [deleteWorkspaceId, setDeleteWorkspaceId] = useState<string | null>(null)
+  const [deleteWorkspaceName, setDeleteWorkspaceName] = useState('')
   const projectNameId = useId()
   const projectDescriptionId = useId()
   const renameProjectNameId = useId()
@@ -219,6 +239,8 @@ export function LeftSideBar({ children, className, forceSolidStyle = false }: Le
     mutateAsync: createWorkspaceMutation,
     isPending: isCreatingWorkspace,
   } = useCreateWorkspace()
+  const updateWorkspace = useUpdateWorkspace()
+  const deleteWorkspace = useDeleteWorkspace()
 
   const currentWorkspace = useMemo(() => {
     if (!selectedWorkspaceId) return null
@@ -660,47 +682,28 @@ export function LeftSideBar({ children, className, forceSolidStyle = false }: Le
         </div>
       </div>
 
-      <div className="px-4 pb-3">
-        <motion.div
-          className={cn(
-            'flex items-center gap-2 rounded-2xl border px-3 py-2',
-            useTransparentStyle
-              ? 'border-white/10 bg-white/5 backdrop-blur-md shadow-lg shadow-black/10'
-              : 'border-border/60 bg-muted/40'
-          )}
-          initial={false}
-          animate={{
-            opacity: 1,
-            filter: useTransparentStyle ? 'blur(0px)' : 'blur(0px)'
-          }}
-          transition={{
-            duration: 0.4,
-            ease: [0.4, 0.0, 0.2, 1.0],
-            opacity: { duration: 0.3 },
-            filter: { duration: 0.5 }
-          }}
-        >
-          {isLoadingWorkspaces ? (
-            <div className="flex flex-1 items-center gap-2 text-xs text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" />
+      <div className="px-3 pb-3">
+        {isLoadingWorkspaces ? (
+            <div className="flex flex-1 items-center gap-1.5 text-xs text-muted-foreground">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
               Loading workspaces…
             </div>
           ) : isWorkspacesError ? (
-            <div className="flex flex-1 items-center justify-between gap-2 text-xs text-destructive">
+            <div className="flex flex-1 items-center justify-between gap-1.5 text-xs text-destructive">
               <span>Failed to load workspaces</span>
               <Button
                 type="button"
                 variant="ghost"
                 size="sm"
-                className="h-7 px-2"
+                className="h-6 px-2 text-xs"
                 onClick={() => void refetchWorkspaces()}
               >
                 Retry
               </Button>
             </div>
           ) : workspaces.length === 0 ? (
-            <div className="flex flex-1 items-center gap-2 text-xs text-muted-foreground">
-              <ImageIcon className="h-4 w-4" />
+            <div className="flex flex-1 items-center gap-1.5 text-xs text-muted-foreground">
+              <ImageIcon className="h-3.5 w-3.5" />
               No workspaces found
             </div>
           ) : (
@@ -710,8 +713,8 @@ export function LeftSideBar({ children, className, forceSolidStyle = false }: Le
             >
               <SelectTrigger 
                 className={cn(
-                  "flex-1 border-0 bg-transparent px-0 py-0 text-left shadow-none focus:ring-0 focus:ring-offset-0 min-w-0",
-                  useTransparentStyle && "text-white hover:text-white"
+                  "w-full border-0 bg-transparent px-2.5 py-2 text-left shadow-none focus:ring-0 focus:ring-offset-0 min-w-0 hover:bg-accent/50 rounded-lg transition-colors",
+                  useTransparentStyle && "text-white hover:text-white hover:bg-white/[0.08]"
                 )}
               >
                 <AnimatePresence mode="wait">
@@ -735,7 +738,7 @@ export function LeftSideBar({ children, className, forceSolidStyle = false }: Le
                       </div>
                       <span className={cn(
                         "truncate text-sm font-medium",
-                        useTransparentStyle && "text-white"
+                        useTransparentStyle ? "text-white" : "text-foreground"
                       )}>
                         {currentWorkspace.name}
                       </span>
@@ -745,39 +748,42 @@ export function LeftSideBar({ children, className, forceSolidStyle = false }: Le
                   )}
                 </AnimatePresence>
               </SelectTrigger>
-              <SelectContent className="min-w-[240px]">
+              <SelectContent className="min-w-[220px] max-w-[300px] p-1.5">
                 {workspaces.map(workspace => (
-                  <SelectItem key={workspace.id} value={workspace.id}>
-                    <div className="flex items-center gap-2 py-1">
+                  <SelectItem 
+                    key={workspace.id} 
+                    value={workspace.id} 
+                    className="rounded-md px-2 py-2 my-0.5 data-[state=checked]:bg-accent/80"
+                  >
+                    <div className="flex items-center gap-2 w-full">
+                      <GripVertical className="h-4 w-4 text-muted-foreground/40 flex-shrink-0" />
                       <div className="flex-shrink-0">
                         {renderWorkspaceBadge(workspace, 'sm')}
                       </div>
-                      <span className="truncate text-sm font-medium">
+                      <span className="truncate text-sm font-medium flex-1">
                         {workspace.name}
                       </span>
                     </div>
                   </SelectItem>
                 ))}
+                <SelectSeparator className="my-1.5" />
+                <button
+                  type="button"
+                  className={cn(
+                    "flex w-full items-center gap-2.5 rounded-md px-2 py-2 text-sm font-medium transition-colors",
+                    "hover:bg-accent/80 text-muted-foreground hover:text-foreground"
+                  )}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleWorkspaceDialogChange(true);
+                  }}
+                >
+                  <Plus className="h-4 w-4" />
+                  <span>New workspace</span>
+                </button>
               </SelectContent>
             </Select>
           )}
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className={cn(
-              "h-7 w-7 flex-shrink-0 transition-colors",
-              useTransparentStyle
-                ? "text-white/70 hover:text-white hover:bg-white/10"
-                : "text-muted-foreground hover:text-foreground"
-            )}
-            onClick={() => handleWorkspaceDialogChange(true)}
-            disabled={isLoadingWorkspaces}
-          >
-            <Plus className="h-4 w-4" />
-            <span className="sr-only">Create workspace</span>
-          </Button>
-        </motion.div>
       </div>
 
       <motion.nav
@@ -803,25 +809,25 @@ export function LeftSideBar({ children, className, forceSolidStyle = false }: Le
           end
           className={({ isActive }) =>
             cn(
-              'flex items-center gap-3 rounded-xl px-4 py-3 text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+              'flex items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring border',
               useTransparentStyle
                 ? isActive
-                  ? 'bg-white/20 text-white shadow-lg shadow-black/10 backdrop-blur-md border border-white/10'
-                  : 'text-white/90 hover:bg-white/10 hover:backdrop-blur-sm'
+                  ? 'bg-white/20 text-white shadow-lg shadow-black/10 backdrop-blur-md border-white/10'
+                  : 'text-white/90 hover:bg-white/10 hover:backdrop-blur-sm border-transparent'
                 : isActive
-                  ? 'bg-accent text-accent-foreground shadow-sm'
-                  : 'text-foreground hover:bg-accent/80'
+                  ? 'bg-accent text-accent-foreground shadow-sm border-transparent'
+                  : 'text-foreground hover:bg-accent/80 border-transparent'
             )
           }
         >
-          <Home className="h-4 w-4" />
+          <Home className="h-3.5 w-3.5" />
           <span className="font-medium">Home</span>
         </NavLink>
 
         <div className="flex flex-col">
           <div
             className={cn(
-              'flex items-center gap-3 rounded-xl px-4 py-3 text-left transition-all duration-200',
+              'flex items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm transition-all duration-200',
               useTransparentStyle
                 ? 'text-white/90'
                 : 'text-foreground'
@@ -898,18 +904,18 @@ export function LeftSideBar({ children, className, forceSolidStyle = false }: Le
                         to={`/projects/${board.id}`}
                         className={({ isActive }) =>
                           cn(
-                            'flex grow items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                            'flex grow items-center gap-2.5 rounded-lg px-3 py-1.5 text-left text-sm transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring border',
                             useTransparentStyle
                               ? isActive
-                                ? 'bg-white/20 text-white shadow-lg shadow-black/10 backdrop-blur-md border border-white/10'
-                                : 'text-white/90 hover:bg-white/10 hover:backdrop-blur-sm'
+                                ? 'bg-white/20 text-white shadow-lg shadow-black/10 backdrop-blur-md border-white/10'
+                                : 'text-white/90 hover:bg-white/10 hover:backdrop-blur-sm border-transparent'
                               : isActive
-                                ? 'bg-accent text-accent-foreground shadow-sm'
-                                : 'text-foreground hover:bg-accent/80'
+                                ? 'bg-accent text-accent-foreground shadow-sm border-transparent'
+                                : 'text-foreground hover:bg-accent/80 border-transparent'
                           )
                         }
                       >
-                        <IconComponent className="h-4 w-4" />
+                        <IconComponent className="h-3.5 w-3.5" />
                         <span className="truncate font-medium">
                           {board.title}
                         </span>
@@ -1006,7 +1012,7 @@ export function LeftSideBar({ children, className, forceSolidStyle = false }: Le
                 type="button"
                 variant="ghost"
                 className={cn(
-                  'mt-2 flex items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                  'mt-2 flex items-center gap-2.5 rounded-lg px-3 py-1.5 text-left text-sm transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                   useTransparentStyle
                     ? 'text-white/90 hover:text-white hover:bg-white/10 hover:backdrop-blur-sm'
                     : 'text-foreground hover:bg-accent/80'
@@ -1014,7 +1020,7 @@ export function LeftSideBar({ children, className, forceSolidStyle = false }: Le
                 onClick={() => setCreateProjectOpen(true)}
               disabled={!selectedWorkspaceId || isLoadingWorkspaces}
               >
-                <Plus className="h-4 w-4" />
+                <Plus className="h-3.5 w-3.5" />
                 <span className="font-medium">New Project</span>
               </Button>
           </motion.div>
@@ -1134,6 +1140,156 @@ export function LeftSideBar({ children, className, forceSolidStyle = false }: Le
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Edit Workspace Dialog */}
+      <Dialog
+        open={editWorkspaceOpen}
+        onOpenChange={open => {
+          setEditWorkspaceOpen(open)
+          if (!open) {
+            setEditWorkspaceId(null)
+            setEditWorkspaceName('')
+            setEditWorkspaceColor(DEFAULT_WORKSPACE_COLOR)
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit workspace</DialogTitle>
+            <DialogDescription>
+              Update the workspace name and color.
+            </DialogDescription>
+          </DialogHeader>
+          <form
+            className="space-y-4"
+            onSubmit={(event: FormEvent<HTMLFormElement>) => {
+              event.preventDefault()
+              if (updateWorkspace.isPending || !editWorkspaceId) return
+
+              const trimmedName = editWorkspaceName.trim()
+              if (!trimmedName) {
+                toast.error('Workspace name is required')
+                return
+              }
+
+              updateWorkspace.mutate(
+                {
+                  id: editWorkspaceId,
+                  name: trimmedName,
+                  color: editWorkspaceColor,
+                },
+                {
+                  onSuccess: () => {
+                    toast.success('Workspace updated')
+                    setEditWorkspaceOpen(false)
+                  },
+                  onError: error => {
+                    const message =
+                      error instanceof Error ? error.message : 'Unknown error'
+                    toast.error('Failed to update workspace', {
+                      description: message,
+                    })
+                  },
+                }
+              )
+            }}
+          >
+            <div className="space-y-2">
+              <Label>Workspace name</Label>
+              <Input
+                value={editWorkspaceName}
+                onChange={event => setEditWorkspaceName(event.target.value)}
+                placeholder="e.g. Product Team"
+                autoFocus
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Color</Label>
+              <div className="flex items-center gap-3">
+                <Input
+                  type="color"
+                  value={editWorkspaceColor}
+                  onChange={event => setEditWorkspaceColor(event.target.value)}
+                  className="h-10 w-16 cursor-pointer border border-border/60 bg-transparent p-1"
+                />
+                <span className="text-xs text-muted-foreground">
+                  Used when no icon is set.
+                </span>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setEditWorkspaceOpen(false)}
+                disabled={updateWorkspace.isPending}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={updateWorkspace.isPending}>
+                {updateWorkspace.isPending ? 'Updating…' : 'Update workspace'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Workspace Dialog */}
+      <AlertDialog
+        open={deleteWorkspaceOpen}
+        onOpenChange={open => {
+          setDeleteWorkspaceOpen(open)
+          if (!open) {
+            setDeleteWorkspaceId(null)
+            setDeleteWorkspaceName('')
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete workspace</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete
+              {deleteWorkspaceName
+                ? ` "${deleteWorkspaceName}"`
+                : ' this workspace'}.
+              <br />
+              <br />
+              <strong>Note:</strong> You must move or delete all projects from this workspace before you can delete it.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteWorkspace.isPending}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={event => {
+                event.preventDefault()
+                if (!deleteWorkspaceId) return
+
+                deleteWorkspace.mutate(deleteWorkspaceId, {
+                  onSuccess: () => {
+                    toast.success('Workspace deleted')
+                    setDeleteWorkspaceOpen(false)
+                  },
+                  onError: error => {
+                    const message =
+                      error instanceof Error ? error.message : 'Unknown error'
+                    toast.error('Failed to delete workspace', {
+                      description: message,
+                    })
+                  },
+                })
+              }}
+              disabled={deleteWorkspace.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteWorkspace.isPending ? 'Deleting…' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <Dialog
         open={renameProjectOpen}

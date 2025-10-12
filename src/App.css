@@ -222,6 +222,11 @@
     letter-spacing: var(--tracking-normal);
   }
 
+  /* Base UI - Create stacking context for portals */
+  #root {
+    isolation: isolate;
+  }
+
   svg {
     color: inherit;
   }
