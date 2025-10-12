@@ -17,6 +17,8 @@ import { useCallback, useMemo, useState } from 'react'
 import { usePreferences, useSavePreferences } from '@/services/preferences'
 import { motion, AnimatePresence } from 'framer-motion'
 
+const SIDEBAR_WIDTH = 256
+
 // A simple debounce function
 function debounce<Args extends unknown[]>(
   func: (...args: Args) => void,
@@ -39,6 +41,15 @@ export function MainWindow() {
     useUIStore()
   const { data: preferences } = usePreferences()
   const { mutate: savePreferences } = useSavePreferences()
+  const sidebarLayoutPreference = preferences?.sidebarLayout ?? []
+  const mainPanelDefault =
+    sidebarLayoutPreference.length === 3
+      ? sidebarLayoutPreference[1]
+      : sidebarLayoutPreference[0] ?? 70
+  const rightPanelDefault =
+    sidebarLayoutPreference.length === 3
+      ? sidebarLayoutPreference[2]
+      : sidebarLayoutPreference[1] ?? 30
   const [isHoveringEdge, setIsHoveringEdge] = useState(false)
 
   // Set up global event listeners (keyboard shortcuts, etc.)
@@ -60,7 +71,10 @@ export function MainWindow() {
   const debouncedSaveLayout = useMemo(
     () =>
       debounce((layout: number[]) => {
-        savePreferences({ sidebarLayout: layout })
+        const normalizedLayout = layout.slice(0, 2)
+        if (normalizedLayout.length === 2) {
+          savePreferences({ sidebarLayout: normalizedLayout })
+        }
       }, 500),
     [savePreferences]
   )
@@ -101,43 +115,46 @@ export function MainWindow() {
 
       {/* Main Content Area with Resizable Panels */}
       <div className={contentClasses}>
-        <ResizablePanelGroup
-          direction="horizontal"
-          onLayout={debouncedSaveLayout}
-          autoSaveId="app-layout"
+        <motion.div
+          initial={false}
+          animate={{
+            width: leftSidebarVisible ? SIDEBAR_WIDTH : 0,
+            opacity: leftSidebarVisible ? 1 : 0,
+            x: leftSidebarVisible ? 0 : -24,
+          }}
+          transition={{ duration: 0.25, ease: 'easeInOut' }}
+          aria-hidden={!leftSidebarVisible}
+          className="relative h-full overflow-hidden rounded-l-[12px] flex-shrink-0"
+          style={{ pointerEvents: leftSidebarVisible ? 'auto' : 'none' }}
         >
-          {/* Left Sidebar */}
-          <ResizablePanel
-            minSize={10}
-            maxSize={15}
-            className={cn(!leftSidebarVisible && 'hidden')}
-            defaultSize={preferences?.sidebarLayout?.[0] ?? 15}
+          <LeftSideBar className="h-full" />
+        </motion.div>
+
+        <div className="flex h-full flex-1 overflow-hidden">
+          <ResizablePanelGroup
+            direction="horizontal"
+            onLayout={debouncedSaveLayout}
+            autoSaveId="app-layout"
+            className="flex-1"
           >
-            <LeftSideBar />
-          </ResizablePanel>
+            {/* Main Content */}
+            <ResizablePanel minSize={30} defaultSize={mainPanelDefault}>
+              <MainWindowContent />
+            </ResizablePanel>
 
-          <ResizableHandle className={cn(!leftSidebarVisible && 'hidden')} />
+            <ResizableHandle className={cn(!rightSidebarVisible && 'hidden')} />
 
-          {/* Main Content */}
-          <ResizablePanel
-            minSize={30}
-            defaultSize={preferences?.sidebarLayout?.[1] ?? 65}
-          >
-            <MainWindowContent />
-          </ResizablePanel>
-
-          <ResizableHandle className={cn(!rightSidebarVisible && 'hidden')} />
-
-          {/* Right Sidebar */}
-          <ResizablePanel
-            minSize={15}
-            maxSize={40}
-            className={cn(!rightSidebarVisible && 'hidden')}
-            defaultSize={preferences?.sidebarLayout?.[2] ?? 20}
-          >
-            <RightSideBar />
-          </ResizablePanel>
-        </ResizablePanelGroup>
+            {/* Right Sidebar */}
+            <ResizablePanel
+              minSize={15}
+              maxSize={40}
+              className={cn(!rightSidebarVisible && 'hidden')}
+              defaultSize={rightPanelDefault}
+            >
+              <RightSideBar />
+            </ResizablePanel>
+          </ResizablePanelGroup>
+        </div>
       </div>
 
       {/* Global UI Components (hidden until triggered) */}

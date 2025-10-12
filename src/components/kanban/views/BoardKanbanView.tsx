@@ -173,11 +173,7 @@ export function BoardKanbanView({
 
 function CardOverlay({ card }: { card: KanbanCard }) {
   return (
-    <div className="pointer-events-none flex w-[300px] max-w-full flex-col rounded-[1.75rem] border border-border bg-card p-5 shadow-xl" 
-         style={{
-           // Move even further left for cursor alignment
-           marginLeft: '-250px', // Further reduced offset
-         }}>
+    <div className="pointer-events-none flex w-[300px] max-w-full flex-col rounded-[1.75rem] border border-border bg-card p-5 shadow-xl rotate-3 opacity-90">
       <CardContent card={card} />
     </div>
   )

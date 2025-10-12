@@ -4,8 +4,6 @@ import type { FormEvent } from 'react'
 import { useMemo, useState, useId } from 'react'
 import type { LucideIcon } from 'lucide-react'
 import {
-  ChevronDown,
-  ChevronRight,
   Home,
   Folder,
   LayoutDashboard,
@@ -144,7 +142,6 @@ const DEFAULT_PROJECT_ICON = PROJECT_ICON_OPTIONS[0]?.value ?? 'Folder'
 
 export function LeftSideBar({ children, className, forceSolidStyle = false }: LeftSideBarProps) {
   const { transparencyEnabled } = useTheme()
-  const [projectsOpen, setProjectsOpen] = useState(true)
   const [createProjectOpen, setCreateProjectOpen] = useState(false)
   const [projectName, setProjectName] = useState('')
   const [projectDescription, setProjectDescription] = useState('')
@@ -363,26 +360,18 @@ export function LeftSideBar({ children, className, forceSolidStyle = false }: Le
         </NavLink>
 
         <div className="flex flex-col">
-          <button
-            type="button"
-            onClick={() => setProjectsOpen(prev => !prev)}
+          <div
             className={cn(
-              'flex items-center gap-3 rounded-xl px-4 py-3 text-left transition-all duration-200 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+              'flex items-center gap-3 rounded-xl px-4 py-3 text-left transition-all duration-200',
               useTransparentStyle
-                ? 'text-gray-200 hover:bg-white/30'
-                : 'text-foreground hover:bg-accent/80'
+                ? 'text-gray-200'
+                : 'text-foreground'
             )}
           >
-            {projectsOpen ? (
-              <ChevronDown className="h-4 w-4" />
-            ) : (
-              <ChevronRight className="h-4 w-4" />
-            )}
             <span className="font-medium">Projects</span>
-          </button>
+          </div>
 
-          {projectsOpen ? (
-            <div className="mt-2 flex flex-col gap-2 ml-6">
+          <div className="mt-2 flex flex-col gap-2 ml-6">
               {isLoadingBoards ? (
                 <div className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-gray-500 dark:text-gray-400">
                   <div className="h-3 w-3 animate-pulse rounded-full bg-muted-foreground/50"></div>
@@ -499,7 +488,6 @@ export function LeftSideBar({ children, className, forceSolidStyle = false }: Le
                 <span className="font-medium">New Project</span>
               </Button>
             </div>
-          ) : null}
         </div>
       </nav>
 
