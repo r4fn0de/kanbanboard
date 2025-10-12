@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { ArrowLeft, Pin, PinOff, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { Note } from '@/services/notes'
-import { useUpdateNote, useDeleteNote } from '@/services/notes'
+import { useUpdateNote, useDeleteNote, useNotes } from '@/services/notes'
 import { toast } from 'sonner'
 import {
   AlertDialog,
@@ -51,6 +51,10 @@ export function NoteEditor({ note, boardId, onBack }: NoteEditorProps) {
 
   const updateNote = useUpdateNote(boardId)
   const deleteNote = useDeleteNote(boardId)
+  const { data: notes = [] } = useNotes(boardId)
+
+  // Get the most up-to-date note from cache
+  const currentNote = notes.find(n => n.id === note.id) || note
 
   const editor = usePlateEditor({
     plugins: EditorKit,
@@ -121,14 +125,14 @@ export function NoteEditor({ note, boardId, onBack }: NoteEditorProps) {
 
   const handleTogglePin = useCallback(() => {
     updateNote.mutate(
-      { id: note.id, boardId, pinned: !note.pinned },
+      { id: note.id, boardId, pinned: !currentNote.pinned },
       {
         onSuccess: () => {
-          toast.success(note.pinned ? 'Note unpinned' : 'Note pinned')
+          toast.success(currentNote.pinned ? 'Note unpinned' : 'Note pinned')
         },
       }
     )
-  }, [note.id, boardId, note.pinned, updateNote])
+  }, [note.id, boardId, currentNote.pinned, updateNote])
 
   const handleDelete = useCallback(() => {
     deleteNote.mutate({ id: note.id }, {
@@ -170,11 +174,11 @@ export function NoteEditor({ note, boardId, onBack }: NoteEditorProps) {
             onClick={handleTogglePin}
             className={cn(
               'h-8 w-8',
-              note.pinned && 'text-primary'
+              currentNote.pinned && 'text-primary'
             )}
-            title={note.pinned ? 'Unpin note' : 'Pin note'}
+            title={currentNote.pinned ? 'Unpin note' : 'Pin note'}
           >
-            {note.pinned ? (
+            {currentNote.pinned ? (
               <PinOff className="h-4 w-4" />
             ) : (
               <Pin className="h-4 w-4" />

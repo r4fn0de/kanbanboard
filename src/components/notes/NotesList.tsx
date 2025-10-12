@@ -1,8 +1,15 @@
-import { Pin, Calendar } from 'lucide-react'
+import { Pin, Calendar, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { Note } from '@/services/notes'
-import { useNotes } from '@/services/notes'
+import { useNotes, useUpdateNote, useDeleteNote } from '@/services/notes'
 import { formatDistanceToNow } from 'date-fns'
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuTrigger,
+} from '@/components/ui/context-menu'
 
 interface NotesListProps {
   boardId: string
@@ -51,6 +58,7 @@ export function NotesList({ boardId, onSelectNote, searchQuery }: NotesListProps
                       key={note.id}
                       note={note}
                       onClick={() => onSelectNote(note)}
+                      boardId={boardId}
                     />
                   ))}
                 </div>
@@ -71,6 +79,7 @@ export function NotesList({ boardId, onSelectNote, searchQuery }: NotesListProps
                       key={note.id}
                       note={note}
                       onClick={() => onSelectNote(note)}
+                      boardId={boardId}
                     />
                   ))}
                 </div>
@@ -86,9 +95,31 @@ export function NotesList({ boardId, onSelectNote, searchQuery }: NotesListProps
 interface NoteCardProps {
   note: Note
   onClick: () => void
+  boardId: string
 }
 
-function NoteCard({ note, onClick }: NoteCardProps) {
+function NoteCard({ note, onClick, boardId }: NoteCardProps) {
+  const updateNote = useUpdateNote(boardId)
+  const deleteNote = useDeleteNote(boardId)
+
+  const handleTogglePin = () => {
+    updateNote.mutate(
+      { id: note.id, boardId, pinned: !note.pinned },
+      {
+        onSuccess: () => {
+          // Toast already handled in the hook
+        },
+      }
+    )
+  }
+
+  const handleDelete = () => {
+    deleteNote.mutate({ id: note.id }, {
+      onSuccess: () => {
+        // Toast already handled in the hook
+      },
+    })
+  }
   // Extract plain text from content for preview
   const getPreviewText = (content: string): string => {
     try {
@@ -115,25 +146,40 @@ function NoteCard({ note, onClick }: NoteCardProps) {
   })
 
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        'w-full rounded-lg border bg-card p-4 text-left transition-all hover:bg-accent/50 hover:shadow-sm',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
-      )}
-    >
-      <div className="flex items-start justify-between gap-3 mb-2">
-        <h3 className="font-semibold line-clamp-1">{note.title}</h3>
-        {note.pinned && <Pin className="h-3.5 w-3.5 text-primary flex-shrink-0" />}
-      </div>
-      <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
-        {preview}
-      </p>
-      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-        <Calendar className="h-3 w-3" />
-        <span>{updatedAt}</span>
-      </div>
-    </button>
+    <ContextMenu>
+      <ContextMenuTrigger asChild>
+        <button
+          type="button"
+          onClick={onClick}
+          className={cn(
+            'w-full rounded-lg border bg-card p-4 text-left transition-all hover:bg-accent/50 hover:shadow-sm',
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
+          )}
+        >
+          <div className="flex items-start justify-between gap-3 mb-2">
+            <h3 className="font-semibold line-clamp-1">{note.title}</h3>
+            {note.pinned && <Pin className="h-3.5 w-3.5 text-primary flex-shrink-0" />}
+          </div>
+          <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
+            {preview}
+          </p>
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <Calendar className="h-3 w-3" />
+            <span>{updatedAt}</span>
+          </div>
+        </button>
+      </ContextMenuTrigger>
+      <ContextMenuContent className="w-48">
+        <ContextMenuItem onClick={handleTogglePin}>
+          <Pin className="mr-2 h-4 w-4" />
+          {note.pinned ? 'Unpin' : 'Pin'}
+        </ContextMenuItem>
+        <ContextMenuSeparator />
+        <ContextMenuItem variant="destructive" onClick={handleDelete}>
+          <Trash2 className="mr-2 h-4 w-4" />
+          Delete
+        </ContextMenuItem>
+      </ContextMenuContent>
+    </ContextMenu>
   )
 }
