@@ -44,15 +44,15 @@ export function NotesList({ boardId, onSelectNote, searchQuery }: NotesListProps
             </div>
           </div>
         ) : (
-          <div className="space-y-6 p-6">
+          <div className="p-6">
             {/* Pinned Notes */}
             {pinnedNotes.length > 0 && (
-              <div>
-                <div className="flex items-center gap-2 mb-3 text-sm font-semibold text-muted-foreground">
+              <div className="mb-8">
+                <div className="flex items-center gap-2 mb-4 text-sm font-semibold text-muted-foreground">
                   <Pin className="h-3.5 w-3.5" />
-                  Pinned
+                  Pinned Notes
                 </div>
-                <div className="space-y-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
                   {pinnedNotes.map((note) => (
                     <NoteCard
                       key={note.id}
@@ -69,11 +69,11 @@ export function NotesList({ boardId, onSelectNote, searchQuery }: NotesListProps
             {unpinnedNotes.length > 0 && (
               <div>
                 {pinnedNotes.length > 0 && (
-                  <div className="flex items-center gap-2 mb-3 text-sm font-semibold text-muted-foreground">
+                  <div className="flex items-center gap-2 mb-4 text-sm font-semibold text-muted-foreground">
                     All Notes
                   </div>
                 )}
-                <div className="space-y-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
                   {unpinnedNotes.map((note) => (
                     <NoteCard
                       key={note.id}
@@ -144,6 +144,9 @@ function NoteCard({ note, onClick, boardId }: NoteCardProps) {
   const updatedAt = formatDistanceToNow(new Date(note.updatedAt), {
     addSuffix: true,
   })
+  const createdAt = formatDistanceToNow(new Date(note.createdAt), {
+    addSuffix: true,
+  })
 
   return (
     <ContextMenu>
@@ -152,7 +155,7 @@ function NoteCard({ note, onClick, boardId }: NoteCardProps) {
           type="button"
           onClick={onClick}
           className={cn(
-            'w-full rounded-lg border bg-card p-4 text-left transition-all hover:bg-accent/50 hover:shadow-sm',
+            'w-full h-full rounded-lg border bg-card p-3 text-left transition-all hover:bg-accent/50 hover:shadow-sm',
             'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
           )}
         >
@@ -160,12 +163,18 @@ function NoteCard({ note, onClick, boardId }: NoteCardProps) {
             <h3 className="font-semibold line-clamp-1">{note.title}</h3>
             {note.pinned && <Pin className="h-3.5 w-3.5 text-primary flex-shrink-0" />}
           </div>
-          <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
+          <p className="text-sm text-muted-foreground line-clamp-10 mb-3 flex-1">
             {preview}
           </p>
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <Calendar className="h-3 w-3" />
-            <span>{updatedAt}</span>
+            <span>Created {createdAt}</span>
+            {note.updatedAt !== note.createdAt && (
+              <>
+                <span className="text-muted-foreground/50">•</span>
+                <span>Updated {updatedAt}</span>
+              </>
+            )}
           </div>
         </button>
       </ContextMenuTrigger>
