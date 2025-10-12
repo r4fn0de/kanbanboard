@@ -14,7 +14,6 @@ const tabs = [
   { id: 'tasks', label: 'Tasks' },
   { id: 'notes', label: 'Notes' },
   { id: 'draws', label: 'Draws' },
-  { id: 'messages', label: 'Messages' },
 ]
 
 export function BoardNavbar({

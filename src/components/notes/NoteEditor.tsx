@@ -47,7 +47,6 @@ export function NoteEditor({ note, boardId, onBack }: NoteEditorProps) {
   const [title, setTitle] = useState(note.title)
   const [content, setContent] = useState(() => parseNoteContent(note.content))
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
-  const [isSavingTitle, setIsSavingTitle] = useState(false)
   const previousNoteIdRef = useRef(note.id)
 
   const updateNote = useUpdateNote(boardId)
@@ -96,33 +95,29 @@ export function NoteEditor({ note, boardId, onBack }: NoteEditorProps) {
     previousNoteIdRef.current = note.id
     setTitle(note.title)
     setContent(parseNoteContent(note.content))
-    setIsSavingTitle(false)
   }, [note.id, note.title, note.content])
 
-  // Auto-save title changes
+  // Auto-save title changes with short debounce
   useEffect(() => {
-    if (title === note.title) {
-      setIsSavingTitle(false)
-      return
-    }
-
-    setIsSavingTitle(true)
     const timer = setTimeout(() => {
-      updateNote.mutate(
-        { id: note.id, boardId, title },
-        {
-          onSettled: () => {
-            setIsSavingTitle(false)
-          },
-        }
-      )
-    }, 1000)
+      if (title !== note.title) {
+        updateNote.mutate(
+          { id: note.id, boardId, title },
+          {
+            onError: (error) => {
+              toast.error('Failed to save title', {
+                description: error instanceof Error ? error.message : 'Unknown error',
+              })
+            },
+          }
+        )
+      }
+    }, 300) // 300ms debounce for better performance
 
     return () => {
       clearTimeout(timer)
     }
   }, [title, note.title, note.id, boardId, updateNote])
-
 
   const handleTogglePin = useCallback(() => {
     updateNote.mutate(
@@ -146,21 +141,26 @@ export function NoteEditor({ note, boardId, onBack }: NoteEditorProps) {
   return (
     <div className="flex h-full flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between border-b px-6 py-4">
-        <div className="flex items-center gap-3">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onBack}
-            className="h-8 w-8"
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <div className="flex items-center gap-2">
-            {isSavingTitle && (
-              <span className="text-xs text-muted-foreground">Saving...</span>
-            )}
-          </div>
+      <div className="flex items-center justify-between px-6 py-4">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onBack}
+          className="h-8 w-8"
+        >
+          <ArrowLeft className="h-4 w-4" />
+        </Button>
+        
+        <div className="flex items-center gap-2 flex-1 justify-center">
+          <Input
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Note title..."
+            className="border-0 text-2xl font-bold text-center focus-visible:ring-0 px-0 max-w-md"
+          />
+          {/* {isSavingTitle && (
+            <span className="text-xs text-muted-foreground">Saving...</span>
+          )} */}
         </div>
 
         <div className="flex items-center gap-2">
@@ -190,16 +190,6 @@ export function NoteEditor({ note, boardId, onBack }: NoteEditorProps) {
             <Trash2 className="h-4 w-4" />
           </Button>
         </div>
-      </div>
-
-      {/* Title Input */}
-      <div className="border-b px-6 py-4">
-        <Input
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="Note title..."
-          className="border-0 text-3xl font-bold focus-visible:ring-0 px-0"
-        />
       </div>
 
       {/* Editor */}
