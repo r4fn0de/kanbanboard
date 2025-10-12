@@ -61,11 +61,11 @@ export async function updateNote(input: UpdateNoteInput): Promise<void> {
 }
 
 export async function deleteNote(id: string, boardId: string): Promise<void> {
-  await invoke('delete_note', { id, board_id: boardId })
+  await invoke('delete_note', { id, boardId })
 }
 
 export async function archiveNote(id: string, boardId: string): Promise<void> {
-  await invoke('archive_note', { id, board_id: boardId })
+  await invoke('archive_note', { id, boardId })
 }
 
 // ============================================================================
@@ -160,6 +160,7 @@ export function useUpdateNote(boardId: string) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notes', boardId] })
+      // Removed toast to avoid noise during auto-save
     },
   })
 }

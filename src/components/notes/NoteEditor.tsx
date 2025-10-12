@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { Plate, usePlateEditor } from 'platejs/react'
 import { EditorKit } from '@/components/editor/editor-kit'
 import { Editor, EditorContainer } from '@/components/ui/editor'
@@ -26,17 +26,29 @@ interface NoteEditorProps {
   onBack: () => void
 }
 
+function createEmptyEditorValue() {
+  return [{ type: 'p', children: [{ text: '' }] }]
+}
+
+function parseNoteContent(rawContent?: string | null) {
+  if (!rawContent) {
+    return createEmptyEditorValue()
+  }
+
+  try {
+    const parsed = JSON.parse(rawContent)
+    return Array.isArray(parsed) ? parsed : createEmptyEditorValue()
+  } catch {
+    return [{ type: 'p', children: [{ text: rawContent }] }]
+  }
+}
+
 export function NoteEditor({ note, boardId, onBack }: NoteEditorProps) {
   const [title, setTitle] = useState(note.title)
-  const [content, setContent] = useState(() => {
-    try {
-      return note.content ? JSON.parse(note.content) : []
-    } catch {
-      return [{ type: 'p', children: [{ text: note.content || '' }] }]
-    }
-  })
+  const [content, setContent] = useState(() => parseNoteContent(note.content))
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
+  const [isSavingTitle, setIsSavingTitle] = useState(false)
+  const previousNoteIdRef = useRef(note.id)
 
   const updateNote = useUpdateNote(boardId)
   const deleteNote = useDeleteNote(boardId)
@@ -44,48 +56,73 @@ export function NoteEditor({ note, boardId, onBack }: NoteEditorProps) {
   const editor = usePlateEditor({
     plugins: EditorKit,
     value: content,
-    onChange: ({ value }) => {
-      setContent(value)
-      setHasUnsavedChanges(true)
-    },
   })
+
+  // Watch for editor changes and save immediately
+  React.useEffect(() => {
+    if (!editor) return
+
+    const handleChange = () => {
+      const newValue = editor.children
+      setContent(newValue)
+      
+      // Save immediately on every change
+      const contentStr = JSON.stringify(newValue)
+      updateNote.mutate(
+        { id: note.id, boardId, content: contentStr },
+        {
+          onError: (error) => {
+            toast.error('Failed to save note', {
+              description: error instanceof Error ? error.message : 'Unknown error',
+            })
+          },
+        }
+      )
+    }
+
+    // Subscribe to editor changes
+    editor.onChange = handleChange
+
+    return () => {
+      editor.onChange = undefined
+    }
+  }, [editor, note.id, boardId, updateNote])
+
+  useEffect(() => {
+    if (previousNoteIdRef.current === note.id) {
+      return
+    }
+
+    previousNoteIdRef.current = note.id
+    setTitle(note.title)
+    setContent(parseNoteContent(note.content))
+    setIsSavingTitle(false)
+  }, [note.id, note.title, note.content])
 
   // Auto-save title changes
   useEffect(() => {
-    if (title !== note.title) {
-      const timer = setTimeout(() => {
-        updateNote.mutate(
-          { id: note.id, boardId, title },
-          {
-            onSuccess: () => {
-              setHasUnsavedChanges(false)
-            },
-          }
-        )
-      }, 1000)
+    if (title === note.title) {
+      setIsSavingTitle(false)
+      return
+    }
 
-      return () => clearTimeout(timer)
+    setIsSavingTitle(true)
+    const timer = setTimeout(() => {
+      updateNote.mutate(
+        { id: note.id, boardId, title },
+        {
+          onSettled: () => {
+            setIsSavingTitle(false)
+          },
+        }
+      )
+    }, 1000)
+
+    return () => {
+      clearTimeout(timer)
     }
   }, [title, note.title, note.id, boardId, updateNote])
 
-  // Auto-save content changes
-  useEffect(() => {
-    if (hasUnsavedChanges) {
-      const timer = setTimeout(() => {
-        const contentStr = JSON.stringify(content)
-        updateNote.mutate(
-          { id: note.id, boardId, content: contentStr },
-          {
-            onSuccess: () => {
-              setHasUnsavedChanges(false)
-            },
-          }
-        )
-      }, 2000)
-
-      return () => clearTimeout(timer)
-    }
-  }, [content, hasUnsavedChanges, note.id, boardId, updateNote])
 
   const handleTogglePin = useCallback(() => {
     updateNote.mutate(
@@ -120,7 +157,7 @@ export function NoteEditor({ note, boardId, onBack }: NoteEditorProps) {
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div className="flex items-center gap-2">
-            {hasUnsavedChanges && (
+            {isSavingTitle && (
               <span className="text-xs text-muted-foreground">Saving...</span>
             )}
           </div>
@@ -180,7 +217,7 @@ export function NoteEditor({ note, boardId, onBack }: NoteEditorProps) {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete note</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete "{note.title}"? This action cannot
+              Are you sure you want to delete &ldquo;{note.title}&rdquo;? This action cannot
               be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
