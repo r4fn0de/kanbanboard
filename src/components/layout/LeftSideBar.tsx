@@ -268,9 +268,6 @@ export function LeftSideBar({
   const [changeIconValue, setChangeIconValue] =
     useState<string>(DEFAULT_PROJECT_ICON)
   const [createWorkspaceOpen, setCreateWorkspaceOpen] = useState(false)
-  const [workspaceIconMap, setWorkspaceIconMap] = useState<
-    Record<string, string>
-  >({})
   // Workspace edit/delete states
   const [editWorkspaceOpen, setEditWorkspaceOpen] = useState(false)
   const [editWorkspaceId, setEditWorkspaceId] = useState<string | null>(null)
@@ -402,41 +399,6 @@ export function LeftSideBar({
     setSelectedWorkspaceId,
     workspaces,
   ])
-
-  useEffect(() => {
-    workspaces.forEach(workspace => {
-      if (!workspace.iconPath) {
-        if (workspaceIconMap[workspace.id]) {
-          setWorkspaceIconMap(prev => {
-            if (!(workspace.id in prev)) {
-              return prev
-            }
-            const { [workspace.id]: _removed, ...rest } = prev
-            return rest
-          })
-        }
-        return
-      }
-
-      if (workspaceIconMap[workspace.id]) {
-        return
-      }
-
-      invoke<string>('get_attachment_url', { filePath: workspace.iconPath })
-        .then(url => {
-          setWorkspaceIconMap(prev => ({ ...prev, [workspace.id]: url }))
-        })
-        .catch(() => {
-          setWorkspaceIconMap(prev => {
-            if (!(workspace.id in prev)) {
-              return prev
-            }
-            const { [workspace.id]: _removed, ...rest } = prev
-            return rest
-          })
-        })
-    })
-  }, [workspaces, workspaceIconMap])
 
   const useTransparentStyle = transparencyEnabled && !forceSolidStyle
 
@@ -580,9 +542,42 @@ export function LeftSideBar({
     setActiveId(null)
   }, [])
 
+  const [workspaceIconUrls, setWorkspaceIconUrls] = useState<
+    Map<string, string>
+  >(new Map())
+
+  // Preload workspace icon URLs when workspaces change
+  useEffect(() => {
+    const loadIcons = async () => {
+      for (const workspace of workspaces) {
+        const iconPath = workspace.iconPath
+        if (iconPath && !workspaceIconUrls.has(iconPath)) {
+          try {
+            const url = (await invoke('get_attachment_url', {
+              filePath: iconPath,
+            })) as string
+            setWorkspaceIconUrls(prev => new Map(prev).set(iconPath, url))
+          } catch (error) {
+            console.error(
+              `Failed to load workspace icon for ${workspace.name}:`,
+              error
+            )
+          }
+        }
+      }
+    }
+
+    if (workspaces.length > 0) {
+      loadIcons()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [workspaces])
+
   const renderWorkspaceBadge = useCallback(
     (workspace: Workspace, size: 'sm' | 'md' = 'md') => {
-      const iconUrl = workspace.iconPath ? workspaceIconMap[workspace.id] : null
+      const iconUrl = workspace.iconPath
+        ? workspaceIconUrls.get(workspace.iconPath)
+        : null
 
       const dimensionClass = size === 'sm' ? 'h-5 w-5' : 'h-6 w-6'
 
@@ -605,7 +600,7 @@ export function LeftSideBar({
         />
       )
     },
-    [workspaceIconMap]
+    [workspaceIconUrls]
   )
 
   return (

@@ -1,5 +1,4 @@
-import { useState } from 'react'
-import { Settings, Palette, Zap } from 'lucide-react'
+import { Settings, Palette, Zap, FolderIcon } from 'lucide-react'
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -28,8 +27,9 @@ import { useUIStore } from '@/store/ui-store'
 import { GeneralPane } from './panes/GeneralPane'
 import { AppearancePane } from './panes/AppearancePane'
 import { AdvancedPane } from './panes/AdvancedPane'
+import { WorkspacesPane } from './panes/WorkspacesPane'
 
-type PreferencePane = 'general' | 'appearance' | 'advanced'
+type PreferencePane = 'general' | 'appearance' | 'workspaces' | 'advanced'
 
 const navigationItems = [
   {
@@ -41,6 +41,11 @@ const navigationItems = [
     id: 'appearance' as const,
     name: 'Appearance',
     icon: Palette,
+  },
+  {
+    id: 'workspaces' as const,
+    name: 'Workspaces',
+    icon: FolderIcon,
   },
   {
     id: 'advanced' as const,
@@ -55,6 +60,8 @@ const getPaneTitle = (pane: PreferencePane): string => {
       return 'General'
     case 'appearance':
       return 'Appearance'
+    case 'workspaces':
+      return 'Workspaces'
     case 'advanced':
       return 'Advanced'
     default:
@@ -63,11 +70,26 @@ const getPaneTitle = (pane: PreferencePane): string => {
 }
 
 export function PreferencesDialog() {
-  const [activePane, setActivePane] = useState<PreferencePane>('general')
-  const { preferencesOpen, setPreferencesOpen } = useUIStore()
+  const {
+    preferencesOpen,
+    setPreferencesOpen,
+    preferencesActivePane,
+    setPreferencesActivePane,
+    editingWorkspaceId,
+    setEditingWorkspaceId,
+  } = useUIStore()
+  const activePane = preferencesActivePane
+
+  // Clear editing workspace when dialog closes
+  const handleOpenChange = (open: boolean) => {
+    setPreferencesOpen(open)
+    if (!open) {
+      setEditingWorkspaceId(null)
+    }
+  }
 
   return (
-    <Dialog open={preferencesOpen} onOpenChange={setPreferencesOpen}>
+    <Dialog open={preferencesOpen} onOpenChange={handleOpenChange}>
       <DialogContent className="overflow-hidden p-0 md:max-h-[600px] md:max-w-[900px] lg:max-w-[1000px] font-sans rounded-xl">
         <DialogTitle className="sr-only">Preferences</DialogTitle>
         <DialogDescription className="sr-only">
@@ -87,7 +109,7 @@ export function PreferencesDialog() {
                           isActive={activePane === item.id}
                         >
                           <button
-                            onClick={() => setActivePane(item.id)}
+                            onClick={() => setPreferencesActivePane(item.id)}
                             className="w-full"
                           >
                             <item.icon />
@@ -124,6 +146,9 @@ export function PreferencesDialog() {
             <div className="flex flex-1 flex-col gap-4 overflow-y-auto p-4 pt-0 max-h-[calc(600px-4rem)]">
               {activePane === 'general' && <GeneralPane />}
               {activePane === 'appearance' && <AppearancePane />}
+              {activePane === 'workspaces' && (
+                <WorkspacesPane editingWorkspaceId={editingWorkspaceId} />
+              )}
               {activePane === 'advanced' && <AdvancedPane />}
             </div>
           </main>

@@ -6,6 +6,8 @@ interface UIState {
   rightSidebarVisible: boolean
   commandPaletteOpen: boolean
   preferencesOpen: boolean
+  preferencesActivePane: 'general' | 'appearance' | 'workspaces' | 'advanced'
+  editingWorkspaceId: string | null
 
   toggleLeftSidebar: () => void
   setLeftSidebarVisible: (visible: boolean) => void
@@ -15,6 +17,14 @@ interface UIState {
   setCommandPaletteOpen: (open: boolean) => void
   togglePreferences: () => void
   setPreferencesOpen: (open: boolean) => void
+  openPreferencesWithPane: (
+    pane: 'general' | 'appearance' | 'workspaces' | 'advanced',
+    workspaceId?: string | null
+  ) => void
+  setPreferencesActivePane: (
+    pane: 'general' | 'appearance' | 'workspaces' | 'advanced'
+  ) => void
+  setEditingWorkspaceId: (id: string | null) => void
 }
 
 export const useUIStore = create<UIState>()(
@@ -24,6 +34,8 @@ export const useUIStore = create<UIState>()(
       rightSidebarVisible: false,
       commandPaletteOpen: false,
       preferencesOpen: false,
+      preferencesActivePane: 'general',
+      editingWorkspaceId: null,
 
       toggleLeftSidebar: () =>
         set(
@@ -72,6 +84,27 @@ export const useUIStore = create<UIState>()(
 
       setPreferencesOpen: open =>
         set({ preferencesOpen: open }, undefined, 'setPreferencesOpen'),
+
+      openPreferencesWithPane: (pane, workspaceId = null) =>
+        set(
+          {
+            preferencesOpen: true,
+            preferencesActivePane: pane,
+            editingWorkspaceId: workspaceId,
+          },
+          undefined,
+          'openPreferencesWithPane'
+        ),
+
+      setPreferencesActivePane: pane =>
+        set(
+          { preferencesActivePane: pane },
+          undefined,
+          'setPreferencesActivePane'
+        ),
+
+      setEditingWorkspaceId: id =>
+        set({ editingWorkspaceId: id }, undefined, 'setEditingWorkspaceId'),
     }),
     {
       name: 'ui-store',

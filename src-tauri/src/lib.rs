@@ -1105,6 +1105,51 @@ async fn update_board_icon(
 }
 
 #[tauri::command]
+async fn update_board_workspace(
+    pool: State<'_, DbPool>,
+    board_id: String,
+    workspace_id: String,
+) -> Result<(), String> {
+    if workspace_id.is_empty() {
+        return Err("O workspace informado é inválido.".to_string());
+    }
+
+    // Verify workspace exists
+    let workspace_exists =
+        sqlx::query_scalar::<_, Option<i64>>("SELECT 1 FROM workspaces WHERE id = ? LIMIT 1")
+            .bind(&workspace_id)
+            .fetch_optional(&*pool)
+            .await
+            .map_err(|e| {
+                log::error!("Falha ao verificar workspace: {e}");
+                e.to_string()
+            })?
+            .is_some();
+
+    if !workspace_exists {
+        return Err("Workspace não encontrado.".to_string());
+    }
+
+    let result = sqlx::query(
+        "UPDATE kanban_boards SET workspace_id = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?",
+    )
+    .bind(&workspace_id)
+    .bind(&board_id)
+    .execute(&*pool)
+    .await
+    .map_err(|e| {
+        log::error!("Failed to update board workspace {board_id}: {e}");
+        e.to_string()
+    })?;
+
+    if result.rows_affected() == 0 {
+        return Err("Quadro não encontrado.".to_string());
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
 async fn delete_board(pool: State<'_, DbPool>, id: String) -> Result<(), String> {
     let result = sqlx::query("DELETE FROM kanban_boards WHERE id = ?")
         .bind(&id)
@@ -2766,10 +2811,12 @@ pub fn run() {
             update_workspace_icon,
             remove_workspace_icon,
             save_cropped_workspace_icon,
+            get_workspace_icon_url,
             load_boards,
             create_board,
             rename_board,
             update_board_icon,
+            update_board_workspace,
             delete_board,
             load_columns,
             create_column,
@@ -2921,6 +2968,46 @@ async fn save_cropped_workspace_icon(
     // Return the relative path
     let relative_path = format!("{}/{}", WORKSPACE_ICON_DIR, filename);
     Ok(relative_path)
+}
+
+#[tauri::command]
+async fn get_workspace_icon_url(
+    app: AppHandle,
+    relative_path: String,
+) -> Result<String, String> {
+    if relative_path.trim().is_empty() {
+        return Err("Invalid relative path".to_string());
+    }
+
+    let app_data_dir = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| format!("Failed to resolve app data directory: {e}"))?;
+
+    let full_path = app_data_dir.join(&relative_path);
+    
+    if !full_path.exists() {
+        return Err(format!("Workspace icon file not found: {}", relative_path));
+    }
+
+    // Read the file and convert to base64 data URL
+    let file_bytes = fs::read(&full_path)
+        .map_err(|e| format!("Failed to read workspace icon file: {e}"))?;
+    
+    // Determine MIME type based on file extension
+    let mime_type = match full_path.extension().and_then(|ext| ext.to_str()) {
+        Some("png") => "image/png",
+        Some("jpg") | Some("jpeg") => "image/jpeg",
+        Some("gif") => "image/gif",
+        Some("webp") => "image/webp",
+        Some("svg") => "image/svg+xml",
+        Some("bmp") => "image/bmp",
+        _ => "image/png", // Default fallback
+    };
+
+    // Encode as base64 data URL
+    let base64_data = general_purpose::STANDARD.encode(&file_bytes);
+    Ok(format!("data:{};base64,{}", mime_type, base64_data))
 }
 
 #[tauri::command]
