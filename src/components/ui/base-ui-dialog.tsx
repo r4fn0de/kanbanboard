@@ -21,7 +21,11 @@ export interface DialogTriggerProps extends BaseDialog.Trigger.Props {
   children: React.ReactNode
 }
 
-export function DialogTrigger({ children, className, ...props }: DialogTriggerProps) {
+export function DialogTrigger({
+  children,
+  className,
+  ...props
+}: DialogTriggerProps) {
   return (
     <BaseDialog.Trigger className={cn('cursor-pointer', className)} {...props}>
       {children}
@@ -117,7 +121,11 @@ export interface DialogCloseProps extends BaseDialog.Close.Props {
   children: React.ReactNode
 }
 
-export function DialogClose({ children, className, ...props }: DialogCloseProps) {
+export function DialogClose({
+  children,
+  className,
+  ...props
+}: DialogCloseProps) {
   return (
     <BaseDialog.Close className={cn('cursor-pointer', className)} {...props}>
       {children}
@@ -132,10 +140,17 @@ export interface DialogTitleProps extends BaseDialog.Title.Props {
   children: React.ReactNode
 }
 
-export function DialogTitle({ className, children, ...props }: DialogTitleProps) {
+export function DialogTitle({
+  className,
+  children,
+  ...props
+}: DialogTitleProps) {
   return (
     <BaseDialog.Title
-      className={cn('text-lg font-semibold leading-none tracking-tight', className)}
+      className={cn(
+        'text-lg font-semibold leading-none tracking-tight',
+        className
+      )}
       {...props}
     >
       {children}
@@ -168,14 +183,22 @@ export function DialogDescription({
 /**
  * Dialog Header - Convenience component for title + description
  */
-export interface DialogHeaderProps extends React.HTMLAttributes<HTMLDivElement> {
+export interface DialogHeaderProps
+  extends React.HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode
 }
 
-export function DialogHeader({ className, children, ...props }: DialogHeaderProps) {
+export function DialogHeader({
+  className,
+  children,
+  ...props
+}: DialogHeaderProps) {
   return (
     <div
-      className={cn('flex flex-col space-y-1.5 text-center sm:text-left', className)}
+      className={cn(
+        'flex flex-col space-y-1.5 text-center sm:text-left',
+        className
+      )}
       {...props}
     >
       {children}
@@ -186,11 +209,16 @@ export function DialogHeader({ className, children, ...props }: DialogHeaderProp
 /**
  * Dialog Footer - Convenience component for action buttons
  */
-export interface DialogFooterProps extends React.HTMLAttributes<HTMLDivElement> {
+export interface DialogFooterProps
+  extends React.HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode
 }
 
-export function DialogFooter({ className, children, ...props }: DialogFooterProps) {
+export function DialogFooter({
+  className,
+  children,
+  ...props
+}: DialogFooterProps) {
   return (
     <div
       className={cn(
@@ -233,7 +261,9 @@ export function CompleteDialog({
         <DialogPopup showCloseButton={showCloseButton} className={className}>
           <DialogHeader>
             <DialogTitle>{title}</DialogTitle>
-            {description && <DialogDescription>{description}</DialogDescription>}
+            {description && (
+              <DialogDescription>{description}</DialogDescription>
+            )}
           </DialogHeader>
           {children}
         </DialogPopup>

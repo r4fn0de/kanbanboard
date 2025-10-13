@@ -1,9 +1,9 @@
-'use client';
+'use client'
 
-import * as React from 'react';
+import * as React from 'react'
 
-import { Menu } from '@base-ui-components/react/menu';
-import { ScrollArea } from '@base-ui-components/react/scroll-area';
+import { Menu } from '@base-ui-components/react/menu'
+import { ScrollArea } from '@base-ui-components/react/scroll-area'
 import {
   CalendarIcon,
   ChevronRightIcon,
@@ -26,28 +26,28 @@ import {
   SquareIcon,
   TableIcon,
   TableOfContentsIcon,
-} from 'lucide-react';
-import { KEYS } from 'platejs';
-import { type PlateEditor, useEditorRef } from 'platejs/react';
+} from 'lucide-react'
+import { KEYS } from 'platejs'
+import { type PlateEditor, useEditorRef } from 'platejs/react'
 
 import {
   insertBlock,
   insertInlineElement,
-} from '@/components/editor/transforms';
+} from '@/components/editor/transforms'
 
-import { ToolbarButton } from './toolbar';
+import { ToolbarButton } from './toolbar'
 
 interface Group {
-  group: string;
-  items: Item[];
+  group: string
+  items: Item[]
 }
 
 interface Item {
-  icon: React.ReactNode;
-  value: string;
-  onSelect: (editor: PlateEditor, value: string) => void;
-  focusEditor?: boolean;
-  label?: string;
+  icon: React.ReactNode
+  value: string
+  onSelect: (editor: PlateEditor, value: string) => void
+  focusEditor?: boolean
+  label?: string
 }
 
 const groups: Group[] = [
@@ -94,10 +94,10 @@ const groups: Group[] = [
         label: 'Divider',
         value: KEYS.hr,
       },
-    ].map((item) => ({
+    ].map(item => ({
       ...item,
       onSelect: (editor, value) => {
-        insertBlock(editor, value);
+        insertBlock(editor, value)
       },
     })),
   },
@@ -124,10 +124,10 @@ const groups: Group[] = [
         label: 'Toggle list',
         value: KEYS.toggle,
       },
-    ].map((item) => ({
+    ].map(item => ({
       ...item,
       onSelect: (editor, value) => {
-        insertBlock(editor, value);
+        insertBlock(editor, value)
       },
     })),
   },
@@ -144,10 +144,10 @@ const groups: Group[] = [
         label: 'Embed',
         value: KEYS.mediaEmbed,
       },
-    ].map((item) => ({
+    ].map(item => ({
       ...item,
       onSelect: (editor, value) => {
-        insertBlock(editor, value);
+        insertBlock(editor, value)
       },
     })),
   },
@@ -175,10 +175,10 @@ const groups: Group[] = [
         label: 'Excalidraw',
         value: KEYS.excalidraw,
       },
-    ].map((item) => ({
+    ].map(item => ({
       ...item,
       onSelect: (editor, value) => {
-        insertBlock(editor, value);
+        insertBlock(editor, value)
       },
     })),
   },
@@ -202,25 +202,25 @@ const groups: Group[] = [
         label: 'Inline Equation',
         value: KEYS.inlineEquation,
       },
-    ].map((item) => ({
+    ].map(item => ({
       ...item,
       onSelect: (editor, value) => {
-        insertInlineElement(editor, value);
+        insertInlineElement(editor, value)
       },
     })),
   },
-];
+]
 
 interface InsertToolbarButtonProps {
-  open?: boolean;
-  onOpenChange?: (open: boolean) => void;
-  defaultOpen?: boolean;
-  disabled?: boolean;
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+  defaultOpen?: boolean
+  disabled?: boolean
 }
 
 export function InsertToolbarButton(props: InsertToolbarButtonProps) {
-  const editor = useEditorRef();
-  const [open, setOpen] = React.useState(false);
+  const editor = useEditorRef()
+  const [open, setOpen] = React.useState(false)
 
   return (
     <Menu.Root open={open} onOpenChange={setOpen} modal={false} {...props}>
@@ -250,9 +250,9 @@ export function InsertToolbarButton(props: InsertToolbarButtonProps) {
                           type="button"
                           className="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent focus:bg-accent transition-colors disabled:pointer-events-none disabled:opacity-50"
                           onClick={() => {
-                            onSelect(editor, value);
-                            editor.tf.focus();
-                            setOpen(false);
+                            onSelect(editor, value)
+                            editor.tf.focus()
+                            setOpen(false)
                           }}
                         >
                           <div className="flex items-center gap-2">
@@ -278,5 +278,5 @@ export function InsertToolbarButton(props: InsertToolbarButtonProps) {
         </Menu.Positioner>
       </Menu.Portal>
     </Menu.Root>
-  );
+  )
 }

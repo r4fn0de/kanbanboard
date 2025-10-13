@@ -194,10 +194,16 @@ const dropAnimation = {
 
 interface SortableWorkspaceItemProps {
   workspace: Workspace
-  renderWorkspaceBadge: (workspace: Workspace, size?: 'sm' | 'md') => React.ReactNode
+  renderWorkspaceBadge: (
+    workspace: Workspace,
+    size?: 'sm' | 'md'
+  ) => React.ReactNode
 }
 
-function SortableWorkspaceItem({ workspace, renderWorkspaceBadge }: SortableWorkspaceItemProps) {
+function SortableWorkspaceItem({
+  workspace,
+  renderWorkspaceBadge,
+}: SortableWorkspaceItemProps) {
   const {
     attributes,
     listeners,
@@ -214,12 +220,12 @@ function SortableWorkspaceItem({ workspace, renderWorkspaceBadge }: SortableWork
   }
 
   return (
-    <div 
-      ref={setNodeRef} 
-      style={style} 
+    <div
+      ref={setNodeRef}
+      style={style}
       className={cn(
-        "flex items-center gap-2 w-full min-w-0",
-        isDragging && "pointer-events-none"
+        'flex items-center gap-2 w-full min-w-0',
+        isDragging && 'pointer-events-none'
       )}
     >
       <div
@@ -239,7 +245,11 @@ function SortableWorkspaceItem({ workspace, renderWorkspaceBadge }: SortableWork
   )
 }
 
-export function LeftSideBar({ children, className, forceSolidStyle = false }: LeftSideBarProps) {
+export function LeftSideBar({
+  children,
+  className,
+  forceSolidStyle = false,
+}: LeftSideBarProps) {
   const { transparencyEnabled } = useTheme()
   const [createProjectOpen, setCreateProjectOpen] = useState(false)
   const [projectName, setProjectName] = useState('')
@@ -258,14 +268,20 @@ export function LeftSideBar({ children, className, forceSolidStyle = false }: Le
   const [changeIconValue, setChangeIconValue] =
     useState<string>(DEFAULT_PROJECT_ICON)
   const [createWorkspaceOpen, setCreateWorkspaceOpen] = useState(false)
-  const [workspaceIconMap, setWorkspaceIconMap] = useState<Record<string, string>>({})
+  const [workspaceIconMap, setWorkspaceIconMap] = useState<
+    Record<string, string>
+  >({})
   // Workspace edit/delete states
   const [editWorkspaceOpen, setEditWorkspaceOpen] = useState(false)
   const [editWorkspaceId, setEditWorkspaceId] = useState<string | null>(null)
   const [editWorkspaceName, setEditWorkspaceName] = useState('')
-  const [editWorkspaceColor, setEditWorkspaceColor] = useState(DEFAULT_WORKSPACE_COLOR)
+  const [editWorkspaceColor, setEditWorkspaceColor] = useState(
+    DEFAULT_WORKSPACE_COLOR
+  )
   const [deleteWorkspaceOpen, setDeleteWorkspaceOpen] = useState(false)
-  const [deleteWorkspaceId, setDeleteWorkspaceId] = useState<string | null>(null)
+  const [deleteWorkspaceId, setDeleteWorkspaceId] = useState<string | null>(
+    null
+  )
   const [deleteWorkspaceName, setDeleteWorkspaceName] = useState('')
   const [orderedWorkspaces, setOrderedWorkspaces] = useState<Workspace[]>([])
   const [activeId, setActiveId] = useState<string | null>(null)
@@ -306,7 +322,9 @@ export function LeftSideBar({ children, className, forceSolidStyle = false }: Le
 
   const currentWorkspace = useMemo(() => {
     if (!selectedWorkspaceId) return null
-    return workspaces.find(workspace => workspace.id === selectedWorkspaceId) ?? null
+    return (
+      workspaces.find(workspace => workspace.id === selectedWorkspaceId) ?? null
+    )
   }, [selectedWorkspaceId, workspaces])
 
   const activeWorkspace = useMemo(() => {
@@ -339,11 +357,11 @@ export function LeftSideBar({ children, className, forceSolidStyle = false }: Le
         const ordered = orderIds
           .map(id => orderedMap.get(id))
           .filter((ws): ws is Workspace => ws !== undefined)
-        
+
         // Add any new workspaces that aren't in the saved order
         const existingIds = new Set(orderIds)
         const newWorkspaces = workspaces.filter(ws => !existingIds.has(ws.id))
-        
+
         setOrderedWorkspaces([...ordered, ...newWorkspaces])
       } catch {
         setOrderedWorkspaces(workspaces)
@@ -363,7 +381,10 @@ export function LeftSideBar({ children, className, forceSolidStyle = false }: Le
       return
     }
 
-    if (!selectedWorkspaceId || !workspaces.some(ws => ws.id === selectedWorkspaceId)) {
+    if (
+      !selectedWorkspaceId ||
+      !workspaces.some(ws => ws.id === selectedWorkspaceId)
+    ) {
       setSelectedWorkspaceId(workspaces[0]?.id ?? null)
     }
   }, [
@@ -532,14 +553,14 @@ export function LeftSideBar({ children, className, forceSolidStyle = false }: Le
       const newIndex = items.findIndex(item => item.id === over.id)
 
       const newOrder = arrayMove(items, oldIndex, newIndex)
-      
+
       // Save order to localStorage
       const orderIds = newOrder.map(ws => ws.id)
       localStorage.setItem('workspaceOrder', JSON.stringify(orderIds))
-      
+
       return newOrder
     })
-    
+
     setActiveId(null)
   }, [])
 
@@ -552,9 +573,7 @@ export function LeftSideBar({ children, className, forceSolidStyle = false }: Le
 
   const renderWorkspaceBadge = useCallback(
     (workspace: Workspace, size: 'sm' | 'md' = 'md') => {
-      const iconUrl = workspace.iconPath
-        ? workspaceIconMap[workspace.id]
-        : null
+      const iconUrl = workspace.iconPath ? workspaceIconMap[workspace.id] : null
 
       const dimensionClass = size === 'sm' ? 'h-5 w-5' : 'h-6 w-6'
 
@@ -570,10 +589,7 @@ export function LeftSideBar({ children, className, forceSolidStyle = false }: Le
 
       return (
         <span
-          className={cn(
-            'rounded-full border border-border/40',
-            dimensionClass
-          )}
+          className={cn('rounded-full border border-border/40', dimensionClass)}
           style={{
             backgroundColor: workspace.color ?? DEFAULT_WORKSPACE_COLOR,
           }}
@@ -584,17 +600,17 @@ export function LeftSideBar({ children, className, forceSolidStyle = false }: Le
   )
 
   return (
-    <motion.div 
+    <motion.div
       className={cn(sidebarClasses, className)}
       initial={false}
       animate={{
-        backgroundColor: useTransparentStyle 
-          ? 'rgba(255, 255, 255, 0.05)' 
-          : 'hsl(var(--background))'
+        backgroundColor: useTransparentStyle
+          ? 'rgba(255, 255, 255, 0.05)'
+          : 'hsl(var(--background))',
       }}
       transition={{
         duration: 0.5,
-        ease: [0.25, 0.1, 0.25, 1.0] // Custom easing similar to Apple
+        ease: [0.25, 0.1, 0.25, 1.0], // Custom easing similar to Apple
       }}
     >
       <div
@@ -662,133 +678,142 @@ export function LeftSideBar({ children, className, forceSolidStyle = false }: Le
 
       <div className="px-3 pb-3">
         {isLoadingWorkspaces ? (
-            <div className="flex flex-1 items-center gap-1.5 text-xs text-muted-foreground">
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              Loading workspaces…
-            </div>
-          ) : isWorkspacesError ? (
-            <div className="flex flex-1 items-center justify-between gap-1.5 text-xs text-destructive">
-              <span>Failed to load workspaces</span>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="h-6 px-2 text-xs"
-                onClick={() => void refetchWorkspaces()}
-              >
-                Retry
-              </Button>
-            </div>
-          ) : workspaces.length === 0 ? (
-            <div className="flex flex-1 items-center gap-1.5 text-xs text-muted-foreground">
-              <ImageIcon className="h-3.5 w-3.5" />
-              No workspaces found
-            </div>
-          ) : (
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              onDragStart={handleDragStart}
-              onDragEnd={handleDragEnd}
-              onDragCancel={handleDragCancel}
+          <div className="flex flex-1 items-center gap-1.5 text-xs text-muted-foreground">
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            Loading workspaces…
+          </div>
+        ) : isWorkspacesError ? (
+          <div className="flex flex-1 items-center justify-between gap-1.5 text-xs text-destructive">
+            <span>Failed to load workspaces</span>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-6 px-2 text-xs"
+              onClick={() => void refetchWorkspaces()}
             >
-              <Select
-                value={selectedWorkspaceId ?? undefined}
-                onValueChange={value => setSelectedWorkspaceId(value)}
+              Retry
+            </Button>
+          </div>
+        ) : workspaces.length === 0 ? (
+          <div className="flex flex-1 items-center gap-1.5 text-xs text-muted-foreground">
+            <ImageIcon className="h-3.5 w-3.5" />
+            No workspaces found
+          </div>
+        ) : (
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+            onDragCancel={handleDragCancel}
+          >
+            <Select
+              value={selectedWorkspaceId ?? undefined}
+              onValueChange={value => setSelectedWorkspaceId(value)}
+            >
+              <SelectTrigger
+                className={cn(
+                  'w-full border-0 bg-transparent px-2.5 py-2 text-left shadow-none focus:ring-0 focus:ring-offset-0 min-w-0 hover:bg-accent/50 rounded-lg transition-colors',
+                  useTransparentStyle &&
+                    'text-white hover:text-white hover:bg-white/[0.08]'
+                )}
               >
-                <SelectTrigger 
-                  className={cn(
-                    "w-full border-0 bg-transparent px-2.5 py-2 text-left shadow-none focus:ring-0 focus:ring-offset-0 min-w-0 hover:bg-accent/50 rounded-lg transition-colors",
-                    useTransparentStyle && "text-white hover:text-white hover:bg-white/[0.08]"
-                  )}
-                >
-                  <AnimatePresence mode="wait">
-                    {currentWorkspace ? (
-                      <motion.div 
-                        key={currentWorkspace.id}
-                        className="flex items-center gap-2 min-w-0 flex-1"
-                        initial={{ opacity: 0, filter: 'blur(4px)', x: -10 }}
-                        animate={{ opacity: 1, filter: 'blur(0px)', x: 0 }}
-                        exit={{ opacity: 0, filter: 'blur(4px)', x: 10 }}
-                        transition={{
-                          type: 'spring',
-                          stiffness: 300,
-                          damping: 30,
-                          opacity: { duration: 0.2 },
-                          filter: { duration: 0.3 }
-                        }}
-                      >
-                        <div className="flex-shrink-0">
-                          {renderWorkspaceBadge(currentWorkspace)}
-                        </div>
-                        <span className={cn(
-                          "truncate text-sm font-medium",
-                          useTransparentStyle ? "text-white" : "text-foreground"
-                        )}>
-                          {currentWorkspace.name}
-                        </span>
-                      </motion.div>
-                    ) : (
-                      <SelectValue placeholder="Select workspace" />
-                    )}
-                  </AnimatePresence>
-                </SelectTrigger>
-                <SelectContent className={cn(
-                  "min-w-[220px] max-w-[300px] p-1.5",
-                  activeId && "[&>*:not([data-dnd-kit-sortable])]:pointer-events-none"
-                )}>
-                  <SortableContext
-                    items={orderedWorkspaces.map(ws => ws.id)}
-                    strategy={verticalListSortingStrategy}
-                  >
-                    {orderedWorkspaces.map(workspace => (
-                      <SelectItem 
-                        key={workspace.id} 
-                        value={workspace.id} 
-                        className="rounded-md px-2 py-2 my-0.5 data-[state=checked]:bg-accent/80"
-                      >
-                        <SortableWorkspaceItem
-                          workspace={workspace}
-                          renderWorkspaceBadge={renderWorkspaceBadge}
-                        />
-                      </SelectItem>
-                    ))}
-                  </SortableContext>
-                  <SelectSeparator className="my-1.5" />
-                  <button
-                    type="button"
-                    className={cn(
-                      "flex w-full items-center gap-2.5 rounded-md px-2 py-2 text-sm font-medium transition-colors",
-                      "hover:bg-accent/80 text-muted-foreground hover:text-foreground"
-                    )}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setCreateWorkspaceOpen(true);
-                    }}
-                  >
-                    <Plus className="h-4 w-4" />
-                    <span>New workspace</span>
-                  </button>
-                </SelectContent>
-              </Select>
-              {createPortal(
-                <DragOverlay dropAnimation={dropAnimation}>
-                  {activeWorkspace ? (
-                    <div className="flex items-center gap-2 rounded-md bg-background border border-border/20 shadow-xl px-2 py-2 min-w-[180px] cursor-grabbing" style={{ zIndex: 10000 }}>
-                      <GripVertical className="h-4 w-4 text-muted-foreground/40 flex-shrink-0" />
+                <AnimatePresence mode="wait">
+                  {currentWorkspace ? (
+                    <motion.div
+                      key={currentWorkspace.id}
+                      className="flex items-center gap-2 min-w-0 flex-1"
+                      initial={{ opacity: 0, filter: 'blur(4px)', x: -10 }}
+                      animate={{ opacity: 1, filter: 'blur(0px)', x: 0 }}
+                      exit={{ opacity: 0, filter: 'blur(4px)', x: 10 }}
+                      transition={{
+                        type: 'spring',
+                        stiffness: 300,
+                        damping: 30,
+                        opacity: { duration: 0.2 },
+                        filter: { duration: 0.3 },
+                      }}
+                    >
                       <div className="flex-shrink-0">
-                        {renderWorkspaceBadge(activeWorkspace, 'sm')}
+                        {renderWorkspaceBadge(currentWorkspace)}
                       </div>
-                      <span className="truncate text-sm font-medium flex-1">
-                        {activeWorkspace.name}
+                      <span
+                        className={cn(
+                          'truncate text-sm font-medium',
+                          useTransparentStyle ? 'text-white' : 'text-foreground'
+                        )}
+                      >
+                        {currentWorkspace.name}
                       </span>
+                    </motion.div>
+                  ) : (
+                    <SelectValue placeholder="Select workspace" />
+                  )}
+                </AnimatePresence>
+              </SelectTrigger>
+              <SelectContent
+                className={cn(
+                  'min-w-[220px] max-w-[300px] p-1.5',
+                  activeId &&
+                    '[&>*:not([data-dnd-kit-sortable])]:pointer-events-none'
+                )}
+              >
+                <SortableContext
+                  items={orderedWorkspaces.map(ws => ws.id)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  {orderedWorkspaces.map(workspace => (
+                    <SelectItem
+                      key={workspace.id}
+                      value={workspace.id}
+                      className="rounded-md px-2 py-2 my-0.5 data-[state=checked]:bg-accent/80"
+                    >
+                      <SortableWorkspaceItem
+                        workspace={workspace}
+                        renderWorkspaceBadge={renderWorkspaceBadge}
+                      />
+                    </SelectItem>
+                  ))}
+                </SortableContext>
+                <SelectSeparator className="my-1.5" />
+                <button
+                  type="button"
+                  className={cn(
+                    'flex w-full items-center gap-2.5 rounded-md px-2 py-2 text-sm font-medium transition-colors',
+                    'hover:bg-accent/80 text-muted-foreground hover:text-foreground'
+                  )}
+                  onClick={e => {
+                    e.preventDefault()
+                    setCreateWorkspaceOpen(true)
+                  }}
+                >
+                  <Plus className="h-4 w-4" />
+                  <span>New workspace</span>
+                </button>
+              </SelectContent>
+            </Select>
+            {createPortal(
+              <DragOverlay dropAnimation={dropAnimation}>
+                {activeWorkspace ? (
+                  <div
+                    className="flex items-center gap-2 rounded-md bg-background border border-border/20 shadow-xl px-2 py-2 min-w-[180px] cursor-grabbing"
+                    style={{ zIndex: 10000 }}
+                  >
+                    <GripVertical className="h-4 w-4 text-muted-foreground/40 flex-shrink-0" />
+                    <div className="flex-shrink-0">
+                      {renderWorkspaceBadge(activeWorkspace, 'sm')}
                     </div>
-                  ) : null}
-                </DragOverlay>,
-                document.body
-              )}
-            </DndContext>
-          )}
+                    <span className="truncate text-sm font-medium flex-1">
+                      {activeWorkspace.name}
+                    </span>
+                  </div>
+                ) : null}
+              </DragOverlay>,
+              document.body
+            )}
+          </DndContext>
+        )}
       </div>
 
       <motion.nav
@@ -801,12 +826,12 @@ export function LeftSideBar({ children, className, forceSolidStyle = false }: Le
         initial={false}
         animate={{
           opacity: 1,
-          filter: 'blur(0px)'
+          filter: 'blur(0px)',
         }}
         transition={{
           duration: 0.4,
           delay: 0.1,
-          ease: [0.25, 0.1, 0.25, 1.0]
+          ease: [0.25, 0.1, 0.25, 1.0],
         }}
       >
         <NavLink
@@ -833,15 +858,13 @@ export function LeftSideBar({ children, className, forceSolidStyle = false }: Le
           <div
             className={cn(
               'flex items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm transition-all duration-200',
-              useTransparentStyle
-                ? 'text-white/90'
-                : 'text-foreground'
+              useTransparentStyle ? 'text-white/90' : 'text-foreground'
             )}
           >
-            <span className="font-medium">Projects</span>
+            <span className="font-bold uppercase">Projects</span>
           </div>
 
-          <motion.div 
+          <motion.div
             className="mt-2 flex flex-col gap-2 ml-6"
             initial={false}
             animate={{ opacity: 1 }}
@@ -856,18 +879,22 @@ export function LeftSideBar({ children, className, forceSolidStyle = false }: Le
                   exit={{ opacity: 0, filter: 'blur(4px)' }}
                   transition={{ duration: 0.3 }}
                 >
-                <div className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2 text-sm",
-                  useTransparentStyle
-                    ? "text-white/60"
-                    : "text-gray-500 dark:text-gray-400"
-                )}>
-                  <div className={cn(
-                    "h-3 w-3 animate-pulse rounded-full",
-                    useTransparentStyle
-                      ? "bg-white/30"
-                      : "bg-muted-foreground/50"
-                  )}></div>
+                  <div
+                    className={cn(
+                      'flex items-center gap-3 rounded-lg px-3 py-2 text-sm',
+                      useTransparentStyle
+                        ? 'text-white/60'
+                        : 'text-gray-500 dark:text-gray-400'
+                    )}
+                  >
+                    <div
+                      className={cn(
+                        'h-3 w-3 animate-pulse rounded-full',
+                        useTransparentStyle
+                          ? 'bg-white/30'
+                          : 'bg-muted-foreground/50'
+                      )}
+                    ></div>
                     <span>Loading…</span>
                   </div>
                 </motion.div>
@@ -879,8 +906,8 @@ export function LeftSideBar({ children, className, forceSolidStyle = false }: Le
                   exit={{ opacity: 0, filter: 'blur(4px)' }}
                   transition={{ duration: 0.3 }}
                 >
-                <div className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-destructive">
-                  <div className="h-2 w-2 rounded-full bg-destructive/60"></div>
+                  <div className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-destructive">
+                    <div className="h-2 w-2 rounded-full bg-destructive/60"></div>
                     <span>Failed to load projects</span>
                   </div>
                 </motion.div>
@@ -902,7 +929,7 @@ export function LeftSideBar({ children, className, forceSolidStyle = false }: Le
                         damping: 30,
                         delay: index * 0.03,
                         opacity: { duration: 0.2 },
-                        filter: { duration: 0.3 }
+                        filter: { duration: 0.3 },
                       }}
                     >
                       <NavLink
@@ -996,38 +1023,42 @@ export function LeftSideBar({ children, className, forceSolidStyle = false }: Le
                   exit={{ opacity: 0, filter: 'blur(4px)' }}
                   transition={{ duration: 0.3 }}
                 >
-                <div className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2 text-sm",
-                  useTransparentStyle
-                    ? "text-white/60"
-                    : "text-gray-500 dark:text-gray-400"
-                )}>
-                  <div className={cn(
-                    "h-2 w-2 rounded-full",
-                    useTransparentStyle
-                      ? "bg-white/30"
-                      : "bg-muted-foreground/50"
-                  )}></div>
+                  <div
+                    className={cn(
+                      'flex items-center gap-3 rounded-lg px-3 py-2 text-sm',
+                      useTransparentStyle
+                        ? 'text-white/60'
+                        : 'text-gray-500 dark:text-gray-400'
+                    )}
+                  >
+                    <div
+                      className={cn(
+                        'h-2 w-2 rounded-full',
+                        useTransparentStyle
+                          ? 'bg-white/30'
+                          : 'bg-muted-foreground/50'
+                      )}
+                    ></div>
                     <span>No projects yet</span>
                   </div>
                 </motion.div>
               )}
             </AnimatePresence>
-              <Button
-                type="button"
-                variant="ghost"
-                className={cn(
-                  'mt-2 flex items-center gap-2.5 rounded-lg px-3 py-1.5 text-left text-sm transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                  useTransparentStyle
-                    ? 'text-white/90 hover:text-white hover:bg-white/10 hover:backdrop-blur-sm'
-                    : 'text-foreground hover:bg-accent/80'
-                )}
-                onClick={() => setCreateProjectOpen(true)}
+            <Button
+              type="button"
+              variant="ghost"
+              className={cn(
+                'mt-2 flex items-center gap-2.5 rounded-lg px-3 py-1.5 text-left text-sm transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                useTransparentStyle
+                  ? 'text-white/90 hover:text-white hover:bg-white/10 hover:backdrop-blur-sm'
+                  : 'text-foreground hover:bg-accent/80'
+              )}
+              onClick={() => setCreateProjectOpen(true)}
               disabled={!selectedWorkspaceId || isLoadingWorkspaces}
-              >
-                <Plus className="h-3.5 w-3.5" />
-                <span className="font-medium">New Project</span>
-              </Button>
+            >
+              <Plus className="h-3.5 w-3.5" />
+              <span className="font-medium">New Project</span>
+            </Button>
           </motion.div>
         </div>
       </motion.nav>
@@ -1037,7 +1068,7 @@ export function LeftSideBar({ children, className, forceSolidStyle = false }: Le
       <CreateWorkspaceDialog
         open={createWorkspaceOpen}
         onOpenChange={setCreateWorkspaceOpen}
-        onSuccess={(workspaceId) => {
+        onSuccess={workspaceId => {
           setSelectedWorkspaceId(workspaceId)
         }}
       />
@@ -1154,10 +1185,12 @@ export function LeftSideBar({ children, className, forceSolidStyle = false }: Le
               This action cannot be undone. This will permanently delete
               {deleteWorkspaceName
                 ? ` "${deleteWorkspaceName}"`
-                : ' this workspace'}.
+                : ' this workspace'}
+              .
               <br />
               <br />
-              <strong>Note:</strong> You must move or delete all projects from this workspace before you can delete it.
+              <strong>Note:</strong> You must move or delete all projects from
+              this workspace before you can delete it.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

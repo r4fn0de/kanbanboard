@@ -1,8 +1,8 @@
-'use client';
+'use client'
 
-import * as React from 'react';
+import * as React from 'react'
 
-import { Menu } from '@base-ui-components/react/menu';
+import { Menu } from '@base-ui-components/react/menu'
 import {
   ArrowDown,
   ArrowLeft,
@@ -14,31 +14,31 @@ import {
   Trash2Icon,
   Ungroup,
   X,
-} from 'lucide-react';
-import { KEYS } from 'platejs';
-import { TablePlugin, useTableMergeState } from '@platejs/table/react';
-import { useEditorPlugin, useEditorSelector } from 'platejs/react';
+} from 'lucide-react'
+import { KEYS } from 'platejs'
+import { TablePlugin, useTableMergeState } from '@platejs/table/react'
+import { useEditorPlugin, useEditorSelector } from 'platejs/react'
 
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils'
 
-import { ToolbarButton } from './toolbar';
+import { ToolbarButton } from './toolbar'
 
 interface TableToolbarButtonProps {
-  open?: boolean;
-  onOpenChange?: (open: boolean) => void;
-  defaultOpen?: boolean;
-  disabled?: boolean;
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+  defaultOpen?: boolean
+  disabled?: boolean
 }
 
 export function TableToolbarButton(props: TableToolbarButtonProps) {
   const tableSelected = useEditorSelector(
-    (editor) => editor.api.some({ match: { type: KEYS.table } }),
+    editor => editor.api.some({ match: { type: KEYS.table } }),
     []
-  );
+  )
 
-  const { editor, tf } = useEditorPlugin(TablePlugin);
-  const [open, setOpen] = React.useState(false);
-  const mergeState = useTableMergeState();
+  const { editor, tf } = useEditorPlugin(TablePlugin)
+  const [open, setOpen] = React.useState(false)
+  const mergeState = useTableMergeState()
 
   return (
     <Menu.Root open={open} onOpenChange={setOpen} modal={false} {...props}>
@@ -58,7 +58,11 @@ export function TableToolbarButton(props: TableToolbarButtonProps) {
                   <span className="text-sm">Table</span>
                 </Menu.SubmenuTrigger>
                 <Menu.Portal>
-                  <Menu.Positioner sideOffset={5} align="start" className="z-50">
+                  <Menu.Positioner
+                    sideOffset={5}
+                    align="start"
+                    className="z-50"
+                  >
                     <Menu.Popup className="m-0 rounded-md border bg-popover p-0 shadow-md">
                       <TablePicker />
                     </Menu.Popup>
@@ -69,21 +73,25 @@ export function TableToolbarButton(props: TableToolbarButtonProps) {
               <Menu.SubmenuRoot>
                 <Menu.SubmenuTrigger
                   className={cn(
-                    "relative flex cursor-pointer select-none items-center gap-2 rounded-sm px-1.5 py-1 outline-none hover:bg-accent focus:bg-accent",
-                    !tableSelected && "cursor-not-allowed opacity-50"
+                    'relative flex cursor-pointer select-none items-center gap-2 rounded-sm px-1.5 py-1 outline-none hover:bg-accent focus:bg-accent',
+                    !tableSelected && 'cursor-not-allowed opacity-50'
                   )}
                 >
                   <div className="size-4" />
                   <span className="text-sm">Cell</span>
                 </Menu.SubmenuTrigger>
                 <Menu.Portal>
-                  <Menu.Positioner sideOffset={5} align="start" className="z-50">
+                  <Menu.Positioner
+                    sideOffset={5}
+                    align="start"
+                    className="z-50"
+                  >
                     <Menu.Popup className="rounded-md border bg-popover p-1 shadow-md">
                       <Menu.Item
                         onClick={() => {
-                          tf.table.merge();
-                          editor.tf.focus();
-                          setOpen(false);
+                          tf.table.merge()
+                          editor.tf.focus()
+                          setOpen(false)
                         }}
                         className="relative flex cursor-pointer select-none items-center rounded-sm px-1.5 py-1 outline-none hover:bg-accent focus:bg-accent data-[disabled]:pointer-events-none data-[disabled]:opacity-50 min-w-[160px]"
                         disabled={!mergeState.canMerge}
@@ -93,9 +101,9 @@ export function TableToolbarButton(props: TableToolbarButtonProps) {
                       </Menu.Item>
                       <Menu.Item
                         onClick={() => {
-                          tf.table.split();
-                          editor.tf.focus();
-                          setOpen(false);
+                          tf.table.split()
+                          editor.tf.focus()
+                          setOpen(false)
                         }}
                         className="relative flex cursor-pointer select-none items-center rounded-sm px-1.5 py-1 outline-none hover:bg-accent focus:bg-accent data-[disabled]:pointer-events-none data-[disabled]:opacity-50 min-w-[160px]"
                         disabled={!mergeState.canSplit}
@@ -111,21 +119,25 @@ export function TableToolbarButton(props: TableToolbarButtonProps) {
               <Menu.SubmenuRoot>
                 <Menu.SubmenuTrigger
                   className={cn(
-                    "relative flex cursor-pointer select-none items-center gap-2 rounded-sm px-1.5 py-1 outline-none hover:bg-accent focus:bg-accent",
-                    !tableSelected && "cursor-not-allowed opacity-50"
+                    'relative flex cursor-pointer select-none items-center gap-2 rounded-sm px-1.5 py-1 outline-none hover:bg-accent focus:bg-accent',
+                    !tableSelected && 'cursor-not-allowed opacity-50'
                   )}
                 >
                   <div className="size-4" />
                   <span className="text-sm">Row</span>
                 </Menu.SubmenuTrigger>
                 <Menu.Portal>
-                  <Menu.Positioner sideOffset={5} align="start" className="z-50">
+                  <Menu.Positioner
+                    sideOffset={5}
+                    align="start"
+                    className="z-50"
+                  >
                     <Menu.Popup className="rounded-md border bg-popover p-1 shadow-md">
                       <Menu.Item
                         onClick={() => {
-                          tf.insert.tableRow({ before: true });
-                          editor.tf.focus();
-                          setOpen(false);
+                          tf.insert.tableRow({ before: true })
+                          editor.tf.focus()
+                          setOpen(false)
                         }}
                         className="relative flex cursor-pointer select-none items-center rounded-sm px-1.5 py-1 outline-none hover:bg-accent focus:bg-accent data-[disabled]:pointer-events-none data-[disabled]:opacity-50 min-w-[160px]"
                         disabled={!tableSelected}
@@ -135,9 +147,9 @@ export function TableToolbarButton(props: TableToolbarButtonProps) {
                       </Menu.Item>
                       <Menu.Item
                         onClick={() => {
-                          tf.insert.tableRow();
-                          editor.tf.focus();
-                          setOpen(false);
+                          tf.insert.tableRow()
+                          editor.tf.focus()
+                          setOpen(false)
                         }}
                         className="relative flex cursor-pointer select-none items-center rounded-sm px-1.5 py-1 outline-none hover:bg-accent focus:bg-accent data-[disabled]:pointer-events-none data-[disabled]:opacity-50 min-w-[160px]"
                         disabled={!tableSelected}
@@ -147,9 +159,9 @@ export function TableToolbarButton(props: TableToolbarButtonProps) {
                       </Menu.Item>
                       <Menu.Item
                         onClick={() => {
-                          tf.remove.tableRow();
-                          editor.tf.focus();
-                          setOpen(false);
+                          tf.remove.tableRow()
+                          editor.tf.focus()
+                          setOpen(false)
                         }}
                         className="relative flex cursor-pointer select-none items-center rounded-sm px-1.5 py-1 outline-none hover:bg-accent focus:bg-accent data-[disabled]:pointer-events-none data-[disabled]:opacity-50 min-w-[160px]"
                         disabled={!tableSelected}
@@ -165,45 +177,53 @@ export function TableToolbarButton(props: TableToolbarButtonProps) {
               <Menu.SubmenuRoot>
                 <Menu.SubmenuTrigger
                   className={cn(
-                    "relative flex cursor-pointer select-none items-center gap-2 rounded-sm px-1.5 py-1 outline-none hover:bg-accent focus:bg-accent",
-                    !tableSelected && "cursor-not-allowed opacity-50"
+                    'relative flex cursor-pointer select-none items-center gap-2 rounded-sm px-1.5 py-1 outline-none hover:bg-accent focus:bg-accent',
+                    !tableSelected && 'cursor-not-allowed opacity-50'
                   )}
                 >
                   <div className="size-4" />
                   <span className="text-sm">Column</span>
                 </Menu.SubmenuTrigger>
                 <Menu.Portal>
-                  <Menu.Positioner sideOffset={5} align="start" className="z-50">
+                  <Menu.Positioner
+                    sideOffset={5}
+                    align="start"
+                    className="z-50"
+                  >
                     <Menu.Popup className="rounded-md border bg-popover p-1 shadow-md">
                       <Menu.Item
                         onClick={() => {
-                          tf.insert.tableColumn({ before: true });
-                          editor.tf.focus();
-                          setOpen(false);
+                          tf.insert.tableColumn({ before: true })
+                          editor.tf.focus()
+                          setOpen(false)
                         }}
                         className="relative flex cursor-pointer select-none items-center rounded-sm px-1.5 py-1 outline-none hover:bg-accent focus:bg-accent data-[disabled]:pointer-events-none data-[disabled]:opacity-50 min-w-[160px]"
                         disabled={!tableSelected}
                       >
                         <ArrowLeft className="size-4" />
-                        <span className="text-sm ml-2">Insert column before</span>
+                        <span className="text-sm ml-2">
+                          Insert column before
+                        </span>
                       </Menu.Item>
                       <Menu.Item
                         onClick={() => {
-                          tf.insert.tableColumn();
-                          editor.tf.focus();
-                          setOpen(false);
+                          tf.insert.tableColumn()
+                          editor.tf.focus()
+                          setOpen(false)
                         }}
                         className="relative flex cursor-pointer select-none items-center rounded-sm px-1.5 py-1 outline-none hover:bg-accent focus:bg-accent data-[disabled]:pointer-events-none data-[disabled]:opacity-50 min-w-[160px]"
                         disabled={!tableSelected}
                       >
                         <ArrowRight className="size-4" />
-                        <span className="text-sm ml-2">Insert column after</span>
+                        <span className="text-sm ml-2">
+                          Insert column after
+                        </span>
                       </Menu.Item>
                       <Menu.Item
                         onClick={() => {
-                          tf.remove.tableColumn();
-                          editor.tf.focus();
-                          setOpen(false);
+                          tf.remove.tableColumn()
+                          editor.tf.focus()
+                          setOpen(false)
                         }}
                         className="relative flex cursor-pointer select-none items-center rounded-sm px-1.5 py-1 outline-none hover:bg-accent focus:bg-accent data-[disabled]:pointer-events-none data-[disabled]:opacity-50 min-w-[160px]"
                         disabled={!tableSelected}
@@ -218,9 +238,9 @@ export function TableToolbarButton(props: TableToolbarButtonProps) {
 
               <Menu.Item
                 onClick={() => {
-                  tf.remove.table();
-                  editor.tf.focus();
-                  setOpen(false);
+                  tf.remove.table()
+                  editor.tf.focus()
+                  setOpen(false)
                 }}
                 className="relative flex cursor-pointer select-none items-center rounded-sm px-1.5 py-1 outline-none hover:bg-accent focus:bg-accent data-[disabled]:pointer-events-none data-[disabled]:opacity-50 min-w-[160px]"
                 disabled={!tableSelected}
@@ -233,39 +253,39 @@ export function TableToolbarButton(props: TableToolbarButtonProps) {
         </Menu.Positioner>
       </Menu.Portal>
     </Menu.Root>
-  );
+  )
 }
 
 function TablePicker() {
-  const { editor, tf } = useEditorPlugin(TablePlugin);
+  const { editor, tf } = useEditorPlugin(TablePlugin)
 
   const [tablePicker, setTablePicker] = React.useState({
     grid: Array.from({ length: 8 }, () => Array.from({ length: 8 }).fill(0)),
     size: { colCount: 0, rowCount: 0 },
-  });
+  })
 
   const onCellMove = (rowIndex: number, colIndex: number) => {
-    const newGrid = [...tablePicker.grid];
+    const newGrid = [...tablePicker.grid]
 
     for (let i = 0; i < newGrid.length; i++) {
       for (let j = 0; j < newGrid[i].length; j++) {
         newGrid[i][j] =
-          i >= 0 && i <= rowIndex && j >= 0 && j <= colIndex ? 1 : 0;
+          i >= 0 && i <= rowIndex && j >= 0 && j <= colIndex ? 1 : 0
       }
     }
 
     setTablePicker({
       grid: newGrid,
       size: { colCount: colIndex + 1, rowCount: rowIndex + 1 },
-    });
-  };
+    })
+  }
 
   return (
     <div
       className="m-0 flex! flex-col p-0"
       onClick={() => {
-        tf.insert.table(tablePicker.size, { select: true });
-        editor.tf.focus();
+        tf.insert.table(tablePicker.size, { select: true })
+        editor.tf.focus()
       }}
     >
       <div className="grid size-[130px] grid-cols-8 gap-0.5 p-1">
@@ -279,10 +299,10 @@ function TablePicker() {
                   !!value && 'border-current'
                 )}
                 onMouseMove={() => {
-                  onCellMove(rowIndex, columIndex);
+                  onCellMove(rowIndex, columIndex)
                 }}
               />
-            );
+            )
           })
         )}
       </div>
@@ -291,5 +311,5 @@ function TablePicker() {
         {tablePicker.size.rowCount} x {tablePicker.size.colCount}
       </div>
     </div>
-  );
+  )
 }

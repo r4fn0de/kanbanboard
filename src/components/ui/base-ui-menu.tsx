@@ -21,22 +21,24 @@ export interface MenuTriggerProps extends BaseMenu.Trigger.Props {
   asChild?: boolean
 }
 
-export function MenuTrigger({ children, className, asChild, ...props }: MenuTriggerProps) {
+export function MenuTrigger({
+  children,
+  className,
+  asChild,
+  ...props
+}: MenuTriggerProps) {
   if (asChild && React.isValidElement(children)) {
     return (
-      <BaseMenu.Trigger 
+      <BaseMenu.Trigger
         className={cn('cursor-pointer', className)}
         render={children}
         {...props}
       />
     )
   }
-  
+
   return (
-    <BaseMenu.Trigger 
-      className={cn('cursor-pointer', className)}
-      {...props}
-    >
+    <BaseMenu.Trigger className={cn('cursor-pointer', className)} {...props}>
       {children}
     </BaseMenu.Trigger>
   )
@@ -60,16 +62,16 @@ export interface MenuPositionerProps extends BaseMenu.Positioner.Props {
   children: React.ReactNode
 }
 
-export function MenuPositioner({ 
-  children, 
+export function MenuPositioner({
+  children,
   className,
   side = 'bottom',
   align = 'end',
   sideOffset = 5,
-  ...props 
+  ...props
 }: MenuPositionerProps) {
   return (
-    <BaseMenu.Positioner 
+    <BaseMenu.Positioner
       side={side}
       align={align}
       sideOffset={sideOffset}
@@ -119,11 +121,11 @@ export interface MenuItemProps extends BaseMenu.Item.Props {
   destructive?: boolean
 }
 
-export function MenuItem({ 
-  className, 
+export function MenuItem({
+  className,
   children,
   destructive = false,
-  ...props 
+  ...props
 }: MenuItemProps) {
   return (
     <BaseMenu.Item
@@ -131,7 +133,7 @@ export function MenuItem({
         'relative flex cursor-pointer select-none items-center',
         'rounded-sm px-2 py-1.5 text-sm outline-none',
         'transition-colors',
-        destructive 
+        destructive
           ? 'text-red-600 focus:text-red-600 focus:bg-red-50 hover:text-red-600 hover:bg-red-50 dark:text-red-400 dark:focus:text-red-300 dark:focus:bg-red-900/20'
           : 'focus:bg-accent focus:text-accent-foreground hover:bg-accent/80',
         'data-[disabled]:pointer-events-none data-[disabled]:opacity-50',

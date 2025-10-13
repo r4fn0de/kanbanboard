@@ -68,15 +68,16 @@ export function NoteEditor({ note, boardId, onBack }: NoteEditorProps) {
     const handleChange = () => {
       const newValue = editor.children
       setContent(newValue)
-      
+
       // Save immediately on every change
       const contentStr = JSON.stringify(newValue)
       updateNote.mutate(
         { id: note.id, boardId, content: contentStr },
         {
-          onError: (error) => {
+          onError: error => {
             toast.error('Failed to save note', {
-              description: error instanceof Error ? error.message : 'Unknown error',
+              description:
+                error instanceof Error ? error.message : 'Unknown error',
             })
           },
         }
@@ -108,9 +109,10 @@ export function NoteEditor({ note, boardId, onBack }: NoteEditorProps) {
         updateNote.mutate(
           { id: note.id, boardId, title },
           {
-            onError: (error) => {
+            onError: error => {
               toast.error('Failed to save title', {
-                description: error instanceof Error ? error.message : 'Unknown error',
+                description:
+                  error instanceof Error ? error.message : 'Unknown error',
               })
             },
           }
@@ -135,11 +137,14 @@ export function NoteEditor({ note, boardId, onBack }: NoteEditorProps) {
   }, [note.id, boardId, currentNote.pinned, updateNote])
 
   const handleDelete = useCallback(() => {
-    deleteNote.mutate({ id: note.id }, {
-      onSuccess: () => {
-        onBack()
-      },
-    })
+    deleteNote.mutate(
+      { id: note.id },
+      {
+        onSuccess: () => {
+          onBack()
+        },
+      }
+    )
   }, [note.id, deleteNote, onBack])
 
   return (
@@ -154,11 +159,11 @@ export function NoteEditor({ note, boardId, onBack }: NoteEditorProps) {
         >
           <ArrowLeft className="h-4 w-4" />
         </Button>
-        
+
         <div className="flex items-center gap-2 flex-1 justify-center">
           <Input
             value={title}
-            onChange={(e) => setTitle(e.target.value)}
+            onChange={e => setTitle(e.target.value)}
             placeholder="Note title..."
             className="border-0 text-2xl font-bold text-center focus-visible:ring-0 px-0 max-w-md"
           />
@@ -172,10 +177,7 @@ export function NoteEditor({ note, boardId, onBack }: NoteEditorProps) {
             variant="ghost"
             size="icon"
             onClick={handleTogglePin}
-            className={cn(
-              'h-8 w-8',
-              currentNote.pinned && 'text-primary'
-            )}
+            className={cn('h-8 w-8', currentNote.pinned && 'text-primary')}
             title={currentNote.pinned ? 'Unpin note' : 'Pin note'}
           >
             {currentNote.pinned ? (
@@ -211,8 +213,8 @@ export function NoteEditor({ note, boardId, onBack }: NoteEditorProps) {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete note</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete &ldquo;{note.title}&rdquo;? This action cannot
-              be undone.
+              Are you sure you want to delete &ldquo;{note.title}&rdquo;? This
+              action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

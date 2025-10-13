@@ -1,33 +1,33 @@
-'use client';
+'use client'
 
-import * as React from 'react';
+import * as React from 'react'
 
-import { SuggestionPlugin } from '@platejs/suggestion/react';
-import { Menu } from '@base-ui-components/react/menu';
-import { CheckIcon, EyeIcon, PencilLineIcon, PenIcon } from 'lucide-react';
-import { useEditorRef, usePlateState, usePluginOption } from 'platejs/react';
+import { SuggestionPlugin } from '@platejs/suggestion/react'
+import { Menu } from '@base-ui-components/react/menu'
+import { CheckIcon, EyeIcon, PencilLineIcon, PenIcon } from 'lucide-react'
+import { useEditorRef, usePlateState, usePluginOption } from 'platejs/react'
 
-import { ToolbarButton } from './toolbar';
+import { ToolbarButton } from './toolbar'
 
 interface ModeToolbarButtonProps {
-  open?: boolean;
-  onOpenChange?: (open: boolean) => void;
-  defaultOpen?: boolean;
-  disabled?: boolean;
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+  defaultOpen?: boolean
+  disabled?: boolean
 }
 
 export function ModeToolbarButton(props: ModeToolbarButtonProps) {
-  const editor = useEditorRef();
-  const [readOnly, setReadOnly] = usePlateState('readOnly');
-  const [open, setOpen] = React.useState(false);
+  const editor = useEditorRef()
+  const [readOnly, setReadOnly] = usePlateState('readOnly')
+  const [open, setOpen] = React.useState(false)
 
-  const isSuggesting = usePluginOption(SuggestionPlugin, 'isSuggesting');
+  const isSuggesting = usePluginOption(SuggestionPlugin, 'isSuggesting')
 
-  let value = 'editing';
+  let value = 'editing'
 
-  if (readOnly) value = 'viewing';
+  if (readOnly) value = 'viewing'
 
-  if (isSuggesting) value = 'suggestion';
+  if (isSuggesting) value = 'suggestion'
 
   const item: Record<string, { icon: React.ReactNode; label: string }> = {
     editing: {
@@ -42,7 +42,7 @@ export function ModeToolbarButton(props: ModeToolbarButtonProps) {
       icon: <EyeIcon />,
       label: 'Viewing',
     },
-  };
+  }
 
   return (
     <Menu.Root open={open} onOpenChange={setOpen} modal={false} {...props}>
@@ -60,25 +60,25 @@ export function ModeToolbarButton(props: ModeToolbarButtonProps) {
               value={value}
               onValueChange={(newValue: string) => {
                 if (newValue === 'viewing') {
-                  setReadOnly(true);
-                  setOpen(false);
-                  return;
+                  setReadOnly(true)
+                  setOpen(false)
+                  return
                 } else {
-                  setReadOnly(false);
+                  setReadOnly(false)
                 }
 
                 if (newValue === 'suggestion') {
-                  editor.setOption(SuggestionPlugin, 'isSuggesting', true);
-                  setOpen(false);
-                  return;
+                  editor.setOption(SuggestionPlugin, 'isSuggesting', true)
+                  setOpen(false)
+                  return
                 } else {
-                  editor.setOption(SuggestionPlugin, 'isSuggesting', false);
+                  editor.setOption(SuggestionPlugin, 'isSuggesting', false)
                 }
 
                 if (newValue === 'editing') {
-                  editor.tf.focus();
-                  setOpen(false);
-                  return;
+                  editor.tf.focus()
+                  setOpen(false)
+                  return
                 }
               }}
             >
@@ -113,7 +113,7 @@ export function ModeToolbarButton(props: ModeToolbarButtonProps) {
         </Menu.Positioner>
       </Menu.Portal>
     </Menu.Root>
-  );
+  )
 }
 
 function Indicator({ value, itemValue }: { value: string; itemValue: string }) {
@@ -121,5 +121,5 @@ function Indicator({ value, itemValue }: { value: string; itemValue: string }) {
     <span className="pointer-events-none absolute right-2 flex size-3.5 items-center justify-center">
       {value === itemValue && <CheckIcon className="size-3" />}
     </span>
-  );
+  )
 }

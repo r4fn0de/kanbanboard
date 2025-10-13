@@ -1,17 +1,17 @@
-'use client';
+'use client'
 
-import * as React from 'react';
+import * as React from 'react'
 
-import type { TResolvedSuggestion } from '@platejs/suggestion';
+import type { TResolvedSuggestion } from '@platejs/suggestion'
 
 import {
   acceptSuggestion,
   getSuggestionKey,
   keyId2SuggestionId,
   rejectSuggestion,
-} from '@platejs/suggestion';
-import { SuggestionPlugin } from '@platejs/suggestion/react';
-import { CheckIcon, XIcon } from 'lucide-react';
+} from '@platejs/suggestion'
+import { SuggestionPlugin } from '@platejs/suggestion/react'
+import { CheckIcon, XIcon } from 'lucide-react'
 import {
   type NodeEntry,
   type Path,
@@ -22,30 +22,30 @@ import {
   KEYS,
   PathApi,
   TextApi,
-} from 'platejs';
-import { useEditorPlugin, usePluginOption } from 'platejs/react';
+} from 'platejs'
+import { useEditorPlugin, usePluginOption } from 'platejs/react'
 
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 import {
   type TDiscussion,
   discussionPlugin,
-} from '@/components/editor/plugins/discussion-kit';
-import { suggestionPlugin } from '@/components/editor/plugins/suggestion-kit';
+} from '@/components/editor/plugins/discussion-kit'
+import { suggestionPlugin } from '@/components/editor/plugins/suggestion-kit'
 
 import {
   type TComment,
   Comment,
   CommentCreateForm,
   formatCommentDate,
-} from './comment';
+} from './comment'
 
 export interface ResolvedSuggestion extends TResolvedSuggestion {
-  comments: TComment[];
+  comments: TComment[]
 }
 
-const BLOCK_SUGGESTION = '__block__';
+const BLOCK_SUGGESTION = '__block__'
 
 const TYPE_TEXT_MAP: Record<string, (node?: TElement) => string> = {
   [KEYS.audio]: () => 'Audio',
@@ -64,25 +64,25 @@ const TYPE_TEXT_MAP: Record<string, (node?: TElement) => string> = {
   [KEYS.hr]: () => 'Horizontal Rule',
   [KEYS.img]: () => 'Image',
   [KEYS.mediaEmbed]: () => 'Media',
-  [KEYS.p]: (node) => {
-    if (node?.[KEYS.listType] === KEYS.listTodo) return 'Todo List';
-    if (node?.[KEYS.listType] === KEYS.ol) return 'Ordered List';
-    if (node?.[KEYS.listType] === KEYS.ul) return 'List';
+  [KEYS.p]: node => {
+    if (node?.[KEYS.listType] === KEYS.listTodo) return 'Todo List'
+    if (node?.[KEYS.listType] === KEYS.ol) return 'Ordered List'
+    if (node?.[KEYS.listType] === KEYS.ul) return 'List'
 
-    return 'Paragraph';
+    return 'Paragraph'
   },
   [KEYS.table]: () => 'Table',
   [KEYS.toc]: () => 'Table of Contents',
   [KEYS.toggle]: () => 'Toggle',
   [KEYS.video]: () => 'Video',
-};
+}
 
 export function BlockSuggestion({ element }: { element: TSuggestionElement }) {
-  const suggestionData = element.suggestion;
+  const suggestionData = element.suggestion
 
-  if (suggestionData?.isLineBreak) return null;
+  if (suggestionData?.isLineBreak) return null
 
-  const isRemove = suggestionData?.type === 'remove';
+  const isRemove = suggestionData?.type === 'remove'
 
   return (
     <div
@@ -92,7 +92,7 @@ export function BlockSuggestion({ element }: { element: TSuggestionElement }) {
       )}
       contentEditable={false}
     />
-  );
+  )
 }
 
 export function BlockSuggestionCard({
@@ -100,35 +100,35 @@ export function BlockSuggestionCard({
   isLast,
   suggestion,
 }: {
-  idx: number;
-  isLast: boolean;
-  suggestion: ResolvedSuggestion;
+  idx: number
+  isLast: boolean
+  suggestion: ResolvedSuggestion
 }) {
-  const { api, editor } = useEditorPlugin(SuggestionPlugin);
+  const { api, editor } = useEditorPlugin(SuggestionPlugin)
 
-  const userInfo = usePluginOption(discussionPlugin, 'user', suggestion.userId);
+  const userInfo = usePluginOption(discussionPlugin, 'user', suggestion.userId)
 
   const accept = (suggestion: ResolvedSuggestion) => {
     api.suggestion.withoutSuggestions(() => {
-      acceptSuggestion(editor, suggestion);
-    });
-  };
+      acceptSuggestion(editor, suggestion)
+    })
+  }
 
   const reject = (suggestion: ResolvedSuggestion) => {
     api.suggestion.withoutSuggestions(() => {
-      rejectSuggestion(editor, suggestion);
-    });
-  };
+      rejectSuggestion(editor, suggestion)
+    })
+  }
 
-  const [hovering, setHovering] = React.useState(false);
+  const [hovering, setHovering] = React.useState(false)
 
   const suggestionText2Array = (text: string) => {
-    if (text === BLOCK_SUGGESTION) return ['line breaks'];
+    if (text === BLOCK_SUGGESTION) return ['line breaks']
 
-    return text.split(BLOCK_SUGGESTION).filter(Boolean);
-  };
+    return text.split(BLOCK_SUGGESTION).filter(Boolean)
+  }
 
-  const [editingId, setEditingId] = React.useState<string | null>(null);
+  const [editingId, setEditingId] = React.useState<string | null>(null)
 
   return (
     <div
@@ -222,11 +222,11 @@ export function BlockSuggestionCard({
             {suggestion.type === 'update' && (
               <div className="flex items-center gap-2">
                 <span className="text-sm text-muted-foreground">
-                  {Object.keys(suggestion.properties).map((key) => (
+                  {Object.keys(suggestion.properties).map(key => (
                     <span key={key}>Un{key}</span>
                   ))}
 
-                  {Object.keys(suggestion.newProperties).map((key) => (
+                  {Object.keys(suggestion.newProperties).map(key => (
                     <span key={key}>
                       {key.charAt(0).toUpperCase() + key.slice(1)}
                     </span>
@@ -275,169 +275,167 @@ export function BlockSuggestionCard({
 
       {!isLast && <div className="h-px w-full bg-muted" />}
     </div>
-  );
+  )
 }
 
 export const useResolveSuggestion = (
   suggestionNodes: NodeEntry<TElement | TSuggestionText>[],
   blockPath: Path
 ) => {
-  const discussions = usePluginOption(discussionPlugin, 'discussions');
+  const discussions = usePluginOption(discussionPlugin, 'discussions')
 
   const { api, editor, getOption, setOption } =
-    useEditorPlugin(suggestionPlugin);
+    useEditorPlugin(suggestionPlugin)
 
   suggestionNodes.forEach(([node]) => {
-    const id = api.suggestion.nodeId(node);
-    const map = getOption('uniquePathMap');
+    const id = api.suggestion.nodeId(node)
+    const map = getOption('uniquePathMap')
 
-    if (!id) return;
+    if (!id) return
 
-    const previousPath = map.get(id);
+    const previousPath = map.get(id)
 
     // If there are no suggestion nodes in the corresponding path in the map, then update it.
     if (PathApi.isPath(previousPath)) {
-      const nodes = api.suggestion.node({ id, at: previousPath, isText: true });
-      const parentNode = api.node(previousPath);
-      let lineBreakId: string | null = null;
+      const nodes = api.suggestion.node({ id, at: previousPath, isText: true })
+      const parentNode = api.node(previousPath)
+      let lineBreakId: string | null = null
 
       if (parentNode && ElementApi.isElement(parentNode[0])) {
-        lineBreakId = api.suggestion.nodeId(parentNode[0]) ?? null;
+        lineBreakId = api.suggestion.nodeId(parentNode[0]) ?? null
       }
 
       if (!nodes && lineBreakId !== id) {
-        return setOption('uniquePathMap', new Map(map).set(id, blockPath));
+        return setOption('uniquePathMap', new Map(map).set(id, blockPath))
       }
 
-      return;
+      return
     }
-    setOption('uniquePathMap', new Map(map).set(id, blockPath));
-  });
+    setOption('uniquePathMap', new Map(map).set(id, blockPath))
+  })
 
   const resolvedSuggestion: ResolvedSuggestion[] = React.useMemo(() => {
-    const map = getOption('uniquePathMap');
+    const map = getOption('uniquePathMap')
 
-    if (suggestionNodes.length === 0) return [];
+    if (suggestionNodes.length === 0) return []
 
     const suggestionIds = new Set(
       suggestionNodes
         .flatMap(([node]) => {
           if (TextApi.isText(node)) {
-            const dataList = api.suggestion.dataList(node);
-            const includeUpdate = dataList.some(
-              (data) => data.type === 'update'
-            );
+            const dataList = api.suggestion.dataList(node)
+            const includeUpdate = dataList.some(data => data.type === 'update')
 
-            if (!includeUpdate) return api.suggestion.nodeId(node);
+            if (!includeUpdate) return api.suggestion.nodeId(node)
 
             return dataList
-              .filter((data) => data.type === 'update')
-              .map((d) => d.id);
+              .filter(data => data.type === 'update')
+              .map(d => d.id)
           }
           if (ElementApi.isElement(node)) {
-            return api.suggestion.nodeId(node);
+            return api.suggestion.nodeId(node)
           }
         })
         .filter(Boolean)
-    );
+    )
 
-    const res: ResolvedSuggestion[] = [];
+    const res: ResolvedSuggestion[] = []
 
-    suggestionIds.forEach((id) => {
-      if (!id) return;
+    suggestionIds.forEach(id => {
+      if (!id) return
 
-      const path = map.get(id);
+      const path = map.get(id)
 
-      if (!path || !PathApi.isPath(path)) return;
-      if (!PathApi.equals(path, blockPath)) return;
+      if (!path || !PathApi.isPath(path)) return
+      if (!PathApi.equals(path, blockPath)) return
 
       const entries = [
         ...editor.api.nodes<TElement | TSuggestionText>({
           at: [],
           mode: 'all',
-          match: (n) =>
+          match: n =>
             (n[KEYS.suggestion] && n[getSuggestionKey(id)]) ||
             api.suggestion.nodeId(n as TElement) === id,
         }),
-      ];
+      ]
 
       // move line break to the end
       entries.sort(([, path1], [, path2]) => {
-        return PathApi.isChild(path1, path2) ? -1 : 1;
-      });
+        return PathApi.isChild(path1, path2) ? -1 : 1
+      })
 
-      let newText = '';
-      let text = '';
-      let properties: any = {};
-      let newProperties: any = {};
+      let newText = ''
+      let text = ''
+      let properties: any = {}
+      let newProperties: any = {}
 
       // overlapping suggestion
       entries.forEach(([node]) => {
         if (TextApi.isText(node)) {
-          const dataList = api.suggestion.dataList(node);
+          const dataList = api.suggestion.dataList(node)
 
-          dataList.forEach((data) => {
-            if (data.id !== id) return;
+          dataList.forEach(data => {
+            if (data.id !== id) return
 
             switch (data.type) {
               case 'insert': {
-                newText += node.text;
+                newText += node.text
 
-                break;
+                break
               }
               case 'remove': {
-                text += node.text;
+                text += node.text
 
-                break;
+                break
               }
               case 'update': {
                 properties = {
                   ...properties,
                   ...data.properties,
-                };
+                }
 
                 newProperties = {
                   ...newProperties,
                   ...data.newProperties,
-                };
+                }
 
-                newText += node.text;
+                newText += node.text
 
-                break;
+                break
               }
               // No default
             }
-          });
+          })
         } else {
           const lineBreakData = api.suggestion.isBlockSuggestion(node)
             ? node.suggestion
-            : undefined;
+            : undefined
 
-          if (lineBreakData?.id !== keyId2SuggestionId(id)) return;
+          if (lineBreakData?.id !== keyId2SuggestionId(id)) return
           if (lineBreakData.type === 'insert') {
             newText += lineBreakData.isLineBreak
               ? BLOCK_SUGGESTION
-              : BLOCK_SUGGESTION + TYPE_TEXT_MAP[node.type](node);
+              : BLOCK_SUGGESTION + TYPE_TEXT_MAP[node.type](node)
           } else if (lineBreakData.type === 'remove') {
             text += lineBreakData.isLineBreak
               ? BLOCK_SUGGESTION
-              : BLOCK_SUGGESTION + TYPE_TEXT_MAP[node.type](node);
+              : BLOCK_SUGGESTION + TYPE_TEXT_MAP[node.type](node)
           }
         }
-      });
+      })
 
-      if (entries.length === 0) return;
+      if (entries.length === 0) return
 
-      const nodeData = api.suggestion.suggestionData(entries[0][0]);
+      const nodeData = api.suggestion.suggestionData(entries[0][0])
 
-      if (!nodeData) return;
+      if (!nodeData) return
 
       // const comments = data?.discussions.find((d) => d.id === id)?.comments;
       const comments =
-        discussions.find((s: TDiscussion) => s.id === id)?.comments || [];
-      const createdAt = new Date(nodeData.createdAt);
+        discussions.find((s: TDiscussion) => s.id === id)?.comments || []
+      const createdAt = new Date(nodeData.createdAt)
 
-      const keyId = getSuggestionKey(id);
+      const keyId = getSuggestionKey(id)
 
       if (nodeData.type === 'update') {
         return res.push({
@@ -450,7 +448,7 @@ export const useResolveSuggestion = (
           suggestionId: keyId2SuggestionId(id),
           type: 'update',
           userId: nodeData.userId,
-        });
+        })
       }
       if (newText.length > 0 && text.length > 0) {
         return res.push({
@@ -462,7 +460,7 @@ export const useResolveSuggestion = (
           text,
           type: 'replace',
           userId: nodeData.userId,
-        });
+        })
       }
       if (newText.length > 0) {
         return res.push({
@@ -473,7 +471,7 @@ export const useResolveSuggestion = (
           suggestionId: keyId2SuggestionId(id),
           type: 'insert',
           userId: nodeData.userId,
-        });
+        })
       }
       if (text.length > 0) {
         return res.push({
@@ -484,11 +482,11 @@ export const useResolveSuggestion = (
           text,
           type: 'remove',
           userId: nodeData.userId,
-        });
+        })
       }
-    });
+    })
 
-    return res;
+    return res
   }, [
     api.suggestion,
     blockPath,
@@ -496,13 +494,13 @@ export const useResolveSuggestion = (
     editor.api,
     getOption,
     suggestionNodes,
-  ]);
+  ])
 
-  return resolvedSuggestion;
-};
+  return resolvedSuggestion
+}
 
 export const isResolvedSuggestion = (
   suggestion: ResolvedSuggestion | TDiscussion
 ): suggestion is ResolvedSuggestion => {
-  return 'suggestionId' in suggestion;
-};
+  return 'suggestionId' in suggestion
+}

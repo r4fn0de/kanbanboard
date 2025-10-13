@@ -1,8 +1,8 @@
-'use client';
+'use client'
 
-import * as React from 'react';
+import * as React from 'react'
 
-import { Menu } from '@base-ui-components/react/menu';
+import { Menu } from '@base-ui-components/react/menu'
 import {
   CheckIcon,
   ChevronRightIcon,
@@ -19,17 +19,14 @@ import {
   PilcrowIcon,
   QuoteIcon,
   SquareIcon,
-} from 'lucide-react';
-import { KEYS } from 'platejs';
-import { useEditorRef, useSelectionFragmentProp } from 'platejs/react';
+} from 'lucide-react'
+import { KEYS } from 'platejs'
+import { useEditorRef, useSelectionFragmentProp } from 'platejs/react'
 
-import type { TElement } from 'platejs';
-import {
-  getBlockType,
-  setBlockType,
-} from '@/components/editor/transforms';
+import type { TElement } from 'platejs'
+import { getBlockType, setBlockType } from '@/components/editor/transforms'
 
-import { ToolbarButton } from './toolbar';
+import { ToolbarButton } from './toolbar'
 
 export const turnIntoItems = [
   {
@@ -115,29 +112,29 @@ export const turnIntoItems = [
     label: '3 columns',
     value: 'action_three_columns',
   },
-];
+]
 
 interface TurnIntoToolbarButtonProps {
-  open?: boolean;
-  onOpenChange?: (open: boolean) => void;
-  defaultOpen?: boolean;
-  disabled?: boolean;
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+  defaultOpen?: boolean
+  disabled?: boolean
 }
 
 export function TurnIntoToolbarButton(props: TurnIntoToolbarButtonProps) {
-  const editor = useEditorRef();
-  const [open, setOpen] = React.useState(false);
+  const editor = useEditorRef()
+  const [open, setOpen] = React.useState(false)
 
   const value = useSelectionFragmentProp({
     defaultValue: KEYS.p,
-    getProp: (node) => getBlockType(node as TElement),
-  });
+    getProp: node => getBlockType(node as TElement),
+  })
   const selectedItem = React.useMemo(
     () =>
-      turnIntoItems.find((item) => item.value === (value ?? KEYS.p)) ??
+      turnIntoItems.find(item => item.value === (value ?? KEYS.p)) ??
       turnIntoItems[0],
     [value]
-  );
+  )
 
   return (
     <Menu.Root open={open} onOpenChange={setOpen} modal={false} {...props}>
@@ -153,14 +150,19 @@ export function TurnIntoToolbarButton(props: TurnIntoToolbarButtonProps) {
       </Menu.Trigger>
 
       <Menu.Portal>
-        <Menu.Positioner sideOffset={5} align="start" side="bottom" className="z-50">
+        <Menu.Positioner
+          sideOffset={5}
+          align="start"
+          side="bottom"
+          className="z-50"
+        >
           <Menu.Popup className="min-w-0 rounded-md border bg-popover p-1 shadow-md">
             <Menu.RadioGroup
               value={value}
-              onValueChange={(type) => {
-                setBlockType(editor, type);
-                editor.tf.focus();
-                setOpen(false);
+              onValueChange={type => {
+                setBlockType(editor, type)
+                editor.tf.focus()
+                setOpen(false)
               }}
             >
               {turnIntoItems.map(({ icon, label, value: itemValue }) => (
@@ -173,7 +175,9 @@ export function TurnIntoToolbarButton(props: TurnIntoToolbarButtonProps) {
                     <CheckIcon className="size-3.5" />
                   </Menu.RadioItemIndicator>
                   <div className="flex items-center gap-2 pl-6">
-                    <div className="size-4 flex items-center justify-center">{icon}</div>
+                    <div className="size-4 flex items-center justify-center">
+                      {icon}
+                    </div>
                     <span className="text-sm">{label}</span>
                   </div>
                 </Menu.RadioItem>
@@ -183,5 +187,5 @@ export function TurnIntoToolbarButton(props: TurnIntoToolbarButtonProps) {
         </Menu.Positioner>
       </Menu.Portal>
     </Menu.Root>
-  );
+  )
 }

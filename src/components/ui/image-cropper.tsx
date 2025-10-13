@@ -1,7 +1,13 @@
 import React, { useState, useCallback, useEffect } from 'react'
 import Cropper from 'react-easy-crop'
 import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Slider } from '@/components/ui/slider'
 import { Label } from '@/components/ui/label'
 import { ZoomIn, ZoomOut, RotateCw, Check, X } from 'lucide-react'
@@ -93,19 +99,23 @@ export function ImageCropper({
   onCropComplete,
   onCancel,
   aspectRatio = 1,
-  recommendedSize = '64x64px'
+  recommendedSize = '64x64px',
 }: ImageCropperProps) {
   const [crop, setCrop] = useState({ x: 0, y: 0 })
   const [rotation, setRotation] = useState(0)
   const [zoom, setZoom] = useState(1)
-  const [croppedAreaPixels, setCroppedAreaPixels] = useState<CroppedAreaPixels | null>(null)
+  const [croppedAreaPixels, setCroppedAreaPixels] =
+    useState<CroppedAreaPixels | null>(null)
   const [isProcessing, setIsProcessing] = useState(false)
   const [imageLoaded, setImageLoaded] = useState(false)
   const [imageError, setImageError] = useState<string | null>(null)
 
-  const onCropAreaChange = useCallback((croppedArea: Area, croppedAreaPixels: CroppedAreaPixels) => {
-    setCroppedAreaPixels(croppedAreaPixels)
-  }, [])
+  const onCropAreaChange = useCallback(
+    (croppedArea: Area, croppedAreaPixels: CroppedAreaPixels) => {
+      setCroppedAreaPixels(croppedAreaPixels)
+    },
+    []
+  )
 
   const onMediaLoaded = useCallback(() => {
     setImageLoaded(true)
@@ -139,11 +149,14 @@ export function ImageCropper({
     onOpenChange(false)
   }, [onCancel, onOpenChange])
 
-  const handleDialogOpenChange = useCallback((newOpen: boolean) => {
-    if (!newOpen && !isProcessing) {
-      handleCancel()
-    }
-  }, [handleCancel, isProcessing])
+  const handleDialogOpenChange = useCallback(
+    (newOpen: boolean) => {
+      if (!newOpen && !isProcessing) {
+        handleCancel()
+      }
+    },
+    [handleCancel, isProcessing]
+  )
 
   // Reset states when dialog opens/closes
   const resetStates = useCallback(() => {
@@ -183,7 +196,7 @@ export function ImageCropper({
         <DialogHeader>
           <DialogTitle>Crop & Adjust Image</DialogTitle>
         </DialogHeader>
-        
+
         <div className="space-y-4">
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">
@@ -196,60 +209,66 @@ export function ImageCropper({
               </span>
             )}
           </div>
-          
+
           <div className="relative h-96 w-full overflow-hidden rounded-xl border-2 border-border bg-muted/30">
             {imageError ? (
               <div className="absolute inset-0 flex items-center justify-center z-50 bg-background/95">
                 <div className="text-center space-y-2">
                   <div className="text-4xl">⚠️</div>
-                  <div className="text-sm font-medium">Failed to load image</div>
-                  <div className="text-xs text-muted-foreground">{imageError}</div>
+                  <div className="text-sm font-medium">
+                    Failed to load image
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {imageError}
+                  </div>
                 </div>
               </div>
             ) : null}
-            
+
             {!imageLoaded && !imageError && (
               <div className="absolute inset-0 flex items-center justify-center z-40 bg-background/95">
                 <div className="text-center space-y-2">
                   <div className="animate-spin text-4xl">⏳</div>
-                  <div className="text-sm text-muted-foreground">Loading image...</div>
+                  <div className="text-sm text-muted-foreground">
+                    Loading image...
+                  </div>
                 </div>
               </div>
             )}
-            
+
             <Cropper
-                image={imageSrc}
-                crop={crop}
-                rotation={rotation}
-                zoom={zoom}
-                aspect={aspectRatio}
-                onCropChange={setCrop}
-                onRotationChange={setRotation}
-                onCropComplete={onCropAreaChange}
-                onZoomChange={setZoom}
-                onMediaLoaded={onMediaLoaded}
-                onLoadError={onLoadError}
-                cropShape="round"
-                showGrid={false}
-                objectFit="contain"
-                restrictPosition={true}
-                style={{
-                  containerStyle: {
-                    width: '100%',
-                    height: '100%',
-                    position: 'relative',
-                    backgroundColor: 'hsl(var(--muted))'
-                  },
-                  mediaStyle: {
-                    objectFit: 'contain'
-                  },
-                  cropAreaStyle: {
-                    border: '3px solid hsl(var(--primary))',
-                    boxShadow: '0 0 0 9999em rgba(0, 0, 0, 0.5)',
-                    color: 'rgba(255, 255, 255, 0.5)'
-                  }
-                }}
-              />
+              image={imageSrc}
+              crop={crop}
+              rotation={rotation}
+              zoom={zoom}
+              aspect={aspectRatio}
+              onCropChange={setCrop}
+              onRotationChange={setRotation}
+              onCropComplete={onCropAreaChange}
+              onZoomChange={setZoom}
+              onMediaLoaded={onMediaLoaded}
+              onLoadError={onLoadError}
+              cropShape="round"
+              showGrid={false}
+              objectFit="contain"
+              restrictPosition={true}
+              style={{
+                containerStyle: {
+                  width: '100%',
+                  height: '100%',
+                  position: 'relative',
+                  backgroundColor: 'hsl(var(--muted))',
+                },
+                mediaStyle: {
+                  objectFit: 'contain',
+                },
+                cropAreaStyle: {
+                  border: '3px solid hsl(var(--primary))',
+                  boxShadow: '0 0 0 9999em rgba(0, 0, 0, 0.5)',
+                  color: 'rgba(255, 255, 255, 0.5)',
+                },
+              }}
+            />
           </div>
 
           <div className="space-y-4 bg-muted/50 p-4 rounded-lg">
@@ -287,7 +306,7 @@ export function ImageCropper({
               </div>
               <Slider
                 value={[zoom]}
-                onValueChange={(value) => setZoom(value[0] ?? 1)}
+                onValueChange={value => setZoom(value[0] ?? 1)}
                 min={1}
                 max={3}
                 step={0.01}
@@ -320,7 +339,7 @@ export function ImageCropper({
               </div>
               <Slider
                 value={[rotation]}
-                onValueChange={(value) => setRotation(value[0] ?? 0)}
+                onValueChange={value => setRotation(value[0] ?? 0)}
                 min={-180}
                 max={180}
                 step={1}

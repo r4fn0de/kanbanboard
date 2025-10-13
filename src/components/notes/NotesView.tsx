@@ -57,7 +57,7 @@ export function NotesView() {
 
   const handleCreateNote = () => {
     if (!boardId) return
-    
+
     const id = globalThis.crypto?.randomUUID?.() ?? `note-${Date.now()}`
     createNote.mutate(
       {
@@ -67,7 +67,7 @@ export function NotesView() {
         content: JSON.stringify([{ type: 'p', children: [{ text: '' }] }]),
       },
       {
-        onSuccess: (newNote) => {
+        onSuccess: newNote => {
           setSelectedNote(newNote)
         },
       }
@@ -89,7 +89,7 @@ export function NotesView() {
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
           value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
+          onChange={e => setSearchQuery(e.target.value)}
           placeholder="Search notes..."
           className="pl-9 h-9"
         />
@@ -120,8 +120,8 @@ export function NotesView() {
             onBack={() => setSelectedNote(null)}
           />
         ) : (
-          <NotesList 
-            boardId={boardId} 
+          <NotesList
+            boardId={boardId}
             onSelectNote={setSelectedNote}
             searchQuery={searchQuery}
           />

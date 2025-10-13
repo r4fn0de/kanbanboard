@@ -1,14 +1,14 @@
-'use client';
+'use client'
 
-import * as React from 'react';
+import * as React from 'react'
 
-import type { VariantProps } from 'class-variance-authority';
-import type { PlateContentProps, PlateViewProps } from 'platejs/react';
+import type { VariantProps } from 'class-variance-authority'
+import type { PlateContentProps, PlateViewProps } from 'platejs/react'
 
-import { cva } from 'class-variance-authority';
-import { PlateContainer, PlateContent, PlateView } from 'platejs/react';
+import { cva } from 'class-variance-authority'
+import { PlateContainer, PlateContent, PlateView } from 'platejs/react'
 
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils'
 
 const editorContainerVariants = cva(
   'relative w-full cursor-text overflow-y-auto caret-primary select-text selection:bg-brand/25 focus-visible:outline-none [&_.slate-selection-area]:z-50 [&_.slate-selection-area]:border [&_.slate-selection-area]:border-brand/25 [&_.slate-selection-area]:bg-brand/15',
@@ -33,7 +33,7 @@ const editorContainerVariants = cva(
       },
     },
   }
-);
+)
 
 export function EditorContainer({
   className,
@@ -49,7 +49,7 @@ export function EditorContainer({
       )}
       {...props}
     />
-  );
+  )
 }
 
 const editorVariants = cva(
@@ -85,10 +85,10 @@ const editorVariants = cva(
       },
     },
   }
-);
+)
 
 export type EditorProps = PlateContentProps &
-  VariantProps<typeof editorVariants>;
+  VariantProps<typeof editorVariants>
 
 export const Editor = React.forwardRef<HTMLDivElement, EditorProps>(
   ({ className, disabled, focused, variant, ...props }, ref) => {
@@ -107,11 +107,11 @@ export const Editor = React.forwardRef<HTMLDivElement, EditorProps>(
         disableDefaultStyles
         {...props}
       />
-    );
+    )
   }
-);
+)
 
-Editor.displayName = 'Editor';
+Editor.displayName = 'Editor'
 
 export function EditorView({
   className,
@@ -123,7 +123,7 @@ export function EditorView({
       {...props}
       className={cn(editorVariants({ variant }), className)}
     />
-  );
+  )
 }
 
-EditorView.displayName = 'EditorView';
+EditorView.displayName = 'EditorView'

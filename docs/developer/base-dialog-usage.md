@@ -5,6 +5,7 @@ A standardized dialog component that provides consistent patterns for dialogs an
 ## Overview
 
 The `BaseDialog` component unifies the common patterns used in dialogs across the app:
+
 - Consistent header/footer structure
 - Loading states with disabled buttons
 - Support for both regular dialogs and alert dialogs
@@ -28,17 +29,20 @@ function CreateWorkspaceDialog() {
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault()
-    mutate({ name }, {
-      onSuccess: () => {
-        toast.success('Workspace created')
-        setOpen(false)
-      },
-      onError: (error) => {
-        toast.error('Failed to create workspace', {
-          description: error.message
-        })
+    mutate(
+      { name },
+      {
+        onSuccess: () => {
+          toast.success('Workspace created')
+          setOpen(false)
+        },
+        onError: error => {
+          toast.error('Failed to create workspace', {
+            description: error.message,
+          })
+        },
       }
-    })
+    )
   }
 
   return (
@@ -83,11 +87,11 @@ function DeleteWorkspaceDialog({ workspace, open, onOpenChange }) {
         toast.success('Workspace deleted')
         onOpenChange(false)
       },
-      onError: (error) => {
+      onError: error => {
         toast.error('Failed to delete workspace', {
-          description: error.message
+          description: error.message,
         })
-      }
+      },
     })
   }
 
@@ -105,7 +109,7 @@ function DeleteWorkspaceDialog({ workspace, open, onOpenChange }) {
       loadingText="Deleting..."
     >
       <div className="text-sm text-muted-foreground">
-        <strong>Note:</strong> You must move or delete all projects from this 
+        <strong>Note:</strong> You must move or delete all projects from this
         workspace before you can delete it.
       </div>
     </BaseDialog>
@@ -117,24 +121,24 @@ function DeleteWorkspaceDialog({ workspace, open, onOpenChange }) {
 
 ### Props
 
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| `open` | `boolean` | - | Whether the dialog is open (required) |
-| `onOpenChange` | `(open: boolean) => void` | - | Callback when open state changes (required) |
-| `title` | `string` | - | Dialog title (required) |
-| `description` | `string` | - | Optional description/subtitle |
-| `children` | `ReactNode` | - | Dialog content (required) |
-| `confirmText` | `string` | `"Save"` | Primary action button text |
-| `cancelText` | `string` | `"Cancel"` | Cancel button text |
-| `onConfirm` | `() => void` | - | Callback for primary action |
-| `onCancel` | `() => void` | - | Callback for cancel (defaults to closing) |
-| `loading` | `boolean` | `false` | Whether action is loading |
-| `loadingText` | `string` | `"Loading..."` | Text to show when loading |
-| `confirmDisabled` | `boolean` | `false` | Whether to disable confirm button |
-| `footerContent` | `ReactNode` | - | Additional footer content |
-| `variant` | `"default"` \| `"destructive"` | `"default"` | Dialog styling variant |
-| `formId` | `string` | - | Form ID to associate with confirm button |
-| `alert` | `boolean` | `false` | Use AlertDialog instead of Dialog |
+| Prop              | Type                           | Default        | Description                                 |
+| ----------------- | ------------------------------ | -------------- | ------------------------------------------- |
+| `open`            | `boolean`                      | -              | Whether the dialog is open (required)       |
+| `onOpenChange`    | `(open: boolean) => void`      | -              | Callback when open state changes (required) |
+| `title`           | `string`                       | -              | Dialog title (required)                     |
+| `description`     | `string`                       | -              | Optional description/subtitle               |
+| `children`        | `ReactNode`                    | -              | Dialog content (required)                   |
+| `confirmText`     | `string`                       | `"Save"`       | Primary action button text                  |
+| `cancelText`      | `string`                       | `"Cancel"`     | Cancel button text                          |
+| `onConfirm`       | `() => void`                   | -              | Callback for primary action                 |
+| `onCancel`        | `() => void`                   | -              | Callback for cancel (defaults to closing)   |
+| `loading`         | `boolean`                      | `false`        | Whether action is loading                   |
+| `loadingText`     | `string`                       | `"Loading..."` | Text to show when loading                   |
+| `confirmDisabled` | `boolean`                      | `false`        | Whether to disable confirm button           |
+| `footerContent`   | `ReactNode`                    | -              | Additional footer content                   |
+| `variant`         | `"default"` \| `"destructive"` | `"default"`    | Dialog styling variant                      |
+| `formId`          | `string`                       | -              | Form ID to associate with confirm button    |
+| `alert`           | `boolean`                      | `false`        | Use AlertDialog instead of Dialog           |
 
 ## Patterns
 
@@ -193,7 +197,7 @@ If you need custom cleanup logic when the dialog closes:
 
 ```tsx
 <BaseDialog
-  onOpenChange={(open) => {
+  onOpenChange={open => {
     if (!open) {
       // Reset form state
       setName('')
@@ -230,9 +234,7 @@ Or use the `onCancel` callback:
   <DialogContent>
     <DialogHeader>
       <DialogTitle>Edit Workspace</DialogTitle>
-      <DialogDescription>
-        Update the workspace name and color
-      </DialogDescription>
+      <DialogDescription>Update the workspace name and color</DialogDescription>
     </DialogHeader>
     <form onSubmit={handleSubmit} className="space-y-4">
       {/* form fields */}
@@ -291,7 +293,7 @@ import { render, screen, fireEvent } from '@testing-library/react'
 
 test('handles form submission', async () => {
   const handleSubmit = vi.fn()
-  
+
   render(
     <BaseDialog
       open
@@ -305,10 +307,10 @@ test('handles form submission', async () => {
       </form>
     </BaseDialog>
   )
-  
+
   const submitButton = screen.getByRole('button', { name: 'Submit' })
   fireEvent.click(submitButton)
-  
+
   expect(handleSubmit).toHaveBeenCalled()
 })
 ```

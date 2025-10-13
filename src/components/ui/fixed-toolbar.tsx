@@ -1,8 +1,8 @@
-'use client';
+'use client'
 
-import { Toolbar } from '@base-ui-components/react/toolbar';
+import { Toolbar } from '@base-ui-components/react/toolbar'
 
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils'
 
 export function FixedToolbar(props: React.ComponentProps<typeof Toolbar.Root>) {
   return (
@@ -13,5 +13,5 @@ export function FixedToolbar(props: React.ComponentProps<typeof Toolbar.Root>) {
         props.className
       )}
     />
-  );
+  )
 }

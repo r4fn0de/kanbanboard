@@ -1,34 +1,34 @@
-'use client';
+'use client'
 
 import {
   type BaseSuggestionConfig,
   BaseSuggestionPlugin,
-} from '@platejs/suggestion';
+} from '@platejs/suggestion'
 import {
   type ExtendConfig,
   type Path,
   isSlateEditor,
   isSlateElement,
   isSlateString,
-} from 'platejs';
-import { toTPlatePlugin } from 'platejs/react';
+} from 'platejs'
+import { toTPlatePlugin } from 'platejs/react'
 
-import { BlockSuggestion } from '@/components/ui/block-suggestion';
+import { BlockSuggestion } from '@/components/ui/block-suggestion'
 import {
   SuggestionLeaf,
   SuggestionLineBreak,
-} from '@/components/ui/suggestion-node';
+} from '@/components/ui/suggestion-node'
 
-import { discussionPlugin } from './discussion-kit';
+import { discussionPlugin } from './discussion-kit'
 
 export type SuggestionConfig = ExtendConfig<
   BaseSuggestionConfig,
   {
-    activeId: string | null;
-    hoverId: string | null;
-    uniquePathMap: Map<string, Path>;
+    activeId: string | null
+    hoverId: string | null
+    uniquePathMap: Map<string, Path>
   }
->;
+>
 
 export const suggestionPlugin = toTPlatePlugin<SuggestionConfig>(
   BaseSuggestionPlugin,
@@ -44,15 +44,15 @@ export const suggestionPlugin = toTPlatePlugin<SuggestionConfig>(
   handlers: {
     // unset active suggestion when clicking outside of suggestion
     onClick: ({ api, event, setOption, type }) => {
-      let leaf = event.target as HTMLElement;
-      let isSet = false;
+      let leaf = event.target as HTMLElement
+      let isSet = false
 
       const unsetActiveSuggestion = () => {
-        setOption('activeId', null);
-        isSet = true;
-      };
+        setOption('activeId', null)
+        isSet = true
+      }
 
-      if (!isSlateString(leaf)) unsetActiveSuggestion();
+      if (!isSlateString(leaf)) unsetActiveSuggestion()
 
       while (
         leaf.parentElement &&
@@ -60,26 +60,26 @@ export const suggestionPlugin = toTPlatePlugin<SuggestionConfig>(
         !isSlateEditor(leaf.parentElement)
       ) {
         if (leaf.classList.contains(`slate-${type}`)) {
-          const suggestionEntry = api.suggestion!.node({ isText: true });
+          const suggestionEntry = api.suggestion!.node({ isText: true })
 
           if (!suggestionEntry) {
-            unsetActiveSuggestion();
+            unsetActiveSuggestion()
 
-            break;
+            break
           }
 
-          const id = api.suggestion!.nodeId(suggestionEntry[0]);
+          const id = api.suggestion!.nodeId(suggestionEntry[0])
 
-          setOption('activeId', id ?? null);
-          isSet = true;
+          setOption('activeId', id ?? null)
+          isSet = true
 
-          break;
+          break
         }
 
-        leaf = leaf.parentElement;
+        leaf = leaf.parentElement
       }
 
-      if (!isSet) unsetActiveSuggestion();
+      if (!isSet) unsetActiveSuggestion()
     },
   },
   render: {
@@ -87,12 +87,12 @@ export const suggestionPlugin = toTPlatePlugin<SuggestionConfig>(
     node: SuggestionLeaf,
     belowRootNodes: ({ api, element }) => {
       if (!api.suggestion!.isBlockSuggestion(element)) {
-        return null;
+        return null
       }
 
-      return <BlockSuggestion element={element} />;
+      return <BlockSuggestion element={element} />
     },
   },
-});
+})
 
-export const SuggestionKit = [suggestionPlugin];
+export const SuggestionKit = [suggestionPlugin]

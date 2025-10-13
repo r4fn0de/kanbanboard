@@ -11,7 +11,11 @@ export const useWorkspaceStore = create<WorkspaceState>()(
     set => ({
       selectedWorkspaceId: null,
       setSelectedWorkspaceId: workspaceId =>
-        set({ selectedWorkspaceId: workspaceId }, undefined, 'setSelectedWorkspaceId'),
+        set(
+          { selectedWorkspaceId: workspaceId },
+          undefined,
+          'setSelectedWorkspaceId'
+        ),
     }),
     {
       name: 'workspace-store',

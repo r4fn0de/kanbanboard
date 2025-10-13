@@ -22,7 +22,8 @@ export function BoardNavbar({
   onTabChange,
   taskControls,
 }: BoardNavbarProps) {
-  const showControls = (activeTab === 'tasks' || activeTab === 'notes') && taskControls
+  const showControls =
+    (activeTab === 'tasks' || activeTab === 'notes') && taskControls
 
   return (
     <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -58,9 +59,7 @@ export function BoardNavbar({
 
         {/* Controls - Visible on Tasks and Notes tabs */}
         {showControls && (
-          <div className="flex items-center gap-2">
-            {taskControls}
-          </div>
+          <div className="flex items-center gap-2">{taskControls}</div>
         )}
       </div>
     </div>

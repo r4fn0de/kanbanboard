@@ -61,7 +61,7 @@ export function BoardDetailView({
   const navigate = useNavigate()
   const [isColumnManagerOpen, setIsColumnManagerOpen] = useState(false)
   const [isCardDialogOpen, setIsCardDialogOpen] = useState(false)
-  
+
   const [cardTitle, setCardTitle] = useState('')
   const [cardDescription, setCardDescription] = useState('')
   const [cardPriority, setCardPriority] = useState<KanbanPriority>('medium')
@@ -73,19 +73,22 @@ export function BoardDetailView({
   const [activeDragCard, setActiveDragCard] = useState<KanbanCard | null>(null)
   const [activeNavTab, setActiveNavTab] = useState('tasks')
 
-  const handleTabChange = useCallback((tab: string) => {
-    if (tab === 'notes') {
-      navigate(`/projects/${board.id}/notes`)
-      return
-    }
+  const handleTabChange = useCallback(
+    (tab: string) => {
+      if (tab === 'notes') {
+        navigate(`/projects/${board.id}/notes`)
+        return
+      }
 
-    if (tab === 'draws') {
-      navigate(`/projects/${board.id}/draws`)
-      return
-    }
+      if (tab === 'draws') {
+        navigate(`/projects/${board.id}/draws`)
+        return
+      }
 
-    setActiveNavTab(tab)
-  }, [board.id, navigate])
+      setActiveNavTab(tab)
+    },
+    [board.id, navigate]
+  )
 
   const cardTitleId = useId()
   const cardDescriptionId = useId()
@@ -211,16 +214,12 @@ export function BoardDetailView({
     }
   }, [visibleCards, selectedCardId])
 
-  
-
   const resetCardForm = useCallback(() => {
     setCardTitle('')
     setCardDescription('')
     setCardPriority('medium')
     setCardDueDate('')
   }, [])
-
-  
 
   const handleCreateCard = useCallback(
     async (event: React.FormEvent) => {
@@ -475,7 +474,7 @@ export function BoardDetailView({
   const resolvedViewMode = isBoardViewMode(viewMode)
     ? viewMode
     : DEFAULT_BOARD_VIEW_MODE
-  
+
   const isCreatingCard = createCardMutation.isPending
 
   if (isLoadingColumns || isLoadingCards) {
@@ -544,10 +543,7 @@ export function BoardDetailView({
         ))}
       </ToggleGroup>
 
-      <Button
-        variant="outline"
-        onClick={() => setIsColumnManagerOpen(true)}
-      >
+      <Button variant="outline" onClick={() => setIsColumnManagerOpen(true)}>
         <Settings2 className="mr-2 h-4 w-4" />
         Manage Columns
       </Button>
@@ -566,250 +562,253 @@ export function BoardDetailView({
 
       {/* Main Content */}
       <div className="flex flex-col gap-6 p-6 flex-1 overflow-hidden">
-      {activeNavTab === 'tasks' ? (
-        <>
-      {columnsWithCounts.length === 0 ? (
-        <div className="flex flex-col items-center justify-center gap-4 py-12">
-          <div className="text-center">
-            <h2 className="text-lg font-semibold">No columns yet</h2>
-            <p className="text-muted-foreground">
-              Create your first column to start organizing tasks
-            </p>
-          </div>
-          <Button
-            onClick={() => setIsColumnManagerOpen(true)}
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Create Column
-          </Button>
-        </div>
-      ) : visibleColumns.length === 0 ? (
-        <div className="flex flex-col items-center justify-center gap-4 py-12">
-          <div className="text-center max-w-md">
-            <h2 className="text-lg font-semibold">All columns are hidden</h2>
-            <p className="text-muted-foreground">
-              Enable at least one column in the manager to view tasks on this
-              board.
-            </p>
-          </div>
-          <Button
-            variant="outline"
-            onClick={() => setIsColumnManagerOpen(true)}
-          >
-            <Settings2 className="mr-2 h-4 w-4" />
-            Manage columns
-          </Button>
-        </div>
-      ) : (
-        <div className="flex flex-1 min-h-0 overflow-hidden">
-          <div className="flex-1 min-h-0 overflow-hidden">
-            {isKanbanView ? (
-              <BoardKanbanView
-                columns={visibleColumns}
-                columnOrder={visibleColumns.map(col => col.id)}
-                cardsByColumn={cardsByColumn}
-                isCreatingCard={isCreatingCard}
-                onDragStart={handleDragStart}
-                onDragCancel={handleDragCancel}
-                onDragEnd={handleDragEnd}
-                activeCard={activeDragCard}
-                onCardSelect={handleCardSelect}
-                selectedCardId={selectedCardId}
-                boardId={board.id}
-                onDeleteTask={handleDeleteCard}
-                onCreateTask={async task => {
-                  // Calculate position based on priority and name sorting
-                  const columnCards = cardsByColumn.get(task.columnId) || []
-
-                  // Find the correct position for the new card in the sorted order
-                  let targetPosition = 0
-                  for (const existingCard of columnCards) {
-                    const priorityOrder = { high: 3, medium: 2, low: 1 }
-                    const priorityDiff =
-                      priorityOrder[existingCard.priority] -
-                      priorityOrder[task.priority]
-
-                    if (priorityDiff > 0) {
-                      // Existing card has higher priority, new card goes before it
-                      break
-                    } else if (priorityDiff === 0) {
-                      // Same priority, compare names
-                      if (existingCard.title.localeCompare(task.title) <= 0) {
-                        // Existing card comes before alphabetically, new card goes after
-                        targetPosition = existingCard.position + 1
-                      } else {
-                        // New card comes before alphabetically
-                        break
-                      }
-                    } else {
-                      // Existing card has lower priority, new card goes before it
-                      break
-                    }
-                  }
-
-                  await createCardMutation.mutateAsync({
-                    id: task.id,
-                    boardId: task.boardId,
-                    columnId: task.columnId,
-                    title: task.title,
-                    description: task.description || undefined,
-                    priority: task.priority,
-                    dueDate: task.dueDate ?? undefined,
-                    position: targetPosition,
-                    tagIds: task.tagIds ?? [],
-                  })
-                }}
-              />
-            ) : resolvedViewMode === 'list' ? (
-              <BoardListView
-                columns={visibleColumns}
-                cardsByColumn={cardsByColumn}
-                isCreatingCard={isCreatingCard}
-                onCardSelect={handleCardSelect}
-                selectedCardId={selectedCardId}
-                boardId={board.id}
-                onDeleteTask={handleDeleteCard}
-                onCreateTask={async task => {
-                  await createCardMutation.mutateAsync({
-                    id: task.id,
-                    boardId: task.boardId,
-                    columnId: task.columnId,
-                    title: task.title,
-                    description: task.description || undefined,
-                    priority: task.priority,
-                    dueDate: task.dueDate ?? undefined,
-                    position: task.position,
-                    tagIds: task.tagIds ?? [],
-                  })
-                }}
-              />
+        {activeNavTab === 'tasks' ? (
+          <>
+            {columnsWithCounts.length === 0 ? (
+              <div className="flex flex-col items-center justify-center gap-4 py-12">
+                <div className="text-center">
+                  <h2 className="text-lg font-semibold">No columns yet</h2>
+                  <p className="text-muted-foreground">
+                    Create your first column to start organizing tasks
+                  </p>
+                </div>
+                <Button onClick={() => setIsColumnManagerOpen(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Column
+                </Button>
+              </div>
+            ) : visibleColumns.length === 0 ? (
+              <div className="flex flex-col items-center justify-center gap-4 py-12">
+                <div className="text-center max-w-md">
+                  <h2 className="text-lg font-semibold">
+                    All columns are hidden
+                  </h2>
+                  <p className="text-muted-foreground">
+                    Enable at least one column in the manager to view tasks on
+                    this board.
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  onClick={() => setIsColumnManagerOpen(true)}
+                >
+                  <Settings2 className="mr-2 h-4 w-4" />
+                  Manage columns
+                </Button>
+              </div>
             ) : (
-              <BoardTimelineView
-                cards={visibleCards}
-                columnsById={visibleColumnsById}
-                onDeleteTask={handleDeleteCard}
-              />
+              <div className="flex flex-1 min-h-0 overflow-hidden">
+                <div className="flex-1 min-h-0 overflow-hidden">
+                  {isKanbanView ? (
+                    <BoardKanbanView
+                      columns={visibleColumns}
+                      columnOrder={visibleColumns.map(col => col.id)}
+                      cardsByColumn={cardsByColumn}
+                      isCreatingCard={isCreatingCard}
+                      onDragStart={handleDragStart}
+                      onDragCancel={handleDragCancel}
+                      onDragEnd={handleDragEnd}
+                      activeCard={activeDragCard}
+                      onCardSelect={handleCardSelect}
+                      selectedCardId={selectedCardId}
+                      boardId={board.id}
+                      onDeleteTask={handleDeleteCard}
+                      onCreateTask={async task => {
+                        // Calculate position based on priority and name sorting
+                        const columnCards =
+                          cardsByColumn.get(task.columnId) || []
+
+                        // Find the correct position for the new card in the sorted order
+                        let targetPosition = 0
+                        for (const existingCard of columnCards) {
+                          const priorityOrder = { high: 3, medium: 2, low: 1 }
+                          const priorityDiff =
+                            priorityOrder[existingCard.priority] -
+                            priorityOrder[task.priority]
+
+                          if (priorityDiff > 0) {
+                            // Existing card has higher priority, new card goes before it
+                            break
+                          } else if (priorityDiff === 0) {
+                            // Same priority, compare names
+                            if (
+                              existingCard.title.localeCompare(task.title) <= 0
+                            ) {
+                              // Existing card comes before alphabetically, new card goes after
+                              targetPosition = existingCard.position + 1
+                            } else {
+                              // New card comes before alphabetically
+                              break
+                            }
+                          } else {
+                            // Existing card has lower priority, new card goes before it
+                            break
+                          }
+                        }
+
+                        await createCardMutation.mutateAsync({
+                          id: task.id,
+                          boardId: task.boardId,
+                          columnId: task.columnId,
+                          title: task.title,
+                          description: task.description || undefined,
+                          priority: task.priority,
+                          dueDate: task.dueDate ?? undefined,
+                          position: targetPosition,
+                          tagIds: task.tagIds ?? [],
+                        })
+                      }}
+                    />
+                  ) : resolvedViewMode === 'list' ? (
+                    <BoardListView
+                      columns={visibleColumns}
+                      cardsByColumn={cardsByColumn}
+                      isCreatingCard={isCreatingCard}
+                      onCardSelect={handleCardSelect}
+                      selectedCardId={selectedCardId}
+                      boardId={board.id}
+                      onDeleteTask={handleDeleteCard}
+                      onCreateTask={async task => {
+                        await createCardMutation.mutateAsync({
+                          id: task.id,
+                          boardId: task.boardId,
+                          columnId: task.columnId,
+                          title: task.title,
+                          description: task.description || undefined,
+                          priority: task.priority,
+                          dueDate: task.dueDate ?? undefined,
+                          position: task.position,
+                          tagIds: task.tagIds ?? [],
+                        })
+                      }}
+                    />
+                  ) : (
+                    <BoardTimelineView
+                      cards={visibleCards}
+                      columnsById={visibleColumnsById}
+                      onDeleteTask={handleDeleteCard}
+                    />
+                  )}
+                </div>
+              </div>
             )}
-          </div>
-        </div>
-      )}
-        </>
-      ) : (
-        <div className="flex flex-col items-center justify-center gap-4 py-12 flex-1">
-          <div className="text-center">
-            <h2 className="text-lg font-semibold capitalize">{activeNavTab}</h2>
-            <p className="text-muted-foreground">
-              This section is coming soon
-            </p>
-          </div>
-        </div>
-      )}
-
-      <ColumnManagerDialog
-        boardId={board.id}
-        columns={columnsWithCounts}
-        open={isColumnManagerOpen}
-        onOpenChange={setIsColumnManagerOpen}
-      />
-
-      {/* Task Details Panel */}
-      {selectedCard ? (
-        <TaskDetailsPanel
-          card={selectedCard}
-          column={columnsById.get(selectedCard.columnId) ?? null}
-          onClose={handleCloseDetails}
-        />
-      ) : null}
-
-      
-
-      {/* Create Card Dialog */}
-      {isCardDialogOpen && cardDialogColumn && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-background rounded-lg shadow-lg w-full max-w-md">
-            <div className="p-6">
-              <h2 className="text-lg font-semibold mb-4">
-                Create Task in {cardDialogColumn.title}
+          </>
+        ) : (
+          <div className="flex flex-col items-center justify-center gap-4 py-12 flex-1">
+            <div className="text-center">
+              <h2 className="text-lg font-semibold capitalize">
+                {activeNavTab}
               </h2>
-              <form onSubmit={handleCreateCard}>
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor={cardTitleId}>Title</Label>
-                    <Input
-                      id={cardTitleId}
-                      value={cardTitle}
-                      onChange={e => setCardTitle(e.target.value)}
-                      placeholder="Enter task title"
-                      disabled={isCreatingCard}
-                      autoFocus
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor={cardDescriptionId}>Description</Label>
-                    <Textarea
-                      id={cardDescriptionId}
-                      value={cardDescription}
-                      onChange={e => setCardDescription(e.target.value)}
-                      placeholder="Enter task description (optional)"
-                      disabled={isCreatingCard}
-                      rows={3}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="card-priority">Priority</Label>
-                    <Select
-                      value={cardPriority}
-                      onValueChange={(value: KanbanPriority) =>
-                        setCardPriority(value)
-                      }
-                      disabled={isCreatingCard}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="low">Low</SelectItem>
-                        <SelectItem value="medium">Medium</SelectItem>
-                        <SelectItem value="high">High</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label htmlFor={cardDueDateId}>Due Date</Label>
-                    <Input
-                      id={cardDueDateId}
-                      type="date"
-                      value={cardDueDate}
-                      onChange={e => setCardDueDate(e.target.value)}
-                      disabled={isCreatingCard}
-                    />
-                  </div>
-                </div>
-                <div className="flex justify-end gap-2 mt-6">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => {
-                      setIsCardDialogOpen(false)
-                      setCardDialogColumn(null)
-                      resetCardForm()
-                    }}
-                    disabled={isCreatingCard}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    type="submit"
-                    disabled={isCreatingCard || !cardTitle.trim()}
-                  >
-                    {isCreatingCard ? 'Creating...' : 'Create Task'}
-                  </Button>
-                </div>
-              </form>
+              <p className="text-muted-foreground">
+                This section is coming soon
+              </p>
             </div>
           </div>
-        </div>
-      )}
+        )}
+
+        <ColumnManagerDialog
+          boardId={board.id}
+          columns={columnsWithCounts}
+          open={isColumnManagerOpen}
+          onOpenChange={setIsColumnManagerOpen}
+        />
+
+        {/* Task Details Panel */}
+        {selectedCard ? (
+          <TaskDetailsPanel
+            card={selectedCard}
+            column={columnsById.get(selectedCard.columnId) ?? null}
+            onClose={handleCloseDetails}
+          />
+        ) : null}
+
+        {/* Create Card Dialog */}
+        {isCardDialogOpen && cardDialogColumn && (
+          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+            <div className="bg-background rounded-lg shadow-lg w-full max-w-md">
+              <div className="p-6">
+                <h2 className="text-lg font-semibold mb-4">
+                  Create Task in {cardDialogColumn.title}
+                </h2>
+                <form onSubmit={handleCreateCard}>
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor={cardTitleId}>Title</Label>
+                      <Input
+                        id={cardTitleId}
+                        value={cardTitle}
+                        onChange={e => setCardTitle(e.target.value)}
+                        placeholder="Enter task title"
+                        disabled={isCreatingCard}
+                        autoFocus
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor={cardDescriptionId}>Description</Label>
+                      <Textarea
+                        id={cardDescriptionId}
+                        value={cardDescription}
+                        onChange={e => setCardDescription(e.target.value)}
+                        placeholder="Enter task description (optional)"
+                        disabled={isCreatingCard}
+                        rows={3}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="card-priority">Priority</Label>
+                      <Select
+                        value={cardPriority}
+                        onValueChange={(value: KanbanPriority) =>
+                          setCardPriority(value)
+                        }
+                        disabled={isCreatingCard}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="low">Low</SelectItem>
+                          <SelectItem value="medium">Medium</SelectItem>
+                          <SelectItem value="high">High</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor={cardDueDateId}>Due Date</Label>
+                      <Input
+                        id={cardDueDateId}
+                        type="date"
+                        value={cardDueDate}
+                        onChange={e => setCardDueDate(e.target.value)}
+                        disabled={isCreatingCard}
+                      />
+                    </div>
+                  </div>
+                  <div className="flex justify-end gap-2 mt-6">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        setIsCardDialogOpen(false)
+                        setCardDialogColumn(null)
+                        resetCardForm()
+                      }}
+                      disabled={isCreatingCard}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="submit"
+                      disabled={isCreatingCard || !cardTitle.trim()}
+                    >
+                      {isCreatingCard ? 'Creating...' : 'Create Task'}
+                    </Button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )

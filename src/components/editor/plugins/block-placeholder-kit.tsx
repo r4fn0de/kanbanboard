@@ -1,7 +1,7 @@
-'use client';
+'use client'
 
-import { KEYS } from 'platejs';
-import { BlockPlaceholderPlugin } from 'platejs/react';
+import { KEYS } from 'platejs'
+import { BlockPlaceholderPlugin } from 'platejs/react'
 
 export const BlockPlaceholderKit = [
   BlockPlaceholderPlugin.configure({
@@ -12,8 +12,8 @@ export const BlockPlaceholderKit = [
         [KEYS.p]: 'Type something...',
       },
       query: ({ path }) => {
-        return path.length === 1;
+        return path.length === 1
       },
     },
   }),
-];
+]

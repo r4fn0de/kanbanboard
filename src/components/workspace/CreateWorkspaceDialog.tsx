@@ -1,6 +1,5 @@
-import { useState, useCallback, FormEvent, useId } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { X, Check, Sparkles, Upload, Palette, Image as ImageIcon } from 'lucide-react'
+import { useState, useCallback, type FormEvent, useId } from 'react'
+import { X, Upload, Palette } from 'lucide-react'
 import { open as openDialog } from '@tauri-apps/plugin-dialog'
 import { readFile } from '@tauri-apps/plugin-fs'
 import { invoke } from '@tauri-apps/api/core'
@@ -46,16 +45,16 @@ export function CreateWorkspaceDialog({
   onOpenChange,
   onSuccess,
 }: CreateWorkspaceDialogProps) {
-  const [step, setStep] = useState<'name' | 'customize'>('name')
   const [workspaceName, setWorkspaceName] = useState('')
   const [workspaceColor, setWorkspaceColor] = useState(DEFAULT_WORKSPACE_COLOR)
-  const [workspaceIconPath, setWorkspaceIconPath] = useState<string | null>(null)
-  const [workspaceIconPreview, setWorkspaceIconPreview] = useState<string | null>(null)
+  const [workspaceIconPreview, setWorkspaceIconPreview] = useState<
+    string | null
+  >(null)
   const [cropperOpen, setCropperOpen] = useState(false)
   const [originalImageSrc, setOriginalImageSrc] = useState<string | null>(null)
   const [croppedImageBlob, setCroppedImageBlob] = useState<Blob | null>(null)
   const [error, setError] = useState<string | null>(null)
-  
+
   const nameId = useId()
   const { mutateAsync: createWorkspace, isPending } = useCreateWorkspace()
 
@@ -67,10 +66,8 @@ export function CreateWorkspaceDialog({
     if (workspaceIconPreview) {
       URL.revokeObjectURL(workspaceIconPreview)
     }
-    setStep('name')
     setWorkspaceName('')
     setWorkspaceColor(DEFAULT_WORKSPACE_COLOR)
-    setWorkspaceIconPath(null)
     setWorkspaceIconPreview(null)
     setCropperOpen(false)
     setOriginalImageSrc(null)
@@ -109,24 +106,24 @@ export function CreateWorkspaceDialog({
       const fileBytes = await readFile(filePath)
       const extension = filePath.split('.').pop()?.toLowerCase()
       const mimeTypes: Record<string, string> = {
-        'png': 'image/png',
-        'jpg': 'image/jpeg',
-        'jpeg': 'image/jpeg',
-        'gif': 'image/gif',
-        'webp': 'image/webp',
-        'svg': 'image/svg+xml',
-        'bmp': 'image/bmp'
+        png: 'image/png',
+        jpg: 'image/jpeg',
+        jpeg: 'image/jpeg',
+        gif: 'image/gif',
+        webp: 'image/webp',
+        svg: 'image/svg+xml',
+        bmp: 'image/bmp',
       }
       const mimeType = mimeTypes[extension ?? ''] ?? 'image/png'
-      
+
       const blob = new Blob([fileBytes], { type: mimeType })
       const dataUrl = URL.createObjectURL(blob)
-      
+
       setOriginalImageSrc(dataUrl)
-      setWorkspaceIconPath(filePath)
       setCropperOpen(true)
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to select image'
+      const message =
+        error instanceof Error ? error.message : 'Failed to select image'
       toast.error(message)
     }
   }, [])
@@ -135,7 +132,6 @@ export function CreateWorkspaceDialog({
     if (workspaceIconPreview) {
       URL.revokeObjectURL(workspaceIconPreview)
     }
-    setWorkspaceIconPath(null)
     setWorkspaceIconPreview(null)
     setCroppedImageBlob(null)
   }, [workspaceIconPreview])
@@ -151,23 +147,11 @@ export function CreateWorkspaceDialog({
       URL.revokeObjectURL(originalImageSrc)
     }
     setOriginalImageSrc(null)
-    setWorkspaceIconPath(null)
     setCroppedImageBlob(null)
     setCropperOpen(false)
   }, [originalImageSrc])
 
-  const handleNameSubmit = (event: FormEvent) => {
-    event.preventDefault()
-    const trimmedName = workspaceName.trim()
-    if (!trimmedName) {
-      setError('Workspace name is required')
-      return
-    }
-    setError(null)
-    setStep('customize')
-  }
-
-  const handleFinalSubmit = async (event: FormEvent) => {
+  const handleSubmit = async (event: FormEvent) => {
     event.preventDefault()
     if (isPending) return
 
@@ -187,10 +171,10 @@ export function CreateWorkspaceDialog({
       if (croppedImageBlob) {
         const arrayBuffer = await croppedImageBlob.arrayBuffer()
         const uint8Array = new Uint8Array(arrayBuffer)
-        
+
         finalIconPath = await invoke<string>('save_cropped_workspace_icon', {
           workspaceId,
-          imageData: Array.from(uint8Array)
+          imageData: Array.from(uint8Array),
         })
       }
 
@@ -206,7 +190,8 @@ export function CreateWorkspaceDialog({
       handleDialogChange(false)
       onSuccess?.(workspace.id)
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to create workspace'
+      const message =
+        error instanceof Error ? error.message : 'Failed to create workspace'
       setError(message)
       toast.error(message)
     }
@@ -218,267 +203,172 @@ export function CreateWorkspaceDialog({
         <DialogPortal>
           <DialogBackdrop />
           <DialogPopup
-            className="sm:max-w-[480px] p-0 gap-0 overflow-hidden"
+            className="sm:max-w-[440px] p-0 gap-0 overflow-hidden"
             showCloseButton={false}
           >
             {/* Header */}
-            <div className="px-6 pt-6 pb-2 flex flex-col space-y-1.5">
-              <DialogTitle className="flex items-center gap-2 text-xl font-semibold">
-                <Sparkles className="h-5 w-5 text-primary" />
+            <div className="relative px-6 pt-6 pb-4">
+              <button
+                onClick={() => handleDialogChange(false)}
+                className="absolute right-6 top-6 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none"
+              >
+                <X className="h-4 w-4" />
+                <span className="sr-only">Close</span>
+              </button>
+              <DialogTitle className="text-xl font-semibold">
                 Create Workspace
               </DialogTitle>
-              <DialogDescription className="text-sm text-muted-foreground">
-                {step === 'name' 
-                  ? 'Give your workspace a memorable name' 
-                  : 'Personalize your workspace'}
+              <DialogDescription className="text-sm text-muted-foreground mt-1">
+                Create and customize a workspace.
               </DialogDescription>
             </div>
 
-            <div className="relative px-6 pb-6">
-            {/* Progress Indicator */}
-            <div className="flex items-center gap-2 mb-6 mt-2">
-              <motion.div 
-                className={cn(
-                  "h-1.5 rounded-full flex-1 transition-colors",
-                  step === 'name' ? 'bg-primary' : 'bg-primary'
-                )}
-                initial={{ scaleX: 0 }}
-                animate={{ scaleX: 1 }}
-                transition={{ duration: 0.3 }}
-              />
-              <motion.div 
-                className={cn(
-                  "h-1.5 rounded-full flex-1 transition-colors",
-                  step === 'customize' ? 'bg-primary' : 'bg-muted'
-                )}
-                initial={{ scaleX: 0 }}
-                animate={{ scaleX: step === 'customize' ? 1 : 0 }}
-                transition={{ duration: 0.3 }}
-              />
-            </div>
-
-            <AnimatePresence mode="wait">
-              {step === 'name' ? (
-                <motion.form
-                  key="name-step"
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 20 }}
-                  transition={{ duration: 0.2 }}
-                  onSubmit={handleNameSubmit}
-                  className="space-y-6"
-                >
-                  <div className="space-y-3">
-                    <Label htmlFor={nameId} className="text-sm font-medium">
-                      Workspace Name
-                    </Label>
-                    <Input
-                      id={nameId}
-                      value={workspaceName}
-                      onChange={(e) => {
-                        setWorkspaceName(e.target.value)
-                        setError(null)
-                      }}
-                      placeholder="e.g., Product Team, Marketing, Design"
-                      autoFocus
-                      className="text-base h-11"
-                      maxLength={50}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      {workspaceName.length}/50 characters
-                    </p>
-                  </div>
-
-                  {error && (
-                    <motion.p
-                      initial={{ opacity: 0, y: -10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="text-sm text-destructive flex items-center gap-2"
+            {/* Form Content */}
+            <form onSubmit={handleSubmit} className="px-6 pb-6 space-y-6">
+              {/* Icon Section */}
+              <div className="flex items-start gap-4">
+                <div className="relative flex-shrink-0">
+                  {workspaceIconPreview ? (
+                    <>
+                      <img
+                        src={workspaceIconPreview}
+                        alt="Workspace icon"
+                        className="h-16 w-16 rounded-xl object-cover"
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={handleClearIcon}
+                        className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-background shadow-sm hover:bg-destructive hover:text-destructive-foreground"
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </>
+                  ) : (
+                    <div
+                      className="h-16 w-16 rounded-xl flex items-center justify-center font-semibold text-white text-xl"
+                      style={{ backgroundColor: workspaceColor }}
                     >
-                      <span className="h-1 w-1 rounded-full bg-destructive" />
-                      {error}
-                    </motion.p>
-                  )}
-
-                  <div className="flex gap-3 pt-4">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => handleDialogChange(false)}
-                      className="flex-1"
-                    >
-                      Cancel
-                    </Button>
-                    <Button 
-                      type="submit" 
-                      className="flex-1 gap-2"
-                      disabled={!workspaceName.trim()}
-                    >
-                      Continue
-                      <Check className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </motion.form>
-              ) : (
-                <motion.form
-                  key="customize-step"
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  transition={{ duration: 0.2 }}
-                  onSubmit={handleFinalSubmit}
-                  className="space-y-6"
-                >
-                  {/* Workspace Preview */}
-                  <div className="flex items-center justify-center py-4">
-                    <motion.div
-                      initial={{ scale: 0.8, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      transition={{ delay: 0.1 }}
-                      className="relative"
-                    >
-                      {workspaceIconPreview ? (
-                        <div className="relative">
-                          <img
-                            src={workspaceIconPreview}
-                            alt="Workspace preview"
-                            className="h-20 w-20 rounded-2xl object-cover ring-4 ring-background shadow-lg"
-                          />
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            onClick={handleClearIcon}
-                            className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-background shadow-md hover:bg-destructive hover:text-destructive-foreground"
-                          >
-                            <X className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      ) : (
-                        <div
-                          className="h-20 w-20 rounded-2xl ring-4 ring-background shadow-lg flex items-center justify-center font-semibold text-white text-2xl"
-                          style={{ backgroundColor: workspaceColor }}
-                        >
-                          {workspaceName.charAt(0).toUpperCase() || '?'}
-                        </div>
-                      )}
-                    </motion.div>
-                  </div>
-
-                  <div className="text-center">
-                    <h3 className="font-semibold text-lg">{workspaceName}</h3>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Customize your workspace
-                    </p>
-                  </div>
-
-                  {/* Icon Upload */}
-                  <div className="space-y-3">
-                    <Label className="text-sm font-medium flex items-center gap-2">
-                      <ImageIcon className="h-4 w-4" />
-                      Workspace Icon
-                    </Label>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={handleSelectIcon}
-                      disabled={isPending}
-                      className="w-full h-auto py-4 border-dashed"
-                    >
-                      <div className="flex flex-col items-center gap-2">
-                        <Upload className="h-5 w-5 text-muted-foreground" />
-                        <div className="text-sm">
-                          <span className="font-medium text-primary">Upload an image</span>
-                          <span className="text-muted-foreground"> or drag and drop</span>
-                        </div>
-                        <span className="text-xs text-muted-foreground">
-                          PNG, JPG, SVG (recommended 64x64px)
-                        </span>
-                      </div>
-                    </Button>
-                  </div>
-
-                  {/* Color Picker */}
-                  {!workspaceIconPreview && (
-                    <div className="space-y-3">
-                      <Label className="text-sm font-medium flex items-center gap-2">
-                        <Palette className="h-4 w-4" />
-                        Workspace Color
-                      </Label>
-                      <div className="flex flex-wrap gap-2">
-                        {PRESET_COLORS.map((color) => (
-                          <button
-                            key={color.value}
-                            type="button"
-                            onClick={() => setWorkspaceColor(color.value)}
-                            className={cn(
-                              "h-10 w-10 rounded-lg transition-all hover:scale-110",
-                              workspaceColor === color.value
-                                ? 'ring-2 ring-primary ring-offset-2 ring-offset-background scale-110'
-                                : 'hover:ring-2 hover:ring-muted'
-                            )}
-                            style={{ backgroundColor: color.value }}
-                            title={color.name}
-                          />
-                        ))}
-                        <input
-                          type="color"
-                          value={workspaceColor}
-                          onChange={(e) => setWorkspaceColor(e.target.value)}
-                          className="h-10 w-10 rounded-lg cursor-pointer border-2 border-border"
-                          title="Custom color"
-                        />
-                      </div>
+                      {workspaceName.charAt(0).toUpperCase() || 'W'}
                     </div>
                   )}
-
-                  {error && (
-                    <motion.p
-                      initial={{ opacity: 0, y: -10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="text-sm text-destructive flex items-center gap-2"
-                    >
-                      <span className="h-1 w-1 rounded-full bg-destructive" />
-                      {error}
-                    </motion.p>
-                  )}
-
-                  <div className="flex gap-3 pt-4">
+                </div>
+                <div className="flex-1 space-y-2">
+                  <Label className="text-xs font-medium text-muted-foreground">
+                    Set an Icon
+                  </Label>
+                  <div className="flex gap-2">
                     <Button
                       type="button"
                       variant="outline"
-                      onClick={() => setStep('name')}
-                      disabled={isPending}
-                      className="flex-1"
+                      size="sm"
+                      onClick={handleSelectIcon}
+                      className="gap-2 h-8 text-xs"
                     >
-                      Back
+                      <Upload className="h-3 w-3" />
+                      Upload Image
                     </Button>
-                    <Button 
-                      type="submit" 
-                      disabled={isPending}
-                      className="flex-1 gap-2"
-                    >
-                      {isPending ? (
-                        <>
-                          <motion.div
-                            animate={{ rotate: 360 }}
-                            transition={{ duration: 1, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
-                            className="h-4 w-4 border-2 border-current border-t-transparent rounded-full"
-                          />
-                          Creating...
-                        </>
-                      ) : (
-                        <>
-                          Create Workspace
-                          <Sparkles className="h-4 w-4" />
-                        </>
-                      )}
-                    </Button>
+                    {workspaceIconPreview && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleClearIcon}
+                        className="h-8 text-xs"
+                      >
+                        Remove
+                      </Button>
+                    )}
                   </div>
-                </motion.form>
+                </div>
+              </div>
+
+              {/* Name Input */}
+              <div className="space-y-2">
+                <Label htmlFor={nameId} className="text-sm font-medium">
+                  Name
+                </Label>
+                <Input
+                  id={nameId}
+                  value={workspaceName}
+                  onChange={e => {
+                    setWorkspaceName(e.target.value)
+                    setError(null)
+                  }}
+                  placeholder="workspace"
+                  autoFocus
+                  className="h-9"
+                  maxLength={50}
+                />
+              </div>
+
+              {/* Color Picker - Only show if no icon */}
+              {!workspaceIconPreview && (
+                <div className="space-y-3">
+                  <Label className="text-sm font-medium flex items-center gap-2">
+                    <Palette className="h-4 w-4" />
+                    Color
+                  </Label>
+                  <div className="flex flex-wrap gap-2">
+                    {PRESET_COLORS.map(color => (
+                      <button
+                        key={color.value}
+                        type="button"
+                        onClick={() => setWorkspaceColor(color.value)}
+                        className={cn(
+                          'h-8 w-8 rounded-lg transition-all hover:scale-110 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2',
+                          workspaceColor === color.value
+                            ? 'ring-2 ring-primary ring-offset-2 scale-110'
+                            : ''
+                        )}
+                        style={{ backgroundColor: color.value }}
+                        title={color.name}
+                        aria-label={`Select ${color.name} color`}
+                      />
+                    ))}
+                    <div className="relative">
+                      <input
+                        type="color"
+                        value={workspaceColor}
+                        onChange={e => setWorkspaceColor(e.target.value)}
+                        className="h-8 w-8 rounded-lg cursor-pointer"
+                        title="Custom color"
+                        style={{
+                          border: '2px solid hsl(var(--border))',
+                          backgroundColor: workspaceColor,
+                        }}
+                      />
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Choose a color for your workspace icon.
+                  </p>
+                </div>
               )}
-            </AnimatePresence>
-          </div>
+
+              {error && <p className="text-sm text-destructive">{error}</p>}
+
+              {/* Action Buttons */}
+              <div className="flex gap-3 pt-2">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => handleDialogChange(false)}
+                  disabled={isPending}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={!workspaceName.trim() || isPending}
+                  className="flex-1"
+                >
+                  {isPending ? 'Creating...' : 'Create Workspace'}
+                </Button>
+              </div>
+            </form>
           </DialogPopup>
         </DialogPortal>
       </Dialog>
@@ -491,8 +381,8 @@ export function CreateWorkspaceDialog({
           imageSrc={originalImageSrc}
           onCropComplete={handleCropComplete}
           onCancel={handleCropCancel}
-          aspect={1}
-          shape="round"
+          aspectRatio={1}
+          recommendedSize="64x64px"
         />
       )}
     </>

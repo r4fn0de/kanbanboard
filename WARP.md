@@ -3,10 +3,12 @@
 This file provides guidance to WARP (warp.dev) when working with code in this repository.
 
 Project overview
+
 - Desktop app built with React + TypeScript (Vite) packaged via Tauri v2 (Rust). Frontend lives under src/, Tauri under src-tauri/.
 - Path alias: import from '@/...' resolves to src/... (see tsconfig.json and vite.config.ts).
 
 Core commands
+
 - Install deps
   - npm install
 - Frontend (Vite)
@@ -41,9 +43,10 @@ Core commands
 - Optional: bundle size sanity build: npm run build:analyze
 
 Architecture and structure
+
 - React + Vite (TypeScript)
   - Vite dev server is configured on port 1420 with strictPort and HMR (see vite.config.ts). Alias '@' -> src.
-  - Vitest uses jsdom, loads setup from src/test/setup.ts, and includes tests under src/**/*.{test,spec}.{ts,tsx,...} (see vitest.config.ts).
+  - Vitest uses jsdom, loads setup from src/test/setup.ts, and includes tests under src/\*_/_.{test,spec}.{ts,tsx,...} (see vitest.config.ts).
 - Command system (src/lib/commands)
   - Central registry and a minimal CommandContext unify palette, keyboard shortcuts, and menus.
   - Follows the getState() performance pattern: access Zustand state via useStore.getState() inside command handlers to avoid render cascades.
@@ -56,14 +59,17 @@ Architecture and structure
   - Tauri v2 with plugins (clipboard, dialog, fs, log, notification, process, opener; updater on desktop builds). Release profile is optimized for size.
 
 CI/CD and releases
-- GitHub Actions: .github/workflows/release.yml builds and drafts a release on tags matching v* (or via manual dispatch). The action uses tauri-apps/tauri-action to produce macOS artifacts and updater metadata.
+
+- GitHub Actions: .github/workflows/release.yml builds and drafts a release on tags matching v\* (or via manual dispatch). The action uses tauri-apps/tauri-action to produce macOS artifacts and updater metadata.
 
 Docs and guides to consult
+
 - README.md (root): Quick start, architecture highlights (command system, state onion), quality gates and production checklist.
 - docs/README.md: Index for developer and user docs.
 - src/lib/commands/README.md: How to define/register commands and performance notes.
 
 Rules from CLAUDE/Cursor (mirrored here for Warp)
+
 - Read before editing: open and understand files before applying changes.
 - Follow established patterns in docs/developer and the command/state patterns above.
 - Performance: prefer getState() access inside commands to avoid unnecessary renders.
@@ -73,4 +79,5 @@ Rules from CLAUDE/Cursor (mirrored here for Warp)
 - Cursor rules import CLAUDE.md via .cursor/rules/main.mdc; treat CLAUDE.md as the source of truth for agent behavior in this repo.
 
 Environment notes
+
 - Desktop dev/build requires a working Rust toolchain (rustup). Ensure your shell session has Rust environment initialized before running Tauri commands.

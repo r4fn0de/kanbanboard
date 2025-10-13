@@ -1,69 +1,69 @@
-'use client';
+'use client'
 
-import * as React from 'react';
+import * as React from 'react'
 
-import { Menu } from '@base-ui-components/react/menu';
-import { MarkdownPlugin } from '@platejs/markdown';
-import { ArrowUpToLineIcon } from 'lucide-react';
-import { getEditorDOMFromHtmlString } from 'platejs';
-import { useEditorRef } from 'platejs/react';
-import { useFilePicker } from 'use-file-picker';
+import { Menu } from '@base-ui-components/react/menu'
+import { MarkdownPlugin } from '@platejs/markdown'
+import { ArrowUpToLineIcon } from 'lucide-react'
+import { getEditorDOMFromHtmlString } from 'platejs'
+import { useEditorRef } from 'platejs/react'
+import { useFilePicker } from 'use-file-picker'
 
-import { ToolbarButton } from './toolbar';
+import { ToolbarButton } from './toolbar'
 
-type ImportType = 'html' | 'markdown';
+type ImportType = 'html' | 'markdown'
 
 interface ImportToolbarButtonProps {
-  open?: boolean;
-  onOpenChange?: (open: boolean) => void;
-  defaultOpen?: boolean;
-  disabled?: boolean;
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+  defaultOpen?: boolean
+  disabled?: boolean
 }
 
 export function ImportToolbarButton(props: ImportToolbarButtonProps) {
-  const editor = useEditorRef();
-  const [open, setOpen] = React.useState(false);
+  const editor = useEditorRef()
+  const [open, setOpen] = React.useState(false)
 
   const getFileNodes = (text: string, type: ImportType) => {
     if (type === 'html') {
-      const editorNode = getEditorDOMFromHtmlString(text);
+      const editorNode = getEditorDOMFromHtmlString(text)
       const nodes = editor.api.html.deserialize({
         element: editorNode,
-      });
+      })
 
-      return nodes;
+      return nodes
     }
 
     if (type === 'markdown') {
-      return editor.getApi(MarkdownPlugin).markdown.deserialize(text);
+      return editor.getApi(MarkdownPlugin).markdown.deserialize(text)
     }
 
-    return [];
-  };
+    return []
+  }
 
   const { openFilePicker: openMdFilePicker } = useFilePicker({
     accept: ['.md', '.mdx'],
     multiple: false,
     onFilesSelected: async ({ plainFiles }) => {
-      const text = await plainFiles[0].text();
+      const text = await plainFiles[0].text()
 
-      const nodes = getFileNodes(text, 'markdown');
+      const nodes = getFileNodes(text, 'markdown')
 
-      editor.tf.insertNodes(nodes);
+      editor.tf.insertNodes(nodes)
     },
-  });
+  })
 
   const { openFilePicker: openHtmlFilePicker } = useFilePicker({
     accept: ['text/html'],
     multiple: false,
     onFilesSelected: async ({ plainFiles }) => {
-      const text = await plainFiles[0].text();
+      const text = await plainFiles[0].text()
 
-      const nodes = getFileNodes(text, 'html');
+      const nodes = getFileNodes(text, 'html')
 
-      editor.tf.insertNodes(nodes);
+      editor.tf.insertNodes(nodes)
     },
-  });
+  })
 
   return (
     <Menu.Root open={open} onOpenChange={setOpen} modal={false} {...props}>
@@ -79,8 +79,8 @@ export function ImportToolbarButton(props: ImportToolbarButtonProps) {
             <Menu.Group>
               <Menu.Item
                 onClick={() => {
-                  openHtmlFilePicker();
-                  setOpen(false);
+                  openHtmlFilePicker()
+                  setOpen(false)
                 }}
                 className="relative flex cursor-pointer select-none items-center rounded-sm px-1.5 py-1 outline-none hover:bg-accent focus:bg-accent data-[disabled]:pointer-events-none data-[disabled]:opacity-50 min-w-[160px]"
               >
@@ -89,8 +89,8 @@ export function ImportToolbarButton(props: ImportToolbarButtonProps) {
 
               <Menu.Item
                 onClick={() => {
-                  openMdFilePicker();
-                  setOpen(false);
+                  openMdFilePicker()
+                  setOpen(false)
                 }}
                 className="relative flex cursor-pointer select-none items-center rounded-sm px-1.5 py-1 outline-none hover:bg-accent focus:bg-accent data-[disabled]:pointer-events-none data-[disabled]:opacity-50 min-w-[160px]"
               >
@@ -101,5 +101,5 @@ export function ImportToolbarButton(props: ImportToolbarButtonProps) {
         </Menu.Positioner>
       </Menu.Portal>
     </Menu.Root>
-  );
+  )
 }

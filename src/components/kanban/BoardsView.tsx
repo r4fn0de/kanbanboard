@@ -149,7 +149,6 @@ export function BoardsView() {
     [handleSelectBoard]
   )
 
-
   const handleEmptyStateCreate = useCallback(() => {
     setIsDialogOpen(true)
   }, [])

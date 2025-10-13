@@ -1,16 +1,16 @@
-'use client';
+'use client'
 
-import * as React from 'react';
+import * as React from 'react'
 import TextareaAutosize, {
   type TextareaAutosizeProps,
-} from 'react-textarea-autosize';
+} from 'react-textarea-autosize'
 
-import type { TEquationElement } from 'platejs';
-import type { PlateElementProps } from 'platejs/react';
+import type { TEquationElement } from 'platejs'
+import type { PlateElementProps } from 'platejs/react'
 
-import { useEquationElement, useEquationInput } from '@platejs/math/react';
-import { BlockSelectionPlugin } from '@platejs/selection/react';
-import { CornerDownLeftIcon, RadicalIcon } from 'lucide-react';
+import { useEquationElement, useEquationInput } from '@platejs/math/react'
+import { BlockSelectionPlugin } from '@platejs/selection/react'
+import { CornerDownLeftIcon, RadicalIcon } from 'lucide-react'
 import {
   createPrimitiveComponent,
   PlateElement,
@@ -19,20 +19,20 @@ import {
   useElement,
   useReadOnly,
   useSelected,
-} from 'platejs/react';
+} from 'platejs/react'
 
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui/button'
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '@/components/ui/popover';
-import { cn } from '@/lib/utils';
+} from '@/components/ui/popover'
+import { cn } from '@/lib/utils'
 
 export function EquationElement(props: PlateElementProps<TEquationElement>) {
-  const selected = useSelected();
-  const [open, setOpen] = React.useState(selected);
-  const katexRef = React.useRef<HTMLDivElement | null>(null);
+  const selected = useSelected()
+  const [open, setOpen] = React.useState(selected)
+  const katexRef = React.useRef<HTMLDivElement | null>(null)
 
   useEquationElement({
     element: props.element,
@@ -48,7 +48,7 @@ export function EquationElement(props: PlateElementProps<TEquationElement>) {
       throwOnError: false,
       trust: false,
     },
-  });
+  })
 
   return (
     <PlateElement className="my-1" {...props}>
@@ -86,26 +86,23 @@ export function EquationElement(props: PlateElementProps<TEquationElement>) {
 
       {props.children}
     </PlateElement>
-  );
+  )
 }
 
 export function InlineEquationElement(
   props: PlateElementProps<TEquationElement>
 ) {
-  const element = props.element;
-  const katexRef = React.useRef<HTMLDivElement | null>(null);
-  const selected = useSelected();
-  const isCollapsed = useEditorSelector(
-    (editor) => editor.api.isCollapsed(),
-    []
-  );
-  const [open, setOpen] = React.useState(selected && isCollapsed);
+  const element = props.element
+  const katexRef = React.useRef<HTMLDivElement | null>(null)
+  const selected = useSelected()
+  const isCollapsed = useEditorSelector(editor => editor.api.isCollapsed(), [])
+  const [open, setOpen] = React.useState(selected && isCollapsed)
 
   React.useEffect(() => {
     if (selected && isCollapsed) {
-      setOpen(true);
+      setOpen(true)
     }
-  }, [selected, isCollapsed]);
+  }, [selected, isCollapsed])
 
   useEquationElement({
     element,
@@ -121,7 +118,7 @@ export function InlineEquationElement(
       throwOnError: false,
       trust: false,
     },
-  });
+  })
 
   return (
     <PlateElement
@@ -170,12 +167,12 @@ export function InlineEquationElement(
 
       {props.children}
     </PlateElement>
-  );
+  )
 }
 
 const EquationInput = createPrimitiveComponent(TextareaAutosize)({
   propsHook: useEquationInput,
-});
+})
 
 const EquationPopoverContent = ({
   className,
@@ -184,39 +181,39 @@ const EquationPopoverContent = ({
   setOpen,
   ...props
 }: {
-  isInline: boolean;
-  open: boolean;
-  setOpen: (open: boolean) => void;
+  isInline: boolean
+  open: boolean
+  setOpen: (open: boolean) => void
 } & TextareaAutosizeProps) => {
-  const editor = useEditorRef();
-  const readOnly = useReadOnly();
-  const element = useElement<TEquationElement>();
+  const editor = useEditorRef()
+  const readOnly = useReadOnly()
+  const element = useElement<TEquationElement>()
 
   React.useEffect(() => {
     if (isInline && open) {
-      setOpen(true);
+      setOpen(true)
     }
-  }, [isInline, open, setOpen]);
+  }, [isInline, open, setOpen])
 
-  if (readOnly) return null;
+  if (readOnly) return null
 
   const onClose = () => {
-    setOpen(false);
+    setOpen(false)
 
     if (isInline) {
-      editor.tf.select(element, { focus: true, next: true });
+      editor.tf.select(element, { focus: true, next: true })
     } else {
       editor
         .getApi(BlockSelectionPlugin)
-        .blockSelection.set(element.id as string);
+        .blockSelection.set(element.id as string)
     }
-  };
+  }
 
   return (
     <PopoverContent
       className="flex gap-2"
-      onEscapeKeyDown={(e) => {
-        e.preventDefault();
+      onEscapeKeyDown={e => {
+        e.preventDefault()
       }}
       contentEditable={false}
     >
@@ -231,5 +228,5 @@ const EquationPopoverContent = ({
         Done <CornerDownLeftIcon className="size-3.5" />
       </Button>
     </PopoverContent>
-  );
-};
+  )
+}

@@ -1,20 +1,20 @@
-'use client';
+'use client'
 
-import * as React from 'react';
+import * as React from 'react'
 
-import type { TAudioElement } from 'platejs';
-import type { PlateElementProps } from 'platejs/react';
+import type { TAudioElement } from 'platejs'
+import type { PlateElementProps } from 'platejs/react'
 
-import { useMediaState } from '@platejs/media/react';
-import { ResizableProvider } from '@platejs/resizable';
-import { PlateElement, withHOC } from 'platejs/react';
+import { useMediaState } from '@platejs/media/react'
+import { ResizableProvider } from '@platejs/resizable'
+import { PlateElement, withHOC } from 'platejs/react'
 
-import { Caption, CaptionTextarea } from './caption';
+import { Caption, CaptionTextarea } from './caption'
 
 export const AudioElement = withHOC(
   ResizableProvider,
   function AudioElement(props: PlateElementProps<TAudioElement>) {
-    const { align = 'center', readOnly, unsafeUrl } = useMediaState();
+    const { align = 'center', readOnly, unsafeUrl } = useMediaState()
 
     return (
       <PlateElement {...props} className="mb-1">
@@ -36,6 +36,6 @@ export const AudioElement = withHOC(
         </figure>
         {props.children}
       </PlateElement>
-    );
+    )
   }
-);
+)

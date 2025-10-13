@@ -1,32 +1,32 @@
-'use client';
+'use client'
 
-import * as React from 'react';
+import * as React from 'react'
 
-import { Menu } from '@base-ui-components/react/menu';
-import { LineHeightPlugin } from '@platejs/basic-styles/react';
-import { CheckIcon, WrapText } from 'lucide-react';
-import { useEditorRef, useSelectionFragmentProp } from 'platejs/react';
+import { Menu } from '@base-ui-components/react/menu'
+import { LineHeightPlugin } from '@platejs/basic-styles/react'
+import { CheckIcon, WrapText } from 'lucide-react'
+import { useEditorRef, useSelectionFragmentProp } from 'platejs/react'
 
-import { ToolbarButton } from './toolbar';
+import { ToolbarButton } from './toolbar'
 
 interface LineHeightToolbarButtonProps {
-  open?: boolean;
-  onOpenChange?: (open: boolean) => void;
-  defaultOpen?: boolean;
-  disabled?: boolean;
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+  defaultOpen?: boolean
+  disabled?: boolean
 }
 
 export function LineHeightToolbarButton(props: LineHeightToolbarButtonProps) {
-  const editor = useEditorRef();
+  const editor = useEditorRef()
   const { defaultNodeValue, validNodeValues: values = [] } =
-    editor.getInjectProps(LineHeightPlugin);
+    editor.getInjectProps(LineHeightPlugin)
 
   const value = useSelectionFragmentProp({
     defaultValue: defaultNodeValue,
-    getProp: (node) => node.lineHeight,
-  });
+    getProp: node => node.lineHeight,
+  })
 
-  const [open, setOpen] = React.useState(false);
+  const [open, setOpen] = React.useState(false)
 
   return (
     <Menu.Root open={open} onOpenChange={setOpen} modal={false} {...props}>
@@ -44,12 +44,12 @@ export function LineHeightToolbarButton(props: LineHeightToolbarButtonProps) {
               onValueChange={(newValue: string) => {
                 editor
                   .getTransforms(LineHeightPlugin)
-                  .lineHeight.setNodes(Number(newValue));
-                editor.tf.focus();
-                setOpen(false);
+                  .lineHeight.setNodes(Number(newValue))
+                editor.tf.focus()
+                setOpen(false)
               }}
             >
-              {values.map((itemValue) => (
+              {values.map(itemValue => (
                 <Menu.RadioItem
                   key={itemValue}
                   className="relative flex cursor-pointer select-none items-center rounded-sm px-1.5 py-2 outline-none hover:bg-accent focus:bg-accent data-[disabled]:pointer-events-none data-[disabled]:opacity-50 min-w-[160px] pl-2"
@@ -66,5 +66,5 @@ export function LineHeightToolbarButton(props: LineHeightToolbarButtonProps) {
         </Menu.Positioner>
       </Menu.Portal>
     </Menu.Root>
-  );
+  )
 }

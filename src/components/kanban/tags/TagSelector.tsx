@@ -225,11 +225,7 @@ export function TagSelector({
 
       <Popover.Root open={popoverOpen} onOpenChange={setPopoverOpen}>
         <Popover.Trigger
-          render={({
-            ref,
-            className: triggerClassName,
-            ...triggerProps
-          }) => (
+          render={({ ref, className: triggerClassName, ...triggerProps }) => (
             <Button
               asChild
               variant="outline"
@@ -255,14 +251,14 @@ export function TagSelector({
             </Button>
           )}
         />
-  <Popover.Portal>
-    <Popover.Positioner 
-      sideOffset={5}
-      className="z-50"
-      side="bottom"
-      align="start"
-    >
-      <Popover.Popup className="w-72 p-0 bg-background border rounded-md shadow-lg">
+        <Popover.Portal>
+          <Popover.Positioner
+            sideOffset={5}
+            className="z-50"
+            side="bottom"
+            align="start"
+          >
+            <Popover.Popup className="w-72 p-0 bg-background border rounded-md shadow-lg">
               <div className="flex items-center justify-between border-b px-3 py-2">
                 <p className="text-sm font-medium">Tags</p>
                 <Button

@@ -1,39 +1,39 @@
-import * as React from 'react';
+import * as React from 'react'
 
 import type {
   RenderStaticNodeWrapper,
   SlateRenderElementProps,
   TListElement,
-} from 'platejs';
+} from 'platejs'
 
-import { isOrderedList } from '@platejs/list';
-import { CheckIcon } from 'lucide-react';
+import { isOrderedList } from '@platejs/list'
+import { CheckIcon } from 'lucide-react'
 
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils'
 
 const config: Record<
   string,
   {
-    Li: React.FC<SlateRenderElementProps>;
-    Marker: React.FC<SlateRenderElementProps>;
+    Li: React.FC<SlateRenderElementProps>
+    Marker: React.FC<SlateRenderElementProps>
   }
 > = {
   todo: {
     Li: TodoLiStatic,
     Marker: TodoMarkerStatic,
   },
-};
+}
 
-export const BlockListStatic: RenderStaticNodeWrapper = (props) => {
-  if (!props.element.listStyleType) return;
+export const BlockListStatic: RenderStaticNodeWrapper = props => {
+  if (!props.element.listStyleType) return
 
-  return (props) => <List {...props} />;
-};
+  return props => <List {...props} />
+}
 
 function List(props: SlateRenderElementProps) {
-  const { listStart, listStyleType } = props.element as TListElement;
-  const { Li, Marker } = config[listStyleType] ?? {};
-  const List = isOrderedList(props.element) ? 'ol' : 'ul';
+  const { listStart, listStyleType } = props.element as TListElement
+  const { Li, Marker } = config[listStyleType] ?? {}
+  const List = isOrderedList(props.element) ? 'ol' : 'ul'
 
   return (
     <List
@@ -44,11 +44,11 @@ function List(props: SlateRenderElementProps) {
       {Marker && <Marker {...props} />}
       {Li ? <Li {...props} /> : <li>{props.children}</li>}
     </List>
-  );
+  )
 }
 
 function TodoMarkerStatic(props: SlateRenderElementProps) {
-  const checked = props.element.checked as boolean;
+  const checked = props.element.checked as boolean
 
   return (
     <div contentEditable={false}>
@@ -65,7 +65,7 @@ function TodoMarkerStatic(props: SlateRenderElementProps) {
         </div>
       </button>
     </div>
-  );
+  )
 }
 
 function TodoLiStatic(props: SlateRenderElementProps) {
@@ -79,5 +79,5 @@ function TodoLiStatic(props: SlateRenderElementProps) {
     >
       {props.children}
     </li>
-  );
+  )
 }

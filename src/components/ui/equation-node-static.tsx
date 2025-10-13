@@ -1,17 +1,17 @@
-import * as React from 'react';
+import * as React from 'react'
 
-import type { SlateElementProps, TEquationElement } from 'platejs';
+import type { SlateElementProps, TEquationElement } from 'platejs'
 
-import { getEquationHtml } from '@platejs/math';
-import { RadicalIcon } from 'lucide-react';
-import { SlateElement } from 'platejs';
+import { getEquationHtml } from '@platejs/math'
+import { RadicalIcon } from 'lucide-react'
+import { SlateElement } from 'platejs'
 
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils'
 
 export function EquationElementStatic(
   props: SlateElementProps<TEquationElement>
 ) {
-  const { element } = props;
+  const { element } = props
 
   const html = getEquationHtml({
     element,
@@ -26,7 +26,7 @@ export function EquationElementStatic(
       throwOnError: false,
       trust: false,
     },
-  });
+  })
 
   return (
     <SlateElement className="my-1" {...props}>
@@ -51,7 +51,7 @@ export function EquationElementStatic(
       </div>
       {props.children}
     </SlateElement>
-  );
+  )
 }
 
 export function InlineEquationElementStatic(
@@ -70,7 +70,7 @@ export function InlineEquationElementStatic(
       throwOnError: false,
       trust: false,
     },
-  });
+  })
 
   return (
     <SlateElement
@@ -95,5 +95,5 @@ export function InlineEquationElementStatic(
       </div>
       {props.children}
     </SlateElement>
-  );
+  )
 }

@@ -16,15 +16,19 @@ A comprehensive guide for implementing smooth, natural animations inspired by Ap
 ## Core Principles
 
 ### 1. **Natural Motion**
+
 Animations should feel like they have real-world physics, not robotic or mechanical.
 
 ### 2. **Purposeful**
+
 Every animation should serve a purpose: guide attention, provide feedback, or maintain context.
 
 ### 3. **Subtle but Noticeable**
+
 Animations should be felt, not explicitly noticed. They should enhance UX without being distracting.
 
 ### 4. **Consistent Timing**
+
 Use consistent duration and easing across similar interactions throughout the app.
 
 ---
@@ -34,13 +38,14 @@ Use consistent duration and easing across similar interactions throughout the ap
 ### The Apple-Inspired Toolkit
 
 #### 1. **Blur + Opacity**
+
 The foundation of smooth transitions. Combined, they create depth and polish.
 
 ```typescript
 // ✅ GOOD: Smooth entrance
 initial={{ opacity: 0, filter: 'blur(4px)' }}
 animate={{ opacity: 1, filter: 'blur(0px)' }}
-transition={{ 
+transition={{
   opacity: { duration: 0.2 },
   filter: { duration: 0.3 }
 }}
@@ -51,11 +56,13 @@ animate={{ opacity: 1 }}
 ```
 
 **When to use:**
+
 - Content appearing/disappearing
 - State transitions
 - Component mounting/unmounting
 
 #### 2. **Spring Physics**
+
 Natural, bouncy movement that feels responsive without being jarring.
 
 ```typescript
@@ -75,27 +82,31 @@ transition={{
 ```
 
 **Parameters:**
+
 - `stiffness: 300` - Default for most UI interactions
 - `stiffness: 400` - Snappy interactions (dropdowns, tooltips)
 - `stiffness: 200` - Heavier elements (modals, sidebars)
 - `damping: 30` - Smooth settling without excessive bounce
 
 #### 3. **Custom Easing Curves**
+
 Apple-inspired bezier curves for linear transitions.
 
 ```typescript
 // Apple-style easing
-ease: [0.25, 0.1, 0.25, 1.0]  // Default smooth
-ease: [0.4, 0.0, 0.2, 1.0]    // Material Design easing
+ease: [0.25, 0.1, 0.25, 1.0] // Default smooth
+ease: [0.4, 0.0, 0.2, 1.0] // Material Design easing
 ease: [0.17, 0.67, 0.83, 0.67] // Expo easing
 ```
 
 **When to use:**
+
 - Background color changes
 - Size/scale adjustments
 - Non-physics animations
 
 #### 4. **Staggered Animations**
+
 Sequential reveals that feel orchestrated, not random.
 
 ```typescript
@@ -116,6 +127,7 @@ Sequential reveals that feel orchestrated, not random.
 ```
 
 **Guidelines:**
+
 - 30-50ms delay between items for lists
 - 50-100ms for larger UI sections
 - Never exceed 150ms per item
@@ -189,8 +201,8 @@ Smooth background and style transitions.
 <motion.div
   initial={false}  // Don't animate on mount
   animate={{
-    backgroundColor: useTransparentStyle 
-      ? 'rgba(255, 255, 255, 0.05)' 
+    backgroundColor: useTransparentStyle
+      ? 'rgba(255, 255, 255, 0.05)'
       : 'hsl(var(--background))'
   }}
   transition={{
@@ -210,10 +222,10 @@ Subtle feedback that feels responsive.
 <motion.button
   whileHover={{ scale: 1.05 }}
   whileTap={{ scale: 0.95 }}
-  transition={{ 
-    type: 'spring', 
-    stiffness: 400, 
-    damping: 25 
+  transition={{
+    type: 'spring',
+    stiffness: 400,
+    damping: 25
   }}
 >
   Click Me
@@ -227,12 +239,14 @@ Subtle feedback that feels responsive.
 ### ✅ DO
 
 1. **Use `initial={false}` for persistent elements**
+
    ```typescript
    // Prevents animation on mount for always-visible elements
    <motion.div initial={false} animate={{ ... }}>
    ```
 
 2. **Combine blur with opacity for depth**
+
    ```typescript
    // Creates a sense of depth and polish
    filter: 'blur(4px)' // During transition
@@ -240,15 +254,17 @@ Subtle feedback that feels responsive.
    ```
 
 3. **Match animation duration to element importance**
+
    ```typescript
    // Quick for small UI elements
    transition={{ duration: 0.2 }}
-   
+
    // Slower for major UI changes
    transition={{ duration: 0.5 }}
    ```
 
 4. **Use spring physics for interactive elements**
+
    ```typescript
    // Buttons, cards, draggable items
    transition={{ type: 'spring', stiffness: 300, damping: 30 }}
@@ -263,6 +279,7 @@ Subtle feedback that feels responsive.
 ### ❌ DON'T
 
 1. **Don't overuse animations**
+
    ```typescript
    // ❌ Everything animating is distracting
    <motion.span animate={{ ... }}>Every</motion.span>
@@ -271,38 +288,42 @@ Subtle feedback that feels responsive.
    ```
 
 2. **Don't use long durations**
+
    ```typescript
    // ❌ Too slow, feels sluggish
    transition={{ duration: 1.5 }}
-   
+
    // ✅ Snappy and responsive
    transition={{ duration: 0.3 }}
    ```
 
 3. **Don't animate layout-shifting properties without reason**
+
    ```typescript
    // ❌ Can cause layout thrashing
    animate={{ marginTop: 100 }}
-   
+
    // ✅ Use transforms instead
    animate={{ y: 100 }}
    ```
 
 4. **Don't use excessive blur**
+
    ```typescript
    // ❌ Too blurry, looks buggy
    filter: 'blur(10px)'
-   
+
    // ✅ Subtle and polished
    filter: 'blur(4px)'
    ```
 
 5. **Don't mix animation styles inconsistently**
+
    ```typescript
    // ❌ Inconsistent
    Component A: transition={{ duration: 0.2 }}
    Component B: transition={{ duration: 0.8 }}
-   
+
    // ✅ Consistent
    All interactive elements: transition={{ duration: 0.3 }}
    ```
@@ -312,7 +333,9 @@ Subtle feedback that feels responsive.
 ## Performance Optimization
 
 ### 1. **Animate Transform Properties**
+
 These are GPU-accelerated and performant:
+
 - `x`, `y`, `z`
 - `scale`, `scaleX`, `scaleY`
 - `rotate`, `rotateX`, `rotateY`
@@ -327,6 +350,7 @@ animate={{ marginLeft: 100 }}
 ```
 
 ### 2. **Use `will-change` for Complex Animations**
+
 ```typescript
 <motion.div
   style={{ willChange: 'transform, opacity' }}
@@ -335,10 +359,11 @@ animate={{ marginLeft: 100 }}
 ```
 
 ### 3. **Avoid Animating During Scroll**
+
 ```typescript
 // ❌ BAD: Can cause jank
 <motion.div
-  animate={{ 
+  animate={{
     y: scrollY * 0.5  // Animates on every scroll event
   }}
 />
@@ -349,6 +374,7 @@ style={{ transform: `translateY(${scrollY * 0.5}px)` }}
 ```
 
 ### 4. **Reduce Animation Complexity on Mobile**
+
 ```typescript
 const isMobile = window.innerWidth < 768
 
@@ -371,13 +397,13 @@ import { motion } from 'framer-motion'
 
 export function Sidebar() {
   const { transparencyEnabled } = useTheme()
-  
+
   return (
     <motion.aside
       initial={false}
       animate={{
-        backgroundColor: transparencyEnabled 
-          ? 'rgba(255, 255, 255, 0.05)' 
+        backgroundColor: transparencyEnabled
+          ? 'rgba(255, 255, 255, 0.05)'
           : 'hsl(var(--background))'
       }}
       transition={{
@@ -512,32 +538,32 @@ export const ANIMATION = {
     NORMAL: 0.3,
     SLOW: 0.5,
   },
-  
+
   // Spring configs
   SPRING: {
     SNAPPY: { type: 'spring', stiffness: 400, damping: 25 },
     SMOOTH: { type: 'spring', stiffness: 300, damping: 30 },
     GENTLE: { type: 'spring', stiffness: 200, damping: 30 },
   },
-  
+
   // Easing curves
   EASE: {
     APPLE: [0.25, 0.1, 0.25, 1.0],
     MATERIAL: [0.4, 0.0, 0.2, 1.0],
     EXPO: [0.17, 0.67, 0.83, 0.67],
   },
-  
+
   // Common transitions
   BLUR: {
     initial: { opacity: 0, filter: 'blur(4px)' },
     animate: { opacity: 1, filter: 'blur(0px)' },
     exit: { opacity: 0, filter: 'blur(4px)' },
-    transition: { 
+    transition: {
       opacity: { duration: 0.2 },
       filter: { duration: 0.3 }
     }
   },
-  
+
   // Stagger delays
   STAGGER: {
     FAST: 0.03,
@@ -578,7 +604,7 @@ import { useReducedMotion } from 'framer-motion'
 
 export function AnimatedComponent() {
   const shouldReduceMotion = useReducedMotion()
-  
+
   return (
     <motion.div
       initial={shouldReduceMotion ? false : { opacity: 0 }}

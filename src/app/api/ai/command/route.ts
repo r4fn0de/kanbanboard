@@ -1,12 +1,9 @@
-import type {
-  ChatMessage,
-  ToolName,
-} from '@/components/editor/use-chat';
-import type { NextRequest } from 'next/server';
+import type { ChatMessage, ToolName } from '@/components/editor/use-chat'
+import type { NextRequest } from 'next/server'
 
-import { google } from '@ai-sdk/google';
-import { replacePlaceholders } from '@platejs/ai';
-import { serializeMd } from '@platejs/markdown';
+import { google } from '@ai-sdk/google'
+import { replacePlaceholders } from '@platejs/ai'
+import { serializeMd } from '@platejs/markdown'
 import {
   convertToModelMessages,
   createUIMessageStream,
@@ -14,44 +11,44 @@ import {
   generateObject,
   streamObject,
   streamText,
-} from 'ai';
-import { NextResponse } from 'next/server';
-import { type SlateEditor, createSlateEditor, nanoid, RangeApi } from 'platejs';
-import { z } from 'zod';
+} from 'ai'
+import { NextResponse } from 'next/server'
+import { type SlateEditor, createSlateEditor, nanoid, RangeApi } from 'platejs'
+import { z } from 'zod'
 
-import { BaseEditorKit } from '@/components/editor/editor-base-kit';
-import { markdownJoinerTransform } from '@/lib/markdown-joiner-transform';
+import { BaseEditorKit } from '@/components/editor/editor-base-kit'
+import { markdownJoinerTransform } from '@/lib/markdown-joiner-transform'
 
 export async function POST(req: NextRequest) {
-  const { apiKey: key, ctx, messages: messagesRaw } = await req.json();
+  const { apiKey: key, ctx, messages: messagesRaw } = await req.json()
 
-  const { children, selection, toolName: toolNameParam } = ctx;
+  const { children, selection, toolName: toolNameParam } = ctx
 
   const editor = createSlateEditor({
     plugins: BaseEditorKit,
     selection,
     value: children,
-  });
+  })
 
-  const apiKey = key || process.env.OPENAI_API_KEY;
+  const apiKey = key || process.env.OPENAI_API_KEY
 
   if (!apiKey) {
     return NextResponse.json(
       { error: 'Missing OpenAI API key.' },
       { status: 401 }
-    );
+    )
   }
 
-  const isSelecting = editor.api.isExpanded();
+  const isSelecting = editor.api.isExpanded()
 
   try {
     const stream = createUIMessageStream<ChatMessage>({
       execute: async ({ writer }) => {
         const lastIndex = messagesRaw.findIndex(
           (message: any) => message.role === 'user'
-        );
+        )
 
-        const messages = [...messagesRaw];
+        const messages = [...messagesRaw]
 
         messages[lastIndex] = replaceMessagePlaceholders(
           editor,
@@ -59,11 +56,11 @@ export async function POST(req: NextRequest) {
           {
             isSelecting,
           }
-        );
+        )
 
-        const lastUserMessage = messages[lastIndex];
+        const lastUserMessage = messages[lastIndex]
 
-        let toolName = toolNameParam;
+        let toolName = toolNameParam
 
         if (!toolName) {
           const { object: AIToolName } = await generateObject({
@@ -75,21 +72,21 @@ export async function POST(req: NextRequest) {
             prompt: `User message:
           ${JSON.stringify(lastUserMessage)}`,
             system: chooseToolSystem,
-          });
+          })
 
           writer.write({
             data: AIToolName as ToolName,
             type: 'data-toolName',
-          });
+          })
 
-          toolName = AIToolName;
+          toolName = AIToolName
         }
 
         if (toolName === 'generate') {
           const generateSystem = replacePlaceholders(
             editor,
             generateSystemTemplate({ isSelecting })
-          );
+          )
 
           const gen = streamText({
             experimental_transform: markdownJoinerTransform(),
@@ -97,16 +94,16 @@ export async function POST(req: NextRequest) {
             messages: convertToModelMessages(messages),
             model: google('gemini-2.5-flash'),
             system: generateSystem,
-          });
+          })
 
-          writer.merge(gen.toUIMessageStream({ sendFinish: false }));
+          writer.merge(gen.toUIMessageStream({ sendFinish: false }))
         }
 
         if (toolName === 'edit') {
           if (!isSelecting)
-            throw new Error('Edit tool is only available when selecting');
+            throw new Error('Edit tool is only available when selecting')
 
-          const editSystem = replacePlaceholders(editor, editSystemTemplate());
+          const editSystem = replacePlaceholders(editor, editSystemTemplate())
 
           const edit = streamText({
             experimental_transform: markdownJoinerTransform(),
@@ -114,16 +111,16 @@ export async function POST(req: NextRequest) {
             messages: convertToModelMessages(messages),
             model: google('gemini-2.5-flash'),
             system: editSystem,
-          });
+          })
 
-          writer.merge(edit.toUIMessageStream({ sendFinish: false }));
+          writer.merge(edit.toUIMessageStream({ sendFinish: false }))
         }
 
         if (toolName === 'comment') {
-          const lastUserMessage = messagesRaw[lastIndex] as ChatMessage;
+          const lastUserMessage = messagesRaw[lastIndex] as ChatMessage
           const prompt = lastUserMessage.parts.find(
-            (p) => p.type === 'text'
-          )?.text;
+            p => p.type === 'text'
+          )?.text
 
           const commentPrompt = replacePlaceholders(
             editor,
@@ -131,7 +128,7 @@ export async function POST(req: NextRequest) {
             {
               prompt,
             }
-          );
+          )
 
           const { elementStream } = streamObject({
             maxOutputTokens: 2048,
@@ -158,54 +155,54 @@ export async function POST(req: NextRequest) {
               })
               .describe('A single comment'),
             system: commentSystem,
-          });
+          })
 
           // Create a single message ID for the entire comment stream
 
           for await (const comment of elementStream) {
-            const commentDataId = nanoid();
+            const commentDataId = nanoid()
             // Send each comment as a delta
 
             writer.write({
               id: commentDataId,
               data: comment,
               type: 'data-comment',
-            });
+            })
           }
         }
       },
-    });
+    })
 
-    return createUIMessageStreamResponse({ stream });
+    return createUIMessageStreamResponse({ stream })
   } catch {
     return NextResponse.json(
       { error: 'Failed to process AI request' },
       { status: 500 }
-    );
+    )
   }
 }
 
 const generateSystemTemplate = ({ isSelecting }: { isSelecting: boolean }) => {
   return isSelecting
     ? PROMPT_TEMPLATES.generateSystemSelecting
-    : PROMPT_TEMPLATES.generateSystemDefault;
-};
+    : PROMPT_TEMPLATES.generateSystemDefault
+}
 
 const editSystemTemplate = () => {
-  return PROMPT_TEMPLATES.editSystemSelecting;
-};
+  return PROMPT_TEMPLATES.editSystemSelecting
+}
 
 const promptTemplate = ({ isSelecting }: { isSelecting: boolean }) => {
   return isSelecting
     ? PROMPT_TEMPLATES.promptSelecting
-    : PROMPT_TEMPLATES.promptDefault;
-};
+    : PROMPT_TEMPLATES.promptDefault
+}
 
 const commentPromptTemplate = ({ isSelecting }: { isSelecting: boolean }) => {
   return isSelecting
     ? PROMPT_TEMPLATES.commentPromptSelecting
-    : PROMPT_TEMPLATES.commentPromptDefault;
-};
+    : PROMPT_TEMPLATES.commentPromptDefault
+}
 
 const chooseToolSystem = `You are a strict classifier. Classify the user's last request as "generate", "edit", or "comment".
 
@@ -214,7 +211,7 @@ Priority rules:
 2. Only return "edit" if the user provides original text (or a selection of text) AND asks to change, rephrase, translate, or shorten it.
 3. Only return "comment" if the user explicitly asks for comments, feedback, annotations, or review. Do not infer "comment" implicitly.
 
-Return only one enum value with no explanation.`;
+Return only one enum value with no explanation.`
 
 const commentSystem = `You are a document review assistant.  
 You will receive an MDX document wrapped in <block id="..."> content </block> tags.  
@@ -236,7 +233,7 @@ Rules:
 - Do NOT default to using the entire block—use the smallest relevant span instead.
 - At least one comment must be provided.
 - If a <Selection> exists, Your comments should come from the <Selection>, and if the <Selection> is too long, there should be more than one comment.
-`;
+`
 
 const systemCommon = `\
 You are an advanced AI-powered note-taking assistant, designed to enhance productivity and creativity in note management.
@@ -264,7 +261,7 @@ Rules:
   3
 </column>
 </column_group>
-`;
+`
 
 const generateSystemDefault = `\
 ${systemCommon}
@@ -273,13 +270,13 @@ ${systemCommon}
 <Block>
 {block}
 </Block>
-`;
+`
 
 const generateSystemSelecting = `\
 ${systemCommon}
 - <Block> contains the text context. You will always receive one <Block>.
 - <selection> is the text highlighted by the user.
-`;
+`
 
 const editSystemSelecting = `\
 - <Block> shows the full sentence or paragraph, only for context. 
@@ -290,12 +287,12 @@ const editSystemSelecting = `\
 - Ensure the replacement fits seamlessly so the whole <Block> reads naturally. 
 - Output must be limited to the replacement string itself.
 - Do not remove the \\n in the original text
-`;
+`
 
 const promptDefault = `<Reminder>
 CRITICAL: NEVER write <Block>.
 </Reminder>
-{prompt}`;
+{prompt}`
 
 const promptSelecting = `<Reminder>
 If this is a question, provide a helpful and concise answer about <Selection>.
@@ -308,7 +305,7 @@ NEVER write <Block> or <Selection>.
 <Block>
 {block}
 </Block>
-`;
+`
 
 const commentPromptSelecting = `
 Comment on the content within the <Selection>.
@@ -316,12 +313,12 @@ Never write <Selection>.
 {prompt}:
       
 {blockWithBlockId}
-`;
+`
 
 const commentPromptDefault = `{prompt}:
       
 {editorWithBlockId}
-`;
+`
 
 const PROMPT_TEMPLATES = {
   commentPromptDefault,
@@ -331,80 +328,80 @@ const PROMPT_TEMPLATES = {
   generateSystemSelecting,
   promptDefault,
   promptSelecting,
-};
+}
 
 const replaceMessagePlaceholders = (
   editor: SlateEditor,
   message: ChatMessage,
   { isSelecting }: { isSelecting: boolean }
 ): ChatMessage => {
-  if (isSelecting) addSelection(editor);
+  if (isSelecting) addSelection(editor)
 
-  const template = promptTemplate({ isSelecting });
+  const template = promptTemplate({ isSelecting })
 
-  const parts = message.parts.map((part) => {
-    if (part.type !== 'text' || !part.text) return part;
+  const parts = message.parts.map(part => {
+    if (part.type !== 'text' || !part.text) return part
 
     let text = replacePlaceholders(editor, template, {
       prompt: part.text,
-    });
+    })
 
-    if (isSelecting) text = removeEscapeSelection(editor, text);
+    if (isSelecting) text = removeEscapeSelection(editor, text)
 
-    return { ...part, text } as typeof part;
-  });
+    return { ...part, text } as typeof part
+  })
 
-  return { ...message, parts };
-};
+  return { ...message, parts }
+}
 
-const SELECTION_START = '<Selection>';
-const SELECTION_END = '</Selection>';
+const SELECTION_START = '<Selection>'
+const SELECTION_END = '</Selection>'
 
 const addSelection = (editor: SlateEditor) => {
-  if (!editor.selection) return;
+  if (!editor.selection) return
 
   if (editor.api.isExpanded()) {
-    const [start, end] = RangeApi.edges(editor.selection);
+    const [start, end] = RangeApi.edges(editor.selection)
 
     editor.tf.withoutNormalizing(() => {
       editor.tf.insertText(SELECTION_END, {
         at: end,
-      });
+      })
 
       editor.tf.insertText(SELECTION_START, {
         at: start,
-      });
-    });
+      })
+    })
   }
-};
+}
 
 const removeEscapeSelection = (editor: SlateEditor, text: string) => {
   let newText = text
     .replace(`\\${SELECTION_START}`, SELECTION_START)
-    .replace(`\\${SELECTION_END}`, SELECTION_END);
+    .replace(`\\${SELECTION_END}`, SELECTION_END)
 
   // If the selection is on a void element, inserting the placeholder will fail, and the string must be replaced manually.
   if (!newText.includes(SELECTION_END)) {
-    const [_, end] = RangeApi.edges(editor.selection!);
+    const [_, end] = RangeApi.edges(editor.selection!)
 
-    const node = editor.api.block({ at: end.path });
+    const node = editor.api.block({ at: end.path })
 
-    if (!node) return newText;
+    if (!node) return newText
 
     if (editor.api.isVoid(node[0])) {
-      const voidString = serializeMd(editor, { value: [node[0]] });
+      const voidString = serializeMd(editor, { value: [node[0]] })
 
-      const idx = newText.lastIndexOf(voidString);
+      const idx = newText.lastIndexOf(voidString)
 
       if (idx !== -1) {
         newText =
           newText.slice(0, idx) +
           voidString.trimEnd() +
           SELECTION_END +
-          newText.slice(idx + voidString.length);
+          newText.slice(idx + voidString.length)
       }
     }
   }
 
-  return newText;
-};
+  return newText
+}

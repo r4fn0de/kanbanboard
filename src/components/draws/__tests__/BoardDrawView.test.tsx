@@ -113,7 +113,10 @@ describe('BoardDrawView', () => {
 
     expect(screen.getByText('Design Board')).toBeInTheDocument()
     const canvas = screen.getByTestId('tldraw')
-    expect(canvas).toHaveAttribute('data-persistence-key', 'board-board-123-draws')
+    expect(canvas).toHaveAttribute(
+      'data-persistence-key',
+      'board-board-123-draws'
+    )
     expect(canvas).toHaveAttribute('data-has-asset-urls', 'true')
   })
 

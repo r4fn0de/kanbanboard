@@ -45,11 +45,11 @@ export function MainWindow() {
   const mainPanelDefault =
     sidebarLayoutPreference.length === 3
       ? sidebarLayoutPreference[1]
-      : sidebarLayoutPreference[0] ?? 70
+      : (sidebarLayoutPreference[0] ?? 70)
   const rightPanelDefault =
     sidebarLayoutPreference.length === 3
       ? sidebarLayoutPreference[2]
-      : sidebarLayoutPreference[1] ?? 30
+      : (sidebarLayoutPreference[1] ?? 30)
   const [isHoveringEdge, setIsHoveringEdge] = useState(false)
 
   // Set up global event listeners (keyboard shortcuts, etc.)
@@ -91,7 +91,7 @@ export function MainWindow() {
             aria-label="Show left sidebar"
             className="absolute left-0 top-0 z-30 h-full w-2 cursor-pointer bg-transparent"
           />
-          
+
           {/* Floating sidebar on hover */}
           <AnimatePresence>
             {isHoveringEdge && (

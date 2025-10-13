@@ -67,7 +67,9 @@ export async function updateWorkspaceIcon(
   })
 }
 
-export async function removeWorkspaceIcon(workspaceId: string): Promise<Workspace> {
+export async function removeWorkspaceIcon(
+  workspaceId: string
+): Promise<Workspace> {
   return invoke<Workspace>('remove_workspace_icon', {
     workspace_id: workspaceId,
   })
@@ -102,18 +104,23 @@ export function useUpdateWorkspace() {
   return useMutation({
     mutationFn: updateWorkspace,
     onSuccess: (_, variables) => {
-      queryClient.setQueryData<Workspace[]>(workspaceQueryKeys.all, previous => {
-        if (!previous) return previous
-        return previous.map(workspace => {
-          if (workspace.id !== variables.id) return workspace
-          return {
-            ...workspace,
-            ...(variables.name !== undefined && { name: variables.name }),
-            ...(variables.color !== undefined && { color: variables.color ?? null }),
-            updatedAt: new Date().toISOString(),
-          }
-        })
-      })
+      queryClient.setQueryData<Workspace[]>(
+        workspaceQueryKeys.all,
+        previous => {
+          if (!previous) return previous
+          return previous.map(workspace => {
+            if (workspace.id !== variables.id) return workspace
+            return {
+              ...workspace,
+              ...(variables.name !== undefined && { name: variables.name }),
+              ...(variables.color !== undefined && {
+                color: variables.color ?? null,
+              }),
+              updatedAt: new Date().toISOString(),
+            }
+          })
+        }
+      )
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: workspaceQueryKeys.all })
@@ -146,7 +153,9 @@ export function useUpdateWorkspaceIconMutation() {
       queryClient.setQueryData<Workspace[]>(workspaceQueryKeys.all, previous =>
         previous
           ? previous.map(workspace =>
-              workspace.id === updatedWorkspace.id ? updatedWorkspace : workspace
+              workspace.id === updatedWorkspace.id
+                ? updatedWorkspace
+                : workspace
             )
           : previous
       )
@@ -166,7 +175,9 @@ export function useRemoveWorkspaceIconMutation() {
       queryClient.setQueryData<Workspace[]>(workspaceQueryKeys.all, previous =>
         previous
           ? previous.map(workspace =>
-              workspace.id === updatedWorkspace.id ? updatedWorkspace : workspace
+              workspace.id === updatedWorkspace.id
+                ? updatedWorkspace
+                : workspace
             )
           : previous
       )

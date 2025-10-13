@@ -17,15 +17,19 @@ interface NotesListProps {
   searchQuery: string
 }
 
-export function NotesList({ boardId, onSelectNote, searchQuery }: NotesListProps) {
+export function NotesList({
+  boardId,
+  onSelectNote,
+  searchQuery,
+}: NotesListProps) {
   const { data: notes = [], isLoading } = useNotes(boardId)
 
-  const filteredNotes = notes.filter((note) =>
+  const filteredNotes = notes.filter(note =>
     note.title.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
-  const pinnedNotes = filteredNotes.filter((note) => note.pinned)
-  const unpinnedNotes = filteredNotes.filter((note) => !note.pinned)
+  const pinnedNotes = filteredNotes.filter(note => note.pinned)
+  const unpinnedNotes = filteredNotes.filter(note => !note.pinned)
 
   return (
     <div className="flex h-full flex-col">
@@ -53,7 +57,7 @@ export function NotesList({ boardId, onSelectNote, searchQuery }: NotesListProps
                   Pinned Notes
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-                  {pinnedNotes.map((note) => (
+                  {pinnedNotes.map(note => (
                     <NoteCard
                       key={note.id}
                       note={note}
@@ -74,7 +78,7 @@ export function NotesList({ boardId, onSelectNote, searchQuery }: NotesListProps
                   </div>
                 )}
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-                  {unpinnedNotes.map((note) => (
+                  {unpinnedNotes.map(note => (
                     <NoteCard
                       key={note.id}
                       note={note}
@@ -114,11 +118,14 @@ function NoteCard({ note, onClick, boardId }: NoteCardProps) {
   }
 
   const handleDelete = () => {
-    deleteNote.mutate({ id: note.id }, {
-      onSuccess: () => {
-        // Toast already handled in the hook
-      },
-    })
+    deleteNote.mutate(
+      { id: note.id },
+      {
+        onSuccess: () => {
+          // Toast already handled in the hook
+        },
+      }
+    )
   }
   // Extract plain text from content for preview
   const getPreviewText = (content: string): string => {
@@ -161,7 +168,9 @@ function NoteCard({ note, onClick, boardId }: NoteCardProps) {
         >
           <div className="flex items-start justify-between gap-3 mb-2">
             <h3 className="font-semibold line-clamp-1">{note.title}</h3>
-            {note.pinned && <Pin className="h-3.5 w-3.5 text-primary flex-shrink-0" />}
+            {note.pinned && (
+              <Pin className="h-3.5 w-3.5 text-primary flex-shrink-0" />
+            )}
           </div>
           <p className="text-sm text-muted-foreground line-clamp-10 mb-3 flex-1">
             {preview}

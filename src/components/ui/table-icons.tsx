@@ -1,6 +1,6 @@
-'use client';
+'use client'
 
-import type { LucideProps } from 'lucide-react';
+import type { LucideProps } from 'lucide-react'
 
 export function BorderAllIcon(props: LucideProps) {
   return (
@@ -42,7 +42,7 @@ export function BorderAllIcon(props: LucideProps) {
         y="11"
       ></rect>
     </svg>
-  );
+  )
 }
 
 export function BorderBottomIcon(props: LucideProps) {
@@ -158,7 +158,7 @@ export function BorderBottomIcon(props: LucideProps) {
         y="11"
       ></rect>
     </svg>
-  );
+  )
 }
 
 export function BorderLeftIcon(props: LucideProps) {
@@ -412,7 +412,7 @@ export function BorderLeftIcon(props: LucideProps) {
         y="1"
       ></rect>
     </svg>
-  );
+  )
 }
 
 export function BorderNoneIcon(props: LucideProps) {
@@ -690,7 +690,7 @@ export function BorderNoneIcon(props: LucideProps) {
         y="11.025"
       ></rect>
     </svg>
-  );
+  )
 }
 
 export function BorderRightIcon(props: LucideProps) {
@@ -892,7 +892,7 @@ export function BorderRightIcon(props: LucideProps) {
         width="1"
       ></rect>
     </svg>
-  );
+  )
 }
 
 export function BorderTopIcon(props: LucideProps) {
@@ -1146,5 +1146,5 @@ export function BorderTopIcon(props: LucideProps) {
         y="4"
       ></rect>
     </svg>
-  );
+  )
 }

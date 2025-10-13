@@ -7,7 +7,7 @@ vi.mock('react-easy-crop', () => {
   return {
     default: function MockCropper() {
       return <div data-testid="cropper">Mock Cropper</div>
-    }
+    },
   }
 })
 
@@ -19,21 +19,25 @@ describe('ImageCropper', () => {
     onCropComplete: vi.fn(),
     onCancel: vi.fn(),
     aspectRatio: 1,
-    recommendedSize: '64x64px'
+    recommendedSize: '64x64px',
   }
 
   it('renders when open', () => {
     render(<ImageCropper {...mockProps} />)
-    
+
     expect(screen.getByText('Crop Image')).toBeInTheDocument()
-    expect(screen.getByText('Recommended size: 64x64px for optimal display in the sidebar.')).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        'Recommended size: 64x64px for optimal display in the sidebar.'
+      )
+    ).toBeInTheDocument()
     expect(screen.getByText('Apply Crop')).toBeInTheDocument()
     expect(screen.getByText('Cancel')).toBeInTheDocument()
   })
 
   it('does not render when closed', () => {
     render(<ImageCropper {...mockProps} open={false} />)
-    
+
     expect(screen.queryByText('Crop Image')).not.toBeInTheDocument()
   })
 })

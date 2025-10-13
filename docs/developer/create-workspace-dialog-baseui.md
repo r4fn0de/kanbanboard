@@ -9,6 +9,7 @@ The `CreateWorkspaceDialog` component has been migrated from shadcn/ui Dialog to
 ### Component Structure
 
 **Before (shadcn/ui):**
+
 ```tsx
 import {
   Dialog,
@@ -18,7 +19,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 
-<Dialog open={open} onOpenChange={handleDialogChange}>
+;<Dialog open={open} onOpenChange={handleDialogChange}>
   <DialogContent>
     <DialogHeader>
       <DialogTitle>Title</DialogTitle>
@@ -30,6 +31,7 @@ import {
 ```
 
 **After (BaseUI):**
+
 ```tsx
 import {
   Dialog,
@@ -40,7 +42,7 @@ import {
   DialogDescription,
 } from '@/components/ui/base-ui-dialog'
 
-<Dialog open={open} onOpenChange={handleDialogChange}>
+;<Dialog open={open} onOpenChange={handleDialogChange}>
   <DialogPortal>
     <DialogBackdrop />
     <DialogPopup showCloseButton={false}>
@@ -73,12 +75,14 @@ import {
 ### Two-Step Interactive Flow
 
 **Step 1: Name**
+
 - Focus on workspace name input
 - Character counter (0/50)
 - Continue button disabled until valid name
 - Smooth animation when proceeding
 
 **Step 2: Customize**
+
 - Live preview with workspace badge
 - Icon upload with image cropper
 - Color picker with 10 presets + custom color
@@ -107,12 +111,12 @@ import { CreateWorkspaceDialog } from '@/components/workspace/CreateWorkspaceDia
 
 function MyComponent() {
   const [open, setOpen] = useState(false)
-  
+
   return (
     <CreateWorkspaceDialog
       open={open}
       onOpenChange={setOpen}
-      onSuccess={(workspaceId) => {
+      onSuccess={workspaceId => {
         console.log('Workspace created:', workspaceId)
       }}
     />
@@ -122,11 +126,11 @@ function MyComponent() {
 
 ## Props
 
-| Prop | Type | Description |
-|------|------|-------------|
-| `open` | `boolean` | Controls dialog visibility |
-| `onOpenChange` | `(open: boolean) => void` | Callback when visibility changes |
-| `onSuccess` | `(workspaceId: string) => void` | Optional callback on successful creation |
+| Prop           | Type                            | Description                              |
+| -------------- | ------------------------------- | ---------------------------------------- |
+| `open`         | `boolean`                       | Controls dialog visibility               |
+| `onOpenChange` | `(open: boolean) => void`       | Callback when visibility changes         |
+| `onSuccess`    | `(workspaceId: string) => void` | Optional callback on successful creation |
 
 ## Related Files
 

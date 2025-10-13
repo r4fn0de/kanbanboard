@@ -17,7 +17,14 @@ import {
 } from '@/components/ui/breadcrumb'
 import { getColumnIconComponent } from '@/components/kanban/column-icon-options'
 import { FALLBACK_COLUMN_COLORS } from '@/constants/kanban-columns'
-import { CalendarDays, Columns3, ArrowDown, ArrowUp, Minus, Check } from 'lucide-react'
+import {
+  CalendarDays,
+  Columns3,
+  ArrowDown,
+  ArrowUp,
+  Minus,
+  Check,
+} from 'lucide-react'
 import type { KanbanCard, KanbanColumn, KanbanPriority } from '@/types/common'
 
 interface AddTaskDialogProps {
@@ -144,7 +151,9 @@ export function AddTaskDialog({
   const getPriorityIcon = (value: KanbanPriority) => {
     switch (value) {
       case 'low':
-        return <ArrowDown className="h-3 w-3 text-emerald-700 dark:text-emerald-300" />
+        return (
+          <ArrowDown className="h-3 w-3 text-emerald-700 dark:text-emerald-300" />
+        )
       case 'high':
         return <ArrowUp className="h-3 w-3 text-rose-700 dark:text-rose-300" />
       default:
@@ -174,13 +183,18 @@ export function AddTaskDialog({
                 </BreadcrumbItem>
                 <BreadcrumbSeparator />
                 <BreadcrumbItem>
-                  <BreadcrumbPage className="text-foreground">New task</BreadcrumbPage>
+                  <BreadcrumbPage className="text-foreground">
+                    New task
+                  </BreadcrumbPage>
                 </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>
           </div>
 
-          <form onSubmit={handleSubmit} className="flex flex-col gap-6 px-6 py-6">
+          <form
+            onSubmit={handleSubmit}
+            className="flex flex-col gap-6 px-6 py-6"
+          >
             <div className="space-y-3">
               <Label htmlFor={titleId} className="sr-only">
                 Title
@@ -211,7 +225,10 @@ export function AddTaskDialog({
 
             <div className="flex flex-wrap items-center gap-3">
               <div className="flex items-center gap-2 rounded-full border px-3 py-2 text-sm">
-                <ColumnIcon className="h-4 w-4" style={{ color: columnAccent }} />
+                <ColumnIcon
+                  className="h-4 w-4"
+                  style={{ color: columnAccent }}
+                />
                 <span className="font-medium text-foreground">
                   {column ? column.title : 'Column'}
                 </span>
@@ -222,7 +239,7 @@ export function AddTaskDialog({
               </Label>
               <Select.Root
                 value={priority}
-                onValueChange={(value) => setPriority(value as KanbanPriority)}
+                onValueChange={value => setPriority(value as KanbanPriority)}
                 disabled={isCreating}
                 items={priorityItems}
               >
@@ -231,7 +248,10 @@ export function AddTaskDialog({
                     {(value: KanbanPriority) => (
                       <div className="flex items-center gap-2">
                         {getPriorityIcon(value)}
-                        {priorityItems.find(item => item.value === value)?.label}
+                        {
+                          priorityItems.find(item => item.value === value)
+                            ?.label
+                        }
                       </div>
                     )}
                   </Select.Value>

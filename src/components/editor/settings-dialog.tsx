@@ -1,10 +1,10 @@
-'use client';
+'use client'
 
 /* DEMO ONLY, DO NOT USE IN PRODUCTION */
 
-import * as React from 'react';
+import * as React from 'react'
 
-import { CopilotPlugin } from '@platejs/ai/react';
+import { CopilotPlugin } from '@platejs/ai/react'
 import {
   Check,
   ChevronsUpDown,
@@ -13,10 +13,10 @@ import {
   EyeOff,
   Settings,
   Wand2Icon,
-} from 'lucide-react';
-import { useEditorRef } from 'platejs/react';
+} from 'lucide-react'
+import { useEditorRef } from 'platejs/react'
 
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui/button'
 import {
   Command,
   CommandEmpty,
@@ -24,7 +24,7 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from '@/components/ui/command';
+} from '@/components/ui/command'
 import {
   Dialog,
   DialogContent,
@@ -32,19 +32,19 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
+} from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '@/components/ui/popover';
-import { cn } from '@/lib/utils';
-import { aiChatPlugin } from '@/components/editor/plugins/ai-kit';
+} from '@/components/ui/popover'
+import { cn } from '@/lib/utils'
+import { aiChatPlugin } from '@/components/editor/plugins/ai-kit'
 
 interface Model {
-  label: string;
-  value: string;
+  label: string
+  value: string
 }
 
 export const models: Model[] = [
@@ -54,25 +54,25 @@ export const models: Model[] = [
   { label: 'gpt-4', value: 'gpt-4' },
   { label: 'gpt-3.5-turbo', value: 'gpt-3.5-turbo' },
   { label: 'gpt-3.5-turbo-instruct', value: 'gpt-3.5-turbo-instruct' },
-];
+]
 
 export function SettingsDialog() {
-  const editor = useEditorRef();
+  const editor = useEditorRef()
 
-  const [tempModel, setTempModel] = React.useState(models[0]);
+  const [tempModel, setTempModel] = React.useState(models[0])
   const [tempKeys, setTempKeys] = React.useState<Record<string, string>>({
     openai: '',
     uploadthing: '',
-  });
-  const [showKey, setShowKey] = React.useState<Record<string, boolean>>({});
-  const [open, setOpen] = React.useState(false);
-  const [openModel, setOpenModel] = React.useState(false);
+  })
+  const [showKey, setShowKey] = React.useState<Record<string, boolean>>({})
+  const [open, setOpen] = React.useState(false)
+  const [openModel, setOpenModel] = React.useState(false)
 
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+    e.preventDefault()
 
     // Update AI chat options
-    const chatOptions = editor.getOptions(aiChatPlugin).chatOptions ?? {};
+    const chatOptions = editor.getOptions(aiChatPlugin).chatOptions ?? {}
 
     editor.setOption(aiChatPlugin, 'chatOptions', {
       ...chatOptions,
@@ -81,13 +81,13 @@ export function SettingsDialog() {
         apiKey: tempKeys.openai,
         model: tempModel.value,
       },
-    });
+    })
 
-    setOpen(false);
+    setOpen(false)
 
     // Update AI complete options
     const completeOptions =
-      editor.getOptions(CopilotPlugin).completeOptions ?? {};
+      editor.getOptions(CopilotPlugin).completeOptions ?? {}
     editor.setOption(CopilotPlugin, 'completeOptions', {
       ...completeOptions,
       body: {
@@ -95,12 +95,12 @@ export function SettingsDialog() {
         apiKey: tempKeys.openai,
         model: tempModel.value,
       },
-    });
-  };
+    })
+  }
 
   const toggleKeyVisibility = (key: string) => {
-    setShowKey((prev) => ({ ...prev, [key]: !prev[key] }));
-  };
+    setShowKey(prev => ({ ...prev, [key]: !prev[key] }))
+  }
 
   const renderApiKeyInput = (service: string, label: string) => (
     <div className="group relative">
@@ -137,8 +137,8 @@ export function SettingsDialog() {
         id={label}
         className="pr-10"
         value={tempKeys[service]}
-        onChange={(e) =>
-          setTempKeys((prev) => ({ ...prev, [service]: e.target.value }))
+        onChange={e =>
+          setTempKeys(prev => ({ ...prev, [service]: e.target.value }))
         }
         placeholder=""
         data-1p-ignore
@@ -161,7 +161,7 @@ export function SettingsDialog() {
         </span>
       </Button>
     </div>
-  );
+  )
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -225,13 +225,13 @@ export function SettingsDialog() {
                       <CommandEmpty>No model found.</CommandEmpty>
                       <CommandList>
                         <CommandGroup>
-                          {models.map((m) => (
+                          {models.map(m => (
                             <CommandItem
                               key={m.value}
                               value={m.value}
                               onSelect={() => {
-                                setTempModel(m);
-                                setOpenModel(false);
+                                setTempModel(m)
+                                setOpenModel(false)
                               }}
                             >
                               <Check
@@ -278,5 +278,5 @@ export function SettingsDialog() {
         </p>
       </DialogContent>
     </Dialog>
-  );
+  )
 }

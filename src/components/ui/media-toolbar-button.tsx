@@ -1,19 +1,19 @@
-'use client';
+'use client'
 
-import * as React from 'react';
+import * as React from 'react'
 
-import { Menu } from '@base-ui-components/react/menu';
+import { Menu } from '@base-ui-components/react/menu'
 import {
   AudioLinesIcon,
   FileUpIcon,
   FilmIcon,
   ImageIcon,
   LinkIcon,
-} from 'lucide-react';
-import { isUrl, KEYS } from 'platejs';
-import { useEditorRef } from 'platejs/react';
-import { toast } from 'sonner';
-import { useFilePicker } from 'use-file-picker';
+} from 'lucide-react'
+import { isUrl, KEYS } from 'platejs'
+import { useEditorRef } from 'platejs/react'
+import { toast } from 'sonner'
+import { useFilePicker } from 'use-file-picker'
 
 import {
   AlertDialog,
@@ -24,22 +24,22 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import { Input } from '@/components/ui/input';
+} from '@/components/ui/alert-dialog'
+import { Input } from '@/components/ui/input'
 
 import {
   ToolbarSplitButton,
   ToolbarSplitButtonPrimary,
   ToolbarSplitButtonSecondary,
-} from './toolbar';
+} from './toolbar'
 
 const MEDIA_CONFIG: Record<
   string,
   {
-    accept: string[];
-    icon: React.ReactNode;
-    title: string;
-    tooltip: string;
+    accept: string[]
+    icon: React.ReactNode
+    title: string
+    tooltip: string
   }
 > = {
   [KEYS.audio]: {
@@ -66,44 +66,44 @@ const MEDIA_CONFIG: Record<
     title: 'Insert Video',
     tooltip: 'Video',
   },
-};
+}
 
 interface MediaToolbarButtonProps {
-  nodeType: string;
-  open?: boolean;
-  onOpenChange?: (open: boolean) => void;
-  defaultOpen?: boolean;
-  disabled?: boolean;
+  nodeType: string
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+  defaultOpen?: boolean
+  disabled?: boolean
 }
 
 export function MediaToolbarButton({
   nodeType,
   ...props
 }: MediaToolbarButtonProps) {
-  const currentConfig = MEDIA_CONFIG[nodeType];
+  const currentConfig = MEDIA_CONFIG[nodeType]
 
-  const editor = useEditorRef();
-  const [open, setOpen] = React.useState(false);
-  const [dialogOpen, setDialogOpen] = React.useState(false);
+  const editor = useEditorRef()
+  const [open, setOpen] = React.useState(false)
+  const [dialogOpen, setDialogOpen] = React.useState(false)
 
   const { openFilePicker } = useFilePicker({
     accept: currentConfig.accept,
     multiple: true,
     onFilesSelected: ({ plainFiles: updatedFiles }) => {
-      editor.getTransforms(PlaceholderPlugin).insert.media(updatedFiles);
+      editor.getTransforms(PlaceholderPlugin).insert.media(updatedFiles)
     },
-  });
+  })
 
   return (
     <>
       <ToolbarSplitButton
         onClick={() => {
-          openFilePicker();
+          openFilePicker()
         }}
-        onKeyDown={(e) => {
+        onKeyDown={e => {
           if (e.key === 'ArrowDown') {
-            e.preventDefault();
-            setOpen(true);
+            e.preventDefault()
+            setOpen(true)
           }
         }}
         pressed={open}
@@ -112,31 +112,22 @@ export function MediaToolbarButton({
           {currentConfig.icon}
         </ToolbarSplitButtonPrimary>
 
-        <Menu.Root
-          open={open}
-          onOpenChange={setOpen}
-          modal={false}
-          {...props}
-        >
+        <Menu.Root open={open} onOpenChange={setOpen} modal={false} {...props}>
           <Menu.Trigger>
             <ToolbarSplitButtonSecondary />
           </Menu.Trigger>
 
           <Menu.Portal>
-            <Menu.Positioner
-              sideOffset={5}
-              align="center"
-              className="z-50"
-            >
+            <Menu.Positioner sideOffset={5} align="center" className="z-50">
               <Menu.Popup
                 className="rounded-md border bg-popover p-1 shadow-md"
-                onClick={(e) => e.stopPropagation()}
+                onClick={e => e.stopPropagation()}
               >
                 <Menu.Group>
                   <Menu.Item
                     onClick={() => {
-                      openFilePicker();
-                      setOpen(false);
+                      openFilePicker()
+                      setOpen(false)
                     }}
                     className="relative flex cursor-pointer select-none items-center rounded-sm px-1.5 py-1 outline-none hover:bg-accent focus:bg-accent data-[disabled]:pointer-events-none data-[disabled]:opacity-50 min-w-[160px]"
                   >
@@ -145,8 +136,8 @@ export function MediaToolbarButton({
                   </Menu.Item>
                   <Menu.Item
                     onClick={() => {
-                      setDialogOpen(true);
-                      setOpen(false);
+                      setDialogOpen(true)
+                      setOpen(false)
                     }}
                     className="relative flex cursor-pointer select-none items-center rounded-sm px-1.5 py-1 outline-none hover:bg-accent focus:bg-accent data-[disabled]:pointer-events-none data-[disabled]:opacity-50 min-w-[160px]"
                   >
@@ -162,8 +153,8 @@ export function MediaToolbarButton({
 
       <AlertDialog
         open={dialogOpen}
-        onOpenChange={(value) => {
-          setDialogOpen(value);
+        onOpenChange={value => {
+          setDialogOpen(value)
         }}
       >
         <AlertDialogContent className="gap-6">
@@ -175,7 +166,7 @@ export function MediaToolbarButton({
         </AlertDialogContent>
       </AlertDialog>
     </>
-  );
+  )
 }
 
 function MediaUrlDialogContent({
@@ -183,24 +174,24 @@ function MediaUrlDialogContent({
   nodeType,
   setOpen,
 }: {
-  currentConfig: (typeof MEDIA_CONFIG)[string];
-  nodeType: string;
-  setOpen: (value: boolean) => void;
+  currentConfig: (typeof MEDIA_CONFIG)[string]
+  nodeType: string
+  setOpen: (value: boolean) => void
 }) {
-  const editor = useEditorRef();
-  const [url, setUrl] = React.useState('');
+  const editor = useEditorRef()
+  const [url, setUrl] = React.useState('')
 
   const embedMedia = React.useCallback(() => {
-    if (!isUrl(url)) return toast.error('Invalid URL');
+    if (!isUrl(url)) return toast.error('Invalid URL')
 
-    setOpen(false);
+    setOpen(false)
     editor.tf.insertNodes({
       children: [{ text: '' }],
       name: nodeType === KEYS.file ? url.split('/').pop() : undefined,
       type: nodeType,
       url,
-    });
-  }, [url, editor, nodeType, setOpen]);
+    })
+  }, [url, editor, nodeType, setOpen])
 
   return (
     <>
@@ -219,9 +210,9 @@ function MediaUrlDialogContent({
           id="url"
           className="w-full"
           value={url}
-          onChange={(e) => setUrl(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') embedMedia();
+          onChange={e => setUrl(e.target.value)}
+          onKeyDown={e => {
+            if (e.key === 'Enter') embedMedia()
           }}
           placeholder=""
           type="url"
@@ -232,14 +223,14 @@ function MediaUrlDialogContent({
       <AlertDialogFooter>
         <AlertDialogCancel>Cancel</AlertDialogCancel>
         <AlertDialogAction
-          onClick={(e) => {
-            e.preventDefault();
-            embedMedia();
+          onClick={e => {
+            e.preventDefault()
+            embedMedia()
           }}
         >
           Accept
         </AlertDialogAction>
       </AlertDialogFooter>
     </>
-  );
+  )
 }

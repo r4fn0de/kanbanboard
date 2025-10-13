@@ -10,18 +10,14 @@ import { Button } from '@/components/ui/button'
 import { useUIStore } from '@/store/ui-store'
 import { useWorkspaceStore } from '@/store/workspace-store'
 
-const assetUrls: TldrawProps['assetUrls'] = getAssetUrls({ baseUrl: '/tldraw-assets' })
+const assetUrls: TldrawProps['assetUrls'] = getAssetUrls({
+  baseUrl: '/tldraw-assets',
+})
 
 export function BoardDrawView() {
   const { boardId } = useParams<{ boardId: string }>()
   const navigate = useNavigate()
-  const {
-    data: boards = [],
-    isLoading,
-    isError,
-    error,
-    refetch,
-  } = useBoards()
+  const { data: boards = [], isLoading, isError, error, refetch } = useBoards()
 
   const setLeftSidebarVisible = useUIStore(state => state.setLeftSidebarVisible)
   const setSelectedWorkspaceId = useWorkspaceStore(
@@ -134,7 +130,11 @@ export function BoardDrawView() {
         style={{ cursor: 'auto', userSelect: 'auto' }}
       >
         <div className="absolute inset-0">
-          <Tldraw licenseKey="tldraw-2026-01-18/WyJhQlFqNDN0QiIsWyIqIl0sMTYsIjIwMjYtMDEtMTgiXQ.QYRIuxzb9KtFcg5AyxPtczlCkgqRtQrbRUO/4+o7ikWsPxGZdUg44h1NRD2cOcjTfHlmZhDsXe55+4j2r3LOUg" assetUrls={assetUrls} persistenceKey={`board-${boardId}-draws`} />
+          <Tldraw
+            licenseKey="tldraw-2026-01-18/WyJhQlFqNDN0QiIsWyIqIl0sMTYsIjIwMjYtMDEtMTgiXQ.QYRIuxzb9KtFcg5AyxPtczlCkgqRtQrbRUO/4+o7ikWsPxGZdUg44h1NRD2cOcjTfHlmZhDsXe55+4j2r3LOUg"
+            assetUrls={assetUrls}
+            persistenceKey={`board-${boardId}-draws`}
+          />
         </div>
       </div>
     </div>

@@ -1,31 +1,31 @@
-'use client';
+'use client'
 
-import * as React from 'react';
+import * as React from 'react'
 
-import type { TElement } from 'platejs';
+import type { TElement } from 'platejs'
 
-import { toUnitLess } from '@platejs/basic-styles';
-import { FontSizePlugin } from '@platejs/basic-styles/react';
-import { Minus, Plus } from 'lucide-react';
-import { KEYS } from 'platejs';
-import { useEditorPlugin, useEditorSelector } from 'platejs/react';
+import { toUnitLess } from '@platejs/basic-styles'
+import { FontSizePlugin } from '@platejs/basic-styles/react'
+import { Minus, Plus } from 'lucide-react'
+import { KEYS } from 'platejs'
+import { useEditorPlugin, useEditorSelector } from 'platejs/react'
 
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '@/components/ui/popover';
-import { cn } from '@/lib/utils';
+} from '@/components/ui/popover'
+import { cn } from '@/lib/utils'
 
-import { ToolbarButton } from './toolbar';
+import { ToolbarButton } from './toolbar'
 
-const DEFAULT_FONT_SIZE = '16';
+const DEFAULT_FONT_SIZE = '16'
 
 const FONT_SIZE_MAP = {
   h1: '36',
   h2: '24',
   h3: '20',
-} as const;
+} as const
 
 const FONT_SIZES = [
   '8',
@@ -42,51 +42,51 @@ const FONT_SIZES = [
   '60',
   '72',
   '96',
-] as const;
+] as const
 
 export function FontSizeToolbarButton() {
-  const [inputValue, setInputValue] = React.useState(DEFAULT_FONT_SIZE);
-  const [isFocused, setIsFocused] = React.useState(false);
-  const { editor, tf } = useEditorPlugin(FontSizePlugin);
+  const [inputValue, setInputValue] = React.useState(DEFAULT_FONT_SIZE)
+  const [isFocused, setIsFocused] = React.useState(false)
+  const { editor, tf } = useEditorPlugin(FontSizePlugin)
 
-  const cursorFontSize = useEditorSelector((editor) => {
-    const fontSize = editor.api.marks()?.[KEYS.fontSize];
+  const cursorFontSize = useEditorSelector(editor => {
+    const fontSize = editor.api.marks()?.[KEYS.fontSize]
 
     if (fontSize) {
-      return toUnitLess(fontSize as string);
+      return toUnitLess(fontSize as string)
     }
 
-    const [block] = editor.api.block<TElement>() || [];
+    const [block] = editor.api.block<TElement>() || []
 
-    if (!block?.type) return DEFAULT_FONT_SIZE;
+    if (!block?.type) return DEFAULT_FONT_SIZE
 
     return block.type in FONT_SIZE_MAP
       ? FONT_SIZE_MAP[block.type as keyof typeof FONT_SIZE_MAP]
-      : DEFAULT_FONT_SIZE;
-  }, []);
+      : DEFAULT_FONT_SIZE
+  }, [])
 
   const handleInputChange = () => {
-    const newSize = toUnitLess(inputValue);
+    const newSize = toUnitLess(inputValue)
 
     if (Number.parseInt(newSize) < 1 || Number.parseInt(newSize) > 100) {
-      editor.tf.focus();
+      editor.tf.focus()
 
-      return;
+      return
     }
     if (newSize !== toUnitLess(cursorFontSize)) {
-      tf.fontSize.addMark(`${newSize}px`);
+      tf.fontSize.addMark(`${newSize}px`)
     }
 
-    editor.tf.focus();
-  };
+    editor.tf.focus()
+  }
 
   const handleFontSizeChange = (delta: number) => {
-    const newSize = Number(displayValue) + delta;
-    tf.fontSize.addMark(`${newSize}px`);
-    editor.tf.focus();
-  };
+    const newSize = Number(displayValue) + delta
+    tf.fontSize.addMark(`${newSize}px`)
+    editor.tf.focus()
+  }
 
-  const displayValue = isFocused ? inputValue : cursorFontSize;
+  const displayValue = isFocused ? inputValue : cursorFontSize
 
   return (
     <div className="flex h-7 items-center gap-1 rounded-md bg-muted/60 p-0">
@@ -102,18 +102,18 @@ export function FontSizeToolbarButton() {
             )}
             value={displayValue}
             onBlur={() => {
-              setIsFocused(false);
-              handleInputChange();
+              setIsFocused(false)
+              handleInputChange()
             }}
-            onChange={(e) => setInputValue(e.target.value)}
+            onChange={e => setInputValue(e.target.value)}
             onFocus={() => {
-              setIsFocused(true);
-              setInputValue(toUnitLess(cursorFontSize));
+              setIsFocused(true)
+              setInputValue(toUnitLess(cursorFontSize))
             }}
-            onKeyDown={(e) => {
+            onKeyDown={e => {
               if (e.key === 'Enter') {
-                e.preventDefault();
-                handleInputChange();
+                e.preventDefault()
+                handleInputChange()
               }
             }}
             data-plate-focus="true"
@@ -122,17 +122,17 @@ export function FontSizeToolbarButton() {
         </PopoverTrigger>
         <PopoverContent
           className="w-10 px-px py-1"
-          onOpenAutoFocus={(e) => e.preventDefault()}
+          onOpenAutoFocus={e => e.preventDefault()}
         >
-          {FONT_SIZES.map((size) => (
+          {FONT_SIZES.map(size => (
             <button
               key={size}
               className={cn(
                 'flex h-8 w-full items-center justify-center text-sm hover:bg-accent data-[highlighted=true]:bg-accent'
               )}
               onClick={() => {
-                tf.fontSize.addMark(`${size}px`);
-                setIsFocused(false);
+                tf.fontSize.addMark(`${size}px`)
+                setIsFocused(false)
               }}
               data-highlighted={size === displayValue}
               type="button"
@@ -147,5 +147,5 @@ export function FontSizeToolbarButton() {
         <Plus />
       </ToolbarButton>
     </div>
-  );
+  )
 }

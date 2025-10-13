@@ -1,23 +1,23 @@
-'use client';
+'use client'
 
-import { AIChatPlugin } from '@platejs/ai/react';
+import { AIChatPlugin } from '@platejs/ai/react'
 import {
   type PlateElementProps,
   type PlateTextProps,
   PlateElement,
   PlateText,
   usePluginOption,
-} from 'platejs/react';
+} from 'platejs/react'
 
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils'
 
 export function AILeaf(props: PlateTextProps) {
-  const streaming = usePluginOption(AIChatPlugin, 'streaming');
+  const streaming = usePluginOption(AIChatPlugin, 'streaming')
   const streamingLeaf = props.editor
     .getApi(AIChatPlugin)
-    .aiChat.node({ streaming: true });
+    .aiChat.node({ streaming: true })
 
-  const isLast = streamingLeaf?.[0] === props.text;
+  const isLast = streamingLeaf?.[0] === props.text
 
   return (
     <PlateText
@@ -30,7 +30,7 @@ export function AILeaf(props: PlateTextProps) {
       )}
       {...props}
     />
-  );
+  )
 }
 
 export function AIAnchorElement(props: PlateElementProps) {
@@ -38,5 +38,5 @@ export function AIAnchorElement(props: PlateElementProps) {
     <PlateElement {...props}>
       <div className="h-[0.1px]" />
     </PlateElement>
-  );
+  )
 }

@@ -1,50 +1,50 @@
-'use client';
+'use client'
 
-import * as React from 'react';
+import * as React from 'react'
 
-import { type UseChatHelpers, useChat as useBaseChat } from '@ai-sdk/react';
-import { faker } from '@faker-js/faker';
-import { AIChatPlugin, aiCommentToRange } from '@platejs/ai/react';
-import { getCommentKey, getTransientCommentKey } from '@platejs/comment';
-import { deserializeMd } from '@platejs/markdown';
-import { BlockSelectionPlugin } from '@platejs/selection/react';
-import { type UIMessage, DefaultChatTransport } from 'ai';
-import { type TNode, KEYS, nanoid, NodeApi, TextApi } from 'platejs';
-import { type PlateEditor, useEditorRef, usePluginOption } from 'platejs/react';
+import { type UseChatHelpers, useChat as useBaseChat } from '@ai-sdk/react'
+import { faker } from '@faker-js/faker'
+import { AIChatPlugin, aiCommentToRange } from '@platejs/ai/react'
+import { getCommentKey, getTransientCommentKey } from '@platejs/comment'
+import { deserializeMd } from '@platejs/markdown'
+import { BlockSelectionPlugin } from '@platejs/selection/react'
+import { type UIMessage, DefaultChatTransport } from 'ai'
+import { type TNode, KEYS, nanoid, NodeApi, TextApi } from 'platejs'
+import { type PlateEditor, useEditorRef, usePluginOption } from 'platejs/react'
 
-import { aiChatPlugin } from '@/components/editor/plugins/ai-kit';
+import { aiChatPlugin } from '@/components/editor/plugins/ai-kit'
 
-import { discussionPlugin } from './plugins/discussion-kit';
+import { discussionPlugin } from './plugins/discussion-kit'
 
-export type ToolName = 'comment' | 'edit' | 'generate';
+export type ToolName = 'comment' | 'edit' | 'generate'
 
 export interface TComment {
-  blockId: string;
-  comment: string;
-  content: string;
+  blockId: string
+  comment: string
+  content: string
 }
 
 export interface MessageDataPart {
-  toolName: ToolName;
-  comment?: TComment;
+  toolName: ToolName
+  comment?: TComment
 }
 
-export type Chat = UseChatHelpers<ChatMessage>;
+export type Chat = UseChatHelpers<ChatMessage>
 
-export type ChatMessage = UIMessage<{}, MessageDataPart>;
+export type ChatMessage = UIMessage<{}, MessageDataPart>
 
 export const useChat = () => {
-  const editor = useEditorRef();
-  const options = usePluginOption(aiChatPlugin, 'chatOptions');
+  const editor = useEditorRef()
+  const options = usePluginOption(aiChatPlugin, 'chatOptions')
 
   // remove when you implement the route /api/ai/command
-  const abortControllerRef = React.useRef<AbortController | null>(null);
+  const abortControllerRef = React.useRef<AbortController | null>(null)
   const _abortFakeStream = () => {
     if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-      abortControllerRef.current = null;
+      abortControllerRef.current.abort()
+      abortControllerRef.current = null
     }
-  };
+  }
 
   const baseChat = useBaseChat<ChatMessage>({
     id: 'editor',
@@ -52,66 +52,66 @@ export const useChat = () => {
       api: options.api || '/api/ai/command',
       // Mock the API response. Remove it when you implement the route /api/ai/command
       fetch: async (input, init) => {
-        const res = await fetch(input, init);
+        const res = await fetch(input, init)
 
         if (!res.ok) {
-          let sample: 'comment' | 'markdown' | 'mdx' | null = null;
+          let sample: 'comment' | 'markdown' | 'mdx' | null = null
 
           try {
             const content = JSON.parse(init?.body as string)
               .messages.at(-1)
-              .parts.find((p: any) => p.type === 'text')?.text;
+              .parts.find((p: any) => p.type === 'text')?.text
 
             if (content.includes('Generate a markdown sample')) {
-              sample = 'markdown';
+              sample = 'markdown'
             } else if (content.includes('Generate a mdx sample')) {
-              sample = 'mdx';
+              sample = 'mdx'
             } else if (content.includes('comment')) {
-              sample = 'comment';
+              sample = 'comment'
             }
           } catch {
-            sample = null;
+            sample = null
           }
 
-          abortControllerRef.current = new AbortController();
+          abortControllerRef.current = new AbortController()
 
-          await new Promise((resolve) => setTimeout(resolve, 400));
+          await new Promise(resolve => setTimeout(resolve, 400))
 
           const stream = fakeStreamText({
             editor,
             sample,
             signal: abortControllerRef.current.signal,
-          });
+          })
 
           const response = new Response(stream, {
             headers: {
               Connection: 'keep-alive',
               'Content-Type': 'text/plain',
             },
-          });
+          })
 
-          return response;
+          return response
         }
 
-        return res;
+        return res
       },
     }),
     onData(data) {
       if (data.type === 'data-toolName') {
-        editor.setOption(AIChatPlugin, 'toolName', data.data);
+        editor.setOption(AIChatPlugin, 'toolName', data.data)
       }
 
       if (data.type === 'data-comment' && data.data) {
-        const aiComment = data.data;
-        const range = aiCommentToRange(editor, aiComment);
+        const aiComment = data.data
+        const range = aiCommentToRange(editor, aiComment)
 
-        if (!range) return console.warn('No range found for AI comment');
+        if (!range) return console.warn('No range found for AI comment')
 
         const discussions =
-          editor.getOption(discussionPlugin, 'discussions') || [];
+          editor.getOption(discussionPlugin, 'discussions') || []
 
         // Generate a new discussion ID
-        const discussionId = nanoid();
+        const discussionId = nanoid()
 
         // Create a new comment
         const newComment = {
@@ -121,7 +121,7 @@ export const useChat = () => {
           discussionId,
           isEdited: false,
           userId: editor.getOption(discussionPlugin, 'currentUserId'),
-        };
+        }
 
         // Create a new discussion
         const newDiscussion = {
@@ -133,11 +133,11 @@ export const useChat = () => {
             .join('\n'),
           isResolved: false,
           userId: editor.getOption(discussionPlugin, 'currentUserId'),
-        };
+        }
 
         // Update discussions
-        const updatedDiscussions = [...discussions, newDiscussion];
-        editor.setOption(discussionPlugin, 'discussions', updatedDiscussions);
+        const updatedDiscussions = [...discussions, newDiscussion]
+        editor.setOption(discussionPlugin, 'discussions', updatedDiscussions)
 
         // Apply comment marks to the editor
         editor.tf.withMerging(() => {
@@ -152,26 +152,26 @@ export const useChat = () => {
               match: TextApi.isText,
               split: true,
             }
-          );
-        });
+          )
+        })
       }
     },
 
     ...options,
-  });
+  })
 
   const chat = {
     ...baseChat,
     _abortFakeStream,
-  };
+  }
 
   React.useEffect(() => {
-    editor.setOption(AIChatPlugin, 'chat', chat);
+    editor.setOption(AIChatPlugin, 'chat', chat)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [chat.status, chat.messages, chat.error]);
+  }, [chat.status, chat.messages, chat.error])
 
-  return chat;
-};
+  return chat
+}
 
 // Used for testing. Remove it after implementing useChat api.
 const fakeStreamText = ({
@@ -180,27 +180,27 @@ const fakeStreamText = ({
   sample = null,
   signal,
 }: {
-  editor: PlateEditor;
-  chunkCount?: number;
-  sample?: 'comment' | 'markdown' | 'mdx' | null;
-  signal?: AbortSignal;
+  editor: PlateEditor
+  chunkCount?: number
+  sample?: 'comment' | 'markdown' | 'mdx' | null
+  signal?: AbortSignal
 }) => {
-  const encoder = new TextEncoder();
+  const encoder = new TextEncoder()
 
   return new ReadableStream({
     async start(controller) {
       const blocks = (() => {
         if (sample === 'markdown') {
-          return markdownChunks;
+          return markdownChunks
         }
 
         if (sample === 'mdx') {
-          return mdxChunks;
+          return mdxChunks
         }
 
         if (sample === 'comment') {
-          const commentChunks = createCommentChunks(editor);
-          return commentChunks;
+          const commentChunks = createCommentChunks(editor)
+          return commentChunks
         }
 
         return [
@@ -218,72 +218,72 @@ const fakeStreamText = ({
             delay: faker.number.int({ max: 100, min: 30 }),
             texts: faker.lorem.words({ max: 3, min: 1 }) + ' ',
           })),
-        ];
-      })();
+        ]
+      })()
       if (signal?.aborted) {
-        controller.error(new Error('Aborted before start'));
-        return;
+        controller.error(new Error('Aborted before start'))
+        return
       }
 
       const abortHandler = () => {
-        controller.error(new Error('Stream aborted'));
-      };
+        controller.error(new Error('Stream aborted'))
+      }
 
-      signal?.addEventListener('abort', abortHandler);
+      signal?.addEventListener('abort', abortHandler)
 
       // Generate a unique message ID
-      const messageId = `msg_${faker.string.alphanumeric(40)}`;
+      const messageId = `msg_${faker.string.alphanumeric(40)}`
 
       // Handle comment data differently
       if (sample === 'comment') {
-        controller.enqueue(encoder.encode('data: {"type":"start"}\n\n'));
-        await new Promise((resolve) => setTimeout(resolve, 10));
+        controller.enqueue(encoder.encode('data: {"type":"start"}\n\n'))
+        await new Promise(resolve => setTimeout(resolve, 10))
 
-        controller.enqueue(encoder.encode('data: {"type":"start-step"}\n\n'));
-        await new Promise((resolve) => setTimeout(resolve, 10));
+        controller.enqueue(encoder.encode('data: {"type":"start-step"}\n\n'))
+        await new Promise(resolve => setTimeout(resolve, 10))
 
         // For comments, send data events directly
         for (const block of blocks) {
           for (const chunk of block) {
-            await new Promise((resolve) => setTimeout(resolve, chunk.delay));
+            await new Promise(resolve => setTimeout(resolve, chunk.delay))
 
             if (signal?.aborted) {
-              signal?.removeEventListener('abort', abortHandler);
-              return;
+              signal?.removeEventListener('abort', abortHandler)
+              return
             }
 
             // Send the data event directly (already formatted as JSON)
-            controller.enqueue(encoder.encode(`data: ${chunk.texts}\n\n`));
+            controller.enqueue(encoder.encode(`data: ${chunk.texts}\n\n`))
           }
         }
 
         // Send the final DONE event
-        controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+        controller.enqueue(encoder.encode('data: [DONE]\n\n'))
       } else {
         // Send initial stream events for text content
-        controller.enqueue(encoder.encode('data: {"type":"start"}\n\n'));
-        await new Promise((resolve) => setTimeout(resolve, 10));
+        controller.enqueue(encoder.encode('data: {"type":"start"}\n\n'))
+        await new Promise(resolve => setTimeout(resolve, 10))
 
-        controller.enqueue(encoder.encode('data: {"type":"start-step"}\n\n'));
-        await new Promise((resolve) => setTimeout(resolve, 10));
+        controller.enqueue(encoder.encode('data: {"type":"start-step"}\n\n'))
+        await new Promise(resolve => setTimeout(resolve, 10))
 
         controller.enqueue(
           encoder.encode(
             `data: {"type":"text-start","id":"${messageId}","providerMetadata":{"openai":{"itemId":"${messageId}"}}}\n\n`
           )
-        );
-        await new Promise((resolve) => setTimeout(resolve, 10));
+        )
+        await new Promise(resolve => setTimeout(resolve, 10))
 
         for (let i = 0; i < blocks.length; i++) {
-          const block = blocks[i];
+          const block = blocks[i]
 
           // Stream the block content
           for (const chunk of block) {
-            await new Promise((resolve) => setTimeout(resolve, chunk.delay));
+            await new Promise(resolve => setTimeout(resolve, chunk.delay))
 
             if (signal?.aborted) {
-              signal?.removeEventListener('abort', abortHandler);
-              return;
+              signal?.removeEventListener('abort', abortHandler)
+              return
             }
 
             // Properly escape the text for JSON
@@ -292,13 +292,13 @@ const fakeStreamText = ({
               .replace(/"/g, String.raw`\"`) // Escape quotes
               .replace(/\n/g, String.raw`\n`) // Escape newlines
               .replace(/\r/g, String.raw`\r`) // Escape carriage returns
-              .replace(/\t/g, String.raw`\t`); // Escape tabs
+              .replace(/\t/g, String.raw`\t`) // Escape tabs
 
             controller.enqueue(
               encoder.encode(
                 `data: {"type":"text-delta","id":"${messageId}","delta":"${escapedText}"}\n\n`
               )
-            );
+            )
           }
 
           // Add double newline after each block except the last one
@@ -307,32 +307,32 @@ const fakeStreamText = ({
               encoder.encode(
                 `data: {"type":"text-delta","id":"${messageId}","delta":"\\n\\n"}\n\n`
               )
-            );
+            )
           }
         }
 
         // Send end events
         controller.enqueue(
           encoder.encode(`data: {"type":"text-end","id":"${messageId}"}\n\n`)
-        );
-        await new Promise((resolve) => setTimeout(resolve, 10));
+        )
+        await new Promise(resolve => setTimeout(resolve, 10))
 
-        controller.enqueue(encoder.encode('data: {"type":"finish-step"}\n\n'));
-        await new Promise((resolve) => setTimeout(resolve, 10));
+        controller.enqueue(encoder.encode('data: {"type":"finish-step"}\n\n'))
+        await new Promise(resolve => setTimeout(resolve, 10))
 
-        controller.enqueue(encoder.encode('data: {"type":"finish"}\n\n'));
-        await new Promise((resolve) => setTimeout(resolve, 10));
+        controller.enqueue(encoder.encode('data: {"type":"finish"}\n\n'))
+        await new Promise(resolve => setTimeout(resolve, 10))
 
-        controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+        controller.enqueue(encoder.encode('data: [DONE]\n\n'))
       }
 
-      signal?.removeEventListener('abort', abortHandler);
-      controller.close();
+      signal?.removeEventListener('abort', abortHandler)
+      controller.close()
     },
-  });
-};
+  })
+}
 
-const delay = faker.number.int({ max: 20, min: 5 });
+const delay = faker.number.int({ max: 20, min: 5 })
 
 const markdownChunks = [
   [
@@ -502,7 +502,7 @@ const markdownChunks = [
     { delay, texts: 'Data    ' },
     { delay, texts: ' |' },
   ],
-];
+]
 
 const mdxChunks = [
   [
@@ -1431,66 +1431,66 @@ const mdxChunks = [
         'src="https://videos.pexels.com/video-files/6769791/6769791-uhd_2560_1440_24fps.mp4" width="80%" isUpload="true" />',
     },
   ],
-];
+]
 
 const createCommentChunks = (editor: PlateEditor) => {
-  const selectedBlocksApi = editor.getApi(BlockSelectionPlugin).blockSelection;
+  const selectedBlocksApi = editor.getApi(BlockSelectionPlugin).blockSelection
 
   const selectedBlocks = selectedBlocksApi
     .getNodes({
       selectionFallback: true,
       sort: true,
     })
-    .map(([block]) => block);
+    .map(([block]) => block)
 
   const isSelectingSome = editor.getOption(
     BlockSelectionPlugin,
     'isSelectingSome'
-  );
+  )
 
   const blocks =
     selectedBlocks.length > 0 && (editor.api.isExpanded() || isSelectingSome)
       ? selectedBlocks
-      : editor.children;
+      : editor.children
 
-  const max = blocks.length;
+  const max = blocks.length
 
-  const commentCount = Math.ceil(max / 2);
+  const commentCount = Math.ceil(max / 2)
 
-  const result = new Set<number>();
+  const result = new Set<number>()
 
   while (result.size < commentCount) {
-    const num = Math.floor(Math.random() * max); // 0 to max-1 (fixed: was 1 to max)
-    result.add(num);
+    const num = Math.floor(Math.random() * max) // 0 to max-1 (fixed: was 1 to max)
+    result.add(num)
   }
 
-  const indexes = Array.from(result).sort((a, b) => a - b);
+  const indexes = Array.from(result).sort((a, b) => a - b)
 
   const chunks = indexes
-    .map((index) => {
-      const block = blocks[index];
+    .map(index => {
+      const block = blocks[index]
       if (!block) {
-        return [];
+        return []
       }
 
-      const blockString = NodeApi.string(block);
-      const endIndex = blockString.indexOf('.');
+      const blockString = NodeApi.string(block)
+      const endIndex = blockString.indexOf('.')
       const content =
-        endIndex === -1 ? blockString : blockString.slice(0, endIndex);
+        endIndex === -1 ? blockString : blockString.slice(0, endIndex)
 
       return [
         {
           delay: faker.number.int({ max: 500, min: 200 }),
           texts: `{"id":"${nanoid()}","data":{"blockId":"${block.id}","comment":"${faker.lorem.sentence()}","content":"${content}"},"type":"data-comment"}`,
         },
-      ];
+      ]
     })
-    .filter((chunk) => chunk.length > 0);
+    .filter(chunk => chunk.length > 0)
 
   const result_chunks = [
     [{ delay: 50, texts: '{"data":"comment","type":"data-toolName"}' }],
     ...chunks,
-  ];
+  ]
 
-  return result_chunks;
-};
+  return result_chunks
+}

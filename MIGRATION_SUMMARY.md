@@ -3,6 +3,7 @@
 ## Status Atual
 
 ✅ **Concluído:**
+
 1. Base UI instalado
 2. CSS configurado para portals
 3. Componentes Base UI criados:
@@ -14,6 +15,7 @@
 7. Delete Workspace Dialog convertido para Base UI
 
 ❌ **Pendente - Dialogs que precisam conversão:**
+
 1. Line 971-1030: **Project dropdown menu** (DropdownMenu -> Menu)
 2. Line 1080-1190: **Create Workspace Dialog** (DialogContent -> DialogPortal/DialogBackdrop/DialogPopup)
 3. Line 1353-1448: **Rename Project Dialog** (DialogContent -> DialogPortal/DialogBackdrop/DialogPopup)
@@ -28,6 +30,7 @@ Para completar a migração, todos os dialogs e menus restantes precisam ser con
 ### Padrão de Conversão
 
 **Radix UI Dialog:**
+
 ```tsx
 <Dialog>
   <DialogContent>
@@ -39,6 +42,7 @@ Para completar a migração, todos os dialogs e menus restantes precisam ser con
 ```
 
 **Base UI Dialog:**
+
 ```tsx
 <Dialog>
   <DialogPortal>
@@ -53,6 +57,7 @@ Para completar a migração, todos os dialogs e menus restantes precisam ser con
 ```
 
 **Radix UI DropdownMenu:**
+
 ```tsx
 <DropdownMenu>
   <DropdownMenuTrigger>...</DropdownMenuTrigger>
@@ -63,6 +68,7 @@ Para completar a migração, todos os dialogs e menus restantes precisam ser con
 ```
 
 **Base UI Menu:**
+
 ```tsx
 <Menu>
   <MenuTrigger>...</MenuTrigger>

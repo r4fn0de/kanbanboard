@@ -69,7 +69,11 @@ function hexToRgba(hex: string | null | undefined, alpha: number) {
 }
 
 // Custom modifier to center overlay on cursor
-const snapCenterToCursor: Modifier = ({ activatorEvent, draggingNodeRect, transform }) => {
+const snapCenterToCursor: Modifier = ({
+  activatorEvent,
+  draggingNodeRect,
+  transform,
+}) => {
   if (draggingNodeRect && activatorEvent) {
     const activatorCoordinates = {
       x: (activatorEvent as MouseEvent).clientX,
@@ -78,8 +82,16 @@ const snapCenterToCursor: Modifier = ({ activatorEvent, draggingNodeRect, transf
 
     return {
       ...transform,
-      x: transform.x + activatorCoordinates.x - draggingNodeRect.left - draggingNodeRect.width / 2,
-      y: transform.y + activatorCoordinates.y - draggingNodeRect.top - draggingNodeRect.height / 2,
+      x:
+        transform.x +
+        activatorCoordinates.x -
+        draggingNodeRect.left -
+        draggingNodeRect.width / 2,
+      y:
+        transform.y +
+        activatorCoordinates.y -
+        draggingNodeRect.top -
+        draggingNodeRect.height / 2,
     }
   }
 
@@ -169,10 +181,7 @@ export function BoardKanbanView({
             })}
           </div>
         </SortableContext>
-        <DragOverlay 
-          dropAnimation={null}
-          modifiers={[snapCenterToCursor]}
-        >
+        <DragOverlay dropAnimation={null} modifiers={[snapCenterToCursor]}>
           {activeCard ? <CardOverlay card={activeCard} /> : null}
         </DragOverlay>
       </DndContext>

@@ -1,22 +1,22 @@
-'use client';
+'use client'
 
-import { withAIBatch } from '@platejs/ai';
+import { withAIBatch } from '@platejs/ai'
 import {
   AIChatPlugin,
   AIPlugin,
   applyAISuggestions,
   streamInsertChunk,
   useChatChunk,
-} from '@platejs/ai/react';
-import { getPluginType, KEYS, PathApi } from 'platejs';
-import { usePluginOption } from 'platejs/react';
+} from '@platejs/ai/react'
+import { getPluginType, KEYS, PathApi } from 'platejs'
+import { usePluginOption } from 'platejs/react'
 
-import { AILoadingBar, AIMenu } from '@/components/ui/ai-menu';
-import { AIAnchorElement, AILeaf } from '@/components/ui/ai-node';
+import { AILoadingBar, AIMenu } from '@/components/ui/ai-menu'
+import { AIAnchorElement, AILeaf } from '@/components/ui/ai-node'
 
-import { useChat } from '../use-chat';
-import { CursorOverlayKit } from './cursor-overlay-kit';
-import { MarkdownKit } from './markdown-kit';
+import { useChat } from '../use-chat'
+import { CursorOverlayKit } from './cursor-overlay-kit'
+import { MarkdownKit } from './markdown-kit'
 
 export const aiChatPlugin = AIChatPlugin.extend({
   options: {
@@ -32,10 +32,10 @@ export const aiChatPlugin = AIChatPlugin.extend({
   },
   shortcuts: { show: { keys: 'mod+j' } },
   useHooks: ({ editor, getOption }) => {
-    useChat();
+    useChat()
 
-    const mode = usePluginOption(AIChatPlugin, 'mode');
-    const toolName = usePluginOption(AIChatPlugin, 'toolName');
+    const mode = usePluginOption(AIChatPlugin, 'mode')
+    const toolName = usePluginOption(AIChatPlugin, 'toolName')
 
     useChatChunk({
       onChunk: ({ chunk, isFirst, nodes, text: content }) => {
@@ -49,53 +49,53 @@ export const aiChatPlugin = AIChatPlugin.extend({
               {
                 at: PathApi.next(editor.selection!.focus.path.slice(0, 1)),
               }
-            );
-          });
-          editor.setOption(AIChatPlugin, 'streaming', true);
+            )
+          })
+          editor.setOption(AIChatPlugin, 'streaming', true)
         }
 
         if (mode === 'insert' && nodes.length > 0) {
           withAIBatch(
             editor,
             () => {
-              if (!getOption('streaming')) return;
+              if (!getOption('streaming')) return
               editor.tf.withScrolling(() => {
                 streamInsertChunk(editor, chunk, {
                   textProps: {
                     [getPluginType(editor, KEYS.ai)]: true,
                   },
-                });
-              });
+                })
+              })
             },
             { split: isFirst }
-          );
+          )
         }
 
         if (toolName === 'edit' && mode === 'chat') {
           withAIBatch(
             editor,
             () => {
-              applyAISuggestions(editor, content);
+              applyAISuggestions(editor, content)
             },
             {
               split: isFirst,
             }
-          );
+          )
         }
       },
       onFinish: () => {
-        editor.setOption(AIChatPlugin, 'streaming', false);
-        editor.setOption(AIChatPlugin, '_blockChunks', '');
-        editor.setOption(AIChatPlugin, '_blockPath', null);
-        editor.setOption(AIChatPlugin, '_mdxName', null);
+        editor.setOption(AIChatPlugin, 'streaming', false)
+        editor.setOption(AIChatPlugin, '_blockChunks', '')
+        editor.setOption(AIChatPlugin, '_blockPath', null)
+        editor.setOption(AIChatPlugin, '_mdxName', null)
       },
-    });
+    })
   },
-});
+})
 
 export const AIKit = [
   ...CursorOverlayKit,
   ...MarkdownKit,
   AIPlugin.withComponent(AILeaf),
   aiChatPlugin,
-];
+]

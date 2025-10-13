@@ -1,4 +1,4 @@
-import * as React from 'react';
+import * as React from 'react'
 
 import {
   type SlateElementProps,
@@ -6,7 +6,7 @@ import {
   type TCodeBlockElement,
   SlateElement,
   SlateLeaf,
-} from 'platejs';
+} from 'platejs'
 
 export function CodeBlockElementStatic(
   props: SlateElementProps<TCodeBlockElement>
@@ -22,15 +22,15 @@ export function CodeBlockElementStatic(
         </pre>
       </div>
     </SlateElement>
-  );
+  )
 }
 
 export function CodeLineElementStatic(props: SlateElementProps) {
-  return <SlateElement {...props} />;
+  return <SlateElement {...props} />
 }
 
 export function CodeSyntaxLeafStatic(props: SlateLeafProps) {
-  const tokenClassName = props.leaf.className as string;
+  const tokenClassName = props.leaf.className as string
 
-  return <SlateLeaf className={tokenClassName} {...props} />;
+  return <SlateLeaf className={tokenClassName} {...props} />
 }

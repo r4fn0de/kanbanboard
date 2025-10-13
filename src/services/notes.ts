@@ -38,25 +38,25 @@ export async function loadNotes(boardId: string): Promise<Note[]> {
 }
 
 export async function createNote(input: CreateNoteInput): Promise<Note> {
-  return await invoke('create_note', { 
+  return await invoke('create_note', {
     args: {
       id: input.id,
       board_id: input.boardId,
       title: input.title,
       content: input.content,
-    }
+    },
   })
 }
 
 export async function updateNote(input: UpdateNoteInput): Promise<void> {
-  await invoke('update_note', { 
+  await invoke('update_note', {
     args: {
       id: input.id,
       board_id: input.boardId,
       title: input.title,
       content: input.content,
       pinned: input.pinned,
-    }
+    },
   })
 }
 
@@ -85,7 +85,7 @@ export function useCreateNote(boardId: string) {
 
   return useMutation({
     mutationFn: createNote,
-    onMutate: async (newNote) => {
+    onMutate: async newNote => {
       // Cancel outgoing refetches
       await queryClient.cancelQueries({ queryKey: ['notes', boardId] })
 
@@ -129,19 +129,25 @@ export function useUpdateNote(boardId: string) {
 
   return useMutation({
     mutationFn: updateNote,
-    onMutate: async (updatedNote) => {
+    onMutate: async updatedNote => {
       await queryClient.cancelQueries({ queryKey: ['notes', boardId] })
 
       const previousNotes = queryClient.getQueryData<Note[]>(['notes', boardId])
 
       queryClient.setQueryData<Note[]>(['notes', boardId], (old = []) =>
-        old.map((note) =>
+        old.map(note =>
           note.id === updatedNote.id
             ? {
                 ...note,
-                ...(updatedNote.title !== undefined && { title: updatedNote.title }),
-                ...(updatedNote.content !== undefined && { content: updatedNote.content }),
-                ...(updatedNote.pinned !== undefined && { pinned: updatedNote.pinned }),
+                ...(updatedNote.title !== undefined && {
+                  title: updatedNote.title,
+                }),
+                ...(updatedNote.content !== undefined && {
+                  content: updatedNote.content,
+                }),
+                ...(updatedNote.pinned !== undefined && {
+                  pinned: updatedNote.pinned,
+                }),
                 updatedAt: new Date().toISOString(),
               }
             : note
@@ -176,7 +182,7 @@ export function useDeleteNote(boardId: string) {
       const previousNotes = queryClient.getQueryData<Note[]>(['notes', boardId])
 
       queryClient.setQueryData<Note[]>(['notes', boardId], (old = []) =>
-        old.filter((note) => note.id !== id)
+        old.filter(note => note.id !== id)
       )
 
       return { previousNotes }
@@ -207,7 +213,7 @@ export function useArchiveNote(boardId: string) {
       const previousNotes = queryClient.getQueryData<Note[]>(['notes', boardId])
 
       queryClient.setQueryData<Note[]>(['notes', boardId], (old = []) =>
-        old.filter((note) => note.id !== id)
+        old.filter(note => note.id !== id)
       )
 
       return { previousNotes }

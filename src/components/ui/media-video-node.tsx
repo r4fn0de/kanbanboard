@@ -1,26 +1,26 @@
-'use client';
+'use client'
 
-import * as React from 'react';
-import LiteYouTubeEmbed from 'react-lite-youtube-embed';
-import ReactPlayer from 'react-player';
+import * as React from 'react'
+import LiteYouTubeEmbed from 'react-lite-youtube-embed'
+import ReactPlayer from 'react-player'
 
-import type { TResizableProps, TVideoElement } from 'platejs';
-import type { PlateElementProps } from 'platejs/react';
+import type { TResizableProps, TVideoElement } from 'platejs'
+import type { PlateElementProps } from 'platejs/react'
 
-import { useDraggable } from '@platejs/dnd';
-import { parseTwitterUrl, parseVideoUrl } from '@platejs/media';
-import { useMediaState } from '@platejs/media/react';
-import { ResizableProvider, useResizableValue } from '@platejs/resizable';
-import { PlateElement, useEditorMounted, withHOC } from 'platejs/react';
+import { useDraggable } from '@platejs/dnd'
+import { parseTwitterUrl, parseVideoUrl } from '@platejs/media'
+import { useMediaState } from '@platejs/media/react'
+import { ResizableProvider, useResizableValue } from '@platejs/resizable'
+import { PlateElement, useEditorMounted, withHOC } from 'platejs/react'
 
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils'
 
-import { Caption, CaptionTextarea } from './caption';
+import { Caption, CaptionTextarea } from './caption'
 import {
   mediaResizeHandleVariants,
   Resizable,
   ResizeHandle,
-} from './resize-handle';
+} from './resize-handle'
 
 export const VideoElement = withHOC(
   ResizableProvider,
@@ -36,16 +36,16 @@ export const VideoElement = withHOC(
       unsafeUrl,
     } = useMediaState({
       urlParsers: [parseTwitterUrl, parseVideoUrl],
-    });
-    const width = useResizableValue('width');
+    })
+    const width = useResizableValue('width')
 
-    const isEditorMounted = useEditorMounted();
+    const isEditorMounted = useEditorMounted()
 
-    const isTweet = true;
+    const isTweet = true
 
     const { isDragging, handleRef } = useDraggable({
       element: props.element,
-    });
+    })
 
     return (
       <PlateElement className="py-2.5" {...props}>
@@ -118,6 +118,6 @@ export const VideoElement = withHOC(
         </figure>
         {props.children}
       </PlateElement>
-    );
+    )
   }
-);
+)

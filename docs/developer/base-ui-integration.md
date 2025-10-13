@@ -26,6 +26,7 @@ body {
 ```
 
 Isso garante que:
+
 - Popups sempre aparecem acima do conteúdo da página
 - `z-index` no seu CSS não interfere com os portals
 - iOS 26+ Safari funciona corretamente com backdrops
@@ -59,7 +60,7 @@ function MyDialog() {
       <DialogTrigger asChild>
         <Button>Open Dialog</Button>
       </DialogTrigger>
-      
+
       <DialogPortal>
         <DialogBackdrop />
         <DialogPopup>
@@ -69,12 +70,12 @@ function MyDialog() {
               Make changes to your workspace here.
             </DialogDescription>
           </DialogHeader>
-          
+
           {/* Conteúdo do dialog */}
           <div className="space-y-4">
             <input type="text" placeholder="Workspace name" />
           </div>
-          
+
           <DialogFooter>
             <DialogClose asChild>
               <Button variant="outline">Cancel</Button>
@@ -103,7 +104,7 @@ function MySimpleDialog() {
   return (
     <>
       <Button onClick={() => setOpen(true)}>Open</Button>
-      
+
       <CompleteDialog
         open={open}
         onOpenChange={setOpen}
@@ -123,7 +124,12 @@ function MySimpleDialog() {
 #### Uso com Estado Controlado
 
 ```tsx
-import { Dialog, DialogPortal, DialogBackdrop, DialogPopup } from '@/components/ui/base-ui-dialog'
+import {
+  Dialog,
+  DialogPortal,
+  DialogBackdrop,
+  DialogPopup,
+} from '@/components/ui/base-ui-dialog'
 
 function ControlledDialog() {
   const [open, setOpen] = useState(false)
@@ -143,6 +149,7 @@ function ControlledDialog() {
 Componente raiz que gerencia o estado do dialog.
 
 **Props:**
+
 - `open?: boolean` - Estado controlado
 - `defaultOpen?: boolean` - Estado inicial não-controlado
 - `onOpenChange?: (open: boolean) => void` - Callback quando o estado muda
@@ -153,6 +160,7 @@ Componente raiz que gerencia o estado do dialog.
 Elemento que abre o dialog quando clicado.
 
 **Props:**
+
 - `asChild?: boolean` - Passa as props para o filho em vez de renderizar um botão
 
 ### DialogPortal
@@ -168,6 +176,7 @@ Overlay escuro atrás do dialog (já estilizado).
 O conteúdo principal do dialog (já estilizado com animações).
 
 **Props:**
+
 - `showCloseButton?: boolean` - Mostra botão X no canto (padrão: true)
 
 ### DialogTitle
@@ -191,6 +200,7 @@ Container de conveniência para botões de ação.
 Fecha o dialog quando clicado.
 
 **Props:**
+
 - `asChild?: boolean` - Passa as props para o filho
 
 ## Diferenças do Radix UI
@@ -198,7 +208,7 @@ Fecha o dialog quando clicado.
 Base UI é muito similar ao Radix UI, mas com algumas diferenças:
 
 1. **Import paths**: `@base-ui-components/react/dialog` em vez de `@radix-ui/react-dialog`
-2. **Naming**: 
+2. **Naming**:
    - `Popup` em vez de `Content`
    - `Backdrop` em vez de `Overlay`
 3. **Tree-shaking**: Base UI é tree-shakeable por padrão
@@ -209,10 +219,11 @@ Base UI é muito similar ao Radix UI, mas com algumas diferenças:
 Se você tiver código usando o Radix UI Dialog antigo:
 
 **Antes (Radix UI):**
+
 ```tsx
 import * as Dialog from '@radix-ui/react-dialog'
 
-<Dialog.Root>
+;<Dialog.Root>
   <Dialog.Portal>
     <Dialog.Overlay />
     <Dialog.Content>
@@ -223,10 +234,11 @@ import * as Dialog from '@radix-ui/react-dialog'
 ```
 
 **Depois (Base UI):**
+
 ```tsx
 import { Dialog } from '@base-ui-components/react/dialog'
 
-<Dialog.Root>
+;<Dialog.Root>
   <Dialog.Portal>
     <Dialog.Backdrop />
     <Dialog.Popup>
@@ -237,8 +249,14 @@ import { Dialog } from '@base-ui-components/react/dialog'
 ```
 
 Ou use nosso wrapper estilizado:
+
 ```tsx
-import { Dialog, DialogPortal, DialogBackdrop, DialogPopup } from '@/components/ui/base-ui-dialog'
+import {
+  Dialog,
+  DialogPortal,
+  DialogBackdrop,
+  DialogPopup,
+} from '@/components/ui/base-ui-dialog'
 ```
 
 ## Estilização
@@ -249,15 +267,20 @@ Base UI adiciona automaticamente atributos de dados que você pode usar para est
 
 ```css
 /* Dialog aberto/fechado */
-[data-state="open"] { }
-[data-state="closed"] { }
+[data-state='open'] {
+}
+[data-state='closed'] {
+}
 
 /* Trigger pressionado */
-[data-pressed="true"] { }
+[data-pressed='true'] {
+}
 
 /* Popup posicionado */
-[data-side="top"] { }
-[data-side="bottom"] { }
+[data-side='top'] {
+}
+[data-side='bottom'] {
+}
 ```
 
 ### Tailwind
@@ -314,8 +337,8 @@ function DeleteConfirmDialog({ item, onConfirm, open, onOpenChange }) {
           <DialogHeader>
             <DialogTitle>Confirmar exclusão</DialogTitle>
             <DialogDescription>
-              Tem certeza que deseja excluir "{item.name}"? 
-              Esta ação não pode ser desfeita.
+              Tem certeza que deseja excluir "{item.name}"? Esta ação não pode
+              ser desfeita.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -342,12 +365,15 @@ function CreateWorkspaceDialog({ open, onOpenChange }) {
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault()
     const formData = new FormData(e.currentTarget)
-    mutate({
-      name: formData.get('name') as string,
-      color: formData.get('color') as string,
-    }, {
-      onSuccess: () => onOpenChange(false)
-    })
+    mutate(
+      {
+        name: formData.get('name') as string,
+        color: formData.get('color') as string,
+      },
+      {
+        onSuccess: () => onOpenChange(false),
+      }
+    )
   }
 
   return (
@@ -357,11 +383,9 @@ function CreateWorkspaceDialog({ open, onOpenChange }) {
         <DialogPopup>
           <DialogHeader>
             <DialogTitle>Criar Workspace</DialogTitle>
-            <DialogDescription>
-              Configure seu novo workspace
-            </DialogDescription>
+            <DialogDescription>Configure seu novo workspace</DialogDescription>
           </DialogHeader>
-          
+
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label>Nome</label>
@@ -371,7 +395,7 @@ function CreateWorkspaceDialog({ open, onOpenChange }) {
               <label>Cor</label>
               <input type="color" name="color" />
             </div>
-            
+
             <DialogFooter>
               <DialogClose asChild>
                 <Button variant="outline" disabled={isPending}>
