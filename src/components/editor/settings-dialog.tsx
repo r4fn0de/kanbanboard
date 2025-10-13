@@ -72,6 +72,7 @@ import { open as openDialog } from '@tauri-apps/plugin-dialog'
 import { readFile } from '@tauri-apps/plugin-fs'
 import { invoke } from '@tauri-apps/api/core'
 import { ImageCropper } from '@/components/ui/image-cropper'
+import { WorkspaceIcon } from '@/components/ui/workspace-icon'
 
 interface Model {
   label: string

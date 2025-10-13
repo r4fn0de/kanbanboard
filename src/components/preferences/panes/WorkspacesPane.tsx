@@ -3,6 +3,7 @@ import { Upload, X, Edit2, Trash2 } from 'lucide-react'
 import { open as openDialog } from '@tauri-apps/plugin-dialog'
 import { readFile } from '@tauri-apps/plugin-fs'
 import { invoke } from '@tauri-apps/api/core'
+import { motion, AnimatePresence, useReducedMotion } from 'motion/react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -29,6 +30,7 @@ import { useWorkspaceStore } from '@/store/workspace-store'
 import { useBoards } from '@/services/kanban'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
+import { ANIMATION } from '@/lib/animation-constants'
 import type { Workspace } from '@/types/common'
 
 const PRESET_COLORS = [
@@ -58,6 +60,7 @@ export function WorkspacesPane({
   editingWorkspaceId: propEditingWorkspaceId,
 }: WorkspacesPaneProps) {
   const [editingWorkspace, setEditingWorkspace] = useState<string | null>(null)
+  const shouldReduceMotion = useReducedMotion()
   const [workspaceName, setWorkspaceName] = useState('')
   const [workspaceColor, setWorkspaceColor] = useState<string | null>(null)
   const [deleteState, setDeleteState] = useState<DeleteWorkspaceState>({
@@ -286,12 +289,25 @@ export function WorkspacesPane({
               const isEditing = editingWorkspace === workspace.id
 
               return (
-                <div
+                <motion.div
                   key={workspace.id}
-                  className="border rounded-lg p-4 space-y-3"
+                  className="border rounded-lg p-4"
+                  layout={!shouldReduceMotion}
+                  initial={shouldReduceMotion ? false : { opacity: 0, filter: 'blur(4px)', y: 10 }}
+                  animate={shouldReduceMotion ? false : { opacity: 1, filter: 'blur(0px)', y: 0 }}
+                  transition={shouldReduceMotion ? { duration: 0 } : {
+                    ...ANIMATION.SPRING.SMOOTH,
+                    opacity: { duration: ANIMATION.DURATION.FAST },
+                    filter: { duration: ANIMATION.DURATION.NORMAL },
+                  }}
                 >
+                  <AnimatePresence mode="wait">
                   {isEditing ? (
-                    <>
+                    <motion.div
+                      key="edit-mode"
+                      className="space-y-4"
+                      {...(shouldReduceMotion ? {} : ANIMATION.EDIT_MODE)}
+                    >
                       <div className="space-y-2">
                         <Label htmlFor={`name-${workspace.id}`}>
                           Workspace Name
@@ -304,47 +320,104 @@ export function WorkspacesPane({
                         />
                       </div>
 
-                      <div className="space-y-2">
-                        <Label>Color</Label>
-                        <div className="flex gap-2 flex-wrap">
-                          {PRESET_COLORS.map(color => (
-                            <button
-                              key={color.value}
-                              type="button"
-                              className={cn(
-                                'size-8 rounded-full border-2 transition-all',
-                                workspaceColor === color.value
-                                  ? 'border-foreground scale-110'
-                                  : 'border-transparent hover:scale-105'
-                              )}
-                              style={{ backgroundColor: color.value }}
-                              onClick={() => setWorkspaceColor(color.value)}
-                              title={color.name}
-                            />
-                          ))}
-                        </div>
-                      </div>
+                      {/* Only show color selection if workspace doesn't have a custom icon */}
+                      <AnimatePresence>
+                      {workspace.iconPath ? (
+                        <motion.div
+                          className="space-y-3"
+                          {...(shouldReduceMotion ? {} : {
+                            initial: { opacity: 0, y: -10 },
+                            animate: { opacity: 1, y: 0 },
+                            exit: { opacity: 0, y: -10 },
+                            transition: ANIMATION.SPRING.SMOOTH
+                          })}
+                        >
+                          <div className="rounded-md bg-muted/50 p-3 text-sm text-muted-foreground">
+                            💡 Color selection is disabled when using a custom icon. Remove the icon to use colors instead.
+                          </div>
+                        </motion.div>
+                      ) : (
+                        <motion.div
+                          className="space-y-3"
+                          {...(shouldReduceMotion ? {} : {
+                            initial: { opacity: 0, height: 0, y: -10 },
+                            animate: { opacity: 1, height: 'auto', y: 0 },
+                            exit: { opacity: 0, height: 0, y: -10 },
+                            transition: {
+                              ...ANIMATION.SPRING.SMOOTH,
+                              delay: 0.05
+                            }
+                          })}
+                        >
+                          <Label>Color</Label>
+                          <div className="flex gap-2 flex-wrap items-center">
+                            {PRESET_COLORS.map((color, index) => (
+                              <motion.button
+                                key={color.value}
+                                type="button"
+                                className={cn(
+                                  'size-10 rounded-full border-2 transition-colors duration-200',
+                                  workspaceColor === color.value
+                                    ? 'border-foreground'
+                                    : 'border-transparent'
+                                )}
+                                style={{ backgroundColor: color.value }}
+                                onClick={() => setWorkspaceColor(color.value)}
+                                title={color.name}
+                                {...(shouldReduceMotion ? {} : {
+                                  initial: { opacity: 0, scale: 0.8 },
+                                  animate: { opacity: 1, scale: 1 },
+                                  transition: {
+                                    ...ANIMATION.SPRING.SMOOTH,
+                                    delay: index * ANIMATION.STAGGER.FAST
+                                  },
+                                  whileHover: ANIMATION.COLOR_BUTTON.whileHover,
+                                  whileTap: ANIMATION.COLOR_BUTTON.whileTap
+                                })}
+                              />
+                            ))}
+                          </div>
+                        </motion.div>
+                      )}
+                      </AnimatePresence>
 
-                      <div className="flex gap-2">
-                        <Button
-                          type="button"
-                          size="sm"
-                          onClick={() => handleSaveWorkspace(workspace.id)}
-                        >
-                          Save
-                        </Button>
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="outline"
-                          onClick={handleCancelEdit}
-                        >
-                          Cancel
-                        </Button>
-                      </div>
-                    </>
+                      <motion.div
+                        className="flex gap-2 pt-2"
+                        {...(shouldReduceMotion ? {} : {
+                          initial: { opacity: 0, y: 10 },
+                          animate: { opacity: 1, y: 0 },
+                          transition: {
+                            ...ANIMATION.SPRING.SMOOTH,
+                            delay: 0.1
+                          }
+                        })}
+                      >
+                        <motion.div {...(shouldReduceMotion ? {} : ANIMATION.BUTTON)}>
+                          <Button
+                            type="button"
+                            size="sm"
+                            onClick={() => handleSaveWorkspace(workspace.id)}
+                          >
+                            Save
+                          </Button>
+                        </motion.div>
+                        <motion.div {...(shouldReduceMotion ? {} : ANIMATION.BUTTON)}>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={handleCancelEdit}
+                          >
+                            Cancel
+                          </Button>
+                        </motion.div>
+                      </motion.div>
+                    </motion.div>
                   ) : (
-                    <>
+                    <motion.div
+                      key="view-mode"
+                      {...(shouldReduceMotion ? {} : ANIMATION.VIEW_MODE)}
+                    >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                           <WorkspaceIcon workspace={workspace} />
@@ -358,50 +431,68 @@ export function WorkspacesPane({
                         </div>
 
                         <div className="flex gap-1">
-                          <Button
-                            type="button"
-                            size="icon"
-                            variant="ghost"
-                            onClick={() => handleSelectIcon(workspace.id)}
-                            title="Change icon"
-                          >
-                            <Upload className="size-4" />
-                          </Button>
-                          {workspace.iconPath && (
+                          <motion.div {...(shouldReduceMotion ? {} : ANIMATION.BUTTON)}>
                             <Button
                               type="button"
                               size="icon"
                               variant="ghost"
-                              onClick={() => handleRemoveIcon(workspace.id)}
-                              title="Remove icon"
+                              onClick={() => handleSelectIcon(workspace.id)}
+                              title="Change icon"
                             >
-                              <X className="size-4" />
+                              <Upload className="size-4" />
                             </Button>
+                          </motion.div>
+                          <AnimatePresence>
+                          {workspace.iconPath && (
+                            <motion.div
+                              {...(shouldReduceMotion ? {} : {
+                                ...ANIMATION.BUTTON,
+                                initial: { opacity: 0, scale: 0.8 },
+                                animate: { opacity: 1, scale: 1 },
+                                exit: { opacity: 0, scale: 0.8 }
+                              })}
+                            >
+                              <Button
+                                type="button"
+                                size="icon"
+                                variant="ghost"
+                                onClick={() => handleRemoveIcon(workspace.id)}
+                                title="Remove icon"
+                              >
+                                <X className="size-4" />
+                              </Button>
+                            </motion.div>
                           )}
-                          <Button
-                            type="button"
-                            size="icon"
-                            variant="ghost"
-                            onClick={() => handleEditWorkspace(workspace)}
-                            title="Edit"
-                          >
-                            <Edit2 className="size-4" />
-                          </Button>
-                          <Button
-                            type="button"
-                            size="icon"
-                            variant="ghost"
-                            onClick={() => handleDeleteWorkspace(workspace)}
-                            className="text-destructive hover:text-destructive"
-                            title="Delete"
-                          >
-                            <Trash2 className="size-4" />
-                          </Button>
+                          </AnimatePresence>
+                          <motion.div {...(shouldReduceMotion ? {} : ANIMATION.BUTTON)}>
+                            <Button
+                              type="button"
+                              size="icon"
+                              variant="ghost"
+                              onClick={() => handleEditWorkspace(workspace)}
+                              title="Edit"
+                            >
+                              <Edit2 className="size-4" />
+                            </Button>
+                          </motion.div>
+                          <motion.div {...(shouldReduceMotion ? {} : ANIMATION.BUTTON)}>
+                            <Button
+                              type="button"
+                              size="icon"
+                              variant="ghost"
+                              onClick={() => handleDeleteWorkspace(workspace)}
+                              className="text-destructive hover:text-destructive"
+                              title="Delete"
+                            >
+                              <Trash2 className="size-4" />
+                            </Button>
+                          </motion.div>
                         </div>
                       </div>
-                    </>
+                    </motion.div>
                   )}
-                </div>
+                  </AnimatePresence>
+                </motion.div>
               )
             })
           )}
