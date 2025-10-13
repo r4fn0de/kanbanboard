@@ -1,6 +1,5 @@
 use anyhow::anyhow;
 use base64::{Engine as _, engine::general_purpose};
-use mime_guess;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
@@ -218,7 +217,7 @@ async fn update_card(pool: State<'_, DbPool>, args: UpdateCardArgs) -> Result<()
         return Err("O cartão não pertence ao quadro informado.".to_string());
     }
 
-    let mut builder = QueryBuilder::<Sqlite>::new(
+    let builder = QueryBuilder::<Sqlite>::new(
         "UPDATE kanban_cards SET updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')",
     );
     let mut has_changes = false;
@@ -315,7 +314,7 @@ async fn move_column(
         .await
         .map_err(|e| format!("Falha ao abrir transação: {e}"))?;
 
-    let mut columns = sqlx::query_as::<_, (String,)>(
+    let columns = sqlx::query_as::<_, (String,)>(
         "SELECT id FROM kanban_columns WHERE board_id = ? ORDER BY position ASC, created_at ASC",
     )
     .bind(&board_id)
@@ -457,7 +456,7 @@ async fn move_card(
             .map_err(|e| format!("Falha ao atualizar posições na coluna de origem: {e}"))?;
         }
 
-        let mut target_cards = sqlx::query_as::<_, (String,)>(
+        let target_cards = sqlx::query_as::<_, (String,)>(
             "SELECT id FROM kanban_cards WHERE column_id = ? ORDER BY position ASC, created_at ASC",
         )
         .bind(&to_column_id)
@@ -1132,22 +1131,20 @@ async fn create_board(
     description: Option<String>,
     icon: Option<String>,
 ) -> Result<(), String> {
-    let workspace_id = workspace_id.trim().to_string();
     if workspace_id.is_empty() {
         return Err("O workspace informado é inválido.".to_string());
     }
 
-    let workspace_exists = sqlx::query_scalar::<_, Option<i64>>(
-        "SELECT 1 FROM workspaces WHERE id = ? LIMIT 1",
-    )
-    .bind(&workspace_id)
-    .fetch_optional(&*pool)
-    .await
-    .map_err(|e| {
-        log::error!("Falha ao verificar workspace ao criar quadro: {e}");
-        e.to_string()
-    })?
-    .is_some();
+    let workspace_exists =
+        sqlx::query_scalar::<_, Option<i64>>("SELECT 1 FROM workspaces WHERE id = ? LIMIT 1")
+            .bind(&workspace_id)
+            .fetch_optional(&*pool)
+            .await
+            .map_err(|e| {
+                log::error!("Falha ao verificar workspace ao criar quadro: {e}");
+                e.to_string()
+            })?
+            .is_some();
 
     if !workspace_exists {
         return Err("Workspace não encontrado.".to_string());
@@ -1202,7 +1199,7 @@ async fn create_workspace(
         return Err("Identificador do workspace inválido.".to_string());
     }
 
-    let mut name = args.name.trim().to_string();
+    let name = args.name.trim().to_string();
     if name.is_empty() {
         return Err("O nome do workspace não pode ser vazio.".to_string());
     }
@@ -1211,10 +1208,12 @@ async fn create_workspace(
     let normalized_color = normalize_workspace_color(args.color)?;
 
     let icon_path = match args.icon_path.as_ref() {
-        Some(path) if !path.trim().is_empty() => match copy_workspace_icon(&app, workspace_id, path) {
-            Ok(relative) => Some(relative),
-            Err(error) => return Err(error),
-        },
+        Some(path) if !path.trim().is_empty() => {
+            match copy_workspace_icon(&app, workspace_id, path) {
+                Ok(relative) => Some(relative),
+                Err(error) => return Err(error),
+            }
+        }
         _ => None,
     };
 
@@ -1291,14 +1290,10 @@ async fn update_workspace(
     builder.push(" WHERE id = ");
     builder.push_bind(workspace_id.to_string());
 
-    let result = builder
-        .build()
-        .execute(&*pool)
-        .await
-        .map_err(|e| {
-            log::error!("Failed to update workspace {workspace_id}: {e}");
-            e.to_string()
-        })?;
+    let result = builder.build().execute(&*pool).await.map_err(|e| {
+        log::error!("Failed to update workspace {workspace_id}: {e}");
+        e.to_string()
+    })?;
 
     if result.rows_affected() == 0 {
         return Err("Workspace não encontrado.".to_string());
@@ -1308,7 +1303,11 @@ async fn update_workspace(
 }
 
 #[tauri::command]
-async fn delete_workspace(app: AppHandle, pool: State<'_, DbPool>, id: String) -> Result<(), String> {
+async fn delete_workspace(
+    app: AppHandle,
+    pool: State<'_, DbPool>,
+    id: String,
+) -> Result<(), String> {
     let workspace_id = id.trim();
     if workspace_id.is_empty() {
         return Err("Identificador do workspace inválido.".to_string());
@@ -1331,14 +1330,13 @@ async fn delete_workspace(app: AppHandle, pool: State<'_, DbPool>, id: String) -
         return Err("Remova ou mova os quadros antes de excluir o workspace.".to_string());
     }
 
-    let existing_icon: Option<String> = sqlx::query_scalar(
-        "SELECT icon_path FROM workspaces WHERE id = ?",
-    )
-    .bind(workspace_id)
-    .fetch_optional(&*pool)
-    .await
-    .map_err(|e| format!("Falha ao carregar ícone do workspace: {e}"))?
-    .flatten();
+    let existing_icon: Option<String> =
+        sqlx::query_scalar("SELECT icon_path FROM workspaces WHERE id = ?")
+            .bind(workspace_id)
+            .fetch_optional(&*pool)
+            .await
+            .map_err(|e| format!("Falha ao carregar ícone do workspace: {e}"))?
+            .flatten();
 
     let result = sqlx::query("DELETE FROM workspaces WHERE id = ?")
         .bind(workspace_id)
@@ -1372,14 +1370,13 @@ async fn update_workspace_icon(
         return Err("Identificador do workspace inválido.".to_string());
     }
 
-    let existing_icon: Option<String> = sqlx::query_scalar(
-        "SELECT icon_path FROM workspaces WHERE id = ?",
-    )
-    .bind(workspace_id)
-    .fetch_optional(&*pool)
-    .await
-    .map_err(|e| format!("Falha ao carregar workspace: {e}"))?
-    .flatten();
+    let existing_icon: Option<String> =
+        sqlx::query_scalar("SELECT icon_path FROM workspaces WHERE id = ?")
+            .bind(workspace_id)
+            .fetch_optional(&*pool)
+            .await
+            .map_err(|e| format!("Falha ao carregar workspace: {e}"))?
+            .flatten();
 
     let new_icon = copy_workspace_icon(&app, workspace_id, &file_path)?;
 
@@ -1423,14 +1420,13 @@ async fn remove_workspace_icon(
         return Err("Identificador do workspace inválido.".to_string());
     }
 
-    let existing_icon: Option<String> = sqlx::query_scalar(
-        "SELECT icon_path FROM workspaces WHERE id = ?",
-    )
-    .bind(workspace_id)
-    .fetch_optional(&*pool)
-    .await
-    .map_err(|e| format!("Falha ao carregar workspace: {e}"))?
-    .flatten();
+    let existing_icon: Option<String> =
+        sqlx::query_scalar("SELECT icon_path FROM workspaces WHERE id = ?")
+            .bind(workspace_id)
+            .fetch_optional(&*pool)
+            .await
+            .map_err(|e| format!("Falha ao carregar workspace: {e}"))?
+            .flatten();
 
     let result = sqlx::query(
         "UPDATE workspaces SET icon_path = NULL, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?",
@@ -1711,7 +1707,7 @@ async fn load_tags(pool: State<'_, DbPool>, board_id: String) -> Result<Vec<Valu
 
 #[tauri::command]
 async fn create_tag(pool: State<'_, DbPool>, args: CreateTagArgs) -> Result<Value, String> {
-    let mut label = args.label.trim().to_string();
+    let label = args.label.trim().to_string();
     if label.is_empty() {
         return Err("O nome da tag não pode ser vazio.".to_string());
     }
@@ -2436,10 +2432,12 @@ async fn ensure_notes_board_id_column(pool: &DbPool) -> Result<(), String> {
     }
 
     // Create indexes for notes table (safe to run multiple times)
-    sqlx::query("CREATE INDEX IF NOT EXISTS idx_notes_board_updated ON notes(board_id, updated_at DESC)")
-        .execute(pool)
-        .await
-        .map_err(|e| format!("Failed to create idx_notes_board_updated: {e}"))?;
+    sqlx::query(
+        "CREATE INDEX IF NOT EXISTS idx_notes_board_updated ON notes(board_id, updated_at DESC)",
+    )
+    .execute(pool)
+    .await
+    .map_err(|e| format!("Failed to create idx_notes_board_updated: {e}"))?;
 
     sqlx::query("CREATE INDEX IF NOT EXISTS idx_notes_board_pinned ON notes(board_id, pinned DESC, updated_at DESC)")
         .execute(pool)
@@ -2480,7 +2478,7 @@ async fn load_notes(pool: State<'_, DbPool>, board_id: String) -> Result<Vec<Val
         "SELECT id, board_id, title, content, created_at, updated_at, archived_at, pinned, tags 
          FROM notes 
          WHERE board_id = ? AND archived_at IS NULL 
-         ORDER BY pinned DESC, updated_at DESC"
+         ORDER BY pinned DESC, updated_at DESC",
     )
     .bind(&board_id)
     .fetch_all(&*pool)
@@ -2512,21 +2510,19 @@ async fn load_notes(pool: State<'_, DbPool>, board_id: String) -> Result<Vec<Val
 #[tauri::command]
 async fn create_note(pool: State<'_, DbPool>, args: CreateNoteArgs) -> Result<Value, String> {
     let content = args.content.unwrap_or_else(|| String::from(""));
-    
-    sqlx::query(
-        "INSERT INTO notes (id, board_id, title, content) VALUES (?, ?, ?, ?)"
-    )
-    .bind(&args.id)
-    .bind(&args.board_id)
-    .bind(&args.title)
-    .bind(&content)
-    .execute(&*pool)
-    .await
-    .map_err(|e| format!("Failed to create note: {e}"))?;
+
+    sqlx::query("INSERT INTO notes (id, board_id, title, content) VALUES (?, ?, ?, ?)")
+        .bind(&args.id)
+        .bind(&args.board_id)
+        .bind(&args.title)
+        .bind(&content)
+        .execute(&*pool)
+        .await
+        .map_err(|e| format!("Failed to create note: {e}"))?;
 
     let row = sqlx::query(
         "SELECT id, board_id, title, content, created_at, updated_at, archived_at, pinned, tags 
-         FROM notes WHERE id = ? AND board_id = ?"
+         FROM notes WHERE id = ? AND board_id = ?",
     )
     .bind(&args.id)
     .bind(&args.board_id)
@@ -2551,7 +2547,8 @@ async fn create_note(pool: State<'_, DbPool>, args: CreateNoteArgs) -> Result<Va
 
 #[tauri::command]
 async fn update_note(pool: State<'_, DbPool>, args: UpdateNoteArgs) -> Result<(), String> {
-    let mut query_parts = vec!["UPDATE notes SET updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')"];
+    let mut query_parts =
+        vec!["UPDATE notes SET updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')"];
     let mut bindings: Vec<String> = vec![];
 
     if let Some(ref title) = args.title {
@@ -2578,7 +2575,7 @@ async fn update_note(pool: State<'_, DbPool>, args: UpdateNoteArgs) -> Result<()
     bindings.push(args.board_id.clone());
 
     let query_str = query_parts.join(", ").replace(", WHERE", " WHERE");
-    
+
     let mut query = sqlx::query(&query_str);
     for binding in bindings {
         query = query.bind(binding);
@@ -2610,7 +2607,7 @@ async fn archive_note(pool: State<'_, DbPool>, id: String, board_id: String) -> 
         "UPDATE notes 
          SET archived_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now'),
              updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
-         WHERE id = ? AND board_id = ?"
+         WHERE id = ? AND board_id = ?",
     )
     .bind(&id)
     .bind(&board_id)
@@ -2664,7 +2661,7 @@ pub fn run() {
             let handle = app.handle();
 
             let pool =
-                tauri::async_runtime::block_on(establish_pool(&handle)).map_err(|e| anyhow!(e))?;
+                tauri::async_runtime::block_on(establish_pool(handle)).map_err(|e| anyhow!(e))?;
 
             tauri::async_runtime::block_on(initialize_schema(&pool)).map_err(|e| anyhow!(e))?;
 
@@ -2799,7 +2796,11 @@ struct UploadImageResponse {
     error: Option<String>,
 }
 
-fn copy_workspace_icon(app: &AppHandle, workspace_id: &str, file_path: &str) -> Result<String, String> {
+fn copy_workspace_icon(
+    app: &AppHandle,
+    workspace_id: &str,
+    file_path: &str,
+) -> Result<String, String> {
     let app_data_dir = app
         .path()
         .app_data_dir()
@@ -3123,14 +3124,14 @@ async fn remove_image(
         .map_err(|e| format!("Failed to commit transaction: {e}"))?;
 
     let full_file_path = app_data_dir.join(&file_path);
-    if full_file_path.exists() {
-        if let Err(e) = fs::remove_file(&full_file_path) {
-            eprintln!(
-                "Warning: Failed to delete file {}: {}",
-                full_file_path.display(),
-                e
-            );
-        }
+    if full_file_path.exists()
+        && let Err(e) = fs::remove_file(&full_file_path)
+    {
+        eprintln!(
+            "Warning: Failed to delete file {}: {}",
+            full_file_path.display(),
+            e
+        );
     }
 
     Ok(())

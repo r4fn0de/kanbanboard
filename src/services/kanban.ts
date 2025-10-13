@@ -39,10 +39,10 @@ export interface CreateBoardInput {
 }
 
 export async function createBoard(input: CreateBoardInput): Promise<void> {
-  // Tauri v2 requires explicit snake_case parameter names
+  // Tauri v2 uses camelCase for command parameters by default
   await invoke('create_board', {
     id: input.id,
-    workspace_id: input.workspaceId,
+    workspaceId: input.workspaceId,
     title: input.title,
     description: input.description ?? null,
     icon: input.icon ?? 'Folder',
