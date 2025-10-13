@@ -6,6 +6,7 @@ import '@tldraw/tldraw/tldraw.css'
 
 import { BoardNavbar } from '@/components/kanban/BoardNavbar'
 import { useBoards } from '@/services/kanban'
+import { useWorkspaces } from '@/services/workspaces'
 import { Button } from '@/components/ui/button'
 import { useUIStore } from '@/store/ui-store'
 import { useWorkspaceStore } from '@/store/workspace-store'
@@ -18,6 +19,7 @@ export function BoardDrawView() {
   const { boardId } = useParams<{ boardId: string }>()
   const navigate = useNavigate()
   const { data: boards = [], isLoading, isError, error, refetch } = useBoards()
+  const { data: workspaces = [] } = useWorkspaces()
 
   const setLeftSidebarVisible = useUIStore(state => state.setLeftSidebarVisible)
   const setSelectedWorkspaceId = useWorkspaceStore(
@@ -121,6 +123,12 @@ export function BoardDrawView() {
     <div className="flex h-screen max-h-screen flex-col overflow-hidden">
       <BoardNavbar
         boardTitle={board.title}
+        boardIcon={board.icon ?? undefined}
+        boardEmoji={board.emoji ?? undefined}
+        boardColor={board.color ?? undefined}
+        workspaceName={
+          workspaces.find(ws => ws.id === board.workspaceId)?.name
+        }
         activeTab="draws"
         onTabChange={handleTabChange}
       />

@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Plus, Search } from 'lucide-react'
 import { useBoards } from '@/services/kanban'
+import { useWorkspaces } from '@/services/workspaces'
 import { useCreateNote } from '@/services/notes'
 import type { Note } from '@/services/notes'
 import { useWorkspaceStore } from '@/store/workspace-store'
@@ -17,6 +18,7 @@ export function NotesView() {
   const [selectedNote, setSelectedNote] = useState<Note | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const { data: boards = [] } = useBoards()
+  const { data: workspaces = [] } = useWorkspaces()
   const createNote = useCreateNote(boardId || '')
   const setSelectedWorkspaceId = useWorkspaceStore(
     state => state.setSelectedWorkspaceId
@@ -106,6 +108,12 @@ export function NotesView() {
       {/* Navbar */}
       <BoardNavbar
         boardTitle={board?.title || 'Notes'}
+        boardIcon={board?.icon ?? undefined}
+        boardEmoji={board?.emoji ?? undefined}
+        boardColor={board?.color ?? undefined}
+        workspaceName={
+          workspaces.find(ws => ws.id === board?.workspaceId)?.name
+        }
         activeTab="notes"
         onTabChange={handleTabChange}
         taskControls={notesControls}

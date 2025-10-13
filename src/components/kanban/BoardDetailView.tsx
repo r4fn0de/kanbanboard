@@ -33,6 +33,7 @@ import type {
   KanbanColumn,
   KanbanPriority,
 } from '@/types/common'
+import { useWorkspaces } from '@/services/workspaces'
 import {
   useCards,
   useColumns,
@@ -59,6 +60,7 @@ export function BoardDetailView({
   onViewModeChange,
 }: BoardDetailViewProps) {
   const navigate = useNavigate()
+  const { data: workspaces = [] } = useWorkspaces()
   const [isColumnManagerOpen, setIsColumnManagerOpen] = useState(false)
   const [isCardDialogOpen, setIsCardDialogOpen] = useState(false)
 
@@ -555,6 +557,12 @@ export function BoardDetailView({
       {/* Navbar */}
       <BoardNavbar
         boardTitle={board.title}
+        boardIcon={board.icon ?? undefined}
+        boardEmoji={board.emoji ?? undefined}
+        boardColor={board.color ?? undefined}
+        workspaceName={
+          workspaces.find(ws => ws.id === board.workspaceId)?.name
+        }
         activeTab={activeNavTab}
         onTabChange={handleTabChange}
         taskControls={taskControls}
