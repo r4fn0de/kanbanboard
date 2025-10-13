@@ -18,7 +18,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-
 ;<Dialog open={open} onOpenChange={handleDialogChange}>
   <DialogContent>
     <DialogHeader>
@@ -41,7 +40,6 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/base-ui-dialog'
-
 ;<Dialog open={open} onOpenChange={handleDialogChange}>
   <DialogPortal>
     <DialogBackdrop />

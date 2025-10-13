@@ -2077,6 +2077,8 @@ pub struct AppPreferences {
     pub theme: String,
     #[serde(default = "default_transparency_enabled")]
     pub transparency_enabled: bool,
+    #[serde(default)]
+    pub last_workspace_id: Option<String>,
     // Add new persistent preferences here, e.g.:
     // pub auto_save: bool,
     // pub language: String,
@@ -2091,6 +2093,7 @@ impl Default for AppPreferences {
         Self {
             theme: "system".to_string(),
             transparency_enabled: default_transparency_enabled(),
+            last_workspace_id: None,
             // Add defaults for new preferences here
         }
     }

@@ -371,6 +371,7 @@ export function LeftSideBar({
     }
   }, [workspaces])
 
+  // Restore last used workspace or select first available
   useEffect(() => {
     if (isLoadingWorkspaces) {
       return
@@ -381,10 +382,18 @@ export function LeftSideBar({
       return
     }
 
-    if (
-      !selectedWorkspaceId ||
-      !workspaces.some(ws => ws.id === selectedWorkspaceId)
-    ) {
+    // If no workspace is selected, try to restore last used or select first
+    if (!selectedWorkspaceId) {
+      // The persist middleware already restored selectedWorkspaceId from localStorage
+      // If it's still null, select the first workspace
+      if (workspaces[0]) {
+        setSelectedWorkspaceId(workspaces[0].id)
+      }
+      return
+    }
+
+    // If selected workspace no longer exists, select first available
+    if (!workspaces.some(ws => ws.id === selectedWorkspaceId)) {
       setSelectedWorkspaceId(workspaces[0]?.id ?? null)
     }
   }, [

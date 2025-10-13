@@ -222,7 +222,6 @@ Se você tiver código usando o Radix UI Dialog antigo:
 
 ```tsx
 import * as Dialog from '@radix-ui/react-dialog'
-
 ;<Dialog.Root>
   <Dialog.Portal>
     <Dialog.Overlay />
@@ -237,7 +236,6 @@ import * as Dialog from '@radix-ui/react-dialog'
 
 ```tsx
 import { Dialog } from '@base-ui-components/react/dialog'
-
 ;<Dialog.Root>
   <Dialog.Portal>
     <Dialog.Backdrop />
