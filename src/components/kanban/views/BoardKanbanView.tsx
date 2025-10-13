@@ -247,7 +247,6 @@ function DraggableColumn({
     transition: isDragging
       ? 'none'
       : (transition ?? 'transform 240ms cubic-bezier(0.22, 1, 0.36, 1)'),
-    cursor: isDragging ? 'grabbing' : 'grab',
     willChange: 'transform',
   }
 
@@ -266,7 +265,7 @@ function DraggableColumn({
     <div
       ref={setNodeRef}
       style={style}
-      className="group flex h-full w-[320px] flex-shrink-0 flex-col gap-5 rounded-[2rem] border border-border bg-muted p-5 transition-all duration-200 active:cursor-grabbing"
+      className="group flex h-full w-[320px] flex-shrink-0 flex-col gap-5 rounded-[2rem] border border-border bg-muted p-5 transition-all duration-200"
     >
       <div
         className={cn(
