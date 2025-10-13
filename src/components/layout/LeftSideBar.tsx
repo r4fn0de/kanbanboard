@@ -571,7 +571,7 @@ export function LeftSideBar({
       initial={false}
       animate={{
         backgroundColor: useTransparentStyle
-          ? 'rgba(255, 255, 255, 0.05)'
+          ? 'rgba(255, 255, 255, 0)'
           : 'hsl(var(--background))',
       }}
       transition={{
