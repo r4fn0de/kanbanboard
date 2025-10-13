@@ -79,9 +79,9 @@ const insertInlineMap: Record<
   [KEYS.link]: (editor) => triggerFloatingLink(editor, { focused: true }),
 };
 
-type InsertBlockOptions = {
+interface InsertBlockOptions {
   upsert?: boolean;
-};
+}
 
 export const insertBlock = (editor: PlateEditor, type: string, options: InsertBlockOptions = {}) => {
   const { upsert = false } = options;

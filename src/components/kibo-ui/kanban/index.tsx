@@ -48,14 +48,14 @@ type KanbanColumnProps = {
   name: string;
 } & Record<string, unknown>;
 
-type KanbanContextProps<
+interface KanbanContextProps<
   T extends KanbanItemProps = KanbanItemProps,
   C extends KanbanColumnProps = KanbanColumnProps,
-> = {
+> {
   columns: C[];
   data: T[];
   activeCardId: string | null;
-};
+}
 
 const KanbanContext = createContext<KanbanContextProps>({
   columns: [],
@@ -63,11 +63,11 @@ const KanbanContext = createContext<KanbanContextProps>({
   activeCardId: null,
 });
 
-export type KanbanBoardProps = {
+export interface KanbanBoardProps {
   id: string;
   children: ReactNode;
   className?: string;
-};
+}
 
 export const KanbanBoard = ({ id, children, className }: KanbanBoardProps) => {
   const { isOver, setNodeRef } = useDroppable({

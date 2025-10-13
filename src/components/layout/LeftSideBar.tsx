@@ -6,9 +6,7 @@ import { createPortal } from 'react-dom'
 import type { LucideIcon } from 'lucide-react'
 import type { Workspace } from '@/types/common'
 import { invoke } from '@tauri-apps/api/core'
-import { open } from '@tauri-apps/plugin-dialog'
-import { readFile } from '@tauri-apps/plugin-fs'
-import { ImageCropper } from '@/components/ui/image-cropper'
+import { CreateWorkspaceDialog } from '@/components/workspace/CreateWorkspaceDialog'
 import {
   Home,
   Folder,
@@ -71,7 +69,6 @@ import {
 } from '@/services/kanban'
 import {
   useWorkspaces,
-  useCreateWorkspace,
   useUpdateWorkspace,
   useDeleteWorkspace,
 } from '@/services/workspaces'
@@ -89,14 +86,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import {
-  Menu,
-  MenuTrigger,
-  MenuPortal,
-  MenuPositioner,
-  MenuPopup,
-  MenuItem,
-} from '@/components/ui/base-ui-menu'
 import { motion, AnimatePresence } from 'framer-motion'
 import { MacOSWindowControls } from '@/components/titlebar/MacOSWindowControls'
 import { executeCommand, useCommandContext } from '@/lib/commands'
@@ -269,19 +258,7 @@ export function LeftSideBar({ children, className, forceSolidStyle = false }: Le
   const [changeIconValue, setChangeIconValue] =
     useState<string>(DEFAULT_PROJECT_ICON)
   const [createWorkspaceOpen, setCreateWorkspaceOpen] = useState(false)
-  const [workspaceName, setWorkspaceName] = useState('')
-  const [workspaceColor, setWorkspaceColor] =
-    useState<string>(DEFAULT_WORKSPACE_COLOR)
-  const [workspaceIconPath, setWorkspaceIconPath] = useState<string | null>(
-    null
-  )
-  const [workspaceIconPreview, setWorkspaceIconPreview] =
-    useState<string | null>(null)
-  const [workspaceError, setWorkspaceError] = useState<string | null>(null)
   const [workspaceIconMap, setWorkspaceIconMap] = useState<Record<string, string>>({})
-  const [cropperOpen, setCropperOpen] = useState(false)
-  const [originalImageSrc, setOriginalImageSrc] = useState<string | null>(null)
-  const [croppedImageBlob, setCroppedImageBlob] = useState<Blob | null>(null)
   // Workspace edit/delete states
   const [editWorkspaceOpen, setEditWorkspaceOpen] = useState(false)
   const [editWorkspaceId, setEditWorkspaceId] = useState<string | null>(null)
@@ -296,8 +273,6 @@ export function LeftSideBar({ children, className, forceSolidStyle = false }: Le
   const projectDescriptionId = useId()
   const renameProjectNameId = useId()
   const renameProjectDescriptionId = useId()
-  const workspaceNameId = useId()
-  const workspaceColorId = useId()
   const navigate = useNavigate()
   const location = useLocation()
   const commandContext = useCommandContext()
@@ -315,10 +290,6 @@ export function LeftSideBar({ children, className, forceSolidStyle = false }: Le
     isError: isWorkspacesError,
     refetch: refetchWorkspaces,
   } = useWorkspaces()
-  const {
-    mutateAsync: createWorkspaceMutation,
-    isPending: isCreatingWorkspace,
-  } = useCreateWorkspace()
   const updateWorkspace = useUpdateWorkspace()
   const deleteWorkspace = useDeleteWorkspace()
 
@@ -513,167 +484,6 @@ export function LeftSideBar({ children, className, forceSolidStyle = false }: Le
       }
     )
   }
-
-  const resetWorkspaceForm = useCallback(() => {
-    // Revoke object URLs to prevent memory leaks
-    if (originalImageSrc) {
-      URL.revokeObjectURL(originalImageSrc)
-    }
-    if (workspaceIconPreview) {
-      URL.revokeObjectURL(workspaceIconPreview)
-    }
-    setWorkspaceName('')
-    setWorkspaceColor(DEFAULT_WORKSPACE_COLOR)
-    setWorkspaceIconPath(null)
-    setWorkspaceIconPreview(null)
-    setWorkspaceError(null)
-    setCropperOpen(false)
-    setOriginalImageSrc(null)
-    setCroppedImageBlob(null)
-  }, [originalImageSrc, workspaceIconPreview])
-
-  const handleWorkspaceDialogChange = useCallback(
-    (open: boolean) => {
-      setCreateWorkspaceOpen(open)
-      if (!open) {
-        resetWorkspaceForm()
-      }
-    },
-    [resetWorkspaceForm]
-  )
-
-  const handleSelectWorkspaceIcon = useCallback(async () => {
-    try {
-      const selected = await open({
-        multiple: false,
-        filters: [
-          {
-            name: 'Images',
-            extensions: ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'bmp'],
-          },
-        ],
-      })
-
-      if (!selected) {
-        return
-      }
-
-      const filePath = Array.isArray(selected) ? selected[0] : selected
-      if (!filePath) {
-        return
-      }
-
-      // Read the file as bytes and convert to blob URL for the cropper
-      const fileBytes = await readFile(filePath)
-      
-      // Detect MIME type from file extension
-      const extension = filePath.split('.').pop()?.toLowerCase()
-      const mimeTypes: Record<string, string> = {
-        'png': 'image/png',
-        'jpg': 'image/jpeg',
-        'jpeg': 'image/jpeg',
-        'gif': 'image/gif',
-        'webp': 'image/webp',
-        'svg': 'image/svg+xml',
-        'bmp': 'image/bmp'
-      }
-      const mimeType = mimeTypes[extension ?? ''] ?? 'image/png'
-      
-      const blob = new Blob([fileBytes], { type: mimeType })
-      const dataUrl = URL.createObjectURL(blob)
-      
-      setOriginalImageSrc(dataUrl)
-      setWorkspaceIconPath(filePath)
-      setCropperOpen(true)
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : 'Failed to select image'
-      toast.error(message)
-    }
-  }, [])
-
-  const handleClearWorkspaceIcon = useCallback(() => {
-    setWorkspaceIconPath(null)
-    setWorkspaceIconPreview(null)
-    setCroppedImageBlob(null)
-  }, [])
-
-  const handleCropComplete = useCallback((croppedBlob: Blob) => {
-    setCroppedImageBlob(croppedBlob)
-    setWorkspaceIconPreview(URL.createObjectURL(croppedBlob))
-    setCropperOpen(false)
-  }, [])
-
-  const handleCropCancel = useCallback(() => {
-    // Revoke object URL to prevent memory leaks
-    if (originalImageSrc) {
-      URL.revokeObjectURL(originalImageSrc)
-    }
-    setOriginalImageSrc(null)
-    setWorkspaceIconPath(null)
-    setCroppedImageBlob(null)
-    setCropperOpen(false)
-  }, [originalImageSrc])
-
-  const handleCreateWorkspaceSubmit = useCallback(
-    async (event: FormEvent<HTMLFormElement>) => {
-      event.preventDefault()
-      if (isCreatingWorkspace) {
-        return
-      }
-
-      const trimmedName = workspaceName.trim()
-      if (!trimmedName) {
-        setWorkspaceError('Workspace name is required')
-        return
-      }
-
-      setWorkspaceError(null)
-
-      try {
-        let finalIconPath = workspaceIconPath
-        const workspaceId = globalThis.crypto?.randomUUID?.() ?? `${Date.now()}`
-
-        // If we have a cropped image, save it using the new Tauri command
-        if (croppedImageBlob) {
-          const arrayBuffer = await croppedImageBlob.arrayBuffer()
-          const uint8Array = new Uint8Array(arrayBuffer)
-          
-          // Save the cropped image and get the relative path
-          finalIconPath = await invoke<string>('save_cropped_workspace_icon', {
-            workspaceId,
-            imageData: Array.from(uint8Array)
-          })
-        }
-
-        const workspace = await createWorkspaceMutation({
-          id: workspaceId,
-          name: trimmedName,
-          color: workspaceColor?.trim() ? workspaceColor : null,
-          iconPath: finalIconPath,
-        })
-
-        toast.success('Workspace created')
-        setSelectedWorkspaceId(workspace.id)
-        handleWorkspaceDialogChange(false)
-      } catch (error) {
-        const message =
-          error instanceof Error ? error.message : 'Failed to create workspace'
-        setWorkspaceError(message)
-        toast.error(message)
-      }
-    },
-    [
-      createWorkspaceMutation,
-      croppedImageBlob,
-      handleWorkspaceDialogChange,
-      isCreatingWorkspace,
-      setSelectedWorkspaceId,
-      workspaceColor,
-      workspaceIconPath,
-      workspaceName,
-    ]
-  )
 
   const projectLinks = useMemo(() => {
     if (isLoadingBoards || isLoadingWorkspaces) {
@@ -953,7 +763,7 @@ export function LeftSideBar({ children, className, forceSolidStyle = false }: Le
                     )}
                     onClick={(e) => {
                       e.preventDefault();
-                      handleWorkspaceDialogChange(true);
+                      setCreateWorkspaceOpen(true);
                     }}
                   >
                     <Plus className="h-4 w-4" />
@@ -1224,117 +1034,13 @@ export function LeftSideBar({ children, className, forceSolidStyle = false }: Le
 
       {children}
 
-      <Dialog
+      <CreateWorkspaceDialog
         open={createWorkspaceOpen}
-        onOpenChange={handleWorkspaceDialogChange}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Create workspace</DialogTitle>
-            <DialogDescription>
-              Group related projects under a workspace with a custom color and
-              icon.
-            </DialogDescription>
-          </DialogHeader>
-          <form className="space-y-4" onSubmit={handleCreateWorkspaceSubmit}>
-            <div className="space-y-2">
-              <Label htmlFor={workspaceNameId}>Workspace name</Label>
-              <Input
-                id={workspaceNameId}
-                value={workspaceName}
-                onChange={event => setWorkspaceName(event.target.value)}
-                placeholder="e.g. Product Team"
-                autoFocus
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor={workspaceColorId}>Color</Label>
-              <div className="flex items-center gap-3">
-                <Input
-                  id={workspaceColorId}
-                  type="color"
-                  value={workspaceColor}
-                  onChange={event => setWorkspaceColor(event.target.value)}
-                  className="h-10 w-16 cursor-pointer border border-border/60 bg-transparent p-1"
-                />
-                <span className="text-xs text-muted-foreground">
-                  Used when no icon is set.
-                </span>
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label>Icon (optional)</Label>
-              <div className="flex items-center gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full border border-dashed border-border/60 bg-background">
-                  {workspaceIconPreview ? (
-                    <img
-                      src={workspaceIconPreview}
-                      alt="Workspace icon preview"
-                      className="h-12 w-12 rounded-full object-cover"
-                    />
-                  ) : (
-                    <span
-                      className="h-8 w-8 rounded-full border border-border/40"
-                      style={{
-                        backgroundColor:
-                          workspaceColor || DEFAULT_WORKSPACE_COLOR,
-                      }}
-                    />
-                  )}
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={handleSelectWorkspaceIcon}
-                    disabled={isCreatingWorkspace}
-                  >
-                    Choose image
-                  </Button>
-                  {workspaceIconPath ? (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={handleClearWorkspaceIcon}
-                      disabled={isCreatingWorkspace}
-                    >
-                      Remove
-                    </Button>
-                  ) : null}
-                </div>
-              </div>
-              {workspaceIconPath ? (
-                <p className="truncate text-xs text-muted-foreground">
-                  {workspaceIconPath}
-                </p>
-              ) : (
-                <p className="text-xs text-muted-foreground">
-                  PNG, JPG, SVG or WebP files work best. Recommended size: 64x64px for optimal display.
-                </p>
-              )}
-            </div>
-            {workspaceError ? (
-              <p className="text-sm text-destructive">{workspaceError}</p>
-            ) : null}
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => handleWorkspaceDialogChange(false)}
-                disabled={isCreatingWorkspace}
-              >
-                Cancel
-              </Button>
-              <Button type="submit" disabled={isCreatingWorkspace}>
-                {isCreatingWorkspace ? 'Creating…' : 'Create workspace'}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+        onOpenChange={setCreateWorkspaceOpen}
+        onSuccess={(workspaceId) => {
+          setSelectedWorkspaceId(workspaceId)
+        }}
+      />
 
       {/* Edit Workspace Dialog */}
       <Dialog
@@ -1792,19 +1498,6 @@ export function LeftSideBar({ children, className, forceSolidStyle = false }: Le
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      {/* Image Cropper Dialog */}
-      {originalImageSrc && (
-        <ImageCropper
-          open={cropperOpen}
-          onOpenChange={setCropperOpen}
-          imageSrc={originalImageSrc}
-          onCropComplete={handleCropComplete}
-          onCancel={handleCropCancel}
-          aspectRatio={1}
-          recommendedSize="64x64px"
-        />
-      )}
     </motion.div>
   )
 }

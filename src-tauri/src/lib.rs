@@ -1209,9 +1209,16 @@ async fn create_workspace(
 
     let icon_path = match args.icon_path.as_ref() {
         Some(path) if !path.trim().is_empty() => {
-            match copy_workspace_icon(&app, workspace_id, path) {
-                Ok(relative) => Some(relative),
-                Err(error) => return Err(error),
+            // Check if the path is already a relative path (from save_cropped_workspace_icon)
+            // If it starts with the workspace icon directory, it's already saved
+            if path.starts_with(WORKSPACE_ICON_DIR) {
+                Some(path.to_string())
+            } else {
+                // Otherwise, it's a file path that needs to be copied
+                match copy_workspace_icon(&app, workspace_id, path) {
+                    Ok(relative) => Some(relative),
+                    Err(error) => return Err(error),
+                }
             }
         }
         _ => None,
