@@ -518,6 +518,7 @@ async fn initialize_schema(pool: &DbPool) -> Result<(), String> {
 
     ensure_workspace_support(pool).await?;
     ensure_board_icon_column(pool).await?;
+    ensure_board_emoji_color_columns(pool).await?;
     ensure_card_attachments_column(pool).await?;
     ensure_column_customization_columns(pool).await?;
     ensure_notes_board_id_column(pool).await?;
@@ -547,6 +548,42 @@ async fn ensure_board_icon_column(pool: &DbPool) -> Result<(), String> {
         .execute(pool)
         .await
         .map_err(|e| format!("Failed to backfill board icons: {e}"))?;
+
+    Ok(())
+}
+
+async fn ensure_board_emoji_color_columns(pool: &DbPool) -> Result<(), String> {
+    let emoji_exists = sqlx::query_scalar::<_, Option<i64>>(
+        "SELECT 1 FROM pragma_table_info('kanban_boards') WHERE name = 'emoji' LIMIT 1",
+    )
+    .fetch_optional(pool)
+    .await
+    .map_err(|e| format!("Failed to inspect kanban_boards schema: {e}"))?
+    .flatten()
+    .is_some();
+
+    if !emoji_exists {
+        sqlx::query("ALTER TABLE kanban_boards ADD COLUMN emoji TEXT")
+            .execute(pool)
+            .await
+            .map_err(|e| format!("Failed to add emoji column to kanban_boards: {e}"))?;
+    }
+
+    let color_exists = sqlx::query_scalar::<_, Option<i64>>(
+        "SELECT 1 FROM pragma_table_info('kanban_boards') WHERE name = 'color' LIMIT 1",
+    )
+    .fetch_optional(pool)
+    .await
+    .map_err(|e| format!("Failed to inspect kanban_boards schema: {e}"))?
+    .flatten()
+    .is_some();
+
+    if !color_exists {
+        sqlx::query("ALTER TABLE kanban_boards ADD COLUMN color TEXT")
+            .execute(pool)
+            .await
+            .map_err(|e| format!("Failed to add color column to kanban_boards: {e}"))?;
+    }
 
     Ok(())
 }
@@ -711,6 +748,8 @@ fn map_board_row(row: SqliteRow) -> Result<Value, sqlx::Error> {
             .try_get::<Option<String>, _>("icon")?
             .filter(|icon| !icon.trim().is_empty())
             .unwrap_or_else(|| DEFAULT_BOARD_ICON.to_string()),
+        "emoji": row.try_get::<Option<String>, _>("emoji")?,
+        "color": row.try_get::<Option<String>, _>("color")?,
         "createdAt": row.try_get::<String, _>("created_at")?,
         "updatedAt": row.try_get::<String, _>("updated_at")?,
         "archivedAt": row.try_get::<Option<String>, _>("archived_at")?,
@@ -1032,7 +1071,7 @@ async fn set_card_tags_tx(
 
 #[tauri::command]
 async fn load_boards(pool: State<'_, DbPool>) -> Result<Vec<Value>, String> {
-    sqlx::query("SELECT id, workspace_id, title, description, icon, created_at, updated_at, archived_at FROM kanban_boards ORDER BY created_at ASC")
+    sqlx::query("SELECT id, workspace_id, title, description, icon, emoji, color, created_at, updated_at, archived_at FROM kanban_boards ORDER BY created_at ASC")
         .try_map(map_board_row)
         .fetch_all(&*pool)
         .await
@@ -1167,22 +1206,34 @@ async fn delete_board(pool: State<'_, DbPool>, id: String) -> Result<(), String>
     Ok(())
 }
 
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct CreateBoardArgs {
+    id: String,
+    workspace_id: String,
+    title: String,
+    #[serde(default)]
+    description: Option<String>,
+    #[serde(default)]
+    icon: Option<String>,
+    #[serde(default)]
+    emoji: Option<String>,
+    #[serde(default)]
+    color: Option<String>,
+}
+
 #[tauri::command]
 async fn create_board(
     pool: State<'_, DbPool>,
-    id: String,
-    workspace_id: String,
-    mut title: String,
-    description: Option<String>,
-    icon: Option<String>,
+    args: CreateBoardArgs,
 ) -> Result<(), String> {
-    if workspace_id.is_empty() {
+    if args.workspace_id.is_empty() {
         return Err("O workspace informado é inválido.".to_string());
     }
 
     let workspace_exists =
         sqlx::query_scalar::<_, Option<i64>>("SELECT 1 FROM workspaces WHERE id = ? LIMIT 1")
-            .bind(&workspace_id)
+            .bind(&args.workspace_id)
             .fetch_optional(&*pool)
             .await
             .map_err(|e| {
@@ -1195,23 +1246,27 @@ async fn create_board(
         return Err("Workspace não encontrado.".to_string());
     }
 
-    title = title.trim().to_string();
+    let title = args.title.trim().to_string();
     if title.is_empty() {
         return Err("O nome do quadro não pode ser vazio.".to_string());
     }
     validate_string_input(&title, 200, "Nome do quadro")?;
 
-    let normalized_description = normalize_optional_text(description);
-    let normalized_icon = normalize_board_icon(icon)?;
+    let normalized_description = normalize_optional_text(args.description);
+    let normalized_icon = normalize_board_icon(args.icon)?;
+    let normalized_emoji = normalize_optional_text(args.emoji);
+    let normalized_color = normalize_optional_text(args.color);
 
     sqlx::query(
-        "INSERT INTO kanban_boards (id, workspace_id, title, description, icon, created_at, updated_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))",
+        "INSERT INTO kanban_boards (id, workspace_id, title, description, icon, emoji, color, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))",
     )
-    .bind(id)
-    .bind(workspace_id)
-    .bind(title)
+    .bind(&args.id)
+    .bind(&args.workspace_id)
+    .bind(&title)
     .bind(normalized_description)
     .bind(normalized_icon)
+    .bind(normalized_emoji)
+    .bind(normalized_color)
     .execute(&*pool)
     .await
     .map(|_| ())

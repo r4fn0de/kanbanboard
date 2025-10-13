@@ -254,19 +254,21 @@ export function LeftSideBar({
   const [createProjectOpen, setCreateProjectOpen] = useState(false)
   const [projectName, setProjectName] = useState('')
   const [projectDescription, setProjectDescription] = useState('')
-  const [renameProjectOpen, setRenameProjectOpen] = useState(false)
-  const [renameProjectId, setRenameProjectId] = useState<string | null>(null)
-  const [renameProjectName, setRenameProjectName] = useState('')
-  const [renameProjectDescription, setRenameProjectDescription] = useState('')
+  const [projectIcon, setProjectIcon] = useState(DEFAULT_PROJECT_ICON)
+  const [projectEmoji, setProjectEmoji] = useState('')
+  const [projectColor, setProjectColor] = useState('#6366F1')
+  const [useEmoji, setUseEmoji] = useState(false)
+  const [settingsProjectOpen, setSettingsProjectOpen] = useState(false)
+  const [settingsProjectId, setSettingsProjectId] = useState<string | null>(null)
+  const [settingsProjectName, setSettingsProjectName] = useState('')
+  const [settingsProjectDescription, setSettingsProjectDescription] = useState('')
+  const [settingsProjectIcon, setSettingsProjectIcon] = useState(DEFAULT_PROJECT_ICON)
+  const [settingsProjectEmoji, setSettingsProjectEmoji] = useState('')
+  const [settingsProjectColor, setSettingsProjectColor] = useState('#6366F1')
+  const [settingsUseEmoji, setSettingsUseEmoji] = useState(false)
   const [deleteProjectOpen, setDeleteProjectOpen] = useState(false)
   const [deleteProjectId, setDeleteProjectId] = useState<string | null>(null)
   const [deleteProjectTitle, setDeleteProjectTitle] = useState('')
-  const [changeIconOpen, setChangeIconOpen] = useState(false)
-  const [changeIconProjectId, setChangeIconProjectId] = useState<string | null>(
-    null
-  )
-  const [changeIconValue, setChangeIconValue] =
-    useState<string>(DEFAULT_PROJECT_ICON)
   const [createWorkspaceOpen, setCreateWorkspaceOpen] = useState(false)
   // Workspace edit/delete states
   const [editWorkspaceOpen, setEditWorkspaceOpen] = useState(false)
@@ -284,8 +286,8 @@ export function LeftSideBar({
   const [activeId, setActiveId] = useState<string | null>(null)
   const projectNameId = useId()
   const projectDescriptionId = useId()
-  const renameProjectNameId = useId()
-  const renameProjectDescriptionId = useId()
+  const settingsProjectNameId = useId()
+  const settingsProjectDescriptionId = useId()
   const navigate = useNavigate()
   const location = useLocation()
   const commandContext = useCommandContext()
@@ -436,46 +438,6 @@ export function LeftSideBar({
     )
   }
 
-  const handleConfirmIconChange = () => {
-    if (!changeIconProjectId || updateBoardIcon.isPending) {
-      return
-    }
-
-    const targetId = changeIconProjectId
-    const iconValue = changeIconValue || DEFAULT_PROJECT_ICON
-
-    if (projectLinks) {
-      const targetBoard = projectLinks.find(board => board.id === targetId)
-      if (
-        targetBoard &&
-        (targetBoard.icon ?? DEFAULT_PROJECT_ICON) === iconValue
-      ) {
-        setChangeIconOpen(false)
-        setChangeIconProjectId(null)
-        setChangeIconValue(DEFAULT_PROJECT_ICON)
-        return
-      }
-    }
-
-    updateBoardIcon.mutate(
-      { id: targetId, icon: iconValue },
-      {
-        onSuccess: () => {
-          toast.success('Project icon updated')
-          setChangeIconOpen(false)
-          setChangeIconProjectId(null)
-          setChangeIconValue(DEFAULT_PROJECT_ICON)
-        },
-        onError: error => {
-          const message =
-            error instanceof Error ? error.message : 'Unknown error'
-          toast.error('Failed to update project icon', {
-            description: message,
-          })
-        },
-      }
-    )
-  }
 
   const projectLinks = useMemo(() => {
     if (isLoadingBoards || isLoadingWorkspaces) {
@@ -919,6 +881,8 @@ export function LeftSideBar({
                 projectLinks.map((board, index) => {
                   const IconComponent =
                     PROJECT_ICON_MAP[board.icon ?? ''] ?? Folder
+                  const hasEmoji = board.emoji && board.emoji.trim().length > 0
+                  const projectColor = board.color || '#6366F1'
 
                   return (
                     <motion.div
@@ -951,7 +915,14 @@ export function LeftSideBar({
                           )
                         }
                       >
-                        <IconComponent className="h-3.5 w-3.5" />
+                        {hasEmoji ? (
+                          <span className="text-base">{board.emoji}</span>
+                        ) : (
+                          <IconComponent
+                            className="h-3.5 w-3.5"
+                            style={{ color: projectColor }}
+                          />
+                        )}
                         <span className="truncate font-medium">
                           {board.title}
                         </span>
@@ -983,26 +954,23 @@ export function LeftSideBar({
                         >
                           <DropdownMenuItem
                             onSelect={() => {
-                              setChangeIconProjectId(board.id)
-                              setChangeIconValue(
-                                board.icon ?? DEFAULT_PROJECT_ICON
-                              )
-                              setChangeIconOpen(true)
-                            }}
-                          >
-                            Change Icon
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onSelect={() => {
-                              setRenameProjectId(board.id)
-                              setRenameProjectName(board.title)
-                              setRenameProjectDescription(
+                              setSettingsProjectId(board.id)
+                              setSettingsProjectName(board.title)
+                              setSettingsProjectDescription(
                                 board.description ?? ''
                               )
-                              setRenameProjectOpen(true)
+                              setSettingsProjectIcon(
+                                board.icon ?? DEFAULT_PROJECT_ICON
+                              )
+                              setSettingsProjectEmoji(board.emoji ?? '')
+                              setSettingsProjectColor(board.color ?? '#6366F1')
+                              setSettingsUseEmoji(
+                                Boolean(board.emoji && board.emoji.trim())
+                              )
+                              setSettingsProjectOpen(true)
                             }}
                           >
-                            Rename
+                            Settings
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onSelect={() => {
@@ -1229,56 +1197,77 @@ export function LeftSideBar({
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Project Settings Dialog */}
       <Dialog
-        open={renameProjectOpen}
+        open={settingsProjectOpen}
         onOpenChange={open => {
-          setRenameProjectOpen(open)
+          setSettingsProjectOpen(open)
           if (!open) {
-            setRenameProjectId(null)
-            setRenameProjectName('')
-            setRenameProjectDescription('')
+            setSettingsProjectId(null)
+            setSettingsProjectName('')
+            setSettingsProjectDescription('')
+            setSettingsProjectIcon(DEFAULT_PROJECT_ICON)
+            setSettingsProjectEmoji('')
+            setSettingsProjectColor('#6366F1')
+            setSettingsUseEmoji(false)
           }
         }}
       >
-        <DialogContent>
+        <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>Rename project</DialogTitle>
+            <DialogTitle>Project Settings</DialogTitle>
             <DialogDescription>
-              Update the project name and description to keep your workspace
-              organized.
+              Manage your project name, description, appearance, and customization.
             </DialogDescription>
           </DialogHeader>
           <form
-            className="space-y-4"
+            className="space-y-6"
             onSubmit={(event: FormEvent<HTMLFormElement>) => {
               event.preventDefault()
-
-              if (renameBoard.isPending || !renameProjectId) {
+              if (renameBoard.isPending || updateBoardIcon.isPending || !settingsProjectId) {
                 return
               }
 
-              const trimmedName = renameProjectName.trim()
-
+              const trimmedName = settingsProjectName.trim()
               if (!trimmedName) {
                 toast.error('Project name is required')
                 return
               }
 
+              // Update name and description
               renameBoard.mutate(
                 {
-                  id: renameProjectId,
+                  id: settingsProjectId,
                   title: trimmedName,
-                  description: renameProjectDescription.trim() || undefined,
+                  description: settingsProjectDescription.trim() || undefined,
                 },
                 {
                   onSuccess: () => {
-                    toast.success('Project updated')
-                    setRenameProjectOpen(false)
+                    // Update icon/emoji after successful name update
+                    updateBoardIcon.mutate(
+                      {
+                        id: settingsProjectId,
+                        icon: settingsUseEmoji ? '' : settingsProjectIcon,
+                      },
+                      {
+                        onSuccess: () => {
+                          toast.success('Project settings updated')
+                          setSettingsProjectOpen(false)
+                        },
+                        onError: error => {
+                          const message =
+                            error instanceof Error ? error.message : 'Unknown error'
+                          toast.error('Failed to update project icon', {
+                            description: message,
+                          })
+                        },
+                      }
+                    )
                   },
                   onError: error => {
                     const message =
                       error instanceof Error ? error.message : 'Unknown error'
-                    toast.error('Failed to rename project', {
+                    toast.error('Failed to update project', {
                       description: message,
                     })
                   },
@@ -1286,40 +1275,206 @@ export function LeftSideBar({
               )
             }}
           >
+            {/* Visual Preview */}
+            <div className="flex items-center justify-center gap-4 py-4">
+              <div
+                className="relative flex h-16 w-16 items-center justify-center rounded-2xl shadow-lg transition-all duration-200"
+                style={{
+                  backgroundColor: settingsUseEmoji ? settingsProjectColor : 'transparent',
+                  transform: 'scale(1)',
+                }}
+              >
+                {settingsUseEmoji && settingsProjectEmoji ? (
+                  <span className="text-3xl">{settingsProjectEmoji}</span>
+                ) : (() => {
+                  const IconComponent = PROJECT_ICON_MAP[settingsProjectIcon] ?? Folder
+                  return (
+                    <IconComponent
+                      className="h-12 w-12"
+                      style={{ color: settingsProjectColor }}
+                    />
+                  )
+                })()}
+              </div>
+            </div>
+
+            {/* Project Name */}
             <div className="space-y-2">
-              <Label htmlFor={renameProjectNameId}>Project name</Label>
+              <Label htmlFor={settingsProjectNameId} className="text-sm font-medium">
+                Project name
+              </Label>
               <Input
-                id={renameProjectNameId}
-                value={renameProjectName}
-                onChange={event => setRenameProjectName(event.target.value)}
+                id={settingsProjectNameId}
+                value={settingsProjectName}
+                onChange={event => setSettingsProjectName(event.target.value)}
                 placeholder="e.g. Marketing Launch"
                 autoFocus
                 required
+                className="h-10"
               />
             </div>
+
+            {/* Customization */}
+            <div className="grid gap-4">
+              {/* Icon or Emoji Toggle */}
+              <div className="flex items-center gap-4 rounded-lg border border-border p-3">
+                <button
+                  type="button"
+                  onClick={() => setSettingsUseEmoji(false)}
+                  className={cn(
+                    'flex-1 rounded-md px-4 py-2 text-sm font-medium transition-colors',
+                    !settingsUseEmoji
+                      ? 'bg-primary text-primary-foreground shadow-sm'
+                      : 'bg-muted/50 text-muted-foreground hover:bg-muted'
+                  )}
+                >
+                  Icon
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSettingsUseEmoji(true)}
+                  className={cn(
+                    'flex-1 rounded-md px-4 py-2 text-sm font-medium transition-colors',
+                    settingsUseEmoji
+                      ? 'bg-primary text-primary-foreground shadow-sm'
+                      : 'bg-muted/50 text-muted-foreground hover:bg-muted'
+                  )}
+                >
+                  Emoji
+                </button>
+              </div>
+
+              {/* Icon Selector */}
+              {!settingsUseEmoji && (
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Icon</Label>
+                  <Select value={settingsProjectIcon} onValueChange={setSettingsProjectIcon}>
+                    <SelectTrigger className="h-10">
+                      <SelectValue>
+                        <div className="flex items-center gap-2">
+                          {(() => {
+                            const IconComponent =
+                              PROJECT_ICON_MAP[settingsProjectIcon] ?? Folder
+                            return (
+                              <>
+                                <IconComponent className="h-4 w-4" />
+                                <span>
+                                  {PROJECT_ICON_OPTIONS.find(
+                                    opt => opt.value === settingsProjectIcon
+                                  )?.label ?? 'Select icon'}
+                                </span>
+                              </>
+                            )
+                          })()}
+                        </div>
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PROJECT_ICON_SECTIONS.map((section, sectionIndex) => (
+                        <div key={section.label}>
+                          {sectionIndex > 0 && <SelectSeparator />}
+                          <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
+                            {section.label}
+                          </div>
+                          {section.options.map(option => {
+                            const IconComponent = option.icon
+                            return (
+                              <SelectItem key={option.value} value={option.value}>
+                                <div className="flex items-center gap-2">
+                                  <IconComponent className="h-4 w-4" />
+                                  <span>{option.label}</span>
+                                </div>
+                              </SelectItem>
+                            )
+                          })}
+                        </div>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {/* Emoji Input */}
+              {settingsUseEmoji && (
+                <div className="space-y-2">
+                  <Label htmlFor="settings-project-emoji" className="text-sm font-medium">
+                    Emoji
+                  </Label>
+                  <Input
+                    id="settings-project-emoji"
+                    value={settingsProjectEmoji}
+                    onChange={event => {
+                      const value = event.target.value
+                      if (value.length <= 2) {
+                        setSettingsProjectEmoji(value)
+                      }
+                    }}
+                    placeholder="😊"
+                    className="h-12 text-center text-3xl"
+                    maxLength={2}
+                  />
+                </div>
+              )}
+
+              {/* Color Picker */}
+              <div className="space-y-2">
+                <Label htmlFor="settings-project-color" className="text-sm font-medium">
+                  Color
+                </Label>
+                <div className="flex gap-2">
+                  <input
+                    id="settings-project-color"
+                    type="color"
+                    value={settingsProjectColor}
+                    onChange={event => setSettingsProjectColor(event.target.value)}
+                    className="h-10 w-14 cursor-pointer rounded-md border border-input"
+                  />
+                  <Input
+                    value={settingsProjectColor}
+                    onChange={event => setSettingsProjectColor(event.target.value)}
+                    placeholder="#6366F1"
+                    className="h-10 flex-1 font-mono text-sm"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Description */}
             <div className="space-y-2">
-              <Label htmlFor={renameProjectDescriptionId}>Description</Label>
+              <Label htmlFor={settingsProjectDescriptionId} className="text-sm font-medium">
+                Description <span className="text-muted-foreground">(optional)</span>
+              </Label>
               <Textarea
-                id={renameProjectDescriptionId}
-                value={renameProjectDescription}
-                onChange={event =>
-                  setRenameProjectDescription(event.target.value)
-                }
-                placeholder="Optional context to help your team get started"
-                rows={4}
+                id={settingsProjectDescriptionId}
+                value={settingsProjectDescription}
+                onChange={event => setSettingsProjectDescription(event.target.value)}
+                placeholder="What's this project about?"
+                rows={3}
+                className="resize-none"
               />
             </div>
-            <DialogFooter>
+
+            <DialogFooter className="gap-2">
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setRenameProjectOpen(false)}
-                disabled={renameBoard.isPending}
+                onClick={() => setSettingsProjectOpen(false)}
+                disabled={renameBoard.isPending || updateBoardIcon.isPending}
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={renameBoard.isPending}>
-                {renameBoard.isPending ? 'Updating…' : 'Save changes'}
+              <Button
+                type="submit"
+                disabled={renameBoard.isPending || updateBoardIcon.isPending}
+              >
+                {renameBoard.isPending || updateBoardIcon.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Saving…
+                  </>
+                ) : (
+                  'Save changes'
+                )}
               </Button>
             </DialogFooter>
           </form>
@@ -1327,95 +1482,29 @@ export function LeftSideBar({
       </Dialog>
 
       <Dialog
-        open={changeIconOpen}
+        open={createProjectOpen}
         onOpenChange={open => {
-          setChangeIconOpen(open)
+          setCreateProjectOpen(open)
           if (!open) {
-            setChangeIconProjectId(null)
-            setChangeIconValue(DEFAULT_PROJECT_ICON)
+            // Reset form on close
+            setProjectName('')
+            setProjectDescription('')
+            setProjectIcon(DEFAULT_PROJECT_ICON)
+            setProjectEmoji('')
+            setProjectColor('#6366F1')
+            setUseEmoji(false)
           }
         }}
       >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Change project icon</DialogTitle>
-            <DialogDescription>
-              Choose an icon to represent this project in the sidebar.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            {PROJECT_ICON_SECTIONS.map(section => (
-              <div key={section.label} className="space-y-2">
-                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  {section.label}
-                </p>
-                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                  {section.options.map(option => {
-                    const IconComponent = option.icon
-                    const isSelected = changeIconValue === option.value
-                    return (
-                      <button
-                        key={option.value}
-                        type="button"
-                        onClick={() => setChangeIconValue(option.value)}
-                        disabled={updateBoardIcon.isPending}
-                        aria-pressed={isSelected}
-                        className={cn(
-                          'flex h-16 flex-col items-center justify-center gap-1.5 rounded-xl border px-3 py-2 text-sm font-medium transition',
-                          isSelected
-                            ? 'border-primary bg-primary/10 text-primary shadow-sm dark:bg-primary/20'
-                            : 'border-transparent bg-accent/10 text-accent-foreground hover:border-accent hover:bg-accent/20'
-                        )}
-                      >
-                        <IconComponent className="h-5 w-5" />
-                        <span className="truncate text-xs font-medium">
-                          {option.label}
-                        </span>
-                      </button>
-                    )
-                  })}
-                </div>
-              </div>
-            ))}
-          </div>
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => {
-                setChangeIconOpen(false)
-                setChangeIconProjectId(null)
-                setChangeIconValue(DEFAULT_PROJECT_ICON)
-              }}
-              disabled={updateBoardIcon.isPending}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              onClick={handleConfirmIconChange}
-              disabled={updateBoardIcon.isPending || !changeIconProjectId}
-            >
-              {updateBoardIcon.isPending ? 'Updating…' : 'Save icon'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog
-        open={createProjectOpen}
-        onOpenChange={open => setCreateProjectOpen(open)}
-      >
-        <DialogContent>
+        <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
             <DialogTitle>Create project</DialogTitle>
             <DialogDescription>
-              Give your project a clear name and optional description to help
-              teammates understand its purpose.
+              Choose an icon or emoji and customize the color for your project.
             </DialogDescription>
           </DialogHeader>
           <form
-            className="space-y-4"
+            className="space-y-6"
             onSubmit={(event: FormEvent<HTMLFormElement>) => {
               event.preventDefault()
               if (createBoard.isPending) return
@@ -1439,13 +1528,19 @@ export function LeftSideBar({
                   workspaceId: selectedWorkspaceId,
                   title: trimmedName,
                   description: projectDescription.trim() || undefined,
-                  icon: DEFAULT_PROJECT_ICON,
+                  icon: useEmoji ? undefined : projectIcon,
+                  emoji: useEmoji && projectEmoji.trim() ? projectEmoji.trim() : undefined,
+                  color: projectColor,
                 },
                 {
                   onSuccess: () => {
                     toast.success('Project created')
                     setProjectName('')
                     setProjectDescription('')
+                    setProjectIcon(DEFAULT_PROJECT_ICON)
+                    setProjectEmoji('')
+                    setProjectColor('#6366F1')
+                    setUseEmoji(false)
                     setCreateProjectOpen(false)
                   },
                   onError: error => {
@@ -1459,8 +1554,34 @@ export function LeftSideBar({
               )
             }}
           >
+            {/* Visual Preview */}
+            <div className="flex items-center justify-center gap-4 py-6">
+              <div
+                className="relative flex h-20 w-20 items-center justify-center rounded-2xl shadow-lg transition-all duration-200"
+                style={{
+                  backgroundColor: useEmoji ? projectColor : 'transparent',
+                  transform: 'scale(1)',
+                }}
+              >
+                {useEmoji && projectEmoji ? (
+                  <span className="text-4xl">{projectEmoji}</span>
+                ) : (() => {
+                  const IconComponent = PROJECT_ICON_MAP[projectIcon] ?? Folder
+                  return (
+                    <IconComponent
+                      className="h-14 w-14"
+                      style={{ color: projectColor }}
+                    />
+                  )
+                })()}
+              </div>
+            </div>
+
+            {/* Project Name */}
             <div className="space-y-2">
-              <Label htmlFor={projectNameId}>Project name</Label>
+              <Label htmlFor={projectNameId} className="text-sm font-medium">
+                Project name
+              </Label>
               <Input
                 id={projectNameId}
                 value={projectName}
@@ -1468,19 +1589,152 @@ export function LeftSideBar({
                 placeholder="e.g. Marketing Launch"
                 autoFocus
                 required
+                className="h-10"
               />
             </div>
+
+            {/* Customization Grid */}
+            <div className="grid gap-4">
+              {/* Icon or Emoji Toggle */}
+              <div className="flex items-center gap-4 rounded-lg border border-border p-3">
+                <button
+                  type="button"
+                  onClick={() => setUseEmoji(false)}
+                  className={cn(
+                    'flex-1 rounded-md px-4 py-2 text-sm font-medium transition-colors',
+                    !useEmoji
+                      ? 'bg-primary text-primary-foreground shadow-sm'
+                      : 'bg-muted/50 text-muted-foreground hover:bg-muted'
+                  )}
+                >
+                  Icon
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setUseEmoji(true)}
+                  className={cn(
+                    'flex-1 rounded-md px-4 py-2 text-sm font-medium transition-colors',
+                    useEmoji
+                      ? 'bg-primary text-primary-foreground shadow-sm'
+                      : 'bg-muted/50 text-muted-foreground hover:bg-muted'
+                  )}
+                >
+                  Emoji
+                </button>
+              </div>
+
+              {/* Icon Selector (only when not using emoji) */}
+              {!useEmoji && (
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Icon</Label>
+                  <Select value={projectIcon} onValueChange={setProjectIcon}>
+                  <SelectTrigger className="h-10">
+                    <SelectValue>
+                      <div className="flex items-center gap-2">
+                        {(() => {
+                          const IconComponent =
+                            PROJECT_ICON_MAP[projectIcon] ?? Folder
+                          return (
+                            <>
+                              <IconComponent className="h-4 w-4" />
+                              <span>
+                                {PROJECT_ICON_OPTIONS.find(
+                                  opt => opt.value === projectIcon
+                                )?.label ?? 'Select icon'}
+                              </span>
+                            </>
+                          )
+                        })()}
+                      </div>
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PROJECT_ICON_SECTIONS.map((section, sectionIndex) => (
+                      <div key={section.label}>
+                        {sectionIndex > 0 && <SelectSeparator />}
+                        <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
+                          {section.label}
+                        </div>
+                        {section.options.map(option => {
+                          const IconComponent = option.icon
+                          return (
+                            <SelectItem key={option.value} value={option.value}>
+                              <div className="flex items-center gap-2">
+                                <IconComponent className="h-4 w-4" />
+                                <span>{option.label}</span>
+                              </div>
+                            </SelectItem>
+                          )
+                        })}
+                      </div>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              )}
+
+              {/* Emoji Input (only when using emoji) */}
+              {useEmoji && (
+                <div className="space-y-2">
+                  <Label htmlFor="project-emoji" className="text-sm font-medium">
+                    Emoji
+                  </Label>
+                  <Input
+                    id="project-emoji"
+                    value={projectEmoji}
+                    onChange={event => {
+                      // Only allow single emoji or clear
+                      const value = event.target.value
+                      if (value.length <= 2) {
+                        setProjectEmoji(value)
+                      }
+                    }}
+                    placeholder="😊"
+                    className="h-12 text-center text-3xl"
+                    maxLength={2}
+                  />
+                </div>
+              )}
+
+              {/* Color Picker */}
+              <div className="space-y-2">
+                <Label htmlFor="project-color" className="text-sm font-medium">
+                  Color
+                </Label>
+                <div className="flex gap-2">
+                  <input
+                    id="project-color"
+                    type="color"
+                    value={projectColor}
+                    onChange={event => setProjectColor(event.target.value)}
+                    className="h-10 w-14 cursor-pointer rounded-md border border-input"
+                  />
+                  <Input
+                    value={projectColor}
+                    onChange={event => setProjectColor(event.target.value)}
+                    placeholder="#6366F1"
+                    className="h-10 flex-1 font-mono text-sm"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Description */}
             <div className="space-y-2">
-              <Label htmlFor={projectDescriptionId}>Description</Label>
+              <Label htmlFor={projectDescriptionId} className="text-sm font-medium">
+                Description <span className="text-muted-foreground">(optional)</span>
+              </Label>
               <Textarea
                 id={projectDescriptionId}
                 value={projectDescription}
                 onChange={event => setProjectDescription(event.target.value)}
-                placeholder="Optional context to help your team get started"
-                rows={4}
+                placeholder="What's this project about?"
+                rows={3}
+                className="resize-none"
               />
             </div>
-            <DialogFooter>
+
+            <DialogFooter className="gap-2">
               <Button
                 type="button"
                 variant="outline"
@@ -1490,7 +1744,14 @@ export function LeftSideBar({
                 Cancel
               </Button>
               <Button type="submit" disabled={createBoard.isPending}>
-                {createBoard.isPending ? 'Creating…' : 'Create project'}
+                {createBoard.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Creating…
+                  </>
+                ) : (
+                  'Create project'
+                )}
               </Button>
             </DialogFooter>
           </form>

@@ -8,6 +8,8 @@ export interface KanbanBoard {
   title: string
   description?: string | null
   icon?: string | null
+  emoji?: string | null
+  color?: string | null
   createdAt: string
   updatedAt: string
   archivedAt?: string | null
@@ -98,6 +100,8 @@ CREATE TABLE IF NOT EXISTS kanban_boards (
   title TEXT NOT NULL,
   description TEXT,
   icon TEXT,
+  emoji TEXT,
+  color TEXT,
   created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
   updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
   archived_at TEXT
