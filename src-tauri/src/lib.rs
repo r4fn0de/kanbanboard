@@ -2673,6 +2673,68 @@ async fn archive_note(pool: State<'_, DbPool>, id: String, board_id: String) -> 
     Ok(())
 }
 
+#[tauri::command]
+async fn set_workspace_icon_path(
+    app: AppHandle,
+    pool: State<'_, DbPool>,
+    workspace_id: String,
+    icon_path: String,
+) -> Result<Value, String> {
+    let workspace_id = workspace_id.trim();
+    if workspace_id.is_empty() {
+        return Err("Identificador do workspace inválido.".to_string());
+    }
+
+    let icon_path = icon_path.trim();
+    if icon_path.is_empty() {
+        return Err("Caminho do ícone inválido.".to_string());
+    }
+
+    // Get the existing icon to clean it up
+    let existing_icon: Option<String> =
+        sqlx::query_scalar("SELECT icon_path FROM workspaces WHERE id = ?")
+            .bind(workspace_id)
+            .fetch_optional(&*pool)
+            .await
+            .map_err(|e| format!("Falha ao carregar workspace: {e}"))?
+            .flatten();
+
+    // Update the icon_path in the database
+    let result = sqlx::query(
+        "UPDATE workspaces SET icon_path = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?",
+    )
+    .bind(icon_path)
+    .bind(workspace_id)
+    .execute(&*pool)
+    .await
+    .map_err(|e| {
+        log::error!("Failed to update workspace icon path for {workspace_id}: {e}");
+        e.to_string()
+    })?;
+
+    if result.rows_affected() == 0 {
+        return Err("Workspace não encontrado.".to_string());
+    }
+
+    // Clean up the old icon file if it exists and is different
+    if let Some(previous) = existing_icon
+        && previous != icon_path
+    {
+        let _ = remove_workspace_icon_file(&app, &previous);
+    }
+
+    // Return the updated workspace
+    sqlx::query("SELECT id, name, color, icon_path, created_at, updated_at, archived_at FROM workspaces WHERE id = ?")
+        .bind(workspace_id)
+        .try_map(map_workspace_row)
+        .fetch_one(&*pool)
+        .await
+        .map_err(|e| {
+            log::error!("Failed to load workspace after icon path update {workspace_id}: {e}");
+            e.to_string()
+        })
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -2811,6 +2873,7 @@ pub fn run() {
             update_workspace_icon,
             remove_workspace_icon,
             save_cropped_workspace_icon,
+            set_workspace_icon_path,
             get_workspace_icon_url,
             load_boards,
             create_board,
@@ -2971,10 +3034,7 @@ async fn save_cropped_workspace_icon(
 }
 
 #[tauri::command]
-async fn get_workspace_icon_url(
-    app: AppHandle,
-    relative_path: String,
-) -> Result<String, String> {
+async fn get_workspace_icon_url(app: AppHandle, relative_path: String) -> Result<String, String> {
     if relative_path.trim().is_empty() {
         return Err("Invalid relative path".to_string());
     }
@@ -2985,15 +3045,15 @@ async fn get_workspace_icon_url(
         .map_err(|e| format!("Failed to resolve app data directory: {e}"))?;
 
     let full_path = app_data_dir.join(&relative_path);
-    
+
     if !full_path.exists() {
         return Err(format!("Workspace icon file not found: {}", relative_path));
     }
 
     // Read the file and convert to base64 data URL
-    let file_bytes = fs::read(&full_path)
-        .map_err(|e| format!("Failed to read workspace icon file: {e}"))?;
-    
+    let file_bytes =
+        fs::read(&full_path).map_err(|e| format!("Failed to read workspace icon file: {e}"))?;
+
     // Determine MIME type based on file extension
     let mime_type = match full_path.extension().and_then(|ext| ext.to_str()) {
         Some("png") => "image/png",

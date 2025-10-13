@@ -25,6 +25,11 @@ export interface UpdateWorkspaceIconInput {
   filePath: string
 }
 
+export interface SetWorkspaceIconPathInput {
+  workspaceId: string
+  iconPath: string
+}
+
 export async function fetchWorkspaces(): Promise<Workspace[]> {
   return invoke<Workspace[]>('load_workspaces')
 }
@@ -62,8 +67,8 @@ export async function updateWorkspaceIcon(
   input: UpdateWorkspaceIconInput
 ): Promise<Workspace> {
   return invoke<Workspace>('update_workspace_icon', {
-    workspace_id: input.workspaceId,
-    file_path: input.filePath,
+    workspaceId: input.workspaceId,
+    filePath: input.filePath,
   })
 }
 
@@ -71,7 +76,16 @@ export async function removeWorkspaceIcon(
   workspaceId: string
 ): Promise<Workspace> {
   return invoke<Workspace>('remove_workspace_icon', {
-    workspace_id: workspaceId,
+    workspaceId: workspaceId,
+  })
+}
+
+export async function setWorkspaceIconPath(
+  input: SetWorkspaceIconPathInput
+): Promise<Workspace> {
+  return invoke<Workspace>('set_workspace_icon_path', {
+    workspaceId: input.workspaceId,
+    iconPath: input.iconPath,
   })
 }
 
@@ -171,6 +185,28 @@ export function useRemoveWorkspaceIconMutation() {
 
   return useMutation({
     mutationFn: removeWorkspaceIcon,
+    onSuccess: updatedWorkspace => {
+      queryClient.setQueryData<Workspace[]>(workspaceQueryKeys.all, previous =>
+        previous
+          ? previous.map(workspace =>
+              workspace.id === updatedWorkspace.id
+                ? updatedWorkspace
+                : workspace
+            )
+          : previous
+      )
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: workspaceQueryKeys.all })
+    },
+  })
+}
+
+export function useSetWorkspaceIconPathMutation() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: setWorkspaceIconPath,
     onSuccess: updatedWorkspace => {
       queryClient.setQueryData<Workspace[]>(workspaceQueryKeys.all, previous =>
         previous
