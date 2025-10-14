@@ -1,4 +1,11 @@
-import { useState, useCallback, type FormEvent, useId } from 'react'
+import {
+  useState,
+  useCallback,
+  useEffect,
+  useRef,
+  type FormEvent,
+  useId,
+} from 'react'
 import { X, Upload, Palette } from 'lucide-react'
 import { open as openDialog } from '@tauri-apps/plugin-dialog'
 import { readFile } from '@tauri-apps/plugin-fs'
@@ -54,9 +61,27 @@ export function CreateWorkspaceDialog({
   const [originalImageSrc, setOriginalImageSrc] = useState<string | null>(null)
   const [croppedImageBlob, setCroppedImageBlob] = useState<Blob | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const dialogRef = useRef<HTMLDivElement>(null)
 
   const nameId = useId()
   const { mutateAsync: createWorkspace, isPending } = useCreateWorkspace()
+
+  // Auto-focus the dialog when it opens
+  useEffect(() => {
+    if (open && dialogRef.current) {
+      // Small delay to ensure the dialog is fully rendered
+      const timeoutId = setTimeout(() => {
+        // Find the first focusable element (the name input with autofocus)
+        const firstFocusable = dialogRef.current?.querySelector<HTMLElement>(
+          'input[autofocus], input, button'
+        )
+        if (firstFocusable) {
+          firstFocusable.focus()
+        }
+      }, 150)
+      return () => clearTimeout(timeoutId)
+    }
+  }, [open])
 
   const resetForm = useCallback(() => {
     // Revoke object URLs to prevent memory leaks
@@ -203,6 +228,7 @@ export function CreateWorkspaceDialog({
         <DialogPortal>
           <DialogBackdrop />
           <DialogPopup
+            ref={dialogRef}
             className="sm:max-w-[440px] p-0 gap-0 overflow-hidden"
             showCloseButton={false}
           >

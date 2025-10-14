@@ -284,6 +284,7 @@ export function LeftSideBar({
   const [deleteWorkspaceName, setDeleteWorkspaceName] = useState('')
   const [orderedWorkspaces, setOrderedWorkspaces] = useState<Workspace[]>([])
   const [activeId, setActiveId] = useState<string | null>(null)
+  const [selectOpen, setSelectOpen] = useState(false)
   const projectNameId = useId()
   const projectDescriptionId = useId()
   const settingsProjectNameId = useId()
@@ -677,6 +678,8 @@ export function LeftSideBar({
             <Select
               value={selectedWorkspaceId ?? undefined}
               onValueChange={value => setSelectedWorkspaceId(value)}
+              open={selectOpen}
+              onOpenChange={setSelectOpen}
             >
               <SelectTrigger
                 className={cn(
@@ -684,6 +687,12 @@ export function LeftSideBar({
                   useTransparentStyle &&
                     'text-white hover:text-white hover:bg-white/[0.08]'
                 )}
+                onClick={e => {
+                  // Prevent opening if dialog is open
+                  if (createWorkspaceOpen) {
+                    e.preventDefault()
+                  }
+                }}
               >
                 <AnimatePresence mode="wait">
                   {currentWorkspace ? (
@@ -751,7 +760,13 @@ export function LeftSideBar({
                   )}
                   onClick={e => {
                     e.preventDefault()
-                    setCreateWorkspaceOpen(true)
+                    e.stopPropagation()
+                    // Close the select dropdown first
+                    setSelectOpen(false)
+                    // Small delay to ensure dropdown closes before dialog opens
+                    setTimeout(() => {
+                      setCreateWorkspaceOpen(true)
+                    }, 100)
                   }}
                 >
                   <Plus className="h-4 w-4" />

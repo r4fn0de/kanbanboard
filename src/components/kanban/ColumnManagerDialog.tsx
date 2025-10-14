@@ -248,11 +248,10 @@ export function ColumnManagerDialog({
                   <PopoverTrigger asChild>
                     <button
                       type="button"
-                      className="flex items-center justify-center w-10 h-10 rounded-lg border-2 hover:border-muted-foreground/30"
+                      className="flex items-center justify-center w-10 h-10 rounded-lg border-2 transition-all duration-150 ease-in-out hover:scale-105 hover:brightness-95"
                       style={{
                         backgroundColor: newColumnColor ?? DEFAULT_MONOCHROMATIC_COLOR,
                         borderColor: newColumnColor ?? DEFAULT_MONOCHROMATIC_COLOR,
-                        transition: 'border-color 150ms ease-in-out',
                       }}
                       disabled={createColumn.isPending}
                     >
@@ -583,11 +582,10 @@ function ColumnManagerRow({
           <PopoverTrigger asChild>
             <button
               type="button"
-              className="flex items-center justify-center w-10 h-10 rounded-lg border-2 hover:border-muted-foreground/30"
+              className="flex items-center justify-center w-10 h-10 rounded-lg border-2 transition-all duration-150 ease-in-out hover:scale-105 hover:brightness-95"
               style={{
                 backgroundColor: color ?? DEFAULT_MONOCHROMATIC_COLOR,
                 borderColor: color ?? DEFAULT_MONOCHROMATIC_COLOR,
-                transition: 'border-color 150ms ease-in-out',
               }}
               disabled={isUpdating}
             >
