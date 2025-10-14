@@ -319,6 +319,8 @@ export function useMoveCard(boardId: string) {
 
           // Update columnId to destination
           moving.columnId = input.toColumnId
+          // Update timestamp to ensure fresh data
+          moving.updatedAt = new Date().toISOString()
 
           const fromList = updated
             .filter(c => c.columnId === input.fromColumnId)
@@ -360,6 +362,12 @@ export function useMoveCard(boardId: string) {
 
       return { previousCards }
     },
+    onSuccess: async () => {
+      // Refetch em background para obter o estado real do servidor
+      await queryClient.refetchQueries({
+        queryKey: kanbanQueryKeys.cards(boardId),
+      })
+    },
     onError: (_error, _variables, context) => {
       if (context?.previousCards) {
         queryClient.setQueryData(
@@ -367,8 +375,7 @@ export function useMoveCard(boardId: string) {
           context.previousCards
         )
       }
-    },
-    onSettled: () => {
+      // Invalida em caso de erro para recarregar
       queryClient.invalidateQueries({
         queryKey: kanbanQueryKeys.cards(boardId),
       })

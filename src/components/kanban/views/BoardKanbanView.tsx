@@ -2,33 +2,33 @@ import {
   DndContext,
   DragOverlay,
   PointerSensor,
-  closestCorners,
+  KeyboardSensor,
+  pointerWithin,
   useDroppable,
   useSensor,
   useSensors,
+  type Announcements,
   type DragCancelEvent,
   type DragEndEvent,
   type DragStartEvent,
-  type Modifier,
 } from '@dnd-kit/core'
+import { snapCenterToCursor } from '@dnd-kit/modifiers'
 import {
   SortableContext,
   horizontalListSortingStrategy,
+  sortableKeyboardCoordinates,
   useSortable,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { Button } from '@/components/ui/button'
-import {
-  ContextMenu,
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuTrigger,
-} from '@/components/ui/context-menu'
 import { cn } from '@/lib/utils'
 import type { KanbanCard, KanbanColumn } from '@/types/common'
-import { Plus, Trash2 } from 'lucide-react'
+import { Plus, ArrowDown, ArrowUp, Minus, Paperclip, Calendar } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
 import { useMemo, useState, useCallback } from 'react'
-import { CardContent } from './board-shared'
+import { KanbanCardItem } from '../card/KanbanCardItem'
+import { formatCardDueDate } from './card-date'
+import { getTagBadgeStyle } from '../tags/utils'
 import { AddTaskDialog } from '../AddTaskDialog'
 import { getColumnIconComponent } from '@/components/kanban/column-icon-options'
 import {
@@ -68,36 +68,6 @@ function hexToRgba(hex: string | null | undefined, alpha: number) {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`
 }
 
-// Custom modifier to center overlay on cursor
-const snapCenterToCursor: Modifier = ({
-  activatorEvent,
-  draggingNodeRect,
-  transform,
-}) => {
-  if (draggingNodeRect && activatorEvent) {
-    const activatorCoordinates = {
-      x: (activatorEvent as MouseEvent).clientX,
-      y: (activatorEvent as MouseEvent).clientY,
-    }
-
-    return {
-      ...transform,
-      x:
-        transform.x +
-        activatorCoordinates.x -
-        draggingNodeRect.left -
-        draggingNodeRect.width / 2,
-      y:
-        transform.y +
-        activatorCoordinates.y -
-        draggingNodeRect.top -
-        draggingNodeRect.height / 2,
-    }
-  }
-
-  return transform
-}
-
 export function BoardKanbanView({
   columns,
   columnOrder,
@@ -120,7 +90,10 @@ export function BoardKanbanView({
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
-      activationConstraint: { distance: 3 },
+      activationConstraint: { distance: 8 },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
     })
   )
 
@@ -145,14 +118,64 @@ export function BoardKanbanView({
     [onCreateTask]
   )
 
+  // Accessibility announcements for screen readers
+  const announcements: Announcements = useMemo<Announcements>(
+    () => ({
+      onDragStart() {
+        const card = activeCard
+        if (!card) return ''
+        return `Picked up draggable card ${card.title}.`
+      },
+      onDragOver({ over }) {
+        const card = activeCard
+        if (!card || !over) return ''
+        
+        const overId = over.id.toString()
+        if (overId.includes('column')) {
+          const columnId = overId.replace('column-', '').replace('-cards', '').replace('-end', '')
+          const column = columnsMap.get(columnId)
+          if (column) {
+            return `Dragging card ${card.title} over column ${column.title}.`
+          }
+        }
+        return `Dragging card ${card.title}.`
+      },
+      onDragEnd({ over }) {
+        const card = activeCard
+        if (!card) return ''
+        
+        if (!over) {
+          return `Dragging cancelled. Card ${card.title} was not moved.`
+        }
+        
+        const overId = over.id.toString()
+        if (overId.includes('column')) {
+          const columnId = overId.replace('column-', '').replace('-cards', '').replace('-end', '')
+          const column = columnsMap.get(columnId)
+          if (column) {
+            return `Card ${card.title} was moved to column ${column.title}.`
+          }
+        }
+        return `Card ${card.title} was moved.`
+      },
+      onDragCancel() {
+        const card = activeCard
+        if (!card) return ''
+        return `Dragging cancelled. Card ${card.title} was dropped.`
+      },
+    }),
+    [activeCard, columnsMap]
+  )
+
   return (
     <>
       <DndContext
         sensors={sensors}
-        collisionDetection={closestCorners}
+        collisionDetection={pointerWithin}
         onDragStart={onDragStart}
         onDragCancel={onDragCancel}
         onDragEnd={onDragEnd}
+        accessibility={{ announcements }}
       >
         <SortableContext
           items={columnOrder.map(id => `column-${id}`)}
@@ -181,7 +204,13 @@ export function BoardKanbanView({
             })}
           </div>
         </SortableContext>
-        <DragOverlay dropAnimation={null} modifiers={[snapCenterToCursor]}>
+        <DragOverlay 
+          dropAnimation={{
+            duration: 200,
+            easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)',
+          }}
+          modifiers={[snapCenterToCursor]}
+        >
           {activeCard ? <CardOverlay card={activeCard} /> : null}
         </DragOverlay>
       </DndContext>
@@ -201,9 +230,119 @@ export function BoardKanbanView({
 }
 
 function CardOverlay({ card }: { card: KanbanCard }) {
+  const tagList = card.tags ?? []
+  const displayTags = tagList.slice(0, 3)
+  const remainingTags = tagList.length - displayTags.length
+  const dueDateLabel = formatCardDueDate(card.dueDate)
+  const hasAttachments = card.attachments && card.attachments.length > 0
+
+  const priorityConfig = {
+    low: {
+      label: 'Low',
+      className:
+        'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-400 dark:border-emerald-800',
+      icon: ArrowDown,
+    },
+    medium: {
+      label: 'Medium',
+      className:
+        'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/50 dark:text-amber-400 dark:border-amber-800',
+      icon: Minus,
+    },
+    high: {
+      label: 'High',
+      className:
+        'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/50 dark:text-rose-400 dark:border-rose-800',
+      icon: ArrowUp,
+    },
+  }[card.priority]
+
+  const PriorityIcon = priorityConfig.icon
+
   return (
-    <div className="pointer-events-none flex w-[280px] flex-col rounded-[1.75rem] border border-border bg-card p-5 shadow-2xl">
-      <CardContent card={card} />
+    <div 
+      className="pointer-events-none w-full flex flex-col gap-4 rounded-2xl border-2 border-primary/40 bg-card p-4 shadow-2xl ring-2 ring-primary/20"
+      style={{
+        transform: 'rotate(2deg) scale(1.05)',
+        transition: 'transform 200ms cubic-bezier(0.18, 0.67, 0.6, 1.22)',
+      }}
+    >
+      {/* Header: Tags */}
+      {tagList.length > 0 && (
+        <div className="flex flex-wrap items-center gap-1.5">
+          {displayTags.map(tag => {
+            const badgeStyle = getTagBadgeStyle(tag)
+            return (
+              <Badge
+                key={tag.id}
+                variant="secondary"
+                className="rounded-md px-2.5 py-0.5 text-xs font-medium border"
+                style={
+                  tag.color
+                    ? {
+                        backgroundColor: `${tag.color}15`,
+                        color: badgeStyle?.color,
+                        borderColor: `${tag.color}40`,
+                      }
+                    : undefined
+                }
+              >
+                {tag.label}
+              </Badge>
+            )
+          })}
+          {remainingTags > 0 && (
+            <Badge
+              variant="outline"
+              className="rounded-md px-2.5 py-0.5 text-xs font-medium"
+            >
+              +{remainingTags}
+            </Badge>
+          )}
+        </div>
+      )}
+
+      {/* Content: Title & Description */}
+      <div className="flex flex-col gap-2">
+        <h3 className="text-base font-semibold leading-tight text-foreground line-clamp-2">
+          {card.title}
+        </h3>
+        {card.description && (
+          <p className="text-sm leading-relaxed text-muted-foreground line-clamp-2">
+            {card.description}
+          </p>
+        )}
+      </div>
+
+      {/* Footer: Metadata */}
+      <div className="flex items-center gap-2 flex-wrap pt-1 border-t border-border/50">
+        {/* Priority Badge */}
+        <div
+          className={cn(
+            'inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium border',
+            priorityConfig.className
+          )}
+        >
+          <PriorityIcon className="h-3 w-3" />
+          <span>{priorityConfig.label}</span>
+        </div>
+
+        {/* Due Date */}
+        {dueDateLabel && (
+          <div className="inline-flex items-center gap-1.5 rounded-md border border-border/60 bg-muted/50 px-2.5 py-1 text-xs font-medium text-foreground">
+            <Calendar className="h-3 w-3" />
+            <span>{dueDateLabel}</span>
+          </div>
+        )}
+
+        {/* Attachments */}
+        {hasAttachments && (
+          <div className="inline-flex items-center gap-1.5 rounded-md border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700 dark:border-blue-800 dark:bg-blue-950/50 dark:text-blue-400">
+            <Paperclip className="h-3 w-3" />
+            <span>{card.attachments?.length}</span>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
@@ -310,7 +449,7 @@ function DraggableColumn({
         {columnCards.length > 0 ? (
           <>
             {columnCards.map(card => (
-              <DraggableCard
+              <KanbanCardItem
                 key={card.id}
                 card={card}
                 onSelect={onCardSelect}
@@ -343,74 +482,6 @@ function DraggableColumn({
   )
 }
 
-function DraggableCard({
-  card,
-  onSelect,
-  isSelected,
-  onDelete,
-}: {
-  card: KanbanCard
-  onSelect?: (card: KanbanCard) => void
-  isSelected: boolean
-  onDelete?: (card: KanbanCard) => void
-}) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: `card-${card.id}` })
-
-  const style: React.CSSProperties = {
-    transform: transform ? CSS.Transform.toString(transform) : undefined,
-    transition: isDragging
-      ? 'none'
-      : (transition ?? 'transform 220ms cubic-bezier(0.2, 0, 0, 1)'),
-    opacity: isDragging ? 0.4 : undefined,
-    cursor: isDragging ? 'grabbing' : 'grab',
-    willChange: 'transform',
-    zIndex: isDragging ? 30 : undefined,
-  }
-
-  return (
-    <ContextMenu>
-      <ContextMenuTrigger asChild>
-        <button
-          type="button"
-          ref={setNodeRef}
-          style={style}
-          {...attributes}
-          {...listeners}
-          onClick={() => onSelect?.(card)}
-          aria-pressed={isSelected}
-          aria-expanded={isSelected}
-          aria-controls="task-details-panel"
-          className={cn(
-            'flex flex-col rounded-[1.75rem] border border-border bg-card p-5 text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 active:cursor-grabbing w-full',
-            isSelected && 'bg-primary/10 dark:bg-primary/15',
-            isDragging && 'shadow-lg'
-          )}
-        >
-          <CardContent card={card} />
-        </button>
-      </ContextMenuTrigger>
-      <ContextMenuContent>
-        <ContextMenuItem
-          variant="destructive"
-          onSelect={event => {
-            event.preventDefault()
-            onDelete?.(card)
-          }}
-        >
-          <Trash2 className="h-4 w-4" />
-          Delete task
-        </ContextMenuItem>
-      </ContextMenuContent>
-    </ContextMenu>
-  )
-}
 
 function EmptyColumnDropZone({
   columnId,
