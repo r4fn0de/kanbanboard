@@ -71,7 +71,7 @@ export function HomeWelcome() {
       <div className="flex flex-col gap-2">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-            Welcome to Kanbanboard
+            Welcome to Modulo
           </h1>
           <p className="text-sm text-muted-foreground">
             Organize your work, keep projects on track, and stay focused

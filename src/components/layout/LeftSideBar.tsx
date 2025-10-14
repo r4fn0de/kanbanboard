@@ -680,7 +680,7 @@ export function LeftSideBar({
             >
               <SelectTrigger
                 className={cn(
-                  'w-full border-0 bg-transparent px-2.5 py-2 text-left shadow-none focus:ring-0 focus:ring-offset-0 min-w-0 hover:bg-accent/50 rounded-lg transition-colors',
+                  'w-full border-0 bg-transparent px-2.5 py-2 text-left focus:ring-0 focus:ring-offset-0 min-w-0 hover:bg-accent/50 rounded-lg transition-colors',
                   useTransparentStyle &&
                     'text-white hover:text-white hover:bg-white/[0.08]'
                 )}
@@ -763,7 +763,7 @@ export function LeftSideBar({
               <DragOverlay dropAnimation={dropAnimation}>
                 {activeWorkspace ? (
                   <div
-                    className="flex items-center gap-2 rounded-md bg-background border border-border/20 shadow-xl px-2 py-2 min-w-[180px] cursor-grabbing"
+                    className="flex items-center gap-2 rounded-md bg-background border border-border/20 px-2 py-2 min-w-[180px] cursor-grabbing"
                     style={{ zIndex: 10000 }}
                   >
                     <GripVertical className="h-4 w-4 text-muted-foreground/40 flex-shrink-0" />
@@ -808,10 +808,10 @@ export function LeftSideBar({
               'flex items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring border',
               useTransparentStyle
                 ? isActive
-                  ? 'bg-white/20 text-white shadow-lg shadow-black/10 backdrop-blur-md border-white/10'
+                  ? 'bg-white/20 text-white backdrop-blur-md border-white/10'
                   : 'text-white/90 hover:bg-white/10 hover:backdrop-blur-sm border-transparent'
                 : isActive
-                  ? 'bg-accent text-accent-foreground shadow-sm border-transparent'
+                  ? 'bg-accent text-accent-foreground border-transparent'
                   : 'text-foreground hover:bg-accent/80 border-transparent'
             )
           }
@@ -907,10 +907,10 @@ export function LeftSideBar({
                             'flex grow items-center gap-2.5 rounded-lg px-3 py-1.5 text-left text-sm transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring border',
                             useTransparentStyle
                               ? isActive
-                                ? 'bg-white/20 text-white shadow-lg shadow-black/10 backdrop-blur-md border-white/10'
+                                ? 'bg-white/20 text-white backdrop-blur-md border-white/10'
                                 : 'text-white/90 hover:bg-white/10 hover:backdrop-blur-sm border-transparent'
                               : isActive
-                                ? 'bg-accent text-accent-foreground shadow-sm border-transparent'
+                                ? 'bg-accent text-accent-foreground border-transparent'
                                 : 'text-foreground hover:bg-accent/80 border-transparent'
                           )
                         }
@@ -919,7 +919,7 @@ export function LeftSideBar({
                           <span className="text-base">{board.emoji}</span>
                         ) : (
                           <IconComponent
-                            className="h-3.5 w-3.5"
+                            className="h-4 w-4"
                             style={{ color: projectColor }}
                           />
                         )}
@@ -1278,7 +1278,7 @@ export function LeftSideBar({
             {/* Visual Preview */}
             <div className="flex items-center justify-center gap-4 py-4">
               <div
-                className="relative flex h-16 w-16 items-center justify-center rounded-2xl shadow-lg transition-all duration-200"
+                className="relative flex h-16 w-16 items-center justify-center rounded-2xl transition-all duration-200"
                 style={{
                   backgroundColor: settingsUseEmoji ? settingsProjectColor : 'transparent',
                   transform: 'scale(1)',
@@ -1324,7 +1324,7 @@ export function LeftSideBar({
                   className={cn(
                     'flex-1 rounded-md px-4 py-2 text-sm font-medium transition-colors',
                     !settingsUseEmoji
-                      ? 'bg-primary text-primary-foreground shadow-sm'
+                      ? 'bg-primary text-primary-foreground'
                       : 'bg-muted/50 text-muted-foreground hover:bg-muted'
                   )}
                 >
@@ -1336,7 +1336,7 @@ export function LeftSideBar({
                   className={cn(
                     'flex-1 rounded-md px-4 py-2 text-sm font-medium transition-colors',
                     settingsUseEmoji
-                      ? 'bg-primary text-primary-foreground shadow-sm'
+                      ? 'bg-primary text-primary-foreground'
                       : 'bg-muted/50 text-muted-foreground hover:bg-muted'
                   )}
                 >
@@ -1557,7 +1557,7 @@ export function LeftSideBar({
             {/* Visual Preview */}
             <div className="flex items-center justify-center gap-4 py-6">
               <div
-                className="relative flex h-20 w-20 items-center justify-center rounded-2xl shadow-lg transition-all duration-200"
+                className="relative flex h-20 w-20 items-center justify-center rounded-2xl transition-all duration-200"
                 style={{
                   backgroundColor: useEmoji ? projectColor : 'transparent',
                   transform: 'scale(1)',
@@ -1603,7 +1603,7 @@ export function LeftSideBar({
                   className={cn(
                     'flex-1 rounded-md px-4 py-2 text-sm font-medium transition-colors',
                     !useEmoji
-                      ? 'bg-primary text-primary-foreground shadow-sm'
+                      ? 'bg-primary text-primary-foreground'
                       : 'bg-muted/50 text-muted-foreground hover:bg-muted'
                   )}
                 >
@@ -1615,7 +1615,7 @@ export function LeftSideBar({
                   className={cn(
                     'flex-1 rounded-md px-4 py-2 text-sm font-medium transition-colors',
                     useEmoji
-                      ? 'bg-primary text-primary-foreground shadow-sm'
+                      ? 'bg-primary text-primary-foreground'
                       : 'bg-muted/50 text-muted-foreground hover:bg-muted'
                   )}
                 >

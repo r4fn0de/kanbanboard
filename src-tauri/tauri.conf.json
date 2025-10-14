@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "kanbanboard",
+  "productName": "Modulo",
   "version": "0.1.0",
-  "identifier": "com.kanbanboard.app",
+  "identifier": "com.modulo.app",
   "build": {
     "removeUnusedCommands": true,
     "beforeDevCommand": "npm run dev",
@@ -13,7 +13,7 @@
   "app": {
     "windows": [
       {
-        "title": "kanbanboard",
+        "title": "Modulo",
         "width": 800,
         "height": 600,
         "minWidth": 1000,
@@ -52,8 +52,8 @@
     ],
     "publisher": "Rafael Porto",
     "category": "DeveloperTool",
-    "shortDescription": "A Tauri React template application",
-    "longDescription": "A modern Tauri React template with comprehensive boilerplate code, TypeScript, Tailwind CSS, and shadcn/ui components.",
+    "shortDescription": "A Offline Workspace App",
+    "longDescription": "A modern Workspace App made for users to create, edit, and manage their projects offline.",
     "copyright": "Copyright © 2025 Rafael Porto. All rights reserved.",
     "macOS": {
       "frameworks": [],
@@ -68,7 +68,7 @@
     "updater": {
       "active": true,
       "endpoints": [
-        "https://github.com/rafaelporto/kanbanboard/releases/latest/download/latest.json"
+        "https://github.com/rafaelporto/modulo/releases/latest/download/latest.json"
       ],
       "dialog": true,
       "pubkey": "YOUR_UPDATER_PUBLIC_KEY_HERE"
