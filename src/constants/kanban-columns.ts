@@ -45,3 +45,6 @@ export const FALLBACK_COLUMN_COLORS = [
   '#EC4899',
   '#8B5CF6',
 ] as const
+
+// Default monochromatic color when user doesn't select a color
+export const DEFAULT_MONOCHROMATIC_COLOR = '#64748B' as const

@@ -18,7 +18,7 @@ import { toast } from 'sonner'
 import {
   COLUMN_COLOR_OPTIONS,
   DEFAULT_COLUMN_ICON,
-  FALLBACK_COLUMN_COLORS,
+  DEFAULT_MONOCHROMATIC_COLOR,
 } from '@/constants/kanban-columns'
 import {
   COLUMN_ICON_OPTIONS,
@@ -31,6 +31,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
@@ -49,14 +60,21 @@ import {
 } from '@/components/ui/command'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 import type { KanbanColumn } from '@/types/common'
 import {
   useMoveColumn,
   useUpdateColumn,
   useCreateColumn,
+  useDeleteColumn,
 } from '@/services/kanban'
-import { Check, GripVertical, Edit2, X, Plus } from 'lucide-react'
+import { Check, GripVertical, Edit2, X, Plus, Trash2 } from 'lucide-react'
 
 interface ColumnWithMeta extends KanbanColumn {
   cardCount: number
@@ -90,6 +108,7 @@ export function ColumnManagerDialog({
   const moveColumn = useMoveColumn(boardId)
   const updateColumn = useUpdateColumn(boardId)
   const createColumn = useCreateColumn(boardId)
+  const deleteColumn = useDeleteColumn(boardId)
 
   const [isCreatingNew, setIsCreatingNew] = useState(false)
   const [newColumnTitle, setNewColumnTitle] = useState('')
@@ -163,7 +182,7 @@ export function ColumnManagerDialog({
         boardId,
         title: newColumnTitle.trim(),
         icon: newColumnIcon,
-        color: newColumnColor,
+        color: newColumnColor || DEFAULT_MONOCHROMATIC_COLOR,
         position: columns.length,
       })
 
@@ -196,7 +215,8 @@ export function ColumnManagerDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <TooltipProvider>
+      <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-96 sm:max-w-lg lg:max-w-xl">
         <DialogHeader>
           <DialogTitle>Manage columns</DialogTitle>
@@ -230,8 +250,8 @@ export function ColumnManagerDialog({
                       type="button"
                       className="flex items-center justify-center w-10 h-10 rounded-lg border-2 hover:border-muted-foreground/30"
                       style={{
-                        backgroundColor: newColumnColor ?? 'transparent',
-                        borderColor: newColumnColor ?? '',
+                        backgroundColor: newColumnColor ?? DEFAULT_MONOCHROMATIC_COLOR,
+                        borderColor: newColumnColor ?? DEFAULT_MONOCHROMATIC_COLOR,
                         transition: 'border-color 150ms ease-in-out',
                       }}
                       disabled={createColumn.isPending}
@@ -243,7 +263,7 @@ export function ColumnManagerDialog({
                           <IconComponent
                             className="h-5 w-5"
                             style={{
-                              color: newColumnColor ? 'white' : 'currentColor',
+                              color: 'white',
                             }}
                           />
                         )
@@ -375,6 +395,23 @@ export function ColumnManagerDialog({
                         throw error
                       }
                     }}
+                    onDelete={async () => {
+                      try {
+                        await deleteColumn.mutateAsync({
+                          id: column.id,
+                          boardId: column.boardId,
+                        })
+                        toast.success('Column deleted successfully')
+                      } catch (error) {
+                        toast.error('Failed to delete column', {
+                          description:
+                            error instanceof Error
+                              ? error.message
+                              : 'Unknown error',
+                        })
+                        throw error
+                      }
+                    }}
                   />
                 ))}
               </div>
@@ -383,6 +420,7 @@ export function ColumnManagerDialog({
         </ScrollArea>
       </DialogContent>
     </Dialog>
+  </TooltipProvider>
   )
 }
 
@@ -397,18 +435,21 @@ interface ColumnManagerRowProps {
   column: ColumnWithMeta
   isUpdating: boolean
   onUpdate: (changes: Partial<ColumnManagerChanges>) => Promise<void>
+  onDelete: () => Promise<void>
 }
 
 function ColumnManagerRow({
   column,
   isUpdating,
   onUpdate,
+  onDelete,
 }: ColumnManagerRowProps) {
   const [title, setTitle] = useState(column.title)
   const [color, setColor] = useState<string | null>(column.color ?? null)
   const [icon, setIcon] = useState<string>(column.icon ?? DEFAULT_COLUMN_ICON)
   const [isEnabled, setIsEnabled] = useState<boolean>(column.isEnabled)
   const [isEditingTitle, setIsEditingTitle] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
   useEffect(() => {
     setTitle(column.title)
@@ -436,7 +477,7 @@ function ColumnManagerRow({
   } = useSortable({ id: column.id })
 
   const IconComponent = getColumnIconComponent(icon)
-  const accentColor = color ?? FALLBACK_COLUMN_COLORS[0]
+  const accentColor = color ?? DEFAULT_MONOCHROMATIC_COLOR
 
   const handleTitleBlur = async () => {
     const trimmed = title.trim()
@@ -506,6 +547,15 @@ function ColumnManagerRow({
     }
   }
 
+  const handleDelete = async () => {
+    setShowDeleteConfirm(false)
+    try {
+      await onDelete()
+    } catch {
+      // Error is handled by the parent component
+    }
+  }
+
   return (
     <div
       ref={setNodeRef}
@@ -535,15 +585,15 @@ function ColumnManagerRow({
               type="button"
               className="flex items-center justify-center w-10 h-10 rounded-lg border-2 hover:border-muted-foreground/30"
               style={{
-                backgroundColor: color ?? 'transparent',
-                borderColor: color ?? '',
+                backgroundColor: color ?? DEFAULT_MONOCHROMATIC_COLOR,
+                borderColor: color ?? DEFAULT_MONOCHROMATIC_COLOR,
                 transition: 'border-color 150ms ease-in-out',
               }}
               disabled={isUpdating}
             >
               <IconComponent
                 className="h-5 w-5"
-                style={{ color: color ? 'white' : 'currentColor' }}
+                style={{ color: 'white' }}
               />
             </button>
           </PopoverTrigger>
@@ -681,6 +731,60 @@ function ColumnManagerRow({
             <span className="text-xs text-muted-foreground mt-1">Hidden</span>
           ) : null}
         </div>
+        <Tooltip>
+          <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+            <TooltipTrigger asChild>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant={column.cardCount > 0 || isUpdating ? "ghost" : "destructive"}
+                  size="sm"
+                  disabled={isUpdating || column.cardCount > 0}
+                  className={cn(
+                    "h-8 w-8 p-0",
+                    column.cardCount > 0 || isUpdating && "opacity-50 cursor-not-allowed"
+                  )}
+                >
+                  <Trash2 className={cn(
+                    "h-4 w-4",
+                    column.cardCount > 0 || isUpdating ? "" : "text-white"
+                  )} />
+                </Button>
+              </AlertDialogTrigger>
+            </TooltipTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Column</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete the column &ldquo;{title}&rdquo;? This action cannot be undone.
+                {column.cardCount > 0 && (
+                  <span className="block mt-2 text-destructive font-medium">
+                    This column contains {column.cardCount} task(s). Please move or delete all tasks before deleting the column.
+                  </span>
+                )}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDelete}
+                disabled={column.cardCount > 0}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+          <TooltipContent>
+            {isUpdating
+              ? "Please wait..."
+              : column.cardCount > 0 
+              ? `Cannot delete column with ${column.cardCount} task${column.cardCount === 1 ? '' : 's'}`
+              : "Delete column"
+            }
+          </TooltipContent>
+        </AlertDialog>
+      </Tooltip>
+        
         <Switch
           checked={isEnabled}
           onCheckedChange={handleToggle}

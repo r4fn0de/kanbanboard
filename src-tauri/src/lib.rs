@@ -1753,6 +1753,65 @@ async fn update_column(pool: State<'_, DbPool>, args: UpdateColumnArgs) -> Resul
 }
 
 #[tauri::command]
+async fn delete_column(
+    pool: State<'_, DbPool>,
+    id: String,
+    board_id: String,
+) -> Result<(), String> {
+    let mut tx = pool
+        .begin()
+        .await
+        .map_err(|e| format!("Falha ao abrir transação: {e}"))?;
+
+    // Check if column exists and belongs to the board
+    let existing_board =
+        sqlx::query_scalar::<_, Option<String>>("SELECT board_id FROM kanban_columns WHERE id = ?")
+            .bind(&id)
+            .fetch_one(&mut *tx)
+            .await
+            .map_err(|e| format!("Falha ao carregar coluna: {e}"))?
+            .ok_or_else(|| "Coluna não encontrada.".to_string())?;
+
+    if existing_board != board_id {
+        return Err("A coluna não pertence ao quadro informado.".to_string());
+    }
+
+    // Check if column has any cards
+    let card_count = sqlx::query_scalar::<_, i64>(
+        "SELECT COUNT(*) FROM kanban_cards WHERE column_id = ? AND archived_at IS NULL"
+    )
+    .bind(&id)
+    .fetch_one(&mut *tx)
+    .await
+    .map_err(|e| format!("Falha ao contar cartões da coluna: {e}"))?;
+
+    if card_count > 0 {
+        return Err(format!(
+            "Não é possível excluir a coluna pois ela possui {} cartão(es). Mova ou exclua os cartões primeiro.",
+            card_count
+        ));
+    }
+
+    // Delete the column
+    sqlx::query("DELETE FROM kanban_columns WHERE id = ?")
+        .bind(&id)
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| format!("Falha ao excluir coluna: {e}"))?;
+
+    // Normalize positions of remaining columns
+    normalize_column_positions_tx(&mut tx, &board_id)
+        .await
+        .map_err(|e| format!("Falha ao normalizar posições das colunas: {e}"))?;
+
+    tx.commit()
+        .await
+        .map_err(|e| format!("Falha ao confirmar transação: {e}"))?;
+
+    Ok(())
+}
+
+#[tauri::command]
 async fn load_cards(pool: State<'_, DbPool>, board_id: String) -> Result<Vec<Value>, String> {
     sqlx::query(
         "SELECT
@@ -2939,6 +2998,7 @@ pub fn run() {
             load_columns,
             create_column,
             update_column,
+            delete_column,
             move_column,
             load_cards,
             load_tags,

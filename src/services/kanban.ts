@@ -464,6 +464,18 @@ export async function moveColumn(input: MoveColumnInput): Promise<void> {
   })
 }
 
+export interface DeleteColumnInput {
+  id: string
+  boardId: string
+}
+
+export async function deleteColumn(input: DeleteColumnInput): Promise<void> {
+  await invoke('delete_column', {
+    id: input.id,
+    boardId: input.boardId,
+  })
+}
+
 export async function fetchCards(boardId: string): Promise<KanbanCard[]> {
   return invoke<KanbanCard[]>('load_cards', { boardId })
 }
@@ -853,6 +865,55 @@ export function useUpdateColumn(boardId: string) {
     onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: kanbanQueryKeys.columns(boardId),
+      })
+    },
+  })
+}
+
+export function useDeleteColumn(boardId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: deleteColumn,
+    onMutate: async input => {
+      const columnsKey = kanbanQueryKeys.columns(boardId)
+      const cardsKey = kanbanQueryKeys.cards(boardId)
+
+      await queryClient.cancelQueries({ queryKey: columnsKey })
+      await queryClient.cancelQueries({ queryKey: cardsKey })
+
+      const previousColumns =
+        queryClient.getQueryData<KanbanColumn[]>(columnsKey)
+      const previousCards = queryClient.getQueryData<KanbanCard[]>(cardsKey)
+
+      if (previousColumns) {
+        const updatedColumns = previousColumns.filter(
+          column => column.id !== input.id
+        )
+        queryClient.setQueryData<KanbanColumn[]>(columnsKey, updatedColumns)
+      }
+
+      return { previousColumns, previousCards }
+    },
+    onError: (_error, _variables, context) => {
+      if (context?.previousColumns) {
+        queryClient.setQueryData(
+          kanbanQueryKeys.columns(boardId),
+          context.previousColumns
+        )
+      }
+      if (context?.previousCards) {
+        queryClient.setQueryData(
+          kanbanQueryKeys.cards(boardId),
+          context.previousCards
+        )
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({
+        queryKey: kanbanQueryKeys.columns(boardId),
+      })
+      queryClient.invalidateQueries({
+        queryKey: kanbanQueryKeys.cards(boardId),
       })
     },
   })
