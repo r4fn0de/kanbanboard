@@ -231,9 +231,9 @@ export function TaskDetailsPanel({
       />
 
       {/* Right panel */}
-      <div className="w-96 h-full bg-muted flex flex-col rounded-[2rem] border border-border">
+      <div className="w-96 h-full bg-muted flex flex-col rounded-2xl border border-border">
         {/* Header */}
-        <div className="p-6 border-b border-border bg-card rounded-t-[2rem]">
+        <div className="p-6 border-b border-border bg-card rounded-t-2xl">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold">Task Details</h2>
             <button
@@ -251,7 +251,7 @@ export function TaskDetailsPanel({
           </div>
 
           <div className="flex items-center gap-3">
-            <Badge variant="secondary" className="text-xs">
+            <Badge variant="secondary" className="text-xs rounded-lg">
               {column.title}
             </Badge>
             <PriorityBadge priority={card.priority} />
@@ -342,6 +342,7 @@ export function TaskDetailsPanel({
               disabled={
                 updateCard.isPending || updateCardTagsMutation.isPending
               }
+              className="[&_button[aria-expanded]]:rounded-2xl"
             />
           </div>
 
@@ -390,7 +391,7 @@ export function TaskDetailsPanel({
         </div>
 
         {/* Footer */}
-        <div className="p-6 border-t border-border bg-card rounded-b-[2rem]">
+        <div className="p-6 border-t border-border bg-card rounded-b-2xl">
           <p className="text-sm text-muted-foreground">
             Created:{' '}
             {card.createdAt

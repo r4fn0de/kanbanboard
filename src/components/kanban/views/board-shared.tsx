@@ -45,7 +45,7 @@ export function PriorityBadge({
   return (
     <Badge
       className={cn(
-        'rounded-full px-3 py-1 text-xs font-semibold leading-none flex items-center gap-1',
+        'rounded-lg px-3 py-1 text-xs font-semibold leading-none flex items-center gap-1',
         variant.className
       )}
     >

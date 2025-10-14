@@ -40,20 +40,17 @@ const PRIORITY_CONFIG: Record<
 > = {
   low: {
     label: 'Low',
-    className:
-      'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-400 dark:border-emerald-800',
+    className: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400',
     icon: ArrowDown,
   },
   medium: {
     label: 'Medium',
-    className:
-      'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/50 dark:text-amber-400 dark:border-amber-800',
+    className: 'bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-400',
     icon: Minus,
   },
   high: {
     label: 'High',
-    className:
-      'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/50 dark:text-rose-400 dark:border-rose-800',
+    className: 'bg-rose-100 text-rose-700 dark:bg-rose-950/50 dark:text-rose-400',
     icon: ArrowUp,
   },
 }
@@ -127,13 +124,12 @@ export function KanbanCardItem({
                   <Badge
                     key={tag.id}
                     variant="secondary"
-                    className="rounded-md px-2.5 py-0.5 text-xs font-medium border"
+                    className="rounded-lg px-2.5 py-0.5 text-xs font-medium"
                     style={
                       tag.color
                         ? {
-                            backgroundColor: `${tag.color}15`,
+                            backgroundColor: `${tag.color}30`,
                             color: badgeStyle?.color,
-                            borderColor: `${tag.color}40`,
                           }
                         : undefined
                     }
@@ -144,8 +140,8 @@ export function KanbanCardItem({
               })}
               {remainingTags > 0 && (
                 <Badge
-                  variant="outline"
-                  className="rounded-md px-2.5 py-0.5 text-xs font-medium"
+                  variant="secondary"
+                  className="rounded-lg px-2.5 py-0.5 text-xs font-medium"
                 >
                   +{remainingTags}
                 </Badge>
@@ -170,7 +166,7 @@ export function KanbanCardItem({
             {/* Priority Badge */}
             <div
               className={cn(
-                'inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium border',
+                'inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-medium',
                 priorityConfig.className
               )}
             >
@@ -180,7 +176,7 @@ export function KanbanCardItem({
 
             {/* Due Date */}
             {dueDateLabel && (
-              <div className="inline-flex items-center gap-1.5 rounded-md border border-border/60 bg-muted/50 px-2.5 py-1 text-xs font-medium text-foreground">
+              <div className="inline-flex items-center gap-1.5 rounded-lg bg-muted/50 px-2.5 py-1 text-xs font-medium text-foreground">
                 <Calendar className="h-3 w-3" />
                 <span>{dueDateLabel}</span>
               </div>
@@ -188,7 +184,7 @@ export function KanbanCardItem({
 
             {/* Attachments */}
             {hasAttachments && (
-              <div className="inline-flex items-center gap-1.5 rounded-md border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700 dark:border-blue-800 dark:bg-blue-950/50 dark:text-blue-400">
+              <div className="inline-flex items-center gap-1.5 rounded-lg bg-blue-100 px-2.5 py-1 text-xs font-medium text-blue-700 dark:bg-blue-950/50 dark:text-blue-400">
                 <Paperclip className="h-3 w-3" />
                 <span>{card.attachments?.length}</span>
               </div>

@@ -98,7 +98,7 @@ export function BoardTimelineView({
   if (groups.length === 0) {
     return (
       <div className="flex flex-1 items-center justify-center rounded-[2rem] border border-dashed border-border bg-muted/50 p-10 text-center text-sm text-muted-foreground">
-        No cards have been added to this board yet.
+        No tasks have been added to this timeline yet.
       </div>
     )
   }
@@ -124,7 +124,7 @@ export function BoardTimelineView({
                 </p>
                 <p className="text-xs text-muted-foreground">
                   {group.cards.length}{' '}
-                  {group.cards.length === 1 ? 'card' : 'cards'}
+                  {group.cards.length === 1 ? 'task' : 'tasks'}
                 </p>
               </div>
             </div>

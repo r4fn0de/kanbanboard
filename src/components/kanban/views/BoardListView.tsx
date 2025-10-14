@@ -286,7 +286,7 @@ export function BoardListView({
                       className="flex items-center justify-center gap-2 rounded-2xl bg-card py-3 text-sm font-medium text-card-foreground transition disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       <Plus className="mr-2 h-4 w-4" />
-                      Add first card
+                      Add first task
                     </Button>
                   </div>
                 )}

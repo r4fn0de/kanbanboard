@@ -201,13 +201,12 @@ export function TagSelector({
             return (
               <Badge
                 key={tag.id}
-                className="rounded-full px-3 py-1 text-xs font-semibold leading-none opacity-100"
+                className="rounded-lg px-3 py-1 text-xs font-semibold leading-none"
                 style={
                   tag.color
                     ? {
-                        backgroundColor: tag.color,
+                        backgroundColor: `${tag.color}30`,
                         color: badgeStyle?.color,
-                        borderColor: tag.color,
                       }
                     : undefined
                 }
@@ -320,15 +319,14 @@ export function TagSelector({
                                 />
                                 <span
                                   className={cn(
-                                    'truncate font-semibold leading-none rounded-full px-3 py-1 text-xs',
+                                    'truncate font-semibold leading-none rounded-lg px-3 py-1 text-xs',
                                     selected && !tag.color && 'font-bold'
                                   )}
                                   style={
                                     tag.color
                                       ? {
-                                          backgroundColor: tag.color,
+                                          backgroundColor: `${tag.color}30`,
                                           color: textColor,
-                                          borderColor: tag.color,
                                         }
                                       : undefined
                                   }

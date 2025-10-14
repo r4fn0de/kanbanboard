@@ -224,11 +224,7 @@ export function AddTaskDialog({
             </div>
 
             <div className="flex flex-wrap items-center gap-3">
-              <div className="flex items-center gap-2 rounded-full border px-3 py-2 text-sm">
-                <ColumnIcon
-                  className="h-4 w-4"
-                  style={{ color: columnAccent }}
-                />
+              <div className="flex items-center gap-2 rounded-full border px-3 py-2 text-sm transition-colors hover:bg-accent/50">
                 <span className="font-medium text-foreground">
                   {column ? column.title : 'Column'}
                 </span>
@@ -243,7 +239,7 @@ export function AddTaskDialog({
                 disabled={isCreating}
                 items={priorityItems}
               >
-                <Select.Trigger className="h-auto w-28 border-none bg-transparent px-2 py-0 text-sm font-medium shadow-none focus:ring-0 focus:ring-offset-0">
+                <Select.Trigger className="h-auto w-auto rounded-full border bg-transparent px-3 py-2 text-sm font-medium shadow-none transition-colors hover:bg-accent/50 focus:ring-0 focus:ring-offset-0">
                   <Select.Value>
                     {(value: KanbanPriority) => (
                       <div className="flex items-center gap-2">
@@ -283,7 +279,7 @@ export function AddTaskDialog({
                 </Select.Portal>
               </Select.Root>
 
-              <div className="flex items-center gap-2 rounded-full border px-3 py-2 text-sm">
+              <div className="flex items-center gap-2 rounded-full border px-3 py-2 text-sm transition-colors hover:bg-accent/50">
                 <CalendarDays className="h-4 w-4" />
                 <Label htmlFor={dueDateId} className="sr-only">
                   Due date
@@ -304,7 +300,7 @@ export function AddTaskDialog({
                   selectedTagIds={selectedTagIds}
                   onChange={setSelectedTagIds}
                   disabled={isCreating}
-                  className="space-y-0 [&>div:first-child]:hidden [&>div:nth-child(2)_button]:w-auto [&>div:nth-child(2)_button]:bg-transparent [&>div:nth-child(2)_button]:px-2 [&>div:nth-child(2)_button]:py-0 [&>div:nth-child(2)_button]:text-sm [&>div:nth-child(2)_button]:font-medium [&>div:nth-child(2)_button]:shadow-none [&>div:nth-child(2)_button]:focus:ring-0 [&>div:nth-child(2)_button]:focus:ring-offset-0 [&>div:nth-child(2)_button]:hover:bg-transparent [&>div:nth-child(2)_button]:border-foreground/20 [&>div:nth-child(2)_button]:text-foreground"
+                  className="space-y-0 [&>div:first-child]:hidden [&_button[aria-expanded]]:rounded-full [&_button[aria-expanded]]:border [&_button[aria-expanded]]:bg-transparent [&_button[aria-expanded]]:px-3 [&_button[aria-expanded]]:py-2 [&_button[aria-expanded]]:hover:bg-accent/50"
                 />
               </div>
             </div>
