@@ -1,12 +1,15 @@
 import { useCallback, useEffect, useState } from 'react'
+import { AnimatePresence, motion } from 'framer-motion'
 import { toast } from 'sonner'
 import { useQueryClient } from '@tanstack/react-query'
 
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Badge } from '@/components/ui/badge'
+import { CalendarDays, Paperclip, Tag, X } from 'lucide-react'
 import { PriorityBadge } from './views/board-shared'
+import { cn } from '@/lib/utils'
+import { getColumnIconComponent } from '@/components/kanban/column-icon-options'
 import {
   kanbanQueryKeys,
   useUpdateCard,
@@ -155,19 +158,11 @@ export function TaskDetailsPanel({
 
   const handleDueDateChange = useCallback(
     async (newDate: Date | undefined) => {
-      console.log('handleDueDateChange called with:', newDate)
       if (!card || !card.boardId) {
-        console.log('No card or boardId available')
         return
       }
 
       const newDateString = newDate ? newDate.toISOString().split('T')[0] : null
-
-      console.log('Updating card with:', {
-        id: card.id,
-        boardId: card.boardId,
-        dueDate: newDateString,
-      })
 
       try {
         await updateCard.mutateAsync({
@@ -175,9 +170,7 @@ export function TaskDetailsPanel({
           boardId: card.boardId,
           dueDate: newDateString,
         })
-        console.log('Update successful')
       } catch (err) {
-        console.error('Update failed:', err)
         toast.error(
           err instanceof Error ? err.message : 'Failed to update due date'
         )
@@ -217,189 +210,246 @@ export function TaskDetailsPanel({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex p-4">
-      {/* Main content area - closes panel when clicked */}
-      <button
-        type="button"
-        className="flex-1"
-        onClick={onClose}
-        onKeyDown={e => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            onClose()
-          }
+    <AnimatePresence mode="wait">
+      <motion.div
+        className="fixed inset-0 z-50 flex bg-black/40 p-6 backdrop-blur-sm"
+        initial={{ opacity: 0, filter: 'blur(6px)' }}
+        animate={{ opacity: 1, filter: 'blur(0px)' }}
+        exit={{ opacity: 0, filter: 'blur(6px)' }}
+        transition={{
+          opacity: { duration: 0.25, ease: [0.25, 0.1, 0.25, 1.0] },
+          filter: { duration: 0.35, ease: [0.25, 0.1, 0.25, 1.0] },
         }}
-      />
-
-      {/* Right panel */}
-      <div className="w-96 h-full bg-muted flex flex-col rounded-2xl border border-border">
-        {/* Header */}
-        <div className="p-6 border-b border-border bg-card rounded-t-2xl">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold">Task Details</h2>
-            <button
-              type="button"
-              onClick={onClose}
-              className="h-8 w-8 p-0 flex items-center justify-center rounded-2xl hover:bg-muted transition-colors"
-              onKeyDown={e => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  onClose()
-                }
-              }}
-            >
-              ×
-            </button>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <Badge variant="secondary" className="text-xs rounded-lg">
-              {column.title}
-            </Badge>
-            <PriorityBadge priority={card.priority} />
-          </div>
-        </div>
-
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-5">
-          {/* Title */}
-          <div className="space-y-2">
-            <Label className="text-sm font-medium">Title</Label>
-            {isEditingTitle ? (
-              <form onSubmit={handleTitleSubmit}>
-                <Input
-                  value={titleDraft}
-                  onChange={e => setTitleDraft(e.target.value)}
-                  onBlur={() => handleTitleSubmit()}
-                  className={titleError ? 'border-red-500' : ''}
-                  disabled={updateCard.isPending}
-                  autoFocus
-                />
-                {titleError && (
-                  <p className="text-sm text-red-500 mt-1">{titleError}</p>
-                )}
-              </form>
-            ) : (
-              <button
-                type="button"
-                className="w-full p-4 border rounded-2xl text-left hover:bg-muted/50 transition-colors bg-card"
-                onClick={() => setIsEditingTitle(true)}
-                onKeyDown={e => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    setIsEditingTitle(true)
+      >
+        <button
+          type="button"
+          aria-label="Close task details"
+          className="flex-1"
+          onClick={onClose}
+          onKeyDown={e => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              onClose()
+            }
+          }}
+        />
+        <motion.div
+          key={card.id}
+          className="flex h-full w-full max-w-[420px] flex-col overflow-hidden rounded-3xl border border-border/80 bg-card shadow-2xl"
+          initial={{
+            opacity: 0,
+            x: 40,
+            filter: 'blur(10px)',
+            scale: 0.98,
+          }}
+          animate={{ opacity: 1, x: 0, filter: 'blur(0px)', scale: 1 }}
+          exit={{ opacity: 0, x: 40, filter: 'blur(10px)', scale: 0.98 }}
+          transition={{
+            type: 'spring',
+            stiffness: 240,
+            damping: 28,
+            opacity: { duration: 0.25, ease: [0.25, 0.1, 0.25, 1.0] },
+            filter: { duration: 0.35, ease: [0.25, 0.1, 0.25, 1.0] },
+          }}
+          style={{ willChange: 'transform, opacity, filter' }}
+        >
+          <div className="border-b border-border/80 px-6 py-5">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex min-w-0 flex-1 flex-col gap-3">
+                <span
+                  className={cn(
+                    'inline-flex items-center gap-2 self-start rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.25em]',
+                    'border-border/50 text-muted-foreground'
+                  )}
+                  style={
+                    column.color
+                      ? {
+                          backgroundColor: `${column.color}1A`,
+                          borderColor: `${column.color}33`,
+                          color: column.color,
+                        }
+                      : undefined
                   }
-                }}
-              >
-                <p className="font-medium">{card.title}</p>
-              </button>
-            )}
-          </div>
-
-          {/* Description */}
-          <div className="space-y-2">
-            <Label className="text-sm font-medium">Description</Label>
-            {isEditingDescription ? (
-              <form onSubmit={handleDescriptionSubmit}>
-                <Textarea
-                  value={descriptionDraft}
-                  onChange={e => setDescriptionDraft(e.target.value)}
-                  onKeyDown={handleDescriptionKeyDown}
-                  onBlur={() => handleDescriptionSubmit()}
-                  placeholder="Add a description... (Enter to save, Shift+Enter for new line)"
-                  disabled={updateCard.isPending}
-                  rows={4}
-                  autoFocus
-                />
-              </form>
-            ) : (
-              <button
-                type="button"
-                className="w-full p-4 border rounded-2xl text-left hover:bg-muted/50 transition-colors min-h-[100px] bg-card"
-                onClick={() => setIsEditingDescription(true)}
-                onKeyDown={e => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    setIsEditingDescription(true)
-                  }
-                }}
-              >
-                {card.description ? (
-                  <p className="text-sm whitespace-pre-wrap">
-                    {card.description}
-                  </p>
+                >
+                  {(() => {
+                    const ColumnIcon = getColumnIconComponent(column.icon ?? null)
+                    return <ColumnIcon className="h-3.5 w-3.5" />
+                  })()}
+                  {column.title}
+                </span>
+                {isEditingTitle ? (
+                  <form onSubmit={handleTitleSubmit} className="min-w-0">
+                    <Input
+                      value={titleDraft}
+                      onChange={e => setTitleDraft(e.target.value)}
+                      onBlur={() => handleTitleSubmit()}
+                      className={`w-full border-0 bg-muted/40 px-3 py-2 text-lg font-semibold leading-tight shadow-none focus-visible:ring-2 focus-visible:ring-foreground/20 focus-visible:ring-offset-0 ${titleError ? 'ring-2 ring-rose-500/50' : ''}`}
+                      disabled={updateCard.isPending}
+                      autoFocus
+                    />
+                  </form>
                 ) : (
-                  <p className="text-sm text-muted-foreground">
-                    Add a description...
-                  </p>
+                  <button
+                    type="button"
+                    className="group flex w-full items-start gap-2 text-left"
+                    onClick={() => setIsEditingTitle(true)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        setIsEditingTitle(true)
+                      }
+                    }}
+                  >
+                    <h2 className="line-clamp-3 text-lg font-semibold leading-tight text-foreground transition-colors group-hover:text-foreground/80">
+                      {card.title}
+                    </h2>
+                  </button>
                 )}
-              </button>
-            )}
+                {titleError ? (
+                  <p className="text-sm text-rose-500">{titleError}</p>
+                ) : null}
+              </div>
+              <div className="flex flex-shrink-0 items-start gap-3">
+                <PriorityBadge priority={card.priority} />
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="flex h-8 w-8 items-center justify-center rounded-full border border-border/80 text-muted-foreground transition-colors hover:border-border hover:text-foreground"
+                  onKeyDown={e => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      onClose()
+                    }
+                  }}
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
           </div>
 
-          <div className="space-y-2">
-            <Label className="text-sm font-medium">Tags</Label>
-            <TagSelector
-              boardId={card.boardId}
-              selectedTagIds={selectedTagIds}
-              onChange={handleTagChange}
-              disabled={
-                updateCard.isPending || updateCardTagsMutation.isPending
-              }
-              className="[&_button[aria-expanded]]:rounded-2xl"
-            />
-          </div>
+          <div className="flex-1 overflow-y-auto px-6 py-8">
+            <div className="space-y-8">
+            <section className="space-y-3">
+              <Label className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">Description</Label>
+              {isEditingDescription ? (
+                <form onSubmit={handleDescriptionSubmit}>
+                  <Textarea
+                    value={descriptionDraft}
+                    onChange={e => setDescriptionDraft(e.target.value)}
+                    onKeyDown={handleDescriptionKeyDown}
+                    onBlur={() => handleDescriptionSubmit()}
+                    placeholder="Add a description..."
+                    disabled={updateCard.isPending}
+                    rows={5}
+                    className="min-h-[140px] resize-none rounded-2xl border-0 bg-muted/40 px-4 py-3 text-sm leading-relaxed text-foreground shadow-none focus-visible:ring-2 focus-visible:ring-foreground/20 focus-visible:ring-offset-0"
+                    autoFocus
+                  />
+                </form>
+              ) : (
+                <button
+                  type="button"
+                  className="relative w-full rounded-2xl border border-border/60 bg-background px-4 py-3 text-left transition-colors hover:border-foreground/20"
+                  onClick={() => setIsEditingDescription(true)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      setIsEditingDescription(true)
+                    }
+                  }}
+                >
+                  {card.description ? (
+                    <p className="text-sm leading-relaxed text-foreground/90">
+                      {card.description}
+                    </p>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      Add a description...
+                    </p>
+                  )}
+                </button>
+              )}
+            </section>
 
-          {/* Due Date */}
-          <div className="space-y-2">
-            <Label className="text-sm font-medium">Due Date</Label>
-            <input
-              type="date"
-              value={
-                card.dueDate
-                  ? new Date(card.dueDate).toISOString().split('T')[0]
-                  : ''
-              }
-              onChange={e => {
-                const newDate = e.target.value
-                  ? new Date(e.target.value)
-                  : undefined
-                handleDueDateChange(newDate)
-              }}
-              className="w-full p-4 border rounded-2xl text-left font-normal bg-card hover:bg-muted/50 transition-colors cursor-pointer"
-            />
-            {!card.dueDate && (
-              <p className="text-sm text-muted-foreground">No due date</p>
-            )}
-          </div>
+            <section className="space-y-4">
+              <Label className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">Metadata</Label>
+              <div className="flex flex-col gap-3">
+                <div className="flex items-center justify-between rounded-2xl border border-border/60 bg-background px-4 py-3">
+                  <div className="flex items-center gap-3">
+                    <CalendarDays className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm font-medium text-muted-foreground">Due date</span>
+                  </div>
+                  <input
+                    type="date"
+                    value={
+                      card.dueDate
+                        ? new Date(card.dueDate).toISOString().split('T')[0]
+                        : ''
+                    }
+                    onChange={e => {
+                      const newDate = e.target.value
+                        ? new Date(e.target.value)
+                        : undefined
+                      handleDueDateChange(newDate)
+                    }}
+                    className="rounded-full border-0 bg-transparent px-3 py-1 text-sm text-foreground/80 transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/20"
+                  />
+                </div>
+                <div className="flex flex-col gap-2 rounded-2xl border border-border/60 bg-background px-4 py-3">
+                  <div className="flex items-center gap-3">
+                    <Tag className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm font-medium text-muted-foreground">Tags</span>
+                  </div>
+                  <TagSelector
+                    boardId={card.boardId}
+                    selectedTagIds={selectedTagIds}
+                    onChange={handleTagChange}
+                    disabled={
+                      updateCard.isPending || updateCardTagsMutation.isPending
+                    }
+                    className="[&_button[aria-expanded]]:rounded-2xl [&_button[aria-expanded]]:border-0 [&_button[aria-expanded]]:bg-muted/60"
+                  />
+                </div>
+              </div>
+            </section>
 
-          {/* Attachments */}
-          <div className="space-y-2">
-            <Label className="text-sm font-medium">Attachments</Label>
-            <ImageUpload
-              cardId={card.id}
-              boardId={card.boardId}
-              attachments={card.attachments}
-              onUploadComplete={() => {
-                queryClient.invalidateQueries({
-                  queryKey: kanbanQueryKeys.cards(card.boardId),
-                })
-              }}
-              onRemoveComplete={() => {
-                queryClient.invalidateQueries({
-                  queryKey: kanbanQueryKeys.cards(card.boardId),
-                })
-              }}
-            />
+            <section className="space-y-4">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">Attachments</Label>
+                {card.attachments && card.attachments.length > 0 ? (
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Paperclip className="h-3.5 w-3.5" />
+                    {card.attachments.length}
+                  </div>
+                ) : null}
+              </div>
+              <ImageUpload
+                cardId={card.id}
+                boardId={card.boardId}
+                attachments={card.attachments}
+                onUploadComplete={() => {
+                  queryClient.invalidateQueries({
+                    queryKey: kanbanQueryKeys.cards(card.boardId),
+                  })
+                }}
+                onRemoveComplete={() => {
+                  queryClient.invalidateQueries({
+                    queryKey: kanbanQueryKeys.cards(card.boardId),
+                  })
+                }}
+              />
+            </section>
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="p-6 border-t border-border bg-card rounded-b-2xl">
-          <p className="text-sm text-muted-foreground">
-            Created:{' '}
-            {card.createdAt
-              ? new Date(card.createdAt).toLocaleDateString()
-              : 'Unknown'}
-          </p>
-        </div>
-      </div>
-    </div>
+          <div className="flex items-center justify-between border-t border-border/80 bg-muted/40 px-6 py-4 text-xs text-muted-foreground">
+            <div className="flex flex-col gap-1">
+              <span className="uppercase tracking-[0.2em]">Created</span>
+              <span className="text-sm font-medium text-foreground/80">
+                {card.createdAt
+                  ? new Date(card.createdAt).toLocaleDateString()
+                  : 'Unknown'}
+              </span>
+            </div>
+          </div>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
   )
 }
