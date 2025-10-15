@@ -1,9 +1,8 @@
-import { useCallback, useEffect, useRef, useState, useMemo } from 'react'
-import { Plate, usePlateEditor } from 'platejs/react'
-import type { Value } from 'platejs'
-import type { TElement, TText } from 'platejs'
-import { EditorKit } from '@/components/editor/editor-kit'
-import { Editor, EditorContainer } from '@/components/ui/editor'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCreateBlockNote } from '@blocknote/react'
+import { BlockNoteView } from '@blocknote/shadcn'
+import '@blocknote/shadcn/style.css'
+import type { BlockNoteEditor, PartialBlock } from '@blocknote/core'
 import { Button } from '@/components/ui/button'
 import { ArrowLeft, Pin, PinOff, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -27,62 +26,47 @@ interface NoteEditorProps {
   onBack: () => void
 }
 
-function parseNoteContent(note: Note): Value {
-  if (!note.content) {
-    return [
-      { 
-        type: 'h1', 
-        children: [{ text: note.title || '' }],
-        id: 'title-block'
-      },
-      { 
-        type: 'p', 
-        children: [{ text: '' }] 
-      }
-    ] as Value
+function getTitleFromBlocks(blocks: PartialBlock[]): string {
+  if (!blocks || blocks.length === 0) {
+    return 'Untitled'
   }
 
-  try {
-    const parsed = JSON.parse(note.content)
-    if (Array.isArray(parsed)) {
-      // Check if first block is title
-      const hasTitle = parsed[0]?.id === 'title-block'
-      if (!hasTitle) {
-        return [
-          { 
-            type: 'h1', 
-            children: [{ text: note.title || '' }],
-            id: 'title-block'
-          },
-          ...parsed
-        ] as Value
-      }
-      return parsed as Value
+  const firstBlock = blocks[0]
+  
+  // Verifica se é um heading
+  if (firstBlock?.type === 'heading' && firstBlock.content) {
+    if (typeof firstBlock.content === 'string') {
+      return firstBlock.content
     }
-  } catch {
-    // Parse failed, create new structure
+    if (Array.isArray(firstBlock.content)) {
+      return firstBlock.content
+        .map((item: any) => (item.type === 'text' ? item.text : ''))
+        .join('')
+    }
   }
-
-  return [
-    { 
-      type: 'h1', 
-      children: [{ text: note.title || '' }],
-      id: 'title-block'
-    },
-    { 
-      type: 'p', 
-      children: [{ text: typeof note.content === 'string' ? note.content : '' }] 
+  
+  // Fallback para paragraph ou qualquer outro tipo
+  if (firstBlock?.content) {
+    if (typeof firstBlock.content === 'string') {
+      return firstBlock.content
     }
-  ] as Value
+    if (Array.isArray(firstBlock.content)) {
+      return firstBlock.content
+        .map((item: any) => (item.type === 'text' ? item.text : ''))
+        .join('')
+    }
+  }
+  
+  return 'Untitled'
 }
 
 export function NoteEditor({ note, boardId, onBack }: NoteEditorProps) {
-  const [content, setContent] = useState<Value>(() => parseNoteContent(note))
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const previousNoteIdRef = useRef(note.id)
   const saveTimeoutRef = useRef<NodeJS.Timeout>()
   const lastSavedContentRef = useRef<string>('')
   const lastSavedTitleRef = useRef<string>('')
+  const isLoadingContent = useRef(false)
 
   const updateNote = useUpdateNote(boardId)
   const deleteNote = useDeleteNote(boardId)
@@ -90,72 +74,89 @@ export function NoteEditor({ note, boardId, onBack }: NoteEditorProps) {
 
   const currentNote = notes.find(n => n.id === note.id) || note
 
-  const editor = usePlateEditor({
-    plugins: EditorKit,
-    value: content,
-  })
+  // Cria o editor vazio - SEM initialContent
+  const editor: BlockNoteEditor = useCreateBlockNote()
 
-  // Extract title from first block - optimized with memoization
-  const getTitleFromContent = useCallback((editorContent: Value) => {
-    const titleBlock = editorContent.find((block: TElement | TText) => {
-      return 'id' in block && block.id === 'title-block'
-    }) as TElement | undefined
-    
-    if (titleBlock?.children) {
-      return titleBlock.children
-        .map((child: TElement | TText) => ('text' in child ? child.text : ''))
-        .join('')
+  // Carregar conteúdo inicial quando o editor estiver pronto
+  useEffect(() => {
+    if (!editor || isLoadingContent.current) return
+
+    const loadContent = async () => {
+      isLoadingContent.current = true
+
+      try {
+        if (note.content) {
+          const parsed = JSON.parse(note.content)
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            // Substitui todo o conteúdo do editor
+            await editor.replaceBlocks(editor.document, parsed)
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load note content:', error)
+        // Se falhar, o editor permanece com conteúdo padrão
+      } finally {
+        isLoadingContent.current = false
+      }
     }
-    return ''
-  }, [])
+
+    loadContent()
+  }, [editor, note.id]) // Recarrega quando muda a nota
 
   // Optimized save function with early exit and debouncing
-  const saveContent = useCallback((editorContent: Value, forceSave = false) => {
-    const contentStr = JSON.stringify(editorContent)
-    const title = getTitleFromContent(editorContent) || 'Untitled'
+  const saveContent = useCallback(
+    (blocks: PartialBlock[], forceSave = false) => {
+      // Não salva se estiver carregando conteúdo
+      if (isLoadingContent.current) return
 
-    // Early exit if nothing has changed (unless force save is true)
-    if (!forceSave && contentStr === lastSavedContentRef.current && 
-        title === lastSavedTitleRef.current) {
-      console.log('Save skipped: content unchanged')
-      return
-    }
+      const contentStr = JSON.stringify(blocks)
+      const title = getTitleFromBlocks(blocks)
 
-    console.log('Saving note:', { title, contentLength: contentStr.length })
-
-    // Update refs immediately to prevent duplicate saves
-    lastSavedContentRef.current = contentStr
-    lastSavedTitleRef.current = title
-
-    updateNote.mutate(
-      { 
-        id: note.id, 
-        boardId, 
-        content: contentStr,
-        title
-      },
-      {
-        onSuccess: () => {
-          console.log('Note saved successfully')
-        },
-        onError: error => {
-          console.error('Failed to save note:', error)
-          toast.error('Failed to save note', {
-            description:
-              error instanceof Error ? error.message : 'Unknown error',
-          })
-        },
+      // Early exit if nothing has changed (unless force save is true)
+      if (
+        !forceSave &&
+        contentStr === lastSavedContentRef.current &&
+        title === lastSavedTitleRef.current
+      ) {
+        return
       }
-    )
-  }, [note.id, boardId, updateNote, getTitleFromContent])
+
+      console.log('Saving note:', { title, contentLength: contentStr.length })
+
+      // Update refs immediately to prevent duplicate saves
+      lastSavedContentRef.current = contentStr
+      lastSavedTitleRef.current = title
+
+      updateNote.mutate(
+        {
+          id: note.id,
+          boardId,
+          content: contentStr,
+          title,
+        },
+        {
+          onSuccess: () => {
+            console.log('Note saved successfully')
+          },
+          onError: error => {
+            console.error('Failed to save note:', error)
+            toast.error('Failed to save note', {
+              description:
+                error instanceof Error ? error.message : 'Unknown error',
+            })
+          },
+        }
+      )
+    },
+    [note.id, boardId, updateNote]
+  )
 
   // Watch for editor changes with optimized debouncing
   useEffect(() => {
     if (!editor) return
 
     const handleChange = () => {
-      const newValue = editor.children as Value
-      setContent(newValue)
+      const blocks = editor.document
 
       // Clear previous timeout
       if (saveTimeoutRef.current) {
@@ -164,14 +165,14 @@ export function NoteEditor({ note, boardId, onBack }: NoteEditorProps) {
 
       // Debounce save with 500ms (balanced performance)
       saveTimeoutRef.current = setTimeout(() => {
-        saveContent(newValue)
+        saveContent(blocks)
       }, 500)
     }
 
-    editor.onChange = handleChange
+    // Subscribe to editor changes
+    editor.onChange(handleChange)
 
     return () => {
-      editor.onChange = undefined
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current)
         saveTimeoutRef.current = undefined
@@ -179,29 +180,18 @@ export function NoteEditor({ note, boardId, onBack }: NoteEditorProps) {
     }
   }, [editor, saveContent])
 
-  // Initialize saved state and reset when switching notes
+  // Reset quando mudar de nota
   useEffect(() => {
     if (previousNoteIdRef.current === note.id) {
       return
     }
 
     previousNoteIdRef.current = note.id
-    const newContent = parseNoteContent(note)
-    setContent(newContent)
     
-    // Initialize saved refs - force first save
-    const initialContentStr = JSON.stringify(newContent)
-    const initialTitle = getTitleFromContent(newContent) || 'Untitled'
-    
-    // Set refs but don't prevent initial save
+    // Reset saved refs
     lastSavedContentRef.current = ''
     lastSavedTitleRef.current = ''
-    
-    // Initial save after component mounts
-    setTimeout(() => {
-      saveContent(newContent, true)
-    }, 100)
-  }, [note, getTitleFromContent, saveContent])
+  }, [note.id])
 
   const handleTogglePin = useCallback(() => {
     updateNote.mutate(
@@ -264,16 +254,12 @@ export function NoteEditor({ note, boardId, onBack }: NoteEditorProps) {
         </div>
       </div>
 
-      {/* Editor with integrated title */}
+      {/* Editor */}
       <div className="flex-1 overflow-auto px-6">
-        <Plate editor={editor}>
-          <EditorContainer className="notion-editor-style">
-            <Editor 
-              placeholder="Untitled"
-              className="focus:outline-none"
-            />
-          </EditorContainer>
-        </Plate>
+        <BlockNoteView 
+          editor={editor} 
+          theme="light"
+        />
       </div>
 
       {/* Delete Confirmation Dialog */}

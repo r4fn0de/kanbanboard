@@ -3,6 +3,9 @@
 @plugin 'tailwind-scrollbar-hide';
 @import 'tailwindcss';
 @import 'tw-animate-css';
+@import "@blocknote/shadcn/style.css";
+@source "../node_modules/@blocknote/shadcn/dist";
+
 
 @custom-variant dark (&:is(.dark *));
 
