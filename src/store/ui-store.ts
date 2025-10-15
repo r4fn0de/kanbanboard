@@ -3,6 +3,7 @@ import { devtools } from 'zustand/middleware'
 
 interface UIState {
   leftSidebarVisible: boolean
+  leftSidebarLocked: boolean
   rightSidebarVisible: boolean
   commandPaletteOpen: boolean
   preferencesOpen: boolean
@@ -11,6 +12,7 @@ interface UIState {
 
   toggleLeftSidebar: () => void
   setLeftSidebarVisible: (visible: boolean) => void
+  setLeftSidebarLocked: (locked: boolean) => void
   toggleRightSidebar: () => void
   setRightSidebarVisible: (visible: boolean) => void
   toggleCommandPalette: () => void
@@ -31,6 +33,7 @@ export const useUIStore = create<UIState>()(
   devtools(
     set => ({
       leftSidebarVisible: true,
+      leftSidebarLocked: false,
       rightSidebarVisible: false,
       commandPaletteOpen: false,
       preferencesOpen: false,
@@ -49,6 +52,13 @@ export const useUIStore = create<UIState>()(
           { leftSidebarVisible: visible },
           undefined,
           'setLeftSidebarVisible'
+        ),
+
+      setLeftSidebarLocked: locked =>
+        set(
+          { leftSidebarLocked: locked },
+          undefined,
+          'setLeftSidebarLocked'
         ),
 
       toggleRightSidebar: () =>

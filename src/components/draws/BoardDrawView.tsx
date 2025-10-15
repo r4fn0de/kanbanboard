@@ -22,6 +22,7 @@ export function BoardDrawView() {
   const { data: workspaces = [] } = useWorkspaces()
 
   const setLeftSidebarVisible = useUIStore(state => state.setLeftSidebarVisible)
+  const setLeftSidebarLocked = useUIStore(state => state.setLeftSidebarLocked)
   const setSelectedWorkspaceId = useWorkspaceStore(
     state => state.setSelectedWorkspaceId
   )
@@ -34,12 +35,15 @@ export function BoardDrawView() {
       setLeftSidebarVisible(false)
     }
 
+    setLeftSidebarLocked(true)
+
     return () => {
       if (shouldRestoreSidebar) {
         setLeftSidebarVisible(true)
       }
+      setLeftSidebarLocked(false)
     }
-  }, [setLeftSidebarVisible])
+  }, [setLeftSidebarVisible, setLeftSidebarLocked])
 
   const board = useMemo(
     () => boards.find(item => item.id === boardId) ?? null,

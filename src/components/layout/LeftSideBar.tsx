@@ -292,7 +292,7 @@ export function LeftSideBar({
   const navigate = useNavigate()
   const location = useLocation()
   const commandContext = useCommandContext()
-  const { leftSidebarVisible, toggleLeftSidebar } = useUIStore()
+  const { leftSidebarVisible, toggleLeftSidebar, leftSidebarLocked } = useUIStore()
   const selectedWorkspaceId = useWorkspaceStore(
     state => state.selectedWorkspaceId
   )
@@ -599,6 +599,7 @@ export function LeftSideBar({
             title={
               leftSidebarVisible ? 'Hide Left Sidebar' : 'Show Left Sidebar'
             }
+            disabled={leftSidebarLocked}
           >
             {leftSidebarVisible ? (
               <PanelLeftClose className="h-3 w-3" />

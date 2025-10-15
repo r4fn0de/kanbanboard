@@ -56,7 +56,7 @@ export function NotesList({
                   <Pin className="h-3.5 w-3.5" />
                   Pinned Notes
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+                <div className="space-y-2">
                   {pinnedNotes.map(note => (
                     <NoteCard
                       key={note.id}
@@ -77,7 +77,7 @@ export function NotesList({
                     All Notes
                   </div>
                 )}
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+                <div className="space-y-2">
                   {unpinnedNotes.map(note => (
                     <NoteCard
                       key={note.id}
@@ -167,7 +167,7 @@ function NoteCard({ note, onClick, boardId }: NoteCardProps) {
           type="button"
           onClick={onClick}
           className={cn(
-            'w-full h-full rounded-lg border bg-card p-3 text-left transition-all hover:bg-accent/50 hover:shadow-sm',
+            'w-full rounded-lg border bg-card p-4 text-left transition-all hover:bg-accent/50 hover:shadow-sm',
             'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
           )}
         >
@@ -177,7 +177,7 @@ function NoteCard({ note, onClick, boardId }: NoteCardProps) {
               <Pin className="h-3.5 w-3.5 text-primary flex-shrink-0" />
             )}
           </div>
-          <p className="text-sm text-muted-foreground line-clamp-10 mb-3 flex-1">
+          <p className="text-sm text-muted-foreground line-clamp-3 mb-3 flex-1">
             {preview}
           </p>
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
