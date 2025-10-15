@@ -9,7 +9,7 @@ import {
 } from '@/components/ui/context-menu'
 import { cn } from '@/lib/utils'
 import type { KanbanCard, KanbanColumn } from '@/types/common'
-import { Plus, Trash2 } from 'lucide-react'
+import { Calendar, Plus, Trash2 } from 'lucide-react'
 import { PriorityBadge } from './board-shared'
 import { formatCardDueDate } from './card-date'
 import { AddTaskDialog } from '../AddTaskDialog'
@@ -207,14 +207,12 @@ export function BoardListView({
                                       <Badge
                                         key={tag.id}
                                         variant="secondary"
-                                        className="rounded-full px-3 py-1 text-xs font-semibold leading-none opacity-100"
+                                        className="rounded-lg px-2.5 py-0.5 text-xs font-semibold"
                                         style={
                                           tag.color
                                             ? {
-                                                backgroundColor: tag.color,
-                                                color:
-                                                  getTagBadgeStyle(tag)?.color,
-                                                borderColor: tag.color,
+                                                backgroundColor: `${tag.color}30`,
+                                                color: getTagBadgeStyle(tag)?.color,
                                               }
                                             : undefined
                                         }
@@ -225,7 +223,7 @@ export function BoardListView({
                                     {remainingTags > 0 ? (
                                       <Badge
                                         variant="secondary"
-                                        className="rounded-full px-3 py-1 text-xs font-semibold leading-none"
+                                        className="rounded-lg px-2.5 py-0.5 text-xs font-semibold"
                                       >
                                         +{remainingTags}
                                       </Badge>
@@ -243,18 +241,12 @@ export function BoardListView({
                                 Due date
                               </span>
                               {dueLabel ? (
-                                <span
-                                  className="rounded-full px-3 py-1 text-xs font-medium"
-                                  style={{
-                                    backgroundColor:
-                                      hexToRgba(baseColor, 0.12) ?? undefined,
-                                    color: iconColor,
-                                  }}
-                                >
-                                  {dueLabel}
-                                </span>
+                                <div className="inline-flex items-center gap-1.5 rounded-lg bg-muted/50 px-2.5 py-1 text-xs font-semibold text-foreground">
+                                  <Calendar className="h-3 w-3" />
+                                  <span>{dueLabel}</span>
+                                </div>
                               ) : (
-                                <span className="rounded-full border border-dashed border-border px-3 py-1 text-xs text-muted-foreground">
+                                <span className="rounded-lg border border-dashed border-border px-3 py-1 text-xs text-muted-foreground">
                                   Add date
                                 </span>
                               )}

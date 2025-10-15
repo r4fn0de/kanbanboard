@@ -303,9 +303,6 @@ export function TaskDetailsPanel({
                     </h2>
                   </button>
                 )}
-                {titleError ? (
-                  <p className="text-sm text-rose-500">{titleError}</p>
-                ) : null}
               </div>
               <div className="flex flex-shrink-0 items-start gap-3">
                 <PriorityBadge priority={card.priority} />
@@ -388,7 +385,7 @@ export function TaskDetailsPanel({
                         : undefined
                       handleDueDateChange(newDate)
                     }}
-                    className="rounded-full border-0 bg-transparent px-3 py-1 text-sm text-foreground/80 transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/20"
+                    className="rounded-full border-0 bg-transparent px-3 py-1 text-sm font-semibold text-foreground/80 transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/20"
                   />
                 </div>
                 <div className="flex flex-col gap-2 rounded-2xl border border-border/60 bg-background px-4 py-3">

@@ -124,7 +124,7 @@ export function KanbanCardItem({
                   <Badge
                     key={tag.id}
                     variant="secondary"
-                    className="rounded-lg px-2.5 py-0.5 text-xs font-medium"
+                    className="rounded-lg px-2.5 py-0.5 text-xs font-semibold"
                     style={
                       tag.color
                         ? {
@@ -141,7 +141,7 @@ export function KanbanCardItem({
               {remainingTags > 0 && (
                 <Badge
                   variant="secondary"
-                  className="rounded-lg px-2.5 py-0.5 text-xs font-medium"
+                  className="rounded-lg px-2.5 py-0.5 text-xs font-semibold"
                 >
                   +{remainingTags}
                 </Badge>
@@ -166,7 +166,7 @@ export function KanbanCardItem({
             {/* Priority Badge */}
             <div
               className={cn(
-                'inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-medium',
+                'inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold',
                 priorityConfig.className
               )}
             >
@@ -176,15 +176,14 @@ export function KanbanCardItem({
 
             {/* Due Date */}
             {dueDateLabel && (
-              <div className="inline-flex items-center gap-1.5 rounded-lg bg-muted/50 px-2.5 py-1 text-xs font-medium text-foreground">
+              <div className="inline-flex items-center gap-1.5 rounded-lg bg-muted/50 px-2.5 py-1 text-xs font-semibold text-foreground">
                 <Calendar className="h-3 w-3" />
                 <span>{dueDateLabel}</span>
               </div>
             )}
 
-            {/* Attachments */}
             {hasAttachments && (
-              <div className="inline-flex items-center gap-1.5 rounded-lg bg-blue-100 px-2.5 py-1 text-xs font-medium text-blue-700 dark:bg-blue-950/50 dark:text-blue-400">
+              <div className="inline-flex items-center gap-1.5 rounded-lg bg-blue-100 px-2.5 py-1 text-xs font-semibold text-blue-700 dark:bg-blue-950/50 dark:text-blue-400">
                 <Paperclip className="h-3 w-3" />
                 <span>{card.attachments?.length}</span>
               </div>

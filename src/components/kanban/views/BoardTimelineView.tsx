@@ -178,14 +178,12 @@ export function BoardTimelineView({
                             <Badge
                               key={tag.id}
                               variant="secondary"
-                              className="rounded-full px-3 py-1 text-xs font-semibold leading-none opacity-100"
+                              className="rounded-lg px-2.5 py-0.5 text-xs font-semibold"
                               style={
                                 tag.color
                                   ? {
-                                      backgroundColor: tag.color,
+                                      backgroundColor: `${tag.color}30`,
                                       color: getTagBadgeStyle(tag)?.color,
-                                      borderColor: tag.color,
-                                      opacity: 1,
                                     }
                                   : undefined
                               }
@@ -196,22 +194,16 @@ export function BoardTimelineView({
                           {remainingTags > 0 ? (
                             <Badge
                               variant="secondary"
-                              className="rounded-full px-3 py-1 text-xs font-semibold leading-none"
+                              className="rounded-lg px-2.5 py-0.5 text-xs font-semibold"
                             >
                               +{remainingTags}
                             </Badge>
                           ) : null}
                           {dueLabel ? (
-                            <span
-                              className="rounded-full px-2 py-1 font-medium"
-                              style={{
-                                backgroundColor:
-                                  hexToRgba(baseColor, 0.12) ?? undefined,
-                                color: baseColor,
-                              }}
-                            >
-                              Due {dueLabel}
-                            </span>
+                            <div className="inline-flex items-center gap-1.5 rounded-lg bg-muted/50 px-2.5 py-1 font-semibold text-foreground">
+                              <CalendarClock className="h-3 w-3" />
+                              <span>Due {dueLabel}</span>
+                            </div>
                           ) : null}
                         </div>
                       </div>
