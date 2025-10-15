@@ -205,10 +205,11 @@ export function BoardKanbanView({
           </div>
         </SortableContext>
         <DragOverlay 
-          dropAnimation={{
-            duration: 200,
-            easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)',
-          }}
+          // Disable drop animation to avoid the overlay "jumping" back to the
+          // previous column before settling in the destination column.
+          // The card itself moves optimistically, so animating the overlay on drop
+          // causes a visual bounce. Removing the animation fixes the flicker.
+          dropAnimation={null}
           modifiers={[snapCenterToCursor]}
         >
           {activeCard ? <CardOverlay card={activeCard} /> : null}

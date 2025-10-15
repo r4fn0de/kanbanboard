@@ -85,7 +85,9 @@ export function KanbanCardItem({
     transition: isDragging
       ? 'none'
       : (transition ?? 'transform 220ms cubic-bezier(0.2, 0, 0, 1)'),
-    opacity: isDragging ? 0.4 : undefined,
+    // Hide the original item completely while dragging so only the DragOverlay is visible.
+    // This prevents any visual "snap back" of the source element when dropping.
+    opacity: isDragging ? 0 : undefined,
     cursor: isDragging ? 'grabbing' : 'grab',
     willChange: 'transform',
     zIndex: isDragging ? 30 : undefined,
