@@ -1,4 +1,4 @@
-import { useState, useCallback, useId, useMemo } from 'react'
+import { useState, useCallback, useId } from 'react'
 import { toast } from 'sonner'
 import { Dialog } from '@base-ui-components/react/dialog'
 import { Select } from '@base-ui-components/react/select'
@@ -15,8 +15,6 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb'
-import { getColumnIconComponent } from '@/components/kanban/column-icon-options'
-import { FALLBACK_COLUMN_COLORS } from '@/constants/kanban-columns'
 import {
   CalendarDays,
   Columns3,
@@ -51,7 +49,6 @@ export function AddTaskDialog({
   onOpenChange,
   column,
   boardId,
-  cardsInColumn,
   onCreateTask,
 }: AddTaskDialogProps) {
   const [title, setTitle] = useState('')
@@ -65,12 +62,6 @@ export function AddTaskDialog({
   const descriptionId = useId()
   const priorityId = useId()
   const dueDateId = useId()
-
-  const columnAccent = column?.color ?? FALLBACK_COLUMN_COLORS[0]
-  const ColumnIcon = useMemo(
-    () => getColumnIconComponent(column?.icon ?? null),
-    [column?.icon]
-  )
 
   const resetForm = useCallback(() => {
     setTitle('')
@@ -105,8 +96,8 @@ export function AddTaskDialog({
 
       setIsCreating(true)
       try {
-        const position = cardsInColumn.length + 1
-
+        // Position will be calculated by the parent component (BoardDetailView)
+        // based on priority and alphabetical order
         await onCreateTask({
           id: `temp-${Date.now()}`,
           boardId,
@@ -117,7 +108,7 @@ export function AddTaskDialog({
           dueDate: dueDate || undefined,
           tags: [],
           tagIds: selectedTagIds,
-          position,
+          position: 0, // Temporary position, will be recalculated by parent
           attachments: null,
         })
 
@@ -141,7 +132,6 @@ export function AddTaskDialog({
       selectedTagIds,
       column,
       boardId,
-      cardsInColumn,
       onCreateTask,
       resetForm,
       onOpenChange,

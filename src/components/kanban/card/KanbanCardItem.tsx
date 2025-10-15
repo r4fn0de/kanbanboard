@@ -41,17 +41,20 @@ const PRIORITY_CONFIG: Record<
 > = {
   low: {
     label: 'Low',
-    className: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400',
+    className:
+      'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400',
     icon: ArrowDown,
   },
   medium: {
     label: 'Medium',
-    className: 'bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-400',
+    className:
+      'bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-400',
     icon: Minus,
   },
   high: {
     label: 'High',
-    className: 'bg-rose-100 text-rose-700 dark:bg-rose-950/50 dark:text-rose-400',
+    className:
+      'bg-rose-100 text-rose-700 dark:bg-rose-950/50 dark:text-rose-400',
     icon: ArrowUp,
   },
 }
@@ -70,7 +73,7 @@ export function KanbanCardItem({
     (typeof window !== 'undefined' &&
       window.matchMedia('(prefers-color-scheme: dark)')?.matches &&
       theme === 'system')
-  
+
   const {
     attributes,
     listeners,
@@ -117,7 +120,7 @@ export function KanbanCardItem({
           className={cn(
             'group/card relative w-full flex flex-col gap-4 rounded-2xl border bg-card p-4 text-left',
             'transition-all duration-200',
-            'hover:shadow-md hover:border-border/80',
+            'hover:border-border',
             'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
             'active:cursor-grabbing',
             isSelected && 'bg-accent/50 border-accent-foreground/20 shadow-sm',

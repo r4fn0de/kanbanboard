@@ -29,8 +29,8 @@ export const ANIMATION = {
     exit: { opacity: 0, filter: 'blur(4px)' },
     transition: {
       opacity: { duration: 0.2 },
-      filter: { duration: 0.3 }
-    }
+      filter: { duration: 0.3 },
+    },
   },
 
   // Edit mode transition
@@ -43,8 +43,8 @@ export const ANIMATION = {
       stiffness: 300,
       damping: 30,
       opacity: { duration: 0.2 },
-      filter: { duration: 0.3 }
-    }
+      filter: { duration: 0.3 },
+    },
   },
 
   // View mode transition
@@ -57,8 +57,8 @@ export const ANIMATION = {
       stiffness: 300,
       damping: 30,
       opacity: { duration: 0.2 },
-      filter: { duration: 0.3 }
-    }
+      filter: { duration: 0.3 },
+    },
   },
 
   // Button interactions
@@ -68,8 +68,8 @@ export const ANIMATION = {
     transition: {
       type: 'spring' as const,
       stiffness: 400,
-      damping: 25
-    }
+      damping: 25,
+    },
   },
 
   // Color button interactions
@@ -79,8 +79,8 @@ export const ANIMATION = {
     transition: {
       type: 'spring' as const,
       stiffness: 400,
-      damping: 25
-    }
+      damping: 25,
+    },
   },
 
   // Stagger delays

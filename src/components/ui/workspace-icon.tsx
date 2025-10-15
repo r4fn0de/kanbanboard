@@ -19,10 +19,10 @@ const sizeClasses = {
   lg: 'size-12',
 }
 
-export function WorkspaceIcon({ 
-  workspace, 
-  className, 
-  size = 'md' 
+export function WorkspaceIcon({
+  workspace,
+  className,
+  size = 'md',
 }: WorkspaceIconProps) {
   const [iconUrl, setIconUrl] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)

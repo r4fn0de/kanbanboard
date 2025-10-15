@@ -23,7 +23,14 @@ import { CSS } from '@dnd-kit/utilities'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import type { KanbanCard, KanbanColumn } from '@/types/common'
-import { Plus, ArrowDown, ArrowUp, Minus, Paperclip, Calendar } from 'lucide-react'
+import {
+  Plus,
+  ArrowDown,
+  ArrowUp,
+  Minus,
+  Paperclip,
+  Calendar,
+} from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { useMemo, useState, useCallback } from 'react'
 import { KanbanCardItem } from '../card/KanbanCardItem'
@@ -129,10 +136,13 @@ export function BoardKanbanView({
       onDragOver({ over }) {
         const card = activeCard
         if (!card || !over) return ''
-        
+
         const overId = over.id.toString()
         if (overId.includes('column')) {
-          const columnId = overId.replace('column-', '').replace('-cards', '').replace('-end', '')
+          const columnId = overId
+            .replace('column-', '')
+            .replace('-cards', '')
+            .replace('-end', '')
           const column = columnsMap.get(columnId)
           if (column) {
             return `Dragging card ${card.title} over column ${column.title}.`
@@ -143,14 +153,17 @@ export function BoardKanbanView({
       onDragEnd({ over }) {
         const card = activeCard
         if (!card) return ''
-        
+
         if (!over) {
           return `Dragging cancelled. Card ${card.title} was not moved.`
         }
-        
+
         const overId = over.id.toString()
         if (overId.includes('column')) {
-          const columnId = overId.replace('column-', '').replace('-cards', '').replace('-end', '')
+          const columnId = overId
+            .replace('column-', '')
+            .replace('-cards', '')
+            .replace('-end', '')
           const column = columnsMap.get(columnId)
           if (column) {
             return `Card ${card.title} was moved to column ${column.title}.`
@@ -204,7 +217,7 @@ export function BoardKanbanView({
             })}
           </div>
         </SortableContext>
-        <DragOverlay 
+        <DragOverlay
           // Disable drop animation to avoid the overlay "jumping" back to the
           // previous column before settling in the destination column.
           // The card itself moves optimistically, so animating the overlay on drop
@@ -261,7 +274,7 @@ function CardOverlay({ card }: { card: KanbanCard }) {
   const PriorityIcon = priorityConfig.icon
 
   return (
-    <div 
+    <div
       className="pointer-events-none w-full flex flex-col gap-4 rounded-2xl border-2 border-primary/40 bg-card p-4 shadow-2xl ring-2 ring-primary/20"
       style={{
         transform: 'rotate(2deg) scale(1.05)',
@@ -446,6 +459,10 @@ function DraggableColumn({
       <div
         ref={setDroppableRef}
         className="flex flex-1 flex-col gap-4 overflow-y-auto overflow-x-visible min-h-0 rounded-xl transition-all duration-200"
+        style={{
+          scrollbarWidth: 'thin',
+          scrollbarColor: 'var(--border) transparent',
+        }}
       >
         {columnCards.length > 0 ? (
           <>
@@ -482,7 +499,6 @@ function DraggableColumn({
     </div>
   )
 }
-
 
 function EmptyColumnDropZone({
   columnId,

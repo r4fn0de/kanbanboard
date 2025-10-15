@@ -217,209 +217,212 @@ export function ColumnManagerDialog({
   return (
     <TooltipProvider>
       <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-96 sm:max-w-lg lg:max-w-xl">
-        <DialogHeader>
-          <DialogTitle>Manage columns</DialogTitle>
-          <DialogDescription>
-            Customize the appearance and availability of your workflow columns.
-          </DialogDescription>
-        </DialogHeader>
+        <DialogContent className="max-w-96 sm:max-w-lg lg:max-w-xl">
+          <DialogHeader>
+            <DialogTitle>Manage columns</DialogTitle>
+            <DialogDescription>
+              Customize the appearance and availability of your workflow
+              columns.
+            </DialogDescription>
+          </DialogHeader>
 
-        <div className="flex items-center justify-between gap-3">
-          <div className="text-sm text-muted-foreground">
-            Drag and drop to reorder. Updates save automatically.
+          <div className="flex items-center justify-between gap-3">
+            <div className="text-sm text-muted-foreground">
+              Drag and drop to reorder. Updates save automatically.
+            </div>
+            <Button
+              variant="outline"
+              onClick={() => setIsCreatingNew(!isCreatingNew)}
+              disabled={createColumn.isPending}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              {isCreatingNew ? 'Cancel' : 'Add column'}
+            </Button>
           </div>
-          <Button
-            variant="outline"
-            onClick={() => setIsCreatingNew(!isCreatingNew)}
-            disabled={createColumn.isPending}
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            {isCreatingNew ? 'Cancel' : 'Add column'}
-          </Button>
-        </div>
 
-        {isCreatingNew && (
-          <div className="space-y-4 p-4 border border-dashed border-border rounded-lg bg-muted/30">
-            <h4 className="text-sm font-medium">Create New Column</h4>
-            <div className="space-y-3">
-              <div className="flex items-center gap-3">
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <button
-                      type="button"
-                      className="flex items-center justify-center w-10 h-10 rounded-lg border-2 transition-all duration-150 ease-in-out hover:scale-105 hover:brightness-95"
-                      style={{
-                        backgroundColor: newColumnColor ?? DEFAULT_MONOCHROMATIC_COLOR,
-                        borderColor: newColumnColor ?? DEFAULT_MONOCHROMATIC_COLOR,
-                      }}
-                      disabled={createColumn.isPending}
-                    >
-                      {(() => {
-                        const IconComponent =
-                          getColumnIconComponent(newColumnIcon)
-                        return (
-                          <IconComponent
-                            className="h-5 w-5"
-                            style={{
-                              color: 'white',
-                            }}
-                          />
-                        )
-                      })()}
-                    </button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-80" align="start">
-                    <div className="space-y-4">
-                      <div>
-                        <h4 className="text-sm font-medium mb-2">Color</h4>
-                        <div className="flex flex-wrap gap-2">
-                          {COLUMN_COLOR_OPTIONS.map(option => (
-                            <button
-                              key={option}
-                              type="button"
-                              className={cn(
-                                'h-8 w-8 rounded-full border-2 transition-all',
-                                newColumnColor === option
-                                  ? 'border-primary scale-110 shadow-sm'
-                                  : 'border-transparent hover:border-muted-foreground/30 hover:scale-105'
-                              )}
-                              style={{ backgroundColor: option }}
-                              onClick={() => setNewColumnColor(option)}
-                              disabled={createColumn.isPending}
+          {isCreatingNew && (
+            <div className="space-y-4 p-4 border border-dashed border-border rounded-lg bg-muted/30">
+              <h4 className="text-sm font-medium">Create New Column</h4>
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <button
+                        type="button"
+                        className="flex items-center justify-center w-10 h-10 rounded-lg border-2 transition-all duration-150 ease-in-out hover:scale-105 hover:brightness-95"
+                        style={{
+                          backgroundColor:
+                            newColumnColor ?? DEFAULT_MONOCHROMATIC_COLOR,
+                          borderColor:
+                            newColumnColor ?? DEFAULT_MONOCHROMATIC_COLOR,
+                        }}
+                        disabled={createColumn.isPending}
+                      >
+                        {(() => {
+                          const IconComponent =
+                            getColumnIconComponent(newColumnIcon)
+                          return (
+                            <IconComponent
+                              className="h-5 w-5"
+                              style={{
+                                color: 'white',
+                              }}
                             />
-                          ))}
-                          <button
-                            type="button"
-                            className="h-8 w-16 rounded-full border-2 border-dashed border-muted-foreground/30 text-xs font-medium text-muted-foreground hover:border-muted-foreground/60 transition-all"
-                            onClick={() => setNewColumnColor(null)}
-                            disabled={createColumn.isPending}
-                          >
-                            Clear
-                          </button>
+                          )
+                        })()}
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-80" align="start">
+                      <div className="space-y-4">
+                        <div>
+                          <h4 className="text-sm font-medium mb-2">Color</h4>
+                          <div className="flex flex-wrap gap-2">
+                            {COLUMN_COLOR_OPTIONS.map(option => (
+                              <button
+                                key={option}
+                                type="button"
+                                className={cn(
+                                  'h-8 w-8 rounded-full border-2 transition-all',
+                                  newColumnColor === option
+                                    ? 'border-primary scale-110 shadow-sm'
+                                    : 'border-transparent hover:border-muted-foreground/30 hover:scale-105'
+                                )}
+                                style={{ backgroundColor: option }}
+                                onClick={() => setNewColumnColor(option)}
+                                disabled={createColumn.isPending}
+                              />
+                            ))}
+                            <button
+                              type="button"
+                              className="h-8 w-16 rounded-full border-2 border-dashed border-muted-foreground/30 text-xs font-medium text-muted-foreground hover:border-muted-foreground/60 transition-all"
+                              onClick={() => setNewColumnColor(null)}
+                              disabled={createColumn.isPending}
+                            >
+                              Clear
+                            </button>
+                          </div>
+                        </div>
+
+                        <div>
+                          <Command>
+                            <CommandInput placeholder="Search icon..." />
+                            <CommandList>
+                              <CommandEmpty>No icons found</CommandEmpty>
+                              <CommandGroup className="max-h-48 overflow-y-auto">
+                                {COLUMN_ICON_OPTIONS.map(option => (
+                                  <CommandItem
+                                    key={option.value}
+                                    value={option.value}
+                                    onSelect={() =>
+                                      setNewColumnIcon(option.value)
+                                    }
+                                    className="flex items-center gap-2"
+                                  >
+                                    <option.icon className="h-4 w-4" />
+                                    <span className="flex-1 text-sm font-medium">
+                                      {option.label}
+                                    </span>
+                                    {newColumnIcon === option.value ? (
+                                      <Check className="h-4 w-4 text-primary" />
+                                    ) : null}
+                                  </CommandItem>
+                                ))}
+                              </CommandGroup>
+                            </CommandList>
+                          </Command>
                         </div>
                       </div>
+                    </PopoverContent>
+                  </Popover>
 
-                      <div>
-                        <Command>
-                          <CommandInput placeholder="Search icon..." />
-                          <CommandList>
-                            <CommandEmpty>No icons found</CommandEmpty>
-                            <CommandGroup className="max-h-48 overflow-y-auto">
-                              {COLUMN_ICON_OPTIONS.map(option => (
-                                <CommandItem
-                                  key={option.value}
-                                  value={option.value}
-                                  onSelect={() =>
-                                    setNewColumnIcon(option.value)
-                                  }
-                                  className="flex items-center gap-2"
-                                >
-                                  <option.icon className="h-4 w-4" />
-                                  <span className="flex-1 text-sm font-medium">
-                                    {option.label}
-                                  </span>
-                                  {newColumnIcon === option.value ? (
-                                    <Check className="h-4 w-4 text-primary" />
-                                  ) : null}
-                                </CommandItem>
-                              ))}
-                            </CommandGroup>
-                          </CommandList>
-                        </Command>
-                      </div>
-                    </div>
-                  </PopoverContent>
-                </Popover>
+                  <Input
+                    value={newColumnTitle}
+                    onChange={e => setNewColumnTitle(e.target.value)}
+                    placeholder="Enter column name..."
+                    disabled={createColumn.isPending}
+                    className="flex-1"
+                    autoFocus
+                  />
+                </div>
 
-                <Input
-                  value={newColumnTitle}
-                  onChange={e => setNewColumnTitle(e.target.value)}
-                  placeholder="Enter column name..."
-                  disabled={createColumn.isPending}
-                  className="flex-1"
-                  autoFocus
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={handleCancelCreate}
-                  disabled={createColumn.isPending}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  onClick={handleCreateColumn}
-                  disabled={createColumn.isPending || !newColumnTitle.trim()}
-                >
-                  {createColumn.isPending ? 'Creating...' : 'Create'}
-                </Button>
+                <div className="flex items-center justify-end gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleCancelCreate}
+                    disabled={createColumn.isPending}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={handleCreateColumn}
+                    disabled={createColumn.isPending || !newColumnTitle.trim()}
+                  >
+                    {createColumn.isPending ? 'Creating...' : 'Create'}
+                  </Button>
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        <ScrollArea className="max-h-[420px] pr-4">
-          <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
-            <SortableContext
-              items={sortedColumns.map(column => column.id)}
-              strategy={verticalListSortingStrategy}
-            >
-              <div className="space-y-3 py-2">
-                {sortedColumns.map(column => (
-                  <ColumnManagerRow
-                    key={column.id}
-                    column={column}
-                    isUpdating={updateColumn.isPending}
-                    onUpdate={async changes => {
-                      try {
-                        await updateColumn.mutateAsync({
-                          id: column.id,
-                          boardId: column.boardId,
-                          ...changes,
-                        })
-                      } catch (error) {
-                        toast.error('Failed to update column', {
-                          description:
-                            error instanceof Error
-                              ? error.message
-                              : 'Unknown error',
-                        })
-                        throw error
-                      }
-                    }}
-                    onDelete={async () => {
-                      try {
-                        await deleteColumn.mutateAsync({
-                          id: column.id,
-                          boardId: column.boardId,
-                        })
-                        toast.success('Column deleted successfully')
-                      } catch (error) {
-                        toast.error('Failed to delete column', {
-                          description:
-                            error instanceof Error
-                              ? error.message
-                              : 'Unknown error',
-                        })
-                        throw error
-                      }
-                    }}
-                  />
-                ))}
-              </div>
-            </SortableContext>
-          </DndContext>
-        </ScrollArea>
-      </DialogContent>
-    </Dialog>
-  </TooltipProvider>
+          <ScrollArea className="max-h-[420px] pr-4">
+            <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+              <SortableContext
+                items={sortedColumns.map(column => column.id)}
+                strategy={verticalListSortingStrategy}
+              >
+                <div className="space-y-3 py-2">
+                  {sortedColumns.map(column => (
+                    <ColumnManagerRow
+                      key={column.id}
+                      column={column}
+                      isUpdating={updateColumn.isPending}
+                      onUpdate={async changes => {
+                        try {
+                          await updateColumn.mutateAsync({
+                            id: column.id,
+                            boardId: column.boardId,
+                            ...changes,
+                          })
+                        } catch (error) {
+                          toast.error('Failed to update column', {
+                            description:
+                              error instanceof Error
+                                ? error.message
+                                : 'Unknown error',
+                          })
+                          throw error
+                        }
+                      }}
+                      onDelete={async () => {
+                        try {
+                          await deleteColumn.mutateAsync({
+                            id: column.id,
+                            boardId: column.boardId,
+                          })
+                          toast.success('Column deleted successfully')
+                        } catch (error) {
+                          toast.error('Failed to delete column', {
+                            description:
+                              error instanceof Error
+                                ? error.message
+                                : 'Unknown error',
+                          })
+                          throw error
+                        }
+                      }}
+                    />
+                  ))}
+                </div>
+              </SortableContext>
+            </DndContext>
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
+    </TooltipProvider>
   )
 }
 
@@ -589,10 +592,7 @@ function ColumnManagerRow({
               }}
               disabled={isUpdating}
             >
-              <IconComponent
-                className="h-5 w-5"
-                style={{ color: 'white' }}
-              />
+              <IconComponent className="h-5 w-5" style={{ color: 'white' }} />
             </button>
           </PopoverTrigger>
           <PopoverContent className="w-80" align="start">
@@ -730,59 +730,68 @@ function ColumnManagerRow({
           ) : null}
         </div>
         <Tooltip>
-          <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+          <AlertDialog
+            open={showDeleteConfirm}
+            onOpenChange={setShowDeleteConfirm}
+          >
             <TooltipTrigger asChild>
               <AlertDialogTrigger asChild>
                 <Button
-                  variant={column.cardCount > 0 || isUpdating ? "ghost" : "destructive"}
+                  variant={
+                    column.cardCount > 0 || isUpdating ? 'ghost' : 'destructive'
+                  }
                   size="sm"
                   disabled={isUpdating || column.cardCount > 0}
                   className={cn(
-                    "h-8 w-8 p-0",
-                    column.cardCount > 0 || isUpdating && "opacity-50 cursor-not-allowed"
+                    'h-8 w-8 p-0',
+                    column.cardCount > 0 ||
+                      (isUpdating && 'opacity-50 cursor-not-allowed')
                   )}
                 >
-                  <Trash2 className={cn(
-                    "h-4 w-4",
-                    column.cardCount > 0 || isUpdating ? "" : "text-white"
-                  )} />
+                  <Trash2
+                    className={cn(
+                      'h-4 w-4',
+                      column.cardCount > 0 || isUpdating ? '' : 'text-white'
+                    )}
+                  />
                 </Button>
               </AlertDialogTrigger>
             </TooltipTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Delete Column</AlertDialogTitle>
-              <AlertDialogDescription>
-                Are you sure you want to delete the column &ldquo;{title}&rdquo;? This action cannot be undone.
-                {column.cardCount > 0 && (
-                  <span className="block mt-2 text-destructive font-medium">
-                    This column contains {column.cardCount} task(s). Please move or delete all tasks before deleting the column.
-                  </span>
-                )}
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={handleDelete}
-                disabled={column.cardCount > 0}
-                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              >
-                Delete
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-          <TooltipContent>
-            {isUpdating
-              ? "Please wait..."
-              : column.cardCount > 0 
-              ? `Cannot delete column with ${column.cardCount} task${column.cardCount === 1 ? '' : 's'}`
-              : "Delete column"
-            }
-          </TooltipContent>
-        </AlertDialog>
-      </Tooltip>
-        
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete Column</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Are you sure you want to delete the column &ldquo;{title}
+                  &rdquo;? This action cannot be undone.
+                  {column.cardCount > 0 && (
+                    <span className="block mt-2 text-destructive font-medium">
+                      This column contains {column.cardCount} task(s). Please
+                      move or delete all tasks before deleting the column.
+                    </span>
+                  )}
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={handleDelete}
+                  disabled={column.cardCount > 0}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+            <TooltipContent>
+              {isUpdating
+                ? 'Please wait...'
+                : column.cardCount > 0
+                  ? `Cannot delete column with ${column.cardCount} task${column.cardCount === 1 ? '' : 's'}`
+                  : 'Delete column'}
+            </TooltipContent>
+          </AlertDialog>
+        </Tooltip>
+
         <Switch
           checked={isEnabled}
           onCheckedChange={handleToggle}

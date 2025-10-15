@@ -19,7 +19,7 @@ import {
   useUpdateTag,
 } from '@/services/kanban'
 import type { KanbanTag } from '@/types/common'
-import { getAccessibleTextColor, getTagBadgeStyle } from './utils'
+import { getTagBadgeStyle } from './utils'
 
 const TAG_COLOR_OPTIONS: readonly string[] = [
   '#f97316',

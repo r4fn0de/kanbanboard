@@ -134,7 +134,11 @@ function NoteCard({ note, onClick, boardId }: NoteCardProps) {
       const extractText = (nodes: unknown[]): string => {
         return nodes
           .map((node: unknown) => {
-            const n = node as { text?: string; children?: unknown[]; id?: string }
+            const n = node as {
+              text?: string
+              children?: unknown[]
+              id?: string
+            }
             // Skip title block to avoid duplicating content
             if (n.id === 'title-block') return ''
             if (n.text) return n.text

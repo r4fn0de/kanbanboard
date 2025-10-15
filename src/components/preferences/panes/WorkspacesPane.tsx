@@ -78,7 +78,9 @@ export function WorkspacesPane({
   const [cropperOpen, setCropperOpen] = useState(false)
   const [originalImageSrc, setOriginalImageSrc] = useState<string | null>(null)
   const [croppedImageBlob, setCroppedImageBlob] = useState<Blob | null>(null)
-  const [croppedImagePreview, setCroppedImagePreview] = useState<string | null>(null)
+  const [croppedImagePreview, setCroppedImagePreview] = useState<string | null>(
+    null
+  )
   const [currentEditingWorkspaceId, setCurrentEditingWorkspaceId] = useState<
     string | null
   >(null)
@@ -89,7 +91,8 @@ export function WorkspacesPane({
   const { mutateAsync: updateWorkspace } = useUpdateWorkspace()
   const { mutateAsync: deleteWorkspace } = useDeleteWorkspace()
   const { mutateAsync: removeWorkspaceIcon } = useRemoveWorkspaceIconMutation()
-  const { mutateAsync: setWorkspaceIconPath } = useSetWorkspaceIconPathMutation()
+  const { mutateAsync: setWorkspaceIconPath } =
+    useSetWorkspaceIconPathMutation()
   const { selectedWorkspaceId, setSelectedWorkspaceId } = useWorkspaceStore()
 
   // Auto-open editing mode if editingWorkspaceId is provided
@@ -115,7 +118,7 @@ export function WorkspacesPane({
       console.log('Has croppedImageBlob:', !!croppedImageBlob)
       console.log('croppedImageBlob size:', croppedImageBlob?.size)
       console.log('croppedImagePreview:', croppedImagePreview)
-      
+
       // Save cropped image if we have one
       let finalIconPath: string | null = null
       if (croppedImageBlob) {
@@ -123,7 +126,10 @@ export function WorkspacesPane({
         const arrayBuffer = await croppedImageBlob.arrayBuffer()
         const uint8Array = new Uint8Array(arrayBuffer)
         console.log('Array buffer size:', uint8Array.length)
-        console.log('Calling save_cropped_workspace_icon with workspaceId:', workspaceId)
+        console.log(
+          'Calling save_cropped_workspace_icon with workspaceId:',
+          workspaceId
+        )
 
         try {
           finalIconPath = await invoke<string>('save_cropped_workspace_icon', {
@@ -133,7 +139,9 @@ export function WorkspacesPane({
           console.log('Icon saved successfully at path:', finalIconPath)
         } catch (saveError) {
           console.error('ERROR in save_cropped_workspace_icon:', saveError)
-          throw new Error(`Failed to save cropped icon: ${saveError instanceof Error ? saveError.message : String(saveError)}`)
+          throw new Error(
+            `Failed to save cropped icon: ${saveError instanceof Error ? saveError.message : String(saveError)}`
+          )
         }
 
         // The icon is already saved by save_cropped_workspace_icon
@@ -143,7 +151,7 @@ export function WorkspacesPane({
           workspaceId,
           iconPath: finalIconPath,
         })
-        
+
         // Update other workspace fields
         await updateWorkspace({
           id: workspaceId,
@@ -160,7 +168,7 @@ export function WorkspacesPane({
       }
 
       toast.success('Workspace updated successfully')
-      
+
       // Clean up
       setEditingWorkspace(null)
       if (originalImageSrc) {
@@ -175,11 +183,13 @@ export function WorkspacesPane({
       setCurrentEditingWorkspaceId(null)
     } catch (error) {
       console.error('Failed to update workspace:', error)
-      const errorMessage = error instanceof Error 
-        ? error.message.includes('não existe') || error.message.includes('not found')
-          ? 'Failed to save. Please check file permissions and try again.'
-          : `Failed to update workspace: ${error.message}`
-        : 'Failed to update workspace. Please try again.'
+      const errorMessage =
+        error instanceof Error
+          ? error.message.includes('não existe') ||
+            error.message.includes('not found')
+            ? 'Failed to save. Please check file permissions and try again.'
+            : `Failed to update workspace: ${error.message}`
+          : 'Failed to update workspace. Please try again.'
       toast.error(errorMessage)
     }
   }
@@ -188,7 +198,7 @@ export function WorkspacesPane({
     setEditingWorkspace(null)
     setWorkspaceName('')
     setWorkspaceColor(null)
-    
+
     // Clean up image cropper states
     if (originalImageSrc) {
       URL.revokeObjectURL(originalImageSrc)
@@ -292,7 +302,9 @@ export function WorkspacesPane({
         fileBytes = await readFile(filePath)
       } catch (readError) {
         console.error('Failed to read file:', readError)
-        toast.error('File not found or cannot be accessed. Please make sure the file exists and you have permission to read it.')
+        toast.error(
+          'File not found or cannot be accessed. Please make sure the file exists and you have permission to read it.'
+        )
         return
       }
 
@@ -322,39 +334,46 @@ export function WorkspacesPane({
       setCropperOpen(true)
     } catch (error) {
       console.error('Error selecting icon:', error)
-      const message = error instanceof Error 
-        ? error.message.includes('not found') || error.message.includes('não existe')
-          ? 'File not found. Please select a valid image file.'
-          : `Failed to select image: ${error.message}`
-        : 'Failed to select image. Please try again.'
+      const message =
+        error instanceof Error
+          ? error.message.includes('not found') ||
+            error.message.includes('não existe')
+            ? 'File not found. Please select a valid image file.'
+            : `Failed to select image: ${error.message}`
+          : 'Failed to select image. Please try again.'
       toast.error(message)
     }
   }
 
-  const handleCropComplete = useCallback((croppedBlob: Blob) => {
-    console.log('handleCropComplete called with blob:', croppedBlob)
-    console.log('Blob size:', croppedBlob.size)
-    console.log('Current editing workspace:', currentEditingWorkspaceId)
-    
-    setCroppedImageBlob(croppedBlob)
-    const previewUrl = URL.createObjectURL(croppedBlob)
-    console.log('Preview URL created:', previewUrl)
-    setCroppedImagePreview(previewUrl)
-    setCropperOpen(false)
-    
-    // If we have a workspace ID but it's not in edit mode, enter edit mode
-    if (currentEditingWorkspaceId && !editingWorkspace) {
-      const workspace = workspaces.find(w => w.id === currentEditingWorkspaceId)
-      if (workspace) {
-        console.log('Entering edit mode for workspace:', workspace.id)
-        setEditingWorkspace(workspace.id)
-        setWorkspaceName(workspace.name)
-        setWorkspaceColor(workspace.color ?? null)
+  const handleCropComplete = useCallback(
+    (croppedBlob: Blob) => {
+      console.log('handleCropComplete called with blob:', croppedBlob)
+      console.log('Blob size:', croppedBlob.size)
+      console.log('Current editing workspace:', currentEditingWorkspaceId)
+
+      setCroppedImageBlob(croppedBlob)
+      const previewUrl = URL.createObjectURL(croppedBlob)
+      console.log('Preview URL created:', previewUrl)
+      setCroppedImagePreview(previewUrl)
+      setCropperOpen(false)
+
+      // If we have a workspace ID but it's not in edit mode, enter edit mode
+      if (currentEditingWorkspaceId && !editingWorkspace) {
+        const workspace = workspaces.find(
+          w => w.id === currentEditingWorkspaceId
+        )
+        if (workspace) {
+          console.log('Entering edit mode for workspace:', workspace.id)
+          setEditingWorkspace(workspace.id)
+          setWorkspaceName(workspace.name)
+          setWorkspaceColor(workspace.color ?? null)
+        }
       }
-    }
-    
-    console.log('States updated, cropper closed')
-  }, [currentEditingWorkspaceId, editingWorkspace, workspaces])
+
+      console.log('States updated, cropper closed')
+    },
+    [currentEditingWorkspaceId, editingWorkspace, workspaces]
+  )
 
   const handleCropCancel = useCallback(() => {
     if (originalImageSrc) {
@@ -407,251 +426,309 @@ export function WorkspacesPane({
                   key={workspace.id}
                   className="border rounded-lg p-4"
                   layout={!shouldReduceMotion}
-                  initial={shouldReduceMotion ? false : { opacity: 0, filter: 'blur(4px)', y: 10 }}
-                  animate={shouldReduceMotion ? false : { opacity: 1, filter: 'blur(0px)', y: 0 }}
-                  transition={shouldReduceMotion ? { duration: 0 } : {
-                    ...ANIMATION.SPRING.SMOOTH,
-                    opacity: { duration: ANIMATION.DURATION.FAST },
-                    filter: { duration: ANIMATION.DURATION.NORMAL },
-                  }}
+                  initial={
+                    shouldReduceMotion
+                      ? false
+                      : { opacity: 0, filter: 'blur(4px)', y: 10 }
+                  }
+                  animate={
+                    shouldReduceMotion
+                      ? false
+                      : { opacity: 1, filter: 'blur(0px)', y: 0 }
+                  }
+                  transition={
+                    shouldReduceMotion
+                      ? { duration: 0 }
+                      : {
+                          ...ANIMATION.SPRING.SMOOTH,
+                          opacity: { duration: ANIMATION.DURATION.FAST },
+                          filter: { duration: ANIMATION.DURATION.NORMAL },
+                        }
+                  }
                 >
                   <AnimatePresence mode="wait">
-                  {isEditing ? (
-                    <motion.div
-                      key="edit-mode"
-                      className="space-y-4"
-                      {...(shouldReduceMotion ? {} : ANIMATION.EDIT_MODE)}
-                    >
-                      <div className="space-y-2">
-                        <Label htmlFor={`name-${workspace.id}`}>
-                          Workspace Name
-                        </Label>
-                        <Input
-                          id={`name-${workspace.id}`}
-                          value={workspaceName}
-                          onChange={e => setWorkspaceName(e.target.value)}
-                          placeholder="Workspace name"
-                        />
-                      </div>
-
-                      {/* Icon Preview Section */}
-                      {croppedImagePreview && (() => {
-                        console.log('Rendering preview section with URL:', croppedImagePreview)
-                        return true
-                      })() && (
-                        <motion.div
-                          className="space-y-3"
-                          {...(shouldReduceMotion ? {} : {
-                            initial: { opacity: 0, y: -10 },
-                            animate: { opacity: 1, y: 0 },
-                            exit: { opacity: 0, y: -10 },
-                            transition: ANIMATION.SPRING.SMOOTH
-                          })}
-                        >
-                          <Label>Icon Preview</Label>
-                          <div className="flex items-start gap-4">
-                            <div className="relative flex-shrink-0">
-                              <img
-                                src={croppedImagePreview}
-                                alt="New workspace icon"
-                                className="h-16 w-16 rounded-xl object-cover border-2 border-border"
-                              />
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => {
-                                  if (croppedImagePreview) {
-                                    URL.revokeObjectURL(croppedImagePreview)
-                                  }
-                                  setCroppedImagePreview(null)
-                                  setCroppedImageBlob(null)
-                                }}
-                                className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-background shadow-sm hover:bg-destructive hover:text-destructive-foreground"
-                              >
-                                <X className="h-3 w-3" />
-                              </Button>
-                            </div>
-                            <div className="flex-1 space-y-2">
-                              <div className="rounded-md bg-green-50 dark:bg-green-950/20 p-3 text-sm text-green-800 dark:text-green-200">
-                                ✓ New icon ready. Click "Save" to apply the changes.
-                              </div>
-                            </div>
-                          </div>
-                        </motion.div>
-                      )}
-
-                      {/* Only show color selection if workspace doesn't have a custom icon and no preview */}
-                      <AnimatePresence>
-                      {(workspace.iconPath || croppedImagePreview) ? (
-                        <motion.div
-                          className="space-y-3"
-                          {...(shouldReduceMotion ? {} : {
-                            initial: { opacity: 0, y: -10 },
-                            animate: { opacity: 1, y: 0 },
-                            exit: { opacity: 0, y: -10 },
-                            transition: ANIMATION.SPRING.SMOOTH
-                          })}
-                        >
-                          <div className="rounded-md bg-muted/50 p-3 text-sm text-muted-foreground">
-                            💡 Color selection is disabled when using {croppedImagePreview ? 'a new icon preview' : 'a custom icon'}. {croppedImagePreview ? 'Remove the preview or save changes' : 'Remove the icon'} to use colors instead.
-                          </div>
-                        </motion.div>
-                      ) : (
-                        <motion.div
-                          className="space-y-3"
-                          {...(shouldReduceMotion ? {} : {
-                            initial: { opacity: 0, height: 0, y: -10 },
-                            animate: { opacity: 1, height: 'auto', y: 0 },
-                            exit: { opacity: 0, height: 0, y: -10 },
-                            transition: {
-                              ...ANIMATION.SPRING.SMOOTH,
-                              delay: 0.05
-                            }
-                          })}
-                        >
-                          <Label>Color</Label>
-                          <div className="flex gap-2 flex-wrap items-center">
-                            {PRESET_COLORS.map((color, index) => (
-                              <motion.button
-                                key={color.value}
-                                type="button"
-                                className={cn(
-                                  'size-10 rounded-full border-2 transition-colors duration-200',
-                                  workspaceColor === color.value
-                                    ? 'border-foreground'
-                                    : 'border-transparent'
-                                )}
-                                style={{ backgroundColor: color.value }}
-                                onClick={() => setWorkspaceColor(color.value)}
-                                title={color.name}
-                                {...(shouldReduceMotion ? {} : {
-                                  initial: { opacity: 0, scale: 0.8 },
-                                  animate: { opacity: 1, scale: 1 },
-                                  transition: {
-                                    ...ANIMATION.SPRING.SMOOTH,
-                                    delay: index * ANIMATION.STAGGER.FAST
-                                  },
-                                  whileHover: ANIMATION.COLOR_BUTTON.whileHover,
-                                  whileTap: ANIMATION.COLOR_BUTTON.whileTap
-                                })}
-                              />
-                            ))}
-                          </div>
-                        </motion.div>
-                      )}
-                      </AnimatePresence>
-
+                    {isEditing ? (
                       <motion.div
-                        className="flex gap-2 pt-2"
-                        {...(shouldReduceMotion ? {} : {
-                          initial: { opacity: 0, y: 10 },
-                          animate: { opacity: 1, y: 0 },
-                          transition: {
-                            ...ANIMATION.SPRING.SMOOTH,
-                            delay: 0.1
-                          }
-                        })}
+                        key="edit-mode"
+                        className="space-y-4"
+                        {...(shouldReduceMotion ? {} : ANIMATION.EDIT_MODE)}
                       >
-                        <motion.div {...(shouldReduceMotion ? {} : ANIMATION.BUTTON)}>
-                          <Button
-                            type="button"
-                            size="sm"
-                            onClick={() => handleSaveWorkspace(workspace.id)}
-                          >
-                            Save
-                          </Button>
-                        </motion.div>
-                        <motion.div {...(shouldReduceMotion ? {} : ANIMATION.BUTTON)}>
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="outline"
-                            onClick={handleCancelEdit}
-                          >
-                            Cancel
-                          </Button>
-                        </motion.div>
-                      </motion.div>
-                    </motion.div>
-                  ) : (
-                    <motion.div
-                      key="view-mode"
-                      {...(shouldReduceMotion ? {} : ANIMATION.VIEW_MODE)}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <WorkspaceIcon workspace={workspace} />
-                          <div>
-                            <h5 className="font-medium">{workspace.name}</h5>
-                            <p className="text-xs text-muted-foreground">
-                              {workspaceBoards.length} project
-                              {workspaceBoards.length !== 1 ? 's' : ''}
-                            </p>
-                          </div>
+                        <div className="space-y-2">
+                          <Label htmlFor={`name-${workspace.id}`}>
+                            Workspace Name
+                          </Label>
+                          <Input
+                            id={`name-${workspace.id}`}
+                            value={workspaceName}
+                            onChange={e => setWorkspaceName(e.target.value)}
+                            placeholder="Workspace name"
+                          />
                         </div>
 
-                        <div className="flex gap-1">
-                          <motion.div {...(shouldReduceMotion ? {} : ANIMATION.BUTTON)}>
-                            <Button
-                              type="button"
-                              size="icon"
-                              variant="ghost"
-                              onClick={() => handleSelectIcon(workspace.id)}
-                              title="Change icon"
-                            >
-                              <Upload className="size-4" />
-                            </Button>
-                          </motion.div>
-                          <AnimatePresence>
-                          {workspace.iconPath && (
+                        {/* Icon Preview Section */}
+                        {croppedImagePreview &&
+                          (() => {
+                            console.log(
+                              'Rendering preview section with URL:',
+                              croppedImagePreview
+                            )
+                            return true
+                          })() && (
                             <motion.div
-                              {...(shouldReduceMotion ? {} : {
-                                ...ANIMATION.BUTTON,
-                                initial: { opacity: 0, scale: 0.8 },
-                                animate: { opacity: 1, scale: 1 },
-                                exit: { opacity: 0, scale: 0.8 }
-                              })}
+                              className="space-y-3"
+                              {...(shouldReduceMotion
+                                ? {}
+                                : {
+                                    initial: { opacity: 0, y: -10 },
+                                    animate: { opacity: 1, y: 0 },
+                                    exit: { opacity: 0, y: -10 },
+                                    transition: ANIMATION.SPRING.SMOOTH,
+                                  })}
                             >
-                              <Button
-                                type="button"
-                                size="icon"
-                                variant="ghost"
-                                onClick={() => handleRemoveIcon(workspace.id)}
-                                title="Remove icon"
-                              >
-                                <X className="size-4" />
-                              </Button>
+                              <Label>Icon Preview</Label>
+                              <div className="flex items-start gap-4">
+                                <div className="relative flex-shrink-0">
+                                  <img
+                                    src={croppedImagePreview}
+                                    alt="New workspace icon"
+                                    className="h-16 w-16 rounded-xl object-cover border-2 border-border"
+                                  />
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => {
+                                      if (croppedImagePreview) {
+                                        URL.revokeObjectURL(croppedImagePreview)
+                                      }
+                                      setCroppedImagePreview(null)
+                                      setCroppedImageBlob(null)
+                                    }}
+                                    className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-background shadow-sm hover:bg-destructive hover:text-destructive-foreground"
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                                <div className="flex-1 space-y-2">
+                                  <div className="rounded-md bg-green-50 dark:bg-green-950/20 p-3 text-sm text-green-800 dark:text-green-200">
+                                    ✓ New icon ready. Click "Save" to apply the
+                                    changes.
+                                  </div>
+                                </div>
+                              </div>
                             </motion.div>
                           )}
-                          </AnimatePresence>
-                          <motion.div {...(shouldReduceMotion ? {} : ANIMATION.BUTTON)}>
+
+                        {/* Only show color selection if workspace doesn't have a custom icon and no preview */}
+                        <AnimatePresence>
+                          {workspace.iconPath || croppedImagePreview ? (
+                            <motion.div
+                              className="space-y-3"
+                              {...(shouldReduceMotion
+                                ? {}
+                                : {
+                                    initial: { opacity: 0, y: -10 },
+                                    animate: { opacity: 1, y: 0 },
+                                    exit: { opacity: 0, y: -10 },
+                                    transition: ANIMATION.SPRING.SMOOTH,
+                                  })}
+                            >
+                              <div className="rounded-md bg-muted/50 p-3 text-sm text-muted-foreground">
+                                💡 Color selection is disabled when using{' '}
+                                {croppedImagePreview
+                                  ? 'a new icon preview'
+                                  : 'a custom icon'}
+                                .{' '}
+                                {croppedImagePreview
+                                  ? 'Remove the preview or save changes'
+                                  : 'Remove the icon'}{' '}
+                                to use colors instead.
+                              </div>
+                            </motion.div>
+                          ) : (
+                            <motion.div
+                              className="space-y-3"
+                              {...(shouldReduceMotion
+                                ? {}
+                                : {
+                                    initial: { opacity: 0, height: 0, y: -10 },
+                                    animate: {
+                                      opacity: 1,
+                                      height: 'auto',
+                                      y: 0,
+                                    },
+                                    exit: { opacity: 0, height: 0, y: -10 },
+                                    transition: {
+                                      ...ANIMATION.SPRING.SMOOTH,
+                                      delay: 0.05,
+                                    },
+                                  })}
+                            >
+                              <Label>Color</Label>
+                              <div className="flex gap-2 flex-wrap items-center">
+                                {PRESET_COLORS.map((color, index) => (
+                                  <motion.button
+                                    key={color.value}
+                                    type="button"
+                                    className={cn(
+                                      'size-10 rounded-full border-2 transition-colors duration-200',
+                                      workspaceColor === color.value
+                                        ? 'border-foreground'
+                                        : 'border-transparent'
+                                    )}
+                                    style={{ backgroundColor: color.value }}
+                                    onClick={() =>
+                                      setWorkspaceColor(color.value)
+                                    }
+                                    title={color.name}
+                                    {...(shouldReduceMotion
+                                      ? {}
+                                      : {
+                                          initial: { opacity: 0, scale: 0.8 },
+                                          animate: { opacity: 1, scale: 1 },
+                                          transition: {
+                                            ...ANIMATION.SPRING.SMOOTH,
+                                            delay:
+                                              index * ANIMATION.STAGGER.FAST,
+                                          },
+                                          whileHover:
+                                            ANIMATION.COLOR_BUTTON.whileHover,
+                                          whileTap:
+                                            ANIMATION.COLOR_BUTTON.whileTap,
+                                        })}
+                                  />
+                                ))}
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+
+                        <motion.div
+                          className="flex gap-2 pt-2"
+                          {...(shouldReduceMotion
+                            ? {}
+                            : {
+                                initial: { opacity: 0, y: 10 },
+                                animate: { opacity: 1, y: 0 },
+                                transition: {
+                                  ...ANIMATION.SPRING.SMOOTH,
+                                  delay: 0.1,
+                                },
+                              })}
+                        >
+                          <motion.div
+                            {...(shouldReduceMotion ? {} : ANIMATION.BUTTON)}
+                          >
                             <Button
                               type="button"
-                              size="icon"
-                              variant="ghost"
-                              onClick={() => handleEditWorkspace(workspace)}
-                              title="Edit"
+                              size="sm"
+                              onClick={() => handleSaveWorkspace(workspace.id)}
                             >
-                              <Edit2 className="size-4" />
+                              Save
                             </Button>
                           </motion.div>
-                          <motion.div {...(shouldReduceMotion ? {} : ANIMATION.BUTTON)}>
+                          <motion.div
+                            {...(shouldReduceMotion ? {} : ANIMATION.BUTTON)}
+                          >
                             <Button
                               type="button"
-                              size="icon"
-                              variant="ghost"
-                              onClick={() => handleDeleteWorkspace(workspace)}
-                              className="text-destructive hover:text-destructive"
-                              title="Delete"
+                              size="sm"
+                              variant="outline"
+                              onClick={handleCancelEdit}
                             >
-                              <Trash2 className="size-4" />
+                              Cancel
                             </Button>
                           </motion.div>
+                        </motion.div>
+                      </motion.div>
+                    ) : (
+                      <motion.div
+                        key="view-mode"
+                        {...(shouldReduceMotion ? {} : ANIMATION.VIEW_MODE)}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <WorkspaceIcon workspace={workspace} />
+                            <div>
+                              <h5 className="font-medium">{workspace.name}</h5>
+                              <p className="text-xs text-muted-foreground">
+                                {workspaceBoards.length} project
+                                {workspaceBoards.length !== 1 ? 's' : ''}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex gap-1">
+                            <motion.div
+                              {...(shouldReduceMotion ? {} : ANIMATION.BUTTON)}
+                            >
+                              <Button
+                                type="button"
+                                size="icon"
+                                variant="ghost"
+                                onClick={() => handleSelectIcon(workspace.id)}
+                                title="Change icon"
+                              >
+                                <Upload className="size-4" />
+                              </Button>
+                            </motion.div>
+                            <AnimatePresence>
+                              {workspace.iconPath && (
+                                <motion.div
+                                  {...(shouldReduceMotion
+                                    ? {}
+                                    : {
+                                        ...ANIMATION.BUTTON,
+                                        initial: { opacity: 0, scale: 0.8 },
+                                        animate: { opacity: 1, scale: 1 },
+                                        exit: { opacity: 0, scale: 0.8 },
+                                      })}
+                                >
+                                  <Button
+                                    type="button"
+                                    size="icon"
+                                    variant="ghost"
+                                    onClick={() =>
+                                      handleRemoveIcon(workspace.id)
+                                    }
+                                    title="Remove icon"
+                                  >
+                                    <X className="size-4" />
+                                  </Button>
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+                            <motion.div
+                              {...(shouldReduceMotion ? {} : ANIMATION.BUTTON)}
+                            >
+                              <Button
+                                type="button"
+                                size="icon"
+                                variant="ghost"
+                                onClick={() => handleEditWorkspace(workspace)}
+                                title="Edit"
+                              >
+                                <Edit2 className="size-4" />
+                              </Button>
+                            </motion.div>
+                            <motion.div
+                              {...(shouldReduceMotion ? {} : ANIMATION.BUTTON)}
+                            >
+                              <Button
+                                type="button"
+                                size="icon"
+                                variant="ghost"
+                                onClick={() => handleDeleteWorkspace(workspace)}
+                                className="text-destructive hover:text-destructive"
+                                title="Delete"
+                              >
+                                <Trash2 className="size-4" />
+                              </Button>
+                            </motion.div>
+                          </div>
                         </div>
-                      </div>
-                    </motion.div>
-                  )}
+                      </motion.div>
+                    )}
                   </AnimatePresence>
                 </motion.div>
               )
@@ -705,131 +782,140 @@ export function WorkspacesPane({
           </AlertDialogHeader>
 
           <AnimatePresence>
-          {deleteState.workspace &&
-            boards.filter(b => b.workspaceId === deleteState.workspace!.id)
-              .length > 0 && (
-              <motion.div
-                className="space-y-3"
-                {...(shouldReduceMotion ? {} : {
-                  initial: { opacity: 0, y: 10 },
-                  animate: { opacity: 1, y: 0 },
-                  exit: { opacity: 0, y: -10 },
-                  transition: ANIMATION.SPRING.SMOOTH
-                })}
-              >
-                <div className="space-y-2">
-                  <motion.button
-                    type="button"
-                    className={cn(
-                      'w-full p-3 border rounded-lg text-left transition-colors',
-                      deleteState.action === 'delete-all'
-                        ? 'border-primary bg-primary/5'
-                        : 'hover:border-muted-foreground/50'
-                    )}
-                    {...(shouldReduceMotion ? {} : {
-                      initial: { opacity: 0, x: -20 },
-                      animate: { opacity: 1, x: 0 },
-                      transition: {
-                        ...ANIMATION.SPRING.SMOOTH,
-                        delay: 0.05
-                      }
-                    })}
-                    onClick={() =>
-                      setDeleteState(prev => ({
-                        ...prev,
-                        action: 'delete-all',
-                        targetWorkspaceId: null,
-                      }))
-                    }
-                  >
-                    <div className="font-medium text-destructive">
-                      Delete workspace and all projects
-                    </div>
-                    <div className="text-sm text-muted-foreground">
-                      This will permanently delete all projects in this
-                      workspace
-                    </div>
-                  </motion.button>
-
-                  <motion.button
-                    type="button"
-                    className={cn(
-                      'w-full p-3 border rounded-lg text-left transition-colors',
-                      deleteState.action === 'move-to-other'
-                        ? 'border-primary bg-primary/5'
-                        : 'hover:border-muted-foreground/50'
-                    )}
-                    {...(shouldReduceMotion ? {} : {
-                      initial: { opacity: 0, x: -20 },
-                      animate: { opacity: 1, x: 0 },
-                      transition: {
-                        ...ANIMATION.SPRING.SMOOTH,
-                        delay: 0.1
-                      }
-                    })}
-                    onClick={() =>
-                      setDeleteState(prev => ({
-                        ...prev,
-                        action: 'move-to-other',
-                      }))
-                    }
-                  >
-                    <div className="font-medium">
-                      Move projects to another workspace
-                    </div>
-                    <div className="text-sm text-muted-foreground">
-                      Keep the projects by moving them first
-                    </div>
-                  </motion.button>
-                </div>
-
-                {deleteState.action === 'move-to-other' && (
-                  <motion.div
-                    className="space-y-2"
-                    {...(shouldReduceMotion ? {} : {
-                      initial: { opacity: 0, height: 0, y: -10 },
-                      animate: { opacity: 1, height: 'auto', y: 0 },
-                      exit: { opacity: 0, height: 0, y: -10 },
-                      transition: {
-                        ...ANIMATION.SPRING.SMOOTH,
-                        delay: 0.1
-                      }
-                    })}
-                  >
-                    <Label>Select target workspace</Label>
-                    <Select
-                      value={deleteState.targetWorkspaceId ?? ''}
-                      onValueChange={value =>
+            {deleteState.workspace &&
+              boards.filter(b => b.workspaceId === deleteState.workspace!.id)
+                .length > 0 && (
+                <motion.div
+                  className="space-y-3"
+                  {...(shouldReduceMotion
+                    ? {}
+                    : {
+                        initial: { opacity: 0, y: 10 },
+                        animate: { opacity: 1, y: 0 },
+                        exit: { opacity: 0, y: -10 },
+                        transition: ANIMATION.SPRING.SMOOTH,
+                      })}
+                >
+                  <div className="space-y-2">
+                    <motion.button
+                      type="button"
+                      className={cn(
+                        'w-full p-3 border rounded-lg text-left transition-colors',
+                        deleteState.action === 'delete-all'
+                          ? 'border-primary bg-primary/5'
+                          : 'hover:border-muted-foreground/50'
+                      )}
+                      {...(shouldReduceMotion
+                        ? {}
+                        : {
+                            initial: { opacity: 0, x: -20 },
+                            animate: { opacity: 1, x: 0 },
+                            transition: {
+                              ...ANIMATION.SPRING.SMOOTH,
+                              delay: 0.05,
+                            },
+                          })}
+                      onClick={() =>
                         setDeleteState(prev => ({
                           ...prev,
-                          targetWorkspaceId: value,
+                          action: 'delete-all',
+                          targetWorkspaceId: null,
                         }))
                       }
                     >
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Select a workspace...">
-                          {deleteState.targetWorkspaceId && (
-                            workspaces.find(w => w.id === deleteState.targetWorkspaceId)?.name
-                          )}
-                        </SelectValue>
-                      </SelectTrigger>
-                      <SelectContent>
-                        {workspaces
-                          .filter(w => w.id !== deleteState.workspace?.id)
-                          .map(w => (
-                            <SelectItem key={w.id} value={w.id}>
-                              <div className="flex items-center gap-2">
-                                <WorkspaceIcon workspace={w} />
-                                <span>{w.name}</span>
-                              </div>
-                            </SelectItem>
-                          ))}
-                      </SelectContent>
-                    </Select>
-                  </motion.div>
-                )}
-              </motion.div>
-            )}
+                      <div className="font-medium text-destructive">
+                        Delete workspace and all projects
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        This will permanently delete all projects in this
+                        workspace
+                      </div>
+                    </motion.button>
+
+                    <motion.button
+                      type="button"
+                      className={cn(
+                        'w-full p-3 border rounded-lg text-left transition-colors',
+                        deleteState.action === 'move-to-other'
+                          ? 'border-primary bg-primary/5'
+                          : 'hover:border-muted-foreground/50'
+                      )}
+                      {...(shouldReduceMotion
+                        ? {}
+                        : {
+                            initial: { opacity: 0, x: -20 },
+                            animate: { opacity: 1, x: 0 },
+                            transition: {
+                              ...ANIMATION.SPRING.SMOOTH,
+                              delay: 0.1,
+                            },
+                          })}
+                      onClick={() =>
+                        setDeleteState(prev => ({
+                          ...prev,
+                          action: 'move-to-other',
+                        }))
+                      }
+                    >
+                      <div className="font-medium">
+                        Move projects to another workspace
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        Keep the projects by moving them first
+                      </div>
+                    </motion.button>
+                  </div>
+
+                  {deleteState.action === 'move-to-other' && (
+                    <motion.div
+                      className="space-y-2"
+                      {...(shouldReduceMotion
+                        ? {}
+                        : {
+                            initial: { opacity: 0, height: 0, y: -10 },
+                            animate: { opacity: 1, height: 'auto', y: 0 },
+                            exit: { opacity: 0, height: 0, y: -10 },
+                            transition: {
+                              ...ANIMATION.SPRING.SMOOTH,
+                              delay: 0.1,
+                            },
+                          })}
+                    >
+                      <Label>Select target workspace</Label>
+                      <Select
+                        value={deleteState.targetWorkspaceId ?? ''}
+                        onValueChange={value =>
+                          setDeleteState(prev => ({
+                            ...prev,
+                            targetWorkspaceId: value,
+                          }))
+                        }
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select a workspace...">
+                            {deleteState.targetWorkspaceId &&
+                              workspaces.find(
+                                w => w.id === deleteState.targetWorkspaceId
+                              )?.name}
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {workspaces
+                            .filter(w => w.id !== deleteState.workspace?.id)
+                            .map(w => (
+                              <SelectItem key={w.id} value={w.id}>
+                                <div className="flex items-center gap-2">
+                                  <WorkspaceIcon workspace={w} />
+                                  <span>{w.name}</span>
+                                </div>
+                              </SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
+                    </motion.div>
+                  )}
+                </motion.div>
+              )}
           </AnimatePresence>
 
           <AlertDialogFooter>

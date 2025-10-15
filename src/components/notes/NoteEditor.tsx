@@ -32,7 +32,7 @@ function getTitleFromBlocks(blocks: PartialBlock[]): string {
   }
 
   const firstBlock = blocks[0]
-  
+
   // Verifica se é um heading
   if (firstBlock?.type === 'heading' && firstBlock.content) {
     if (typeof firstBlock.content === 'string') {
@@ -44,7 +44,7 @@ function getTitleFromBlocks(blocks: PartialBlock[]): string {
         .join('')
     }
   }
-  
+
   // Fallback para paragraph ou qualquer outro tipo
   if (firstBlock?.content) {
     if (typeof firstBlock.content === 'string') {
@@ -56,7 +56,7 @@ function getTitleFromBlocks(blocks: PartialBlock[]): string {
         .join('')
     }
   }
-  
+
   return 'Untitled'
 }
 
@@ -187,7 +187,7 @@ export function NoteEditor({ note, boardId, onBack }: NoteEditorProps) {
     }
 
     previousNoteIdRef.current = note.id
-    
+
     // Reset saved refs
     lastSavedContentRef.current = ''
     lastSavedTitleRef.current = ''
@@ -256,10 +256,7 @@ export function NoteEditor({ note, boardId, onBack }: NoteEditorProps) {
 
       {/* Editor */}
       <div className="flex-1 overflow-auto px-6">
-        <BlockNoteView 
-          editor={editor} 
-          theme="light"
-        />
+        <BlockNoteView editor={editor} theme="light" />
       </div>
 
       {/* Delete Confirmation Dialog */}

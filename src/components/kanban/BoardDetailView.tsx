@@ -231,43 +231,16 @@ export function BoardDetailView({
       try {
         const columnCards = cardsByColumn.get(cardDialogColumn.id) || []
 
-        // Calculate position based on priority and name sorting
-        const newCard = {
-          title: cardTitle.trim(),
-          priority: cardPriority,
-        }
-
-        // Find the correct position for the new card in the sorted order
-        let targetPosition = 0
-        for (const existingCard of columnCards) {
-          const priorityOrder = { high: 3, medium: 2, low: 1 }
-          const priorityDiff =
-            priorityOrder[existingCard.priority] -
-            priorityOrder[newCard.priority]
-
-          if (priorityDiff > 0) {
-            // Existing card has higher priority, new card goes before it
-            break
-          } else if (priorityDiff === 0) {
-            // Same priority, compare names
-            if (existingCard.title.localeCompare(newCard.title) <= 0) {
-              // Existing card comes before alphabetically, new card goes after
-              targetPosition = existingCard.position + 1
-            } else {
-              // New card comes before alphabetically
-              break
-            }
-          } else {
-            // Existing card has lower priority, new card goes before it
-            break
-          }
-        }
+        // Always insert at the end of the column
+        // The frontend displays cards sorted by priority and name,
+        // but the backend position is just sequential (0, 1, 2...)
+        const targetPosition = columnCards.length + 1
 
         await createCardMutation.mutateAsync({
           id: `temp-${Date.now()}`,
           boardId: board.id,
           columnId: cardDialogColumn.id,
-          title: cardTitle.trim(),
+          title: newCardTitle,
           description: cardDescription.trim() || undefined,
           priority: cardPriority,
           dueDate: cardDueDate || undefined,
@@ -560,9 +533,7 @@ export function BoardDetailView({
         boardIcon={board.icon ?? undefined}
         boardEmoji={board.emoji ?? undefined}
         boardColor={board.color ?? undefined}
-        workspaceName={
-          workspaces.find(ws => ws.id === board.workspaceId)?.name
-        }
+        workspaceName={workspaces.find(ws => ws.id === board.workspaceId)?.name}
         activeTab={activeNavTab}
         onTabChange={handleTabChange}
         taskControls={taskControls}
@@ -622,37 +593,12 @@ export function BoardDetailView({
                       boardId={board.id}
                       onDeleteTask={handleDeleteCard}
                       onCreateTask={async task => {
-                        // Calculate position based on priority and name sorting
+                        // Always insert at the end of the column
+                        // The frontend displays cards sorted by priority and name,
+                        // but the backend position is just sequential (0, 1, 2...)
                         const columnCards =
                           cardsByColumn.get(task.columnId) || []
-
-                        // Find the correct position for the new card in the sorted order
-                        let targetPosition = 0
-                        for (const existingCard of columnCards) {
-                          const priorityOrder = { high: 3, medium: 2, low: 1 }
-                          const priorityDiff =
-                            priorityOrder[existingCard.priority] -
-                            priorityOrder[task.priority]
-
-                          if (priorityDiff > 0) {
-                            // Existing card has higher priority, new card goes before it
-                            break
-                          } else if (priorityDiff === 0) {
-                            // Same priority, compare names
-                            if (
-                              existingCard.title.localeCompare(task.title) <= 0
-                            ) {
-                              // Existing card comes before alphabetically, new card goes after
-                              targetPosition = existingCard.position + 1
-                            } else {
-                              // New card comes before alphabetically
-                              break
-                            }
-                          } else {
-                            // Existing card has lower priority, new card goes before it
-                            break
-                          }
-                        }
+                        const targetPosition = columnCards.length + 1
 
                         await createCardMutation.mutateAsync({
                           id: task.id,

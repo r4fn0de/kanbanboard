@@ -55,11 +55,7 @@ export const useUIStore = create<UIState>()(
         ),
 
       setLeftSidebarLocked: locked =>
-        set(
-          { leftSidebarLocked: locked },
-          undefined,
-          'setLeftSidebarLocked'
-        ),
+        set({ leftSidebarLocked: locked }, undefined, 'setLeftSidebarLocked'),
 
       toggleRightSidebar: () =>
         set(

@@ -259,10 +259,14 @@ export function LeftSideBar({
   const [projectColor, setProjectColor] = useState('#6366F1')
   const [useEmoji, setUseEmoji] = useState(false)
   const [settingsProjectOpen, setSettingsProjectOpen] = useState(false)
-  const [settingsProjectId, setSettingsProjectId] = useState<string | null>(null)
+  const [settingsProjectId, setSettingsProjectId] = useState<string | null>(
+    null
+  )
   const [settingsProjectName, setSettingsProjectName] = useState('')
-  const [settingsProjectDescription, setSettingsProjectDescription] = useState('')
-  const [settingsProjectIcon, setSettingsProjectIcon] = useState(DEFAULT_PROJECT_ICON)
+  const [settingsProjectDescription, setSettingsProjectDescription] =
+    useState('')
+  const [settingsProjectIcon, setSettingsProjectIcon] =
+    useState(DEFAULT_PROJECT_ICON)
   const [settingsProjectEmoji, setSettingsProjectEmoji] = useState('')
   const [settingsProjectColor, setSettingsProjectColor] = useState('#6366F1')
   const [settingsUseEmoji, setSettingsUseEmoji] = useState(false)
@@ -292,7 +296,8 @@ export function LeftSideBar({
   const navigate = useNavigate()
   const location = useLocation()
   const commandContext = useCommandContext()
-  const { leftSidebarVisible, toggleLeftSidebar, leftSidebarLocked } = useUIStore()
+  const { leftSidebarVisible, toggleLeftSidebar, leftSidebarLocked } =
+    useUIStore()
   const selectedWorkspaceId = useWorkspaceStore(
     state => state.selectedWorkspaceId
   )
@@ -438,7 +443,6 @@ export function LeftSideBar({
       }
     )
   }
-
 
   const projectLinks = useMemo(() => {
     if (isLoadingBoards || isLoadingWorkspaces) {
@@ -1233,14 +1237,19 @@ export function LeftSideBar({
           <DialogHeader>
             <DialogTitle>Project Settings</DialogTitle>
             <DialogDescription>
-              Manage your project name, description, appearance, and customization.
+              Manage your project name, description, appearance, and
+              customization.
             </DialogDescription>
           </DialogHeader>
           <form
             className="space-y-6"
             onSubmit={(event: FormEvent<HTMLFormElement>) => {
               event.preventDefault()
-              if (renameBoard.isPending || updateBoardIcon.isPending || !settingsProjectId) {
+              if (
+                renameBoard.isPending ||
+                updateBoardIcon.isPending ||
+                !settingsProjectId
+              ) {
                 return
               }
 
@@ -1272,7 +1281,9 @@ export function LeftSideBar({
                         },
                         onError: error => {
                           const message =
-                            error instanceof Error ? error.message : 'Unknown error'
+                            error instanceof Error
+                              ? error.message
+                              : 'Unknown error'
                           toast.error('Failed to update project icon', {
                             description: message,
                           })
@@ -1296,27 +1307,35 @@ export function LeftSideBar({
               <div
                 className="relative flex h-16 w-16 items-center justify-center rounded-2xl transition-all duration-200"
                 style={{
-                  backgroundColor: settingsUseEmoji ? settingsProjectColor : 'transparent',
+                  backgroundColor: settingsUseEmoji
+                    ? settingsProjectColor
+                    : 'transparent',
                   transform: 'scale(1)',
                 }}
               >
                 {settingsUseEmoji && settingsProjectEmoji ? (
                   <span className="text-3xl">{settingsProjectEmoji}</span>
-                ) : (() => {
-                  const IconComponent = PROJECT_ICON_MAP[settingsProjectIcon] ?? Folder
-                  return (
-                    <IconComponent
-                      className="h-12 w-12"
-                      style={{ color: settingsProjectColor }}
-                    />
-                  )
-                })()}
+                ) : (
+                  (() => {
+                    const IconComponent =
+                      PROJECT_ICON_MAP[settingsProjectIcon] ?? Folder
+                    return (
+                      <IconComponent
+                        className="h-12 w-12"
+                        style={{ color: settingsProjectColor }}
+                      />
+                    )
+                  })()
+                )}
               </div>
             </div>
 
             {/* Project Name */}
             <div className="space-y-2">
-              <Label htmlFor={settingsProjectNameId} className="text-sm font-medium">
+              <Label
+                htmlFor={settingsProjectNameId}
+                className="text-sm font-medium"
+              >
                 Project name
               </Label>
               <Input
@@ -1364,7 +1383,10 @@ export function LeftSideBar({
               {!settingsUseEmoji && (
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">Icon</Label>
-                  <Select value={settingsProjectIcon} onValueChange={setSettingsProjectIcon}>
+                  <Select
+                    value={settingsProjectIcon}
+                    onValueChange={setSettingsProjectIcon}
+                  >
                     <SelectTrigger className="h-10">
                       <SelectValue>
                         <div className="flex items-center gap-2">
@@ -1395,7 +1417,10 @@ export function LeftSideBar({
                           {section.options.map(option => {
                             const IconComponent = option.icon
                             return (
-                              <SelectItem key={option.value} value={option.value}>
+                              <SelectItem
+                                key={option.value}
+                                value={option.value}
+                              >
                                 <div className="flex items-center gap-2">
                                   <IconComponent className="h-4 w-4" />
                                   <span>{option.label}</span>
@@ -1413,7 +1438,10 @@ export function LeftSideBar({
               {/* Emoji Input */}
               {settingsUseEmoji && (
                 <div className="space-y-2">
-                  <Label htmlFor="settings-project-emoji" className="text-sm font-medium">
+                  <Label
+                    htmlFor="settings-project-emoji"
+                    className="text-sm font-medium"
+                  >
                     Emoji
                   </Label>
                   <Input
@@ -1434,7 +1462,10 @@ export function LeftSideBar({
 
               {/* Color Picker */}
               <div className="space-y-2">
-                <Label htmlFor="settings-project-color" className="text-sm font-medium">
+                <Label
+                  htmlFor="settings-project-color"
+                  className="text-sm font-medium"
+                >
                   Color
                 </Label>
                 <div className="flex gap-2">
@@ -1442,12 +1473,16 @@ export function LeftSideBar({
                     id="settings-project-color"
                     type="color"
                     value={settingsProjectColor}
-                    onChange={event => setSettingsProjectColor(event.target.value)}
+                    onChange={event =>
+                      setSettingsProjectColor(event.target.value)
+                    }
                     className="h-10 w-14 cursor-pointer rounded-md border border-input"
                   />
                   <Input
                     value={settingsProjectColor}
-                    onChange={event => setSettingsProjectColor(event.target.value)}
+                    onChange={event =>
+                      setSettingsProjectColor(event.target.value)
+                    }
                     placeholder="#6366F1"
                     className="h-10 flex-1 font-mono text-sm"
                   />
@@ -1457,13 +1492,19 @@ export function LeftSideBar({
 
             {/* Description */}
             <div className="space-y-2">
-              <Label htmlFor={settingsProjectDescriptionId} className="text-sm font-medium">
-                Description <span className="text-muted-foreground">(optional)</span>
+              <Label
+                htmlFor={settingsProjectDescriptionId}
+                className="text-sm font-medium"
+              >
+                Description{' '}
+                <span className="text-muted-foreground">(optional)</span>
               </Label>
               <Textarea
                 id={settingsProjectDescriptionId}
                 value={settingsProjectDescription}
-                onChange={event => setSettingsProjectDescription(event.target.value)}
+                onChange={event =>
+                  setSettingsProjectDescription(event.target.value)
+                }
                 placeholder="What's this project about?"
                 rows={3}
                 className="resize-none"
@@ -1545,7 +1586,10 @@ export function LeftSideBar({
                   title: trimmedName,
                   description: projectDescription.trim() || undefined,
                   icon: useEmoji ? undefined : projectIcon,
-                  emoji: useEmoji && projectEmoji.trim() ? projectEmoji.trim() : undefined,
+                  emoji:
+                    useEmoji && projectEmoji.trim()
+                      ? projectEmoji.trim()
+                      : undefined,
                   color: projectColor,
                 },
                 {
@@ -1581,15 +1625,18 @@ export function LeftSideBar({
               >
                 {useEmoji && projectEmoji ? (
                   <span className="text-4xl">{projectEmoji}</span>
-                ) : (() => {
-                  const IconComponent = PROJECT_ICON_MAP[projectIcon] ?? Folder
-                  return (
-                    <IconComponent
-                      className="h-14 w-14"
-                      style={{ color: projectColor }}
-                    />
-                  )
-                })()}
+                ) : (
+                  (() => {
+                    const IconComponent =
+                      PROJECT_ICON_MAP[projectIcon] ?? Folder
+                    return (
+                      <IconComponent
+                        className="h-14 w-14"
+                        style={{ color: projectColor }}
+                      />
+                    )
+                  })()
+                )}
               </div>
             </div>
 
@@ -1644,55 +1691,61 @@ export function LeftSideBar({
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">Icon</Label>
                   <Select value={projectIcon} onValueChange={setProjectIcon}>
-                  <SelectTrigger className="h-10">
-                    <SelectValue>
-                      <div className="flex items-center gap-2">
-                        {(() => {
-                          const IconComponent =
-                            PROJECT_ICON_MAP[projectIcon] ?? Folder
-                          return (
-                            <>
-                              <IconComponent className="h-4 w-4" />
-                              <span>
-                                {PROJECT_ICON_OPTIONS.find(
-                                  opt => opt.value === projectIcon
-                                )?.label ?? 'Select icon'}
-                              </span>
-                            </>
-                          )
-                        })()}
-                      </div>
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    {PROJECT_ICON_SECTIONS.map((section, sectionIndex) => (
-                      <div key={section.label}>
-                        {sectionIndex > 0 && <SelectSeparator />}
-                        <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
-                          {section.label}
-                        </div>
-                        {section.options.map(option => {
-                          const IconComponent = option.icon
-                          return (
-                            <SelectItem key={option.value} value={option.value}>
-                              <div className="flex items-center gap-2">
+                    <SelectTrigger className="h-10">
+                      <SelectValue>
+                        <div className="flex items-center gap-2">
+                          {(() => {
+                            const IconComponent =
+                              PROJECT_ICON_MAP[projectIcon] ?? Folder
+                            return (
+                              <>
                                 <IconComponent className="h-4 w-4" />
-                                <span>{option.label}</span>
-                              </div>
-                            </SelectItem>
-                          )
-                        })}
-                      </div>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+                                <span>
+                                  {PROJECT_ICON_OPTIONS.find(
+                                    opt => opt.value === projectIcon
+                                  )?.label ?? 'Select icon'}
+                                </span>
+                              </>
+                            )
+                          })()}
+                        </div>
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PROJECT_ICON_SECTIONS.map((section, sectionIndex) => (
+                        <div key={section.label}>
+                          {sectionIndex > 0 && <SelectSeparator />}
+                          <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
+                            {section.label}
+                          </div>
+                          {section.options.map(option => {
+                            const IconComponent = option.icon
+                            return (
+                              <SelectItem
+                                key={option.value}
+                                value={option.value}
+                              >
+                                <div className="flex items-center gap-2">
+                                  <IconComponent className="h-4 w-4" />
+                                  <span>{option.label}</span>
+                                </div>
+                              </SelectItem>
+                            )
+                          })}
+                        </div>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               )}
 
               {/* Emoji Input (only when using emoji) */}
               {useEmoji && (
                 <div className="space-y-2">
-                  <Label htmlFor="project-emoji" className="text-sm font-medium">
+                  <Label
+                    htmlFor="project-emoji"
+                    className="text-sm font-medium"
+                  >
                     Emoji
                   </Label>
                   <Input
@@ -1737,8 +1790,12 @@ export function LeftSideBar({
 
             {/* Description */}
             <div className="space-y-2">
-              <Label htmlFor={projectDescriptionId} className="text-sm font-medium">
-                Description <span className="text-muted-foreground">(optional)</span>
+              <Label
+                htmlFor={projectDescriptionId}
+                className="text-sm font-medium"
+              >
+                Description{' '}
+                <span className="text-muted-foreground">(optional)</span>
               </Label>
               <Textarea
                 id={projectDescriptionId}

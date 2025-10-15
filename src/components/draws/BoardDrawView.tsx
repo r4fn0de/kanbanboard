@@ -130,9 +130,7 @@ export function BoardDrawView() {
         boardIcon={board.icon ?? undefined}
         boardEmoji={board.emoji ?? undefined}
         boardColor={board.color ?? undefined}
-        workspaceName={
-          workspaces.find(ws => ws.id === board.workspaceId)?.name
-        }
+        workspaceName={workspaces.find(ws => ws.id === board.workspaceId)?.name}
         activeTab="draws"
         onTabChange={handleTabChange}
       />
