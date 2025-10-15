@@ -127,22 +127,27 @@ function NoteCard({ note, onClick, boardId }: NoteCardProps) {
       }
     )
   }
-  // Extract plain text from content for preview
+  // Extract plain text from content for preview, excluding title block
   const getPreviewText = (content: string): string => {
     try {
       const parsed = JSON.parse(content)
       const extractText = (nodes: unknown[]): string => {
         return nodes
           .map((node: unknown) => {
-            const n = node as { text?: string; children?: unknown[] }
+            const n = node as { text?: string; children?: unknown[]; id?: string }
+            // Skip title block to avoid duplicating content
+            if (n.id === 'title-block') return ''
             if (n.text) return n.text
             if (n.children) return extractText(n.children)
             return ''
           })
           .join(' ')
+          .replace(/\s+/g, ' ') // Normalize whitespace
       }
-      return extractText(parsed).trim() || 'No content'
+      const text = extractText(parsed).trim()
+      return text || 'No content'
     } catch {
+      // For old format content, return as-is
       return content || 'No content'
     }
   }
