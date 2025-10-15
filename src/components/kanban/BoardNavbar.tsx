@@ -35,7 +35,6 @@ interface BoardNavbarProps {
 }
 
 const tabs = [
-  { id: 'overview', label: 'Overview' },
   { id: 'tasks', label: 'Tasks' },
   { id: 'notes', label: 'Notes' },
   { id: 'draws', label: 'Draws' },
