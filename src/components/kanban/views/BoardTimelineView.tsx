@@ -2,6 +2,7 @@ import { Badge } from '@/components/ui/badge'
 import type { KanbanCard, KanbanColumn } from '@/types/common'
 import { CalendarClock, Trash2 } from 'lucide-react'
 import { useMemo } from 'react'
+import { useTheme } from '@/hooks/use-theme'
 import { PriorityBadge } from './board-shared'
 import { formatCardDueDate } from './card-date'
 import {
@@ -40,6 +41,13 @@ export function BoardTimelineView({
   columnsById,
   onDeleteTask,
 }: BoardTimelineViewProps) {
+  const { theme } = useTheme()
+  const isDarkMode =
+    theme === 'dark' ||
+    (typeof window !== 'undefined' &&
+      window.matchMedia('(prefers-color-scheme: dark)')?.matches &&
+      theme === 'system')
+
   const dateFormatter = useMemo(
     () => new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }),
     []
@@ -179,14 +187,7 @@ export function BoardTimelineView({
                               key={tag.id}
                               variant="secondary"
                               className="rounded-lg px-2.5 py-0.5 text-xs font-semibold"
-                              style={
-                                tag.color
-                                  ? {
-                                      backgroundColor: `${tag.color}30`,
-                                      color: getTagBadgeStyle(tag)?.color,
-                                    }
-                                  : undefined
-                              }
+                              style={getTagBadgeStyle(tag, isDarkMode)}
                             >
                               {tag.label}
                             </Badge>

@@ -22,7 +22,7 @@ export function getAccessibleTextColor(
 
   // No modo escuro, ser muito mais rigoroso para usar texto branco
   if (isDarkMode) {
-    return luminance > 0.25 ? '#000000' : '#ffffff'
+    return luminance > 0.4 ? '#000000' : '#ffffff'
   }
 
   return luminance > 0.5 ? '#000000' : '#ffffff'
@@ -33,10 +33,11 @@ export function getTagBadgeStyle(tag: KanbanTag, isDarkMode = false) {
     return undefined
   }
 
-  const textColor = getAccessibleTextColor(tag.color, isDarkMode)
+  const opacity = isDarkMode ? '40' : '30'
+
   return {
-    backgroundColor: tag.color,
-    color: textColor,
-    borderColor: tag.color,
+    backgroundColor: `${tag.color}${opacity}`,
+    color: tag.color,
+    borderColor: 'transparent',
   } as const
 }

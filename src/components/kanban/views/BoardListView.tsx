@@ -7,6 +7,7 @@ import {
   ContextMenuItem,
   ContextMenuTrigger,
 } from '@/components/ui/context-menu'
+import { useTheme } from '@/hooks/use-theme'
 import { cn } from '@/lib/utils'
 import type { KanbanCard, KanbanColumn } from '@/types/common'
 import { Calendar, Plus, Trash2 } from 'lucide-react'
@@ -61,6 +62,12 @@ export function BoardListView({
   const [selectedColumn, setSelectedColumn] = useState<KanbanColumn | null>(
     null
   )
+  const { theme } = useTheme()
+  const isDarkMode =
+    theme === 'dark' ||
+    (typeof window !== 'undefined' &&
+      window.matchMedia('(prefers-color-scheme: dark)')?.matches &&
+      theme === 'system')
 
   const handleAddCard = useCallback((column: KanbanColumn) => {
     setSelectedColumn(column)
@@ -208,14 +215,10 @@ export function BoardListView({
                                         key={tag.id}
                                         variant="secondary"
                                         className="rounded-lg px-2.5 py-0.5 text-xs font-semibold"
-                                        style={
-                                          tag.color
-                                            ? {
-                                                backgroundColor: `${tag.color}30`,
-                                                color: getTagBadgeStyle(tag)?.color,
-                                              }
-                                            : undefined
-                                        }
+                                        style={getTagBadgeStyle(
+                                          tag,
+                                          isDarkMode
+                                        )}
                                       >
                                         {tag.label}
                                       </Badge>

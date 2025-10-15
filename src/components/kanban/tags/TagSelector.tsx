@@ -202,14 +202,7 @@ export function TagSelector({
               <Badge
                 key={tag.id}
                 className="rounded-lg px-3 py-1 text-xs font-semibold leading-none"
-                style={
-                  tag.color
-                    ? {
-                        backgroundColor: `${tag.color}30`,
-                        color: badgeStyle?.color,
-                      }
-                    : undefined
-                }
+                style={badgeStyle}
               >
                 {tag.label}
               </Badge>
@@ -282,10 +275,6 @@ export function TagSelector({
                     ) : tags.length > 0 ? (
                       tags.map(tag => {
                         const selected = selectedTagIds.includes(tag.id)
-                        const textColor = getAccessibleTextColor(
-                          tag.color,
-                          isDarkMode
-                        )
 
                         return (
                           <button
@@ -322,14 +311,7 @@ export function TagSelector({
                                     'truncate font-semibold leading-none rounded-lg px-3 py-1 text-xs',
                                     selected && !tag.color && 'font-bold'
                                   )}
-                                  style={
-                                    tag.color
-                                      ? {
-                                          backgroundColor: `${tag.color}30`,
-                                          color: textColor,
-                                        }
-                                      : undefined
-                                  }
+                                  style={getTagBadgeStyle(tag, isDarkMode)}
                                 >
                                   {tag.label}
                                 </span>

@@ -7,6 +7,7 @@ import {
   ContextMenuItem,
   ContextMenuTrigger,
 } from '@/components/ui/context-menu'
+import { useTheme } from '@/hooks/use-theme'
 import { cn } from '@/lib/utils'
 import type { KanbanCard } from '@/types/common'
 import {
@@ -63,6 +64,12 @@ export function KanbanCardItem({
   maxVisibleTags = 3,
 }: KanbanCardItemProps) {
   const [isDeleting, setIsDeleting] = React.useState(false)
+  const { theme } = useTheme()
+  const isDarkMode =
+    theme === 'dark' ||
+    (typeof window !== 'undefined' &&
+      window.matchMedia('(prefers-color-scheme: dark)')?.matches &&
+      theme === 'system')
   
   const {
     attributes,
@@ -119,20 +126,13 @@ export function KanbanCardItem({
           {tagList.length > 0 && (
             <div className="flex flex-wrap items-center gap-1.5">
               {displayTags.map(tag => {
-                const badgeStyle = getTagBadgeStyle(tag)
+                const badgeStyle = getTagBadgeStyle(tag, isDarkMode)
                 return (
                   <Badge
                     key={tag.id}
                     variant="secondary"
                     className="rounded-lg px-2.5 py-0.5 text-xs font-semibold"
-                    style={
-                      tag.color
-                        ? {
-                            backgroundColor: `${tag.color}30`,
-                            color: badgeStyle?.color,
-                          }
-                        : undefined
-                    }
+                    style={badgeStyle}
                   >
                     {tag.label}
                   </Badge>
