@@ -21,6 +21,128 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import {
+  FormattingToolbarController,
+  FormattingToolbar,
+  BasicTextStyleButton,
+  BlockTypeSelect,
+  CreateLinkButton,
+  TextAlignButton,
+  useComponentsContext,
+} from '@blocknote/react'
+import { Popover } from '@base-ui-components/react/popover'
+
+const COLOR_PRESETS = {
+  basic: ['black', 'gray', 'brown'],
+  colors: ['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink']
+}
+
+function CustomColorButton({ editor }: { editor: BlockNoteEditor }) {
+  const Components = useComponentsContext()
+
+  const [isOpen, setIsOpen] = useState(false)
+
+  const handleTextColorSelect = (color: string) => {
+    editor.toggleStyles({ textColor: color });
+    setIsOpen(false);
+  }
+
+  const handleBackgroundColorSelect = (color: string) => {
+    editor.toggleStyles({ backgroundColor: color });
+    setIsOpen(false);
+  }
+
+  const currentTextColor = editor.getActiveStyles().textColor
+  const currentBackgroundColor = editor.getActiveStyles().backgroundColor
+
+  if (!Components?.FormattingToolbar?.Button) {
+    return null
+  }
+
+  return (
+    <Popover.Root open={isOpen} onOpenChange={setIsOpen}>
+      <Popover.Trigger>
+        <Components.FormattingToolbar.Button
+          mainTooltip="Colors"
+          isSelected={!!currentTextColor || !!currentBackgroundColor}
+        >
+          <div className="flex items-center gap-1">
+            <span>A</span>
+            <div 
+              className="w-3 h-3 rounded border border-border"
+              style={{ 
+                backgroundColor: currentTextColor || '#000',
+                borderColor: currentTextColor ? '#ccc' : '#999'
+              }}
+            />
+          </div>
+        </Components.FormattingToolbar.Button>
+      </Popover.Trigger>
+      <Popover.Portal>
+        <Popover.Positioner side="bottom" align="start">
+          <Popover.Popup className="bg-card border border-border rounded-md shadow-lg p-3 min-w-[200px]">
+            <div className="space-y-3">
+              {/* Text Colors */}
+              <div>
+                <div className="text-xs text-muted-foreground mb-2">Text</div>
+                <div className="grid grid-cols-5 gap-1">
+                  {[...COLOR_PRESETS.basic, ...COLOR_PRESETS.colors].map((color: string) => (
+                    <button
+                      key={`text-${color}`}
+                      onClick={() => handleTextColorSelect(color)}
+                      className={cn(
+                        "w-6 h-6 rounded border-2 hover:scale-110 transition-transform",
+                        currentTextColor === color 
+                          ? "border-primary ring-1 ring-primary/20" 
+                          : "border-transparent hover:border-border"
+                      )}
+                      style={{ backgroundColor: color }}
+                      title={`Text: ${color}`}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {/* Background Colors */}
+              <div>
+                <div className="text-xs text-muted-foreground mb-2">Background</div>
+                <div className="grid grid-cols-5 gap-1">
+                  {[...COLOR_PRESETS.basic, ...COLOR_PRESETS.colors].map((color: string) => (
+                    <button
+                      key={`bg-${color}`}
+                      onClick={() => handleBackgroundColorSelect(color)}
+                      className={cn(
+                        "w-6 h-6 rounded border-2 hover:scale-110 transition-transform",
+                        currentBackgroundColor === color 
+                          ? "border-primary ring-1 ring-primary/20" 
+                          : "border-transparent hover:border-border"
+                      )}
+                      style={{ backgroundColor: color }}
+                      title={`Background: ${color}`}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {/* Clear Colors */}
+              <div className="flex gap-2 pt-2 border-t border-border">
+                <button
+                  onClick={() => {
+                    editor.toggleStyles({ textColor: undefined })
+                    editor.toggleStyles({ backgroundColor: undefined })
+                  }}
+                  className="px-3 py-1 text-sm text-muted-foreground hover:text-foreground hover:bg-accent rounded transition-colors"
+                >
+                  Clear colors
+                </button>
+              </div>
+            </div>
+          </Popover.Popup>
+        </Popover.Positioner>
+      </Popover.Portal>
+    </Popover.Root>
+  )
+}
 
 interface NoteEditorProps {
   note: Note
@@ -348,7 +470,25 @@ export function NoteEditor({ note, boardId, onBack }: NoteEditorProps) {
           editor={editor}
           theme={resolvedEditorTheme}
           className="blocknote-view"
-        />
+          formattingToolbar={false}
+        >
+          <FormattingToolbarController
+            formattingToolbar={() => (
+              <FormattingToolbar>
+                <BlockTypeSelect key="blockTypeSelect" />
+                <BasicTextStyleButton basicTextStyle="bold" key="boldStyleButton" />
+                <BasicTextStyleButton basicTextStyle="italic" key="italicStyleButton" />
+                <BasicTextStyleButton basicTextStyle="underline" key="underlineStyleButton" />
+                <BasicTextStyleButton basicTextStyle="strike" key="strikeStyleButton" />
+                <CustomColorButton key="customColorButton" editor={editor} />
+                <CreateLinkButton key="createLinkButton" />
+                <TextAlignButton textAlignment="left" key="textAlignLeftButton" />
+                <TextAlignButton textAlignment="center" key="textAlignCenterButton" />
+                <TextAlignButton textAlignment="right" key="textAlignRightButton" />
+              </FormattingToolbar>
+            )}
+          />
+        </BlockNoteView>
       </div>
 
       {/* Delete Confirmation Dialog */}
