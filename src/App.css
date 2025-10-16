@@ -21,6 +21,19 @@
   background-color: transparent;
 }
 
+.blocknote-view .bn-root,
+.blocknote-view .bn-container,
+.blocknote-view .bn-editor,
+.blocknote-view .bn-editor-content,
+.blocknote-view .bn-page,
+.blocknote-view .bn-block,
+.blocknote-view .bn-block-content {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
 .dark .blocknote-view,
 .dark .blocknote-view .bn-root,
 .dark .blocknote-view .bn-container,
@@ -35,9 +48,7 @@
 
 .blocknote-view .bn-toolbar,
 .blocknote-view .bn-editor-toolbar,
-.blocknote-view .bn-inline-toolbar,
-.blocknote-view .bn-popover,
-.blocknote-view .bn-popover-content {
+.blocknote-view .bn-inline-toolbar {
   background-color: color-mix(in srgb, var(--card) 90%, transparent);
   border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
   color: var(--foreground);
@@ -52,9 +63,7 @@
 
 .dark .blocknote-view .bn-toolbar,
 .dark .blocknote-view .bn-editor-toolbar,
-.dark .blocknote-view .bn-inline-toolbar,
-.dark .blocknote-view .bn-popover,
-.dark .blocknote-view .bn-popover-content {
+.dark .blocknote-view .bn-inline-toolbar {
   background-color: color-mix(in srgb, var(--card) 40%, transparent);
   border-color: color-mix(in srgb, var(--border) 30%, transparent);
 }
