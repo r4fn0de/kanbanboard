@@ -1,5 +1,5 @@
 import type { ChangeEvent } from 'react'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useCreateBlockNote } from '@blocknote/react'
 import { BlockNoteView } from '@blocknote/shadcn'
 import '@blocknote/shadcn/style.css'
@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils'
 import type { Note } from '@/services/notes'
 import { useUpdateNote, useDeleteNote, useNotes } from '@/services/notes'
 import { toast } from 'sonner'
+import { useTheme } from '@/hooks/use-theme'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -70,6 +71,20 @@ export function NoteEditor({ note, boardId, onBack }: NoteEditorProps) {
   const lastSavedContentRef = useRef<string>('')
   const lastSavedTitleRef = useRef<string>('')
   const isLoadingContent = useRef(false)
+
+  const { theme: currentTheme } = useTheme()
+
+  const resolvedEditorTheme = useMemo<'light' | 'dark'>(() => {
+    if (currentTheme === 'system') {
+      if (typeof document !== 'undefined') {
+        return document.documentElement.classList.contains('dark')
+          ? 'dark'
+          : 'light'
+      }
+      return 'light'
+    }
+    return currentTheme === 'dark' ? 'dark' : 'light'
+  }, [currentTheme])
 
   const updateNote = useUpdateNote(boardId)
   const deleteNote = useDeleteNote(boardId)
@@ -329,7 +344,11 @@ export function NoteEditor({ note, boardId, onBack }: NoteEditorProps) {
             }}
           />
         </div>
-        <BlockNoteView editor={editor} theme="light" />
+        <BlockNoteView
+          editor={editor}
+          theme={resolvedEditorTheme}
+          className="blocknote-view"
+        />
       </div>
 
       {/* Delete Confirmation Dialog */}

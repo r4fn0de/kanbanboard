@@ -6,6 +6,92 @@
 @import '@blocknote/shadcn/style.css';
 @source "../node_modules/@blocknote/shadcn/dist";
 
+.blocknote-view {
+  color: inherit;
+  background-color: transparent;
+}
+
+.blocknote-view .bn-root,
+.blocknote-view .bn-container,
+.blocknote-view .bn-editor,
+.blocknote-view .bn-editor-content,
+.blocknote-view .bn-page,
+.blocknote-view .bn-block,
+.blocknote-view .bn-block-content {
+  background-color: transparent;
+}
+
+.dark .blocknote-view,
+.dark .blocknote-view .bn-root,
+.dark .blocknote-view .bn-container,
+.dark .blocknote-view .bn-editor,
+.dark .blocknote-view .bn-editor-content,
+.dark .blocknote-view .bn-page,
+.dark .blocknote-view .bn-block,
+.dark .blocknote-view .bn-block-content {
+  background-color: transparent !important;
+  color: var(--foreground);
+}
+
+.blocknote-view .bn-toolbar,
+.blocknote-view .bn-editor-toolbar,
+.blocknote-view .bn-inline-toolbar,
+.blocknote-view .bn-popover,
+.blocknote-view .bn-popover-content {
+  background-color: color-mix(in srgb, var(--card) 90%, transparent);
+  border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+  color: var(--foreground);
+  backdrop-filter: blur(12px);
+}
+
+.blocknote-view .bn-toolbar button,
+.blocknote-view .bn-editor-toolbar button,
+.blocknote-view .bn-inline-toolbar button {
+  color: inherit;
+}
+
+.dark .blocknote-view .bn-toolbar,
+.dark .blocknote-view .bn-editor-toolbar,
+.dark .blocknote-view .bn-inline-toolbar,
+.dark .blocknote-view .bn-popover,
+.dark .blocknote-view .bn-popover-content {
+  background-color: color-mix(in srgb, var(--card) 40%, transparent);
+  border-color: color-mix(in srgb, var(--border) 30%, transparent);
+}
+
+.blocknote-view .bn-tooltip {
+  background-color: color-mix(in srgb, var(--card) 92%, transparent);
+  border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+  color: var(--foreground);
+  backdrop-filter: blur(8px);
+  transform: translate3d(0, 0, 0);
+}
+
+.dark .blocknote-view .bn-tooltip {
+  background-color: color-mix(in srgb, var(--card) 60%, transparent);
+  border-color: color-mix(in srgb, var(--border) 50%, transparent);
+}
+
+.blocknote-view .bn-tooltip[data-side='top'] {
+  margin-bottom: 8px;
+}
+
+.blocknote-view .bn-tooltip[data-side='bottom'] {
+  margin-top: 8px;
+}
+
+.blocknote-view .bn-tooltip[data-side='left'] {
+  margin-right: 8px;
+}
+
+.blocknote-view .bn-tooltip[data-side='right'] {
+  margin-left: 8px;
+}
+
+.blocknote-view .bn-tooltip::after {
+  display: none;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
