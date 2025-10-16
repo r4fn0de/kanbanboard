@@ -1,3 +1,4 @@
+import type { ChangeEvent } from 'react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useCreateBlockNote } from '@blocknote/react'
 import { BlockNoteView } from '@blocknote/shadcn'
@@ -62,8 +63,10 @@ function getTitleFromBlocks(blocks: PartialBlock[]): string {
 
 export function NoteEditor({ note, boardId, onBack }: NoteEditorProps) {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [titleDraft, setTitleDraft] = useState(note.title ?? '')
   const previousNoteIdRef = useRef(note.id)
   const saveTimeoutRef = useRef<NodeJS.Timeout>()
+  const titleSaveTimeoutRef = useRef<NodeJS.Timeout>()
   const lastSavedContentRef = useRef<string>('')
   const lastSavedTitleRef = useRef<string>('')
   const isLoadingContent = useRef(false)
@@ -105,34 +108,41 @@ export function NoteEditor({ note, boardId, onBack }: NoteEditorProps) {
 
   // Optimized save function with early exit and debouncing
   const saveContent = useCallback(
-    (blocks: PartialBlock[], forceSave = false) => {
+    (
+      blocks: PartialBlock[],
+      options: { force?: boolean; overrideTitle?: string } = {}
+    ) => {
       // Não salva se estiver carregando conteúdo
       if (isLoadingContent.current) return
 
       const contentStr = JSON.stringify(blocks)
-      const title = getTitleFromBlocks(blocks)
+      const derivedTitle = getTitleFromBlocks(blocks)
+      const titleToSave = options.overrideTitle ?? derivedTitle
 
       // Early exit if nothing has changed (unless force save is true)
       if (
-        !forceSave &&
+        !options.force &&
         contentStr === lastSavedContentRef.current &&
-        title === lastSavedTitleRef.current
+        titleToSave === lastSavedTitleRef.current
       ) {
         return
       }
 
-      console.log('Saving note:', { title, contentLength: contentStr.length })
+      console.log('Saving note:', {
+        title: titleToSave,
+        contentLength: contentStr.length,
+      })
 
       // Update refs immediately to prevent duplicate saves
       lastSavedContentRef.current = contentStr
-      lastSavedTitleRef.current = title
+      lastSavedTitleRef.current = titleToSave
 
       updateNote.mutate(
         {
           id: note.id,
           boardId,
           content: contentStr,
-          title,
+          title: titleToSave,
         },
         {
           onSuccess: () => {
@@ -179,6 +189,54 @@ export function NoteEditor({ note, boardId, onBack }: NoteEditorProps) {
       }
     }
   }, [editor, saveContent])
+
+  // Sync external title changes into local state
+  useEffect(() => {
+    setTitleDraft(note.title ?? '')
+  }, [note.title])
+
+  const handleTitleChange = useCallback(
+    (event: ChangeEvent<HTMLTextAreaElement>) => {
+      const value = event.target.value
+      setTitleDraft(value)
+
+      if (titleSaveTimeoutRef.current) {
+        clearTimeout(titleSaveTimeoutRef.current)
+      }
+
+      titleSaveTimeoutRef.current = setTimeout(() => {
+        saveContent(editor.document, { force: true, overrideTitle: value })
+      }, 400)
+    },
+    [editor, saveContent]
+  )
+
+  const handleTitleBlur = useCallback(() => {
+    if (titleSaveTimeoutRef.current) {
+      clearTimeout(titleSaveTimeoutRef.current)
+      titleSaveTimeoutRef.current = undefined
+    }
+    saveContent(editor.document, { force: true, overrideTitle: titleDraft })
+  }, [editor, saveContent, titleDraft])
+
+  const handleTitleKeyDown = useCallback(
+    (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
+      if (event.key === 'Enter') {
+        event.preventDefault()
+        handleTitleBlur()
+        editor.focus()
+      }
+    },
+    [editor, handleTitleBlur]
+  )
+
+  useEffect(() => {
+    return () => {
+      if (titleSaveTimeoutRef.current) {
+        clearTimeout(titleSaveTimeoutRef.current)
+      }
+    }
+  }, [])
 
   // Reset quando mudar de nota
   useEffect(() => {
@@ -256,6 +314,21 @@ export function NoteEditor({ note, boardId, onBack }: NoteEditorProps) {
 
       {/* Editor */}
       <div className="flex-1 overflow-auto px-6">
+        <div className="mx-auto w-full max-w-4xl pb-4">
+          <textarea
+            value={titleDraft}
+            onChange={handleTitleChange}
+            onBlur={handleTitleBlur}
+            onKeyDown={handleTitleKeyDown}
+            placeholder="Untitled note"
+            className="w-full resize-none bg-transparent text-3xl font-semibold text-foreground outline-none"
+            rows={1}
+            style={{
+              lineHeight: '1.2',
+              minHeight: '3rem',
+            }}
+          />
+        </div>
         <BlockNoteView editor={editor} theme="light" />
       </div>
 
