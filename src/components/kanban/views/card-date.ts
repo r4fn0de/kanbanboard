@@ -44,8 +44,7 @@ export function getCardDueMetadata(
 
   if (daysUntil < 0) {
     status = 'overdue'
-    const daysLate = Math.abs(daysUntil)
-    display = daysLate === 1 ? 'Overdue by 1 day' : `Overdue by ${daysLate} days`
+    display = formattedDate
   } else if (daysUntil === 0) {
     status = 'today'
     display = 'Due today'
