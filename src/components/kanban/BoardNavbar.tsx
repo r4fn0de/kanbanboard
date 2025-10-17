@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import {
   ChevronRight,
@@ -32,6 +33,11 @@ interface BoardNavbarProps {
   activeTab?: string
   onTabChange?: (tab: string) => void
   taskControls?: ReactNode
+  dueSummary?: {
+    overdue: number
+    today: number
+    soon: number
+  }
 }
 
 const tabs = [
@@ -69,9 +75,10 @@ export function BoardNavbar({
   activeTab = 'tasks',
   onTabChange,
   taskControls,
+  dueSummary,
 }: BoardNavbarProps) {
   const showControls =
-    (activeTab === 'tasks' || activeTab === 'notes') && taskControls
+    (activeTab === 'tasks' || activeTab === 'notes') && (taskControls || dueSummary)
 
   const hasEmoji = boardEmoji && boardEmoji.trim().length > 0
   const IconComponent = boardIcon ? ICON_MAP[boardIcon] || Folder : Folder
@@ -165,8 +172,30 @@ export function BoardNavbar({
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 20 }}
             transition={{ duration: 0.2 }}
-            className="flex items-center gap-2 flex-shrink-0"
+            className="flex items-center gap-3 flex-shrink-0"
           >
+            {dueSummary && activeTab === 'tasks' ? (
+              <div className="hidden md:flex items-center gap-2">
+                {dueSummary.overdue > 0 && (
+                  <Badge className="bg-rose-500/10 text-rose-600 border border-rose-500/20 dark:text-rose-300">
+                    Overdue {dueSummary.overdue}
+                  </Badge>
+                )}
+                {dueSummary.today > 0 && (
+                  <Badge className="bg-amber-500/10 text-amber-600 border border-amber-500/20 dark:text-amber-300">
+                    Due today {dueSummary.today}
+                  </Badge>
+                )}
+                {dueSummary.soon > 0 && (
+                  <Badge className="bg-amber-500/10 text-amber-600 border border-amber-500/20 dark:text-amber-300">
+                    Due soon {dueSummary.soon}
+                  </Badge>
+                )}
+                {dueSummary.overdue + dueSummary.today + dueSummary.soon === 0 && (
+                  <Badge variant="outline">No upcoming deadlines</Badge>
+                )}
+              </div>
+            ) : null}
             {taskControls}
           </motion.div>
         )}

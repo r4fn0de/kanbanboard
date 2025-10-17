@@ -3,12 +3,17 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { toast } from 'sonner'
 import { useQueryClient } from '@tanstack/react-query'
 
+import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { CalendarDays, Paperclip, Tag, X } from 'lucide-react'
 import { PriorityBadge } from './views/board-shared'
 import { cn } from '@/lib/utils'
+import {
+  CARD_DUE_STATUS_STYLES,
+  getCardDueMetadata,
+} from './views/card-date'
 import { getColumnIconComponent } from '@/components/kanban/column-icon-options'
 import {
   kanbanQueryKeys,
@@ -25,8 +30,6 @@ interface TaskDetailsPanelProps {
   column: KanbanColumn | null
   onClose: () => void
 }
-
-// Using the shared formatCardDueDate from views
 
 export function TaskDetailsPanel({
   card,
@@ -48,6 +51,8 @@ export function TaskDetailsPanel({
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>(
     card?.tags.map(tag => tag.id) ?? []
   )
+
+  const dueMetadata = card ? getCardDueMetadata(card.dueDate) : null
 
   useEffect(() => {
     if (!card) {
@@ -369,50 +374,55 @@ export function TaskDetailsPanel({
               </section>
 
               <section className="space-y-4">
-                <Label className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
-                  Metadata
-                </Label>
-                <div className="flex flex-col gap-3">
-                  <div className="flex items-center justify-between rounded-2xl border border-border/60 bg-background px-4 py-3">
-                    <div className="flex items-center gap-3">
-                      <CalendarDays className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm font-medium text-muted-foreground">
-                        Due date
-                      </span>
-                    </div>
-                    <input
-                      type="date"
-                      value={
-                        card.dueDate
-                          ? new Date(card.dueDate).toISOString().split('T')[0]
-                          : ''
-                      }
-                      onChange={e => {
-                        const newDate = e.target.value
-                          ? new Date(e.target.value)
-                          : undefined
-                        handleDueDateChange(newDate)
-                      }}
-                      className="rounded-full border-0 bg-transparent px-3 py-1 text-sm font-semibold text-foreground/80 transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/20"
-                    />
+                <div className="flex items-center justify-between rounded-2xl border border-border/60 bg-background px-4 py-3">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <CalendarDays className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm font-medium text-muted-foreground">
+                      Due date
+                    </span>
+                    {dueMetadata && (
+                      <Badge
+                        className={cn(
+                          'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold',
+                          CARD_DUE_STATUS_STYLES[dueMetadata.status]
+                        )}
+                      >
+                        {dueMetadata.display}
+                      </Badge>
+                    )}
                   </div>
-                  <div className="flex flex-col gap-2 rounded-2xl border border-border/60 bg-background px-4 py-3">
-                    <div className="flex items-center gap-3">
-                      <Tag className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm font-medium text-muted-foreground">
-                        Tags
-                      </span>
-                    </div>
-                    <TagSelector
-                      boardId={card.boardId}
-                      selectedTagIds={selectedTagIds}
-                      onChange={handleTagChange}
-                      disabled={
-                        updateCard.isPending || updateCardTagsMutation.isPending
-                      }
-                      className="[&_button[aria-expanded]]:rounded-2xl [&_button[aria-expanded]]:border-0 [&_button[aria-expanded]]:bg-muted/60"
-                    />
+                  <input
+                    type="date"
+                    value={
+                      card.dueDate
+                        ? new Date(card.dueDate).toISOString().split('T')[0]
+                        : ''
+                    }
+                    onChange={e => {
+                      const newDate = e.target.value
+                        ? new Date(e.target.value)
+                        : undefined
+                      handleDueDateChange(newDate)
+                    }}
+                    className="rounded-full border-0 bg-transparent px-3 py-1 text-sm font-semibold text-foreground/80 transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/20"
+                  />
+                </div>
+                <div className="flex flex-col gap-2 rounded-2xl border border-border/60 bg-background px-4 py-3">
+                  <div className="flex items-center gap-3">
+                    <Tag className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm font-medium text-muted-foreground">
+                      Tags
+                    </span>
                   </div>
+                  <TagSelector
+                    boardId={card.boardId}
+                    selectedTagIds={selectedTagIds}
+                    onChange={handleTagChange}
+                    disabled={
+                      updateCard.isPending || updateCardTagsMutation.isPending
+                    }
+                    className="[&_button[aria-expanded]]:rounded-2xl [&_button[aria-expanded]]:border-0 [&_button[aria-expanded]]:bg-muted/60"
+                  />
                 </div>
               </section>
 

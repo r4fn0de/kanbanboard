@@ -21,9 +21,10 @@ import {
   isBoardViewMode,
   type BoardViewMode,
 } from '@/components/kanban/board-view-modes'
-import { BoardKanbanView } from '@/components/kanban/views/BoardKanbanView'
-import { BoardListView } from '@/components/kanban/views/BoardListView'
-import { BoardTimelineView } from '@/components/kanban/views/BoardTimelineView'
+import { BoardKanbanView } from './views/BoardKanbanView'
+import { BoardListView } from './views/BoardListView'
+import { BoardTimelineView } from './views/BoardTimelineView'
+import { getCardDueMetadata } from './views/card-date'
 import { TaskDetailsPanel } from '@/components/kanban/TaskDetailsPanel'
 import { ColumnManagerDialog } from '@/components/kanban/ColumnManagerDialog'
 import { BoardNavbar } from '@/components/kanban/BoardNavbar'
@@ -204,6 +205,22 @@ export function BoardDetailView({
     [visibleColumns, visibleCards]
   )
 
+  const dueSummary = useMemo(() => {
+    const summary = { overdue: 0, today: 0, soon: 0 }
+    visibleCards.forEach(card => {
+      const metadata = getCardDueMetadata(card.dueDate)
+      if (!metadata) return
+      if (metadata.status === 'overdue') {
+        summary.overdue += 1
+      } else if (metadata.status === 'today') {
+        summary.today += 1
+      } else if (metadata.status === 'soon') {
+        summary.soon += 1
+      }
+    })
+    return summary
+  }, [visibleCards])
+
   const selectedCard = useMemo(
     () => visibleCards.find(card => card.id === selectedCardId) ?? null,
     [visibleCards, selectedCardId]
@@ -229,6 +246,7 @@ export function BoardDetailView({
       if (!cardTitle.trim() || !cardDialogColumn) return
 
       try {
+        const trimmedTitle = cardTitle.trim()
         const columnCards = cardsByColumn.get(cardDialogColumn.id) || []
 
         // Always insert at the end of the column
@@ -240,7 +258,7 @@ export function BoardDetailView({
           id: `temp-${Date.now()}`,
           boardId: board.id,
           columnId: cardDialogColumn.id,
-          title: newCardTitle,
+          title: trimmedTitle,
           description: cardDescription.trim() || undefined,
           priority: cardPriority,
           dueDate: cardDueDate || undefined,
@@ -460,13 +478,13 @@ export function BoardDetailView({
           <Skeleton className="h-6 w-48" />
         </div>
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {Array.from({ length: 3 }).map((_, index) => (
-            <div key={`column-skeleton-${index}`} className="space-y-4">
+          {['first', 'second', 'third'].map(key => (
+            <div key={`column-skeleton-${key}`} className="space-y-4">
               <Skeleton className="h-6 w-24" />
               <div className="space-y-2">
-                {Array.from({ length: 3 }).map((_, cardIndex) => (
+                {['a', 'b', 'c'].map(cardKey => (
                   <Skeleton
-                    key={`card-skeleton-${cardIndex}`}
+                    key={`card-skeleton-${key}-${cardKey}`}
                     className="h-20 w-full"
                   />
                 ))}
@@ -536,6 +554,7 @@ export function BoardDetailView({
         workspaceName={workspaces.find(ws => ws.id === board.workspaceId)?.name}
         activeTab={activeNavTab}
         onTabChange={handleTabChange}
+        dueSummary={dueSummary}
         taskControls={taskControls}
       />
 

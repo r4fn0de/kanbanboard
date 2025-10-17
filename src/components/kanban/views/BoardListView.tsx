@@ -12,7 +12,10 @@ import { cn } from '@/lib/utils'
 import type { KanbanCard, KanbanColumn } from '@/types/common'
 import { Calendar, Plus, Trash2 } from 'lucide-react'
 import { PriorityBadge } from './board-shared'
-import { formatCardDueDate } from './card-date'
+import {
+  CARD_DUE_STATUS_STYLES,
+  getCardDueMetadata,
+} from './card-date'
 import { AddTaskDialog } from '../AddTaskDialog'
 import { getTagBadgeStyle } from '../tags/utils'
 import { getColumnIconComponent } from '@/components/kanban/column-icon-options'
@@ -163,7 +166,7 @@ export function BoardListView({
               <div className="divide-y divide-border/60">
                 {columnCards.length > 0 ? (
                   columnCards.map((card, rowIndex) => {
-                    const dueLabel = formatCardDueDate(card.dueDate)
+                    const dueMetadata = getCardDueMetadata(card.dueDate)
                     const displayTags = card.tags.slice(0, 3)
                     const remainingTags = card.tags.length - displayTags.length
                     const isSelected = selectedCardId === card.id
@@ -243,16 +246,17 @@ export function BoardListView({
                               <span className="text-xs font-semibold uppercase text-muted-foreground md:hidden">
                                 Due date
                               </span>
-                              {dueLabel ? (
-                                <div className="inline-flex items-center gap-1.5 rounded-lg bg-muted/50 px-2.5 py-1 text-xs font-semibold text-foreground">
+                              {dueMetadata ? (
+                                <Badge
+                                  className={cn(
+                                    'inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 font-semibold',
+                                    CARD_DUE_STATUS_STYLES[dueMetadata.status]
+                                  )}
+                                >
                                   <Calendar className="h-3 w-3" />
-                                  <span>{dueLabel}</span>
-                                </div>
-                              ) : (
-                                <span className="rounded-lg border border-dashed border-border px-3 py-1 text-xs text-muted-foreground">
-                                  Add date
-                                </span>
-                              )}
+                                  <span>{dueMetadata.display}</span>
+                                </Badge>
+                              ) : null}
                             </div>
                           </button>
                         </ContextMenuTrigger>

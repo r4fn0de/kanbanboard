@@ -20,7 +20,10 @@ import {
 } from 'lucide-react'
 import type { ComponentType } from 'react'
 import * as React from 'react'
-import { formatCardDueDate } from '../views/card-date'
+import {
+  CARD_DUE_STATUS_STYLES,
+  getCardDueMetadata,
+} from '../views/card-date'
 import { getTagBadgeStyle } from '../tags/utils'
 
 interface KanbanCardItemProps {
@@ -99,10 +102,20 @@ export function KanbanCardItem({
   const tagList = card.tags ?? []
   const displayTags = tagList.slice(0, maxVisibleTags)
   const remainingTags = tagList.length - displayTags.length
-  const dueDateLabel = formatCardDueDate(card.dueDate)
+  const dueMetadata = getCardDueMetadata(card.dueDate)
   const hasAttachments = card.attachments && card.attachments.length > 0
   const priorityConfig = PRIORITY_CONFIG[card.priority]
   const PriorityIcon = priorityConfig.icon
+
+  const dueBorderClass = dueMetadata
+    ? dueMetadata.status === 'overdue'
+      ? 'border-rose-500/40'
+      : dueMetadata.status === 'today'
+        ? 'border-amber-500/40'
+        : dueMetadata.status === 'soon'
+          ? 'border-amber-500/30'
+          : ''
+    : ''
 
   return (
     <ContextMenu>
@@ -123,6 +136,7 @@ export function KanbanCardItem({
             'hover:border-border',
             'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
             'active:cursor-grabbing',
+            dueBorderClass,
             isSelected && 'bg-accent/50 border-accent-foreground/20 shadow-sm',
             isDragging && 'shadow-xl border-primary/30'
           )}
@@ -180,11 +194,16 @@ export function KanbanCardItem({
             </div>
 
             {/* Due Date */}
-            {dueDateLabel && (
-              <div className="inline-flex items-center gap-1.5 rounded-lg bg-muted/50 px-2.5 py-1 text-xs font-semibold text-foreground">
+            {dueMetadata && (
+              <Badge
+                className={cn(
+                  'inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold',
+                  CARD_DUE_STATUS_STYLES[dueMetadata.status]
+                )}
+              >
                 <Calendar className="h-3 w-3" />
-                <span>{dueDateLabel}</span>
-              </div>
+                <span>{dueMetadata.display}</span>
+              </Badge>
             )}
 
             {hasAttachments && (

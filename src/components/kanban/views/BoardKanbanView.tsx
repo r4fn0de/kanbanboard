@@ -34,7 +34,10 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { useMemo, useState, useCallback } from 'react'
 import { KanbanCardItem } from '../card/KanbanCardItem'
-import { formatCardDueDate } from './card-date'
+import {
+  CARD_DUE_STATUS_STYLES,
+  getCardDueMetadata,
+} from './card-date'
 import { getTagBadgeStyle } from '../tags/utils'
 import { AddTaskDialog } from '../AddTaskDialog'
 import { getColumnIconComponent } from '@/components/kanban/column-icon-options'
@@ -247,7 +250,7 @@ function CardOverlay({ card }: { card: KanbanCard }) {
   const tagList = card.tags ?? []
   const displayTags = tagList.slice(0, 3)
   const remainingTags = tagList.length - displayTags.length
-  const dueDateLabel = formatCardDueDate(card.dueDate)
+  const dueMetadata = getCardDueMetadata(card.dueDate)
   const hasAttachments = card.attachments && card.attachments.length > 0
 
   const priorityConfig = {
@@ -342,11 +345,16 @@ function CardOverlay({ card }: { card: KanbanCard }) {
         </div>
 
         {/* Due Date */}
-        {dueDateLabel && (
-          <div className="inline-flex items-center gap-1.5 rounded-md border border-border/60 bg-muted/50 px-2.5 py-1 text-xs font-medium text-foreground">
+        {dueMetadata && (
+          <Badge
+            className={cn(
+              'inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium',
+              CARD_DUE_STATUS_STYLES[dueMetadata.status]
+            )}
+          >
             <Calendar className="h-3 w-3" />
-            <span>{dueDateLabel}</span>
-          </div>
+            <span>{dueMetadata.display}</span>
+          </Badge>
         )}
 
         {/* Attachments */}

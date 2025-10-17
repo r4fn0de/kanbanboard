@@ -2,8 +2,11 @@ import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import type { KanbanCard } from '@/types/common'
 import { ArrowDown, ArrowUp, Minus, Paperclip } from 'lucide-react'
+import {
+  CARD_DUE_STATUS_STYLES,
+  getCardDueMetadata,
+} from './card-date'
 import type { ComponentType } from 'react'
-import { formatCardDueDate } from './card-date'
 import { getTagBadgeStyle } from '../tags/utils'
 
 export function PriorityBadge({
@@ -59,7 +62,7 @@ export function CardContent({ card }: { card: KanbanCard }) {
   const tagList = card.tags ?? []
   const displayTags = tagList.slice(0, 2)
   const remainingTags = tagList.length - displayTags.length
-  const dueDateLabel = formatCardDueDate(card.dueDate)
+  const dueMetadata = getCardDueMetadata(card.dueDate)
   const hasAttachments = card.attachments && card.attachments.length > 0
 
   return (
@@ -103,10 +106,15 @@ export function CardContent({ card }: { card: KanbanCard }) {
             </div>
           )}
           <PriorityBadge priority={card.priority} />
-          {dueDateLabel && (
-            <span className="rounded-full bg-gray-300 px-3 py-1 text-xs font-semibold text-gray-800 dark:bg-gray-600 dark:text-gray-200">
-              {dueDateLabel}
-            </span>
+          {dueMetadata && (
+            <Badge
+              className={cn(
+                'rounded-full px-3 py-1 text-xs font-semibold leading-none flex items-center gap-1',
+                CARD_DUE_STATUS_STYLES[dueMetadata.status]
+              )}
+            >
+              {dueMetadata.display}
+            </Badge>
           )}
         </div>
       </div>

@@ -1,10 +1,14 @@
 import { Badge } from '@/components/ui/badge'
 import type { KanbanCard, KanbanColumn } from '@/types/common'
-import { CalendarClock, Trash2 } from 'lucide-react'
+import { Calendar, Trash2 } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import { useMemo } from 'react'
 import { useTheme } from '@/hooks/use-theme'
 import { PriorityBadge } from './board-shared'
-import { formatCardDueDate } from './card-date'
+import {
+  CARD_DUE_STATUS_STYLES,
+  getCardDueMetadata,
+} from './card-date'
 import {
   ContextMenu,
   ContextMenuContent,
@@ -122,7 +126,7 @@ export function BoardTimelineView({
           >
             <div className="flex items-center gap-3 sm:w-64">
               <div className="flex h-9 w-9 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-sm">
-                <CalendarClock className="h-4 w-4" />
+                <Calendar className="h-4 w-4" />
               </div>
               <div>
                 <p className="text-sm font-semibold text-foreground">
@@ -146,7 +150,7 @@ export function BoardTimelineView({
                 const IconComponent = getColumnIconComponent(
                   column?.icon ?? DEFAULT_COLUMN_ICON
                 )
-                const dueLabel = formatCardDueDate(card.dueDate)
+                const dueMetadata = getCardDueMetadata(card.dueDate)
                 const tagList = card.tags ?? []
                 const displayTags = tagList.slice(0, 3)
                 const remainingTags = tagList.length - displayTags.length
@@ -200,11 +204,16 @@ export function BoardTimelineView({
                               +{remainingTags}
                             </Badge>
                           ) : null}
-                          {dueLabel ? (
-                            <div className="inline-flex items-center gap-1.5 rounded-lg bg-muted/50 px-2.5 py-1 font-semibold text-foreground">
-                              <CalendarClock className="h-3 w-3" />
-                              <span>Due {dueLabel}</span>
-                            </div>
+                          {dueMetadata ? (
+                            <Badge
+                              className={cn(
+                                'inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 font-semibold',
+                                CARD_DUE_STATUS_STYLES[dueMetadata.status]
+                              )}
+                            >
+                              <Calendar className="h-3 w-3" />
+                              <span>{dueMetadata.display}</span>
+                            </Badge>
                           ) : null}
                         </div>
                       </div>
