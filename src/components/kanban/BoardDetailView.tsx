@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import { Tooltip as BaseTooltip } from '@base-ui-components/react/tooltip'
 import {
   BOARD_VIEW_OPTIONS,
   DEFAULT_BOARD_VIEW_MODE,
@@ -524,19 +525,39 @@ export function BoardDetailView({
             onViewModeChange(value)
           }
         }}
+        className="flex h-9 items-center gap-0 rounded-md border border-border/80 bg-card/80 backdrop-blur overflow-hidden"
       >
         {BOARD_VIEW_OPTIONS.map(option => (
-          <ToggleGroupItem
-            key={option.value}
-            value={option.value}
-            aria-label={option.label}
-          >
-            <option.icon className="h-4 w-4" />
-          </ToggleGroupItem>
+          <BaseTooltip.Root key={option.value} delay={0} closeDelay={0}>
+            <BaseTooltip.Trigger
+              render={({ ref, ...triggerProps }) => (
+                <ToggleGroupItem
+                  ref={ref}
+                  {...triggerProps}
+                  value={option.value}
+                  aria-label={option.label}
+                  className="flex h-full w-9 items-center justify-center text-muted-foreground transition-all duration-150 hover:bg-muted/70 data-[state=on]:bg-primary/10 data-[state=on]:text-primary"
+                >
+                  <option.icon className="h-4 w-4" />
+                </ToggleGroupItem>
+              )}
+            />
+            <BaseTooltip.Portal>
+              <BaseTooltip.Positioner sideOffset={8}>
+                <BaseTooltip.Popup className="z-50 w-fit rounded-md bg-primary px-3 py-1.5 text-xs text-primary-foreground">
+                  {option.label}
+                </BaseTooltip.Popup>
+              </BaseTooltip.Positioner>
+            </BaseTooltip.Portal>
+          </BaseTooltip.Root>
         ))}
       </ToggleGroup>
 
-      <Button variant="outline" onClick={() => setIsColumnManagerOpen(true)}>
+      <Button
+        variant="outline"
+        className="shadow-none"
+        onClick={() => setIsColumnManagerOpen(true)}
+      >
         <Settings2 className="mr-2 h-4 w-4" />
         Manage Columns
       </Button>
@@ -698,7 +719,7 @@ export function BoardDetailView({
         {/* Create Card Dialog */}
         {isCardDialogOpen && cardDialogColumn && (
           <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-            <div className="bg-background rounded-lg shadow-lg w-full max-w-md">
+            <div className="bg-background rounded-lg w-full max-w-md">
               <div className="p-6">
                 <h2 className="text-lg font-semibold mb-4">
                   Create Task in {cardDialogColumn.title}

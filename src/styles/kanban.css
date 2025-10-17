@@ -5,14 +5,14 @@
   overflow-x: hidden;
   
   /* Esconde a barra de rolagem no Chrome, Safari e Edge */
-  &::-webkit-scrollbar {
-    width: 0.25rem;
-    background: transparent;
-  }
-  
-  &::-webkit-scrollbar-thumb {
-    background: transparent;
-  }
+  .kanban-column-cards::-webkit-scrollbar {
+  width: 0.25rem;
+  background: transparent;
+}
+
+.kanban-column-cards::-webkit-scrollbar-thumb {
+  background: transparent;
+}
   
   /* Esconde a barra de rolagem no Firefox */
   scrollbar-width: thin;
