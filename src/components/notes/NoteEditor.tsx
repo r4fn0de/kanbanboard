@@ -5,7 +5,7 @@ import { BlockNoteView } from '@blocknote/shadcn'
 import '@blocknote/shadcn/style.css'
 import type { BlockNoteEditor, PartialBlock } from '@blocknote/core'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft, Pin, PinOff, Trash2 } from 'lucide-react'
+import { ArrowLeft, ChevronRight, Pin, PinOff, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { Note } from '@/services/notes'
 import { useUpdateNote, useDeleteNote, useNotes } from '@/services/notes'
@@ -258,13 +258,13 @@ const COLOR_PRESETS = {
 
 function ToolbarButtonWithTooltip({ children, tooltip }: { children: React.ReactNode; tooltip: string }) {
   return (
-    <Tooltip.Root>
-      <Tooltip.Trigger>
+    <Tooltip.Root delay={0} closeDelay={0}>
+      <Tooltip.Trigger data-baseui-tooltip-trigger>
         {children}
       </Tooltip.Trigger>
       <Tooltip.Portal>
         <Tooltip.Positioner side="top" align="center">
-          <Tooltip.Popup className="bg-popover text-popover-foreground border border-border rounded-md px-2 py-1 text-sm shadow-md">
+          <Tooltip.Popup className="bg-popover text-popover-foreground border border-border rounded-md px-2 py-1 text-sm shadow-md" data-baseui-tooltip-popup>
             {tooltip}
           </Tooltip.Popup>
         </Tooltip.Positioner>
@@ -278,6 +278,16 @@ function CustomBlockTypeButton({ editor }: { editor: BlockNoteEditor }) {
   const Components = useComponentsContext()
 
   const [isOpen, setIsOpen] = useState(false)
+
+  useEffect(() => {
+    const unsubscribe = editor.onSelectionChange?.(() => {
+      setIsOpen(false)
+    })
+
+    return () => {
+      unsubscribe?.()
+    }
+  }, [editor])
 
   const handleBlockTypeSelect = (option: typeof BLOCK_TYPE_OPTIONS[0]) => {
     console.log('Selecting block type:', option);
@@ -342,24 +352,30 @@ function CustomBlockTypeButton({ editor }: { editor: BlockNoteEditor }) {
         <Components.FormattingToolbar.Button
           mainTooltip="Block Type"
         >
-          <span className="text-xs font-mono">{getCurrentBlockType()}</span>
+          <span className="text-xs font-mono tracking-wide">{getCurrentBlockType()}</span>
         </Components.FormattingToolbar.Button>
       </Popover.Trigger>
       <Popover.Portal>
         <Popover.Positioner side="bottom" align="start">
-          <Popover.Popup className="bg-card border border-border rounded-md shadow-lg py-2 min-w-[180px] max-h-[300px] overflow-y-auto">
-            <div className="space-y-1">
+          <Popover.Popup className="bg-popover border border-border rounded-xl shadow-xl py-3 min-w-[220px] max-h-[320px] overflow-y-auto">
+            <div className="px-3 pb-2">
+              <p className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground/70">Select block style</p>
+            </div>
+            <div className="space-y-0.5">
               {BLOCK_TYPE_OPTIONS.map((option, index) => (
                 <button
                   key={`${option.type}-${option.level || 0}-${index}`}
                   onClick={() => handleBlockTypeSelect(option)}
-                  className="w-full px-3 py-2 text-left text-sm hover:bg-accent hover:text-accent-foreground flex items-center gap-3 transition-colors"
+                  className="group w-full px-4 py-3 text-left text-sm flex items-center gap-3 transition-all hover:bg-muted/50 dark:hover:bg-muted/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
                   title={option.label}
                 >
-                  <span className="text-xs font-mono min-w-[24px] text-muted-foreground">
+                  <span className="flex h-7 w-7 items-center justify-center rounded-lg border border-border bg-background text-xs font-mono text-muted-foreground transition-colors group-hover:border-primary/60 group-hover:text-primary dark:group-hover:border-primary/40">
                     {option.icon}
                   </span>
-                  <span className="truncate">{option.label}</span>
+                  <span className="flex-1 truncate font-medium text-foreground transition-colors group-hover:text-primary">
+                    {option.label}
+                  </span>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground/60 transition-colors group-hover:text-primary" />
                 </button>
               ))}
             </div>
@@ -412,6 +428,16 @@ function CustomColorButton({ editor }: { editor: BlockNoteEditor }) {
   const Components = useComponentsContext()
 
   const [isOpen, setIsOpen] = useState(false)
+
+  useEffect(() => {
+    const unsubscribe = editor.onSelectionChange?.(() => {
+      setIsOpen(false)
+    })
+
+    return () => {
+      unsubscribe?.()
+    }
+  }, [editor])
 
   const handleTextColorSelect = (color: string) => {
     editor.toggleStyles({ textColor: color });
