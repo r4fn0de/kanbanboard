@@ -33,6 +33,7 @@ import {
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { useMemo, useState, useCallback } from 'react'
+import '../../../styles/kanban.css'
 import { KanbanCardItem } from '../card/KanbanCardItem'
 import {
   CARD_DUE_STATUS_STYLES,
@@ -466,10 +467,10 @@ function DraggableColumn({
       </div>
       <div
         ref={setDroppableRef}
-        className="flex flex-1 flex-col gap-4 overflow-y-auto overflow-x-visible min-h-0 rounded-xl transition-all duration-200"
+        className="flex flex-1 flex-col gap-4 overflow-y-auto overflow-x-visible min-h-0 rounded-xl transition-all duration-200 kanban-column-cards"
         style={{
-          scrollbarWidth: 'thin',
-          scrollbarColor: 'var(--border) transparent',
+          scrollbarWidth: 'none',
+          msOverflowStyle: 'none',
         }}
       >
         {columnCards.length > 0 ? (
