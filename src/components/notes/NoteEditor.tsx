@@ -3,9 +3,17 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useCreateBlockNote } from '@blocknote/react'
 import { BlockNoteView } from '@blocknote/shadcn'
 import '@blocknote/shadcn/style.css'
-import type { BlockNoteEditor, PartialBlock } from '@blocknote/core'
+import type {
+  BlockNoteEditor,
+  PartialBlock,
+  DefaultBlockSchema,
+  DefaultInlineContentSchema,
+  DefaultStyleSchema,
+} from '@blocknote/core'
+import { blockHasType, editorHasBlockWithType } from '@blocknote/core'
 import { Button } from '@/components/ui/button'
 import { ArrowLeft, ChevronRight, Pin, PinOff, Trash2 } from 'lucide-react'
+import { MdDragIndicator } from 'react-icons/md'
 import { cn } from '@/lib/utils'
 import type { Note } from '@/services/notes'
 import { useUpdateNote, useDeleteNote, useNotes } from '@/services/notes'
@@ -21,6 +29,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import type { SideMenuProps } from '@blocknote/react'
 import {
   FormattingToolbarController,
   FormattingToolbar,
@@ -28,6 +37,9 @@ import {
   TextAlignButton,
   LinkToolbarController,
   useComponentsContext,
+  SideMenuController,
+  AddBlockButton,
+  useDictionary,
 } from '@blocknote/react'
 import { Popover } from '@base-ui-components/react/popover'
 import { Tooltip } from '@base-ui-components/react/tooltip'
@@ -270,6 +282,201 @@ function ToolbarButtonWithTooltip({ children, tooltip }: { children: React.React
         </Tooltip.Positioner>
       </Tooltip.Portal>
     </Tooltip.Root>
+  )
+}
+
+
+type DefaultSideMenuProps = SideMenuProps<
+  DefaultBlockSchema,
+  DefaultInlineContentSchema,
+  DefaultStyleSchema
+>
+
+
+const SIDE_MENU_COLORS = ['default', ...COLOR_PRESETS.basic, ...COLOR_PRESETS.colors] as const
+
+
+function BaseUIDragHandleButton(props: DefaultSideMenuProps) {
+  const Components = useComponentsContext()
+  const dict = useDictionary()
+  const { editor, block } = props
+  const [open, setOpen] = useState(false)
+
+  const supportsTextColor = blockHasType(block, editor, block.type, {
+    textColor: 'string',
+  }) && editorHasBlockWithType(editor, block.type, { textColor: 'string' })
+
+  const supportsBackgroundColor = blockHasType(block, editor, block.type, {
+    backgroundColor: 'string',
+  }) && editorHasBlockWithType(editor, block.type, { backgroundColor: 'string' })
+
+  const blockProps = (block.props ?? {}) as Record<string, unknown>
+  const currentTextColor = (blockProps.textColor as string | undefined) ?? 'default'
+  const currentBackgroundColor = (blockProps.backgroundColor as string | undefined) ?? 'default'
+
+  const handleOpenChange = (next: boolean) => {
+    setOpen(next)
+    if (next) {
+      props.freezeMenu()
+    } else {
+      props.unfreezeMenu()
+    }
+  }
+
+  const handleDelete = () => {
+    editor.removeBlocks([block])
+    handleOpenChange(false)
+  }
+
+  const updateBlockProps = (updates: Record<string, unknown>) => {
+    const nextProps: Record<string, unknown> = { ...blockProps }
+    Object.entries(updates).forEach(([key, value]) => {
+      if (value === undefined) {
+        delete nextProps[key]
+      } else {
+        nextProps[key] = value
+      }
+    })
+
+    editor.updateBlock(block, {
+      type: block.type,
+      props: nextProps,
+    })
+  }
+
+  const handleSelectTextColor = (color: string) => {
+    if (!supportsTextColor) return
+    if (color === 'default') {
+      updateBlockProps({ textColor: undefined })
+    } else {
+      updateBlockProps({ textColor: color })
+    }
+  }
+
+  const handleSelectBackgroundColor = (color: string) => {
+    if (!supportsBackgroundColor) return
+    if (color === 'default') {
+      updateBlockProps({ backgroundColor: undefined })
+    } else {
+      updateBlockProps({ backgroundColor: color })
+    }
+  }
+
+  return (
+    <Popover.Root open={open} onOpenChange={handleOpenChange}>
+      <Popover.Trigger asChild>
+        <Components.SideMenu.Button
+          label={dict.side_menu.drag_handle_label}
+          draggable
+          onDragStart={event => props.blockDragStart(event, block)}
+          onDragEnd={props.blockDragEnd}
+          className="bn-button"
+          icon={<MdDragIndicator size={24} data-test="dragHandle" />}
+        />
+      </Popover.Trigger>
+      <Popover.Portal>
+        <Popover.Positioner side="right" align="start" sideOffset={6}>
+          <Popover.Popup className="bg-popover border border-border rounded-lg shadow-lg p-3 w-60 space-y-3">
+            <div className="space-y-2">
+              <button
+                type="button"
+                onClick={handleDelete}
+                className="w-full rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm font-medium text-destructive transition-colors hover:bg-destructive/20"
+              >
+                {dict.drag_handle.delete_menuitem}
+              </button>
+            </div>
+            {(supportsTextColor || supportsBackgroundColor) && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  <span>{dict.drag_handle.colors_menuitem}</span>
+                </div>
+                {supportsTextColor && (
+                  <div className="space-y-1">
+                    <p className="text-[11px] font-medium text-muted-foreground">Text</p>
+                    <div className="grid grid-cols-8 gap-1">
+                      {SIDE_MENU_COLORS.map(color => (
+                        <button
+                          key={`text-${color}`}
+                          type="button"
+                          onClick={() => handleSelectTextColor(color)}
+                          className={cn(
+                            'h-6 w-6 rounded border border-border transition-transform hover:scale-105',
+                            currentTextColor === color && 'ring-2 ring-primary border-primary'
+                          )}
+                          style={{
+                            backgroundColor: color === 'default' ? 'transparent' : color,
+                            color: color === 'default' ? 'inherit' : '#fff',
+                          }}
+                          title={color}
+                        >
+                          {color === 'default' ? 'A' : ''}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {supportsBackgroundColor && (
+                  <div className="space-y-1">
+                    <p className="text-[11px] font-medium text-muted-foreground">Background</p>
+                    <div className="grid grid-cols-8 gap-1">
+                      {SIDE_MENU_COLORS.map(color => (
+                        <button
+                          key={`background-${color}`}
+                          type="button"
+                          onClick={() => handleSelectBackgroundColor(color)}
+                          className={cn(
+                            'h-6 w-6 rounded border border-border transition-transform hover:scale-105',
+                            currentBackgroundColor === color && 'ring-2 ring-primary border-primary'
+                          )}
+                          style={{
+                            backgroundColor: color === 'default' ? 'transparent' : color,
+                            color: color === 'default' ? 'inherit' : '#fff',
+                          }}
+                          title={color}
+                        >
+                          {color === 'default' ? '•' : ''}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </Popover.Popup>
+        </Popover.Positioner>
+      </Popover.Portal>
+    </Popover.Root>
+  )
+}
+
+
+function BaseUISideMenu(props: DefaultSideMenuProps) {
+  const Components = useComponentsContext()
+
+  const dataAttributes = useMemo(() => {
+    const attrs: Record<string, string> = {
+      'data-block-type': props.block.type,
+    }
+
+    const blockProps = (props.block.props ?? {}) as Record<string, unknown>
+    if (props.block.type === 'heading' && typeof blockProps.level === 'number') {
+      attrs['data-level'] = String(blockProps.level)
+    }
+
+    const meta = props.editor.schema.blockSpecs[props.block.type].implementation.meta
+    if (meta?.fileBlockAccept) {
+      attrs['data-url'] = blockProps.url ? 'true' : 'false'
+    }
+
+    return attrs
+  }, [props.block.props, props.block.type, props.editor.schema.blockSpecs])
+
+  return (
+    <Components.SideMenu.Root className="bn-side-menu" {...dataAttributes}>
+      <AddBlockButton {...props} />
+      <BaseUIDragHandleButton {...props} />
+    </Components.SideMenu.Root>
   )
 }
 
@@ -905,9 +1112,13 @@ export function NoteEditor({ note, boardId, onBack }: NoteEditorProps) {
               editor={editor}
               theme={resolvedEditorTheme}
               className="blocknote-view"
+              sideMenu={false}
               formattingToolbar={false}
               linkToolbar={false}
             >
+              <SideMenuController
+                sideMenu={props => <BaseUISideMenu {...props} />}
+              />
               <FormattingToolbarController
                 formattingToolbar={() => (
                   <FormattingToolbar>

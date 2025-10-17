@@ -78,6 +78,26 @@
   animation: none !important;
 }
 
+.blocknote-view .bn-side-menu {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 4px;
+}
+
+.blocknote-view .bn-side-menu .bn-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 1px;
+}
+
+.blocknote-view .bn-side-menu [data-test='dragHandleAdd'] {
+  transform: translateY(-1px);
+}
+
 .dark .blocknote-view .bn-tooltip {
   background-color: color-mix(in srgb, var(--card) 60%, transparent);
   border-color: color-mix(in srgb, var(--border) 50%, transparent);
