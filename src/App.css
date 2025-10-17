@@ -328,6 +328,16 @@
     cursor: default;
   }
 
+  html,
+  body {
+    background: transparent !important;
+    overflow: hidden;
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+  }
+
   body {
     @apply text-foreground;
     font-family:
@@ -348,17 +358,19 @@
     overscroll-behavior: none;
     min-height: 100vh;
     min-width: 100vw;
-    overflow: hidden;
-    position: relative;
-    background-color: transparent;
-    -webkit-backdrop-filter: blur(0);
-    backdrop-filter: blur(0);
     letter-spacing: var(--tracking-normal);
   }
 
-  /* Base UI - Create stacking context for portals */
+  /* Aplicar border-radius e overflow no root */
   #root {
     isolation: isolate;
+    border-radius: 12px;
+    overflow: hidden;
+    width: 100%;
+    height: 100vh;
+      background-color: color-mix(in srgb, var(--background) 30%, transparent);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   }
 
   svg {
@@ -381,6 +393,7 @@
     cursor: pointer !important;
   }
 }
+
 
 @layer base {
   * {

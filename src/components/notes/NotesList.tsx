@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { Pin, Calendar, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { Note } from '@/services/notes'
@@ -10,6 +11,15 @@ import {
   ContextMenuSeparator,
   ContextMenuTrigger,
 } from '@/components/ui/context-menu'
+import { Skeleton } from '@/components/ui/skeleton'
+import { extractNotePreview } from './utils'
+
+const NOTE_LIST_SKELETON_KEYS = [
+  'notes-loading-1',
+  'notes-loading-2',
+  'notes-loading-3',
+  'notes-loading-4',
+]
 
 interface NotesListProps {
   boardId: string
@@ -24,20 +34,38 @@ export function NotesList({
 }: NotesListProps) {
   const { data: notes = [], isLoading } = useNotes(boardId)
 
-  const filteredNotes = notes.filter(note =>
-    note.title.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+  const normalizedQuery = searchQuery.trim().toLowerCase()
 
-  const pinnedNotes = filteredNotes.filter(note => note.pinned)
-  const unpinnedNotes = filteredNotes.filter(note => !note.pinned)
+  const processedNotes = useMemo(() => {
+    const matchesQuery = normalizedQuery
+      ? notes.filter(note =>
+          note.title.toLowerCase().includes(normalizedQuery)
+        )
+      : notes
+
+    return [...matchesQuery].sort((a, b) => {
+      const pinnedDiff = Number(b.pinned) - Number(a.pinned)
+      if (pinnedDiff !== 0) return pinnedDiff
+
+      const aUpdated = new Date(a.updatedAt).getTime()
+      const bUpdated = new Date(b.updatedAt).getTime()
+      return bUpdated - aUpdated
+    })
+  }, [notes, normalizedQuery])
+
+  const filteredNotes = processedNotes
+  const pinnedNotes = processedNotes.filter(note => note.pinned)
+  const unpinnedNotes = processedNotes.filter(note => !note.pinned)
 
   return (
     <div className="flex h-full flex-col">
       {/* Notes List */}
       <div className="flex-1 overflow-auto">
         {isLoading ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="text-muted-foreground">Loading notes...</div>
+          <div className="space-y-3 px-6 py-6">
+            {NOTE_LIST_SKELETON_KEYS.map(key => (
+              <Skeleton key={key} className="h-24 rounded-xl" />
+            ))}
           </div>
         ) : filteredNotes.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 px-6 text-center">
@@ -127,42 +155,21 @@ function NoteCard({ note, onClick, boardId }: NoteCardProps) {
       }
     )
   }
-  // Extract plain text from content for preview, excluding title block
-  const getPreviewText = (content: string): string => {
-    try {
-      const parsed = JSON.parse(content)
-      const extractText = (nodes: unknown[]): string => {
-        return nodes
-          .map((node: unknown) => {
-            const n = node as {
-              text?: string
-              children?: unknown[]
-              id?: string
-            }
-            // Skip title block to avoid duplicating content
-            if (n.id === 'title-block') return ''
-            if (n.text) return n.text
-            if (n.children) return extractText(n.children)
-            return ''
-          })
-          .join(' ')
-          .replace(/\s+/g, ' ') // Normalize whitespace
-      }
-      const text = extractText(parsed).trim()
-      return text || 'No content'
-    } catch {
-      // For old format content, return as-is
-      return content || 'No content'
-    }
-  }
-
-  const preview = getPreviewText(note.content)
-  const updatedAt = formatDistanceToNow(new Date(note.updatedAt), {
-    addSuffix: true,
-  })
-  const createdAt = formatDistanceToNow(new Date(note.createdAt), {
-    addSuffix: true,
-  })
+  const preview = useMemo(() => extractNotePreview(note.content), [note.content])
+  const updatedAt = useMemo(
+    () =>
+      formatDistanceToNow(new Date(note.updatedAt), {
+        addSuffix: true,
+      }),
+    [note.updatedAt]
+  )
+  const createdAt = useMemo(
+    () =>
+      formatDistanceToNow(new Date(note.createdAt), {
+        addSuffix: true,
+      }),
+    [note.createdAt]
+  )
 
   return (
     <ContextMenu>

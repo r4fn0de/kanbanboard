@@ -25,7 +25,7 @@
         "decorations": false,
         "alwaysOnTop": false,
         "transparent": true,
-        "shadow": true,
+        "shadow": false,
         "dragDropEnabled": true,
         "windowEffects": {
           "effects": ["hudWindow"],
