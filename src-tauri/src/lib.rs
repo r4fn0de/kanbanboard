@@ -13,6 +13,7 @@ use std::path::PathBuf;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tauri::menu::{MenuBuilder, MenuItemBuilder, PredefinedMenuItem, SubmenuBuilder};
 use tauri::{AppHandle, Emitter, Manager, State};
+use tauri_plugin_opener::OpenerExt;
 
 const KANBAN_SCHEMA: &str = include_str!("../schema/kanban.sql");
 const DATABASE_FILE: &str = "flowspace.db";
@@ -92,6 +93,31 @@ async fn establish_pool(app: &AppHandle) -> Result<DbPool, String> {
         .map_err(|e| format!("Failed to create SQLite pool: {e}"))?;
 
     Ok(pool)
+}
+
+#[tauri::command]
+async fn open_attachment(app: AppHandle, file_path: String) -> Result<(), String> {
+    let app_data_dir = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| format!("Failed to resolve app data directory: {e}"))?;
+
+    let full_path = app_data_dir.join(&file_path);
+
+    if !full_path.exists() {
+        return Err(format!("Attachment not found: {}", file_path));
+    }
+
+    let path_str = full_path
+        .to_str()
+        .ok_or_else(|| format!("Failed to convert path to string: {}", file_path))?
+        .to_string();
+
+    app.opener()
+        .open_path(path_str, Option::<String>::None)
+        .map_err(|e| format!("Failed to open attachment: {e}"))?;
+
+    Ok(())
 }
 
 #[derive(Debug, Deserialize)]
@@ -3013,6 +3039,7 @@ pub fn run() {
             upload_image,
             remove_image,
             get_attachment_url,
+            open_attachment,
             load_notes,
             create_note,
             update_note,
@@ -3211,6 +3238,17 @@ async fn upload_image(
         format!("Failed to create attachments directory: {e}")
     })?;
 
+    let card_attachments_dir = attachments_dir.join(&card_id);
+    println!(
+        "Ensuring card attachment directory exists: {:?}",
+        card_attachments_dir
+    );
+
+    fs::create_dir_all(&card_attachments_dir).map_err(|e| {
+        println!("Failed to create card attachment directory: {}", e);
+        format!("Failed to create card attachment directory: {e}")
+    })?;
+
     let source_path = PathBuf::from(&file_path);
     println!("Checking source path: {:?}", source_path);
 
@@ -3230,52 +3268,119 @@ async fn upload_image(
 
     println!("File extension: {}", file_extension);
 
-    let mime_type = mime_guess::from_path(&source_path).first_or_octet_stream();
-    println!("Detected MIME type: {}", mime_type);
-    println!("MIME type string: {}", mime_type.as_ref());
+    let ext_lower = file_extension.to_lowercase();
+    let image_extensions = [
+        "jpg", "jpeg", "png", "gif", "webp", "svg", "bmp", "ico", "tiff", "tif",
+    ];
+    let document_extensions = [
+        "pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "txt", "csv", "md", "rtf",
+        "zip", "rar", "7z", "tar", "json",
+    ];
 
-    // Check if it's an image by extension as fallback
-    let is_image_by_extension = match file_extension.to_lowercase().as_str() {
-        "jpg" | "jpeg" | "png" | "gif" | "webp" | "svg" | "bmp" | "ico" | "tiff" | "tif" => true,
-        _ => false,
-    };
+    let is_image_by_extension = image_extensions.contains(&ext_lower.as_str());
+    let is_document_by_extension = document_extensions.contains(&ext_lower.as_str());
 
-    println!("Is image by extension: {}", is_image_by_extension);
-
-    if !mime_type.type_().as_str().starts_with("image/") && !is_image_by_extension {
+    if !is_image_by_extension && !is_document_by_extension {
         println!(
-            "File is not an image - MIME: {}, extension: {}",
-            mime_type, file_extension
+            "Unsupported attachment extension received: {}",
+            file_extension
         );
         return Ok(UploadImageResponse {
             success: false,
             file_path: String::new(),
-            error: Some(format!(
-                "File is not an image. Detected MIME: {}, extension: {}",
-                mime_type, file_extension
-            )),
+            error: Some(format!("Unsupported attachment type: .{}", file_extension)),
         });
     }
 
-    let timestamp = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map_err(|e| {
-            println!("System time error: {}", e);
-            format!("System time error: {e}")
-        })?
-        .as_secs();
+    let mime_type = mime_guess::from_path(&source_path).first_or_octet_stream();
+    println!("Detected MIME type: {}", mime_type);
+    println!("MIME type string: {}", mime_type.as_ref());
 
-    let filename = format!("{}_{}.{}", card_id, timestamp, file_extension);
-    let destination_path = attachments_dir.join(&filename);
+    if !is_image_by_extension && mime_type.type_().as_str().starts_with("image/") {
+        println!(
+            "Attachment extension {} detected as image MIME {}; treating as document",
+            file_extension, mime_type
+        );
+    }
 
-    println!("Copying from {:?} to {:?}", source_path, destination_path);
+    let original_name = source_path
+        .file_name()
+        .and_then(|name| name.to_str())
+        .map(|name| name.replace(['/', '\\'], "_"))
+        .filter(|name| !name.trim().is_empty())
+        .unwrap_or_else(|| {
+            let fallback = format!("attachment.{}", file_extension);
+            println!(
+                "Unable to determine original filename, falling back to {}",
+                fallback
+            );
+            fallback
+        });
+
+    let mut destination_path = card_attachments_dir.join(&original_name);
+
+    if destination_path.exists() {
+        println!(
+            "Attachment with same name exists, generating unique filename for {:?}",
+            destination_path
+        );
+
+        let timestamp = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map_err(|e| {
+                println!("System time error: {}", e);
+                format!("System time error: {e}")
+            })?
+            .as_secs();
+
+        let (base, ext) = match destination_path.file_stem().and_then(|s| s.to_str()) {
+            Some(stem) => (stem.to_string(), source_path.extension().and_then(|e| e.to_str()).map(|e| e.to_string())),
+            None => ("attachment".to_string(), source_path.extension().and_then(|e| e.to_str()).map(|e| e.to_string())),
+        };
+
+        let mut counter = 1u32;
+        loop {
+            let candidate_name = if let Some(ref ext) = ext {
+                format!("{}_{timestamp}_{counter}.{}", base, ext)
+            } else {
+                format!("{}_{timestamp}_{counter}", base)
+            };
+
+            let candidate_path = card_attachments_dir.join(&candidate_name);
+            if !candidate_path.exists() {
+                destination_path = candidate_path;
+                break;
+            }
+
+            counter += 1;
+        }
+    }
+
+    println!(
+        "Copying from {:?} to {:?}",
+        source_path,
+        destination_path
+    );
 
     fs::copy(&source_path, &destination_path).map_err(|e| {
         println!("Failed to copy file: {}", e);
         format!("Failed to copy file: {e}")
     })?;
 
-    let relative_path = format!("attachments/{}", filename);
+    let relative_path = destination_path
+        .strip_prefix(&app_data_dir)
+        .map_err(|e| {
+            println!(
+                "Failed to compute relative path for {:?}: {}",
+                destination_path, e
+            );
+            format!("Failed to compute relative attachment path: {e}")
+        })?
+        .iter()
+        .map(|component| component.to_string_lossy())
+        .collect::<Vec<_>>()
+        .join("/");
+
     println!("Generated relative path: {}", relative_path);
 
     let mut tx = pool.begin().await.map_err(|e| {
