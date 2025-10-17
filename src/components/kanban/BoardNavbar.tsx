@@ -91,21 +91,11 @@ export function BoardNavbar({
           {/* Breadcrumb with Project Info */}
           <div className="flex items-center gap-3 min-w-0">
             {/* Project Icon/Emoji */}
-            <div className="flex-shrink-0">
+            <div className="flex-shrink-0 flex h-9 w-9 items-center justify-center">
               {hasEmoji ? (
-                <div
-                  className="flex h-9 w-9 items-center justify-center rounded-lg transition-transform hover:scale-105"
-                  style={{ backgroundColor: boardColor }}
-                >
-                  <span className="text-lg">{boardEmoji}</span>
-                </div>
+                <span className="text-2xl leading-none">{boardEmoji}</span>
               ) : (
-                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent/50 transition-colors hover:bg-accent">
-                  <IconComponent
-                    className="h-5 w-5"
-                    style={{ color: boardColor }}
-                  />
-                </div>
+                <IconComponent className="h-5 w-5" style={{ color: boardColor }} />
               )}
             </div>
 

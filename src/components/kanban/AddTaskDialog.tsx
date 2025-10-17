@@ -155,7 +155,7 @@ export function AddTaskDialog({
     <Dialog.Root open={isOpen} onOpenChange={handleOpenChange}>
       <Dialog.Portal>
         <Dialog.Backdrop className="fixed inset-0 bg-black/50 z-50" />
-        <Dialog.Popup className="fixed left-1/2 top-1/2 z-50 w-full max-w-[760px] -translate-x-1/2 -translate-y-1/2 rounded-2xl border bg-background shadow-lg">
+        <Dialog.Popup className="fixed left-1/2 top-1/2 z-50 w-full max-w-[760px] -translate-x-1/2 -translate-y-1/2 rounded-2xl border bg-background">
           <div className="border-b px-6 py-4">
             <Breadcrumb>
               <BreadcrumbList className="items-center gap-1 text-xs font-medium text-muted-foreground">
@@ -244,7 +244,7 @@ export function AddTaskDialog({
                 </Select.Trigger>
                 <Select.Portal>
                   <Select.Positioner sideOffset={5} className="z-50">
-                    <Select.Popup className="rounded-md border bg-popover p-1 shadow-md">
+                    <Select.Popup className="rounded-md border bg-popover p-1">
                       <Select.List>
                         {priorityItems.map(item => (
                           <Select.Item
@@ -290,7 +290,7 @@ export function AddTaskDialog({
                   selectedTagIds={selectedTagIds}
                   onChange={setSelectedTagIds}
                   disabled={isCreating}
-                  className="space-y-0 [&>div:first-child]:hidden [&_button[aria-expanded]]:rounded-full [&_button[aria-expanded]]:border [&_button[aria-expanded]]:bg-transparent [&_button[aria-expanded]]:px-3 [&_button[aria-expanded]]:py-2 [&_button[aria-expanded]]:hover:bg-accent/50"
+                  className="space-y-0 [&>div:first-child]:hidden [&_button]:shadow-none [&_button[aria-expanded]]:rounded-full [&_button[aria-expanded]]:border [&_button[aria-expanded]]:bg-transparent [&_button[aria-expanded]]:px-3 [&_button[aria-expanded]]:py-2 [&_button[aria-expanded]]:hover:bg-accent/50"
                 />
               </div>
             </div>

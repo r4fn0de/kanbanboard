@@ -250,7 +250,7 @@ export function TagSelector({
             side="bottom"
             align="start"
           >
-            <Popover.Popup className="w-72 p-0 bg-background border rounded-md shadow-lg">
+            <Popover.Popup className="w-72 p-0 bg-background border rounded-md">
               <div className="flex items-center justify-between border-b px-3 py-2">
                 <p className="text-sm font-medium">Tags</p>
                 <Button
@@ -375,7 +375,7 @@ export function TagSelector({
       >
         <Dialog.Portal>
           <Dialog.Backdrop className="fixed inset-0 bg-black/50 z-50" />
-          <Dialog.Popup className="fixed left-1/2 top-1/2 z-50 max-w-md w-full -translate-x-1/2 -translate-y-1/2 bg-background border rounded-md shadow-lg p-6">
+          <Dialog.Popup className="fixed left-1/2 top-1/2 z-50 max-w-md w-full -translate-x-1/2 -translate-y-1/2 bg-background border rounded-md p-6">
             <Dialog.Title className="text-lg font-semibold mb-1">
               {editorState?.mode === 'edit' ? 'Edit tag' : 'Create tag'}
             </Dialog.Title>
