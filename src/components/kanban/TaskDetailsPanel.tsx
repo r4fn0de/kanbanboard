@@ -4,10 +4,13 @@ import { toast } from 'sonner'
 import { useQueryClient } from '@tanstack/react-query'
 
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Progress } from '@/components/ui/progress'
 import { Textarea } from '@/components/ui/textarea'
-import { CalendarDays, Paperclip, Tag, X } from 'lucide-react'
+import { ArrowDown, ArrowUp, CalendarDays, Paperclip, Plus, Tag, Trash2, X } from 'lucide-react'
 import { PriorityBadge } from './views/board-shared'
 import { cn } from '@/lib/utils'
 import {
@@ -17,13 +20,16 @@ import {
 import { getColumnIconComponent } from '@/components/kanban/column-icon-options'
 import {
   kanbanQueryKeys,
+  useCreateSubtask,
+  useDeleteSubtask,
   useUpdateCard,
   useUpdateCardTags,
+  useUpdateSubtask,
 } from '@/services/kanban'
 import { ImageUpload } from '@/components/ui/image-upload'
 import { TagSelector } from '@/components/kanban/tags/TagSelector'
 
-import type { KanbanCard, KanbanColumn } from '@/types/common'
+import type { KanbanCard, KanbanColumn, KanbanSubtask } from '@/types/common'
 
 interface TaskDetailsPanelProps {
   card: KanbanCard | null
@@ -39,6 +45,9 @@ export function TaskDetailsPanel({
   const queryClient = useQueryClient()
   const updateCard = useUpdateCard(card?.boardId || '')
   const updateCardTagsMutation = useUpdateCardTags(card?.boardId ?? '')
+  const createSubtaskMutation = useCreateSubtask(card?.boardId || '')
+  const updateSubtaskMutation = useUpdateSubtask(card?.boardId || '')
+  const deleteSubtaskMutation = useDeleteSubtask(card?.boardId || '')
   const [isEditingTitle, setIsEditingTitle] = useState(false)
   const [titleDraft, setTitleDraft] = useState(card?.title || '')
   const [titleError, setTitleError] = useState<string | null>(null)
@@ -51,6 +60,9 @@ export function TaskDetailsPanel({
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>(
     card?.tags.map(tag => tag.id) ?? []
   )
+  const [newSubtaskTitle, setNewSubtaskTitle] = useState('')
+  const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null)
+  const [subtaskDraft, setSubtaskDraft] = useState('')
 
   const dueMetadata = card ? getCardDueMetadata(card.dueDate) : null
 
@@ -74,7 +86,18 @@ export function TaskDetailsPanel({
     }
     setSelectedTagIds(card.tags.map(tag => tag.id))
     setPreviousCardId(card.id)
+    setNewSubtaskTitle('')
+    setEditingSubtaskId(null)
+    setSubtaskDraft('')
   }, [card, isEditingTitle, isEditingDescription, previousCardId])
+
+  const totalSubtasks = card?.subtasks.length ?? 0
+  const completedSubtasks = card?.subtasks.filter(subtask => subtask.isCompleted).length ?? 0
+  const subtaskProgress = totalSubtasks > 0 ? (completedSubtasks / totalSubtasks) * 100 : 0
+  const isSubtaskMutationPending =
+    createSubtaskMutation.isPending ||
+    updateSubtaskMutation.isPending ||
+    deleteSubtaskMutation.isPending
 
   const handleTitleSubmit = useCallback(
     async (e?: React.FormEvent) => {
@@ -208,6 +231,186 @@ export function TaskDetailsPanel({
       )
     },
     [card, updateCardTagsMutation]
+  )
+
+  const handleCreateSubtask = useCallback(
+    async (e?: React.FormEvent) => {
+      e?.preventDefault()
+      if (!card || !card.boardId) {
+        return
+      }
+
+      const trimmed = newSubtaskTitle.trim()
+      if (!trimmed) {
+        return
+      }
+
+      const generatedId =
+        typeof crypto !== 'undefined' && 'randomUUID' in crypto
+          ? crypto.randomUUID()
+          : `temp-${Date.now()}`
+
+      try {
+        await createSubtaskMutation.mutateAsync({
+          id: generatedId,
+          boardId: card.boardId,
+          cardId: card.id,
+          title: trimmed,
+          position: card.subtasks.length,
+        })
+        setNewSubtaskTitle('')
+      } catch (error) {
+        toast.error(
+          error instanceof Error ? error.message : 'Failed to create subtask'
+        )
+      }
+    },
+    [card, createSubtaskMutation, newSubtaskTitle]
+  )
+
+  const handleToggleSubtask = useCallback(
+    (subtask: KanbanSubtask, checked: boolean | 'indeterminate') => {
+      if (!card || !card.boardId) {
+        return
+      }
+
+      const nextValue = checked === true
+      updateSubtaskMutation.mutate(
+        {
+          id: subtask.id,
+          boardId: card.boardId,
+          cardId: card.id,
+          isCompleted: nextValue,
+        },
+        {
+          onError: (error: unknown) => {
+            toast.error(
+              error instanceof Error ? error.message : 'Failed to update subtask'
+            )
+          },
+        }
+      )
+    },
+    [card, updateSubtaskMutation]
+  )
+
+  const handleStartEditingSubtask = useCallback((subtask: KanbanSubtask) => {
+    setEditingSubtaskId(subtask.id)
+    setSubtaskDraft(subtask.title)
+  }, [])
+
+  const handleCancelEditingSubtask = useCallback(() => {
+    setEditingSubtaskId(null)
+    setSubtaskDraft('')
+  }, [])
+
+  const handleSubmitSubtaskTitle = useCallback(async () => {
+    if (!card || !card.boardId || !editingSubtaskId) {
+      return
+    }
+
+    const trimmed = subtaskDraft.trim()
+    if (!trimmed) {
+      toast.error('Subtask title cannot be empty')
+      return
+    }
+
+    const original = card.subtasks.find(subtask => subtask.id === editingSubtaskId)
+    if (!original) {
+      handleCancelEditingSubtask()
+      return
+    }
+
+    if (trimmed === original.title) {
+      handleCancelEditingSubtask()
+      return
+    }
+
+    try {
+      await updateSubtaskMutation.mutateAsync({
+        id: editingSubtaskId,
+        boardId: card.boardId,
+        cardId: card.id,
+        title: trimmed,
+      })
+      handleCancelEditingSubtask()
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : 'Failed to update subtask'
+      )
+    }
+  }, [card, editingSubtaskId, handleCancelEditingSubtask, subtaskDraft, updateSubtaskMutation])
+
+  const handleSubtaskInputKeyDown = useCallback(
+    (event: React.KeyboardEvent<HTMLInputElement>) => {
+      if (event.key === 'Enter') {
+        event.preventDefault()
+        void handleSubmitSubtaskTitle()
+      } else if (event.key === 'Escape') {
+        event.preventDefault()
+        handleCancelEditingSubtask()
+      }
+    },
+    [handleCancelEditingSubtask, handleSubmitSubtaskTitle]
+  )
+
+  const handleDeleteSubtask = useCallback(
+    async (subtask: KanbanSubtask) => {
+      if (!card || !card.boardId) {
+        return
+      }
+
+      try {
+        await deleteSubtaskMutation.mutateAsync({
+          id: subtask.id,
+          boardId: card.boardId,
+          cardId: card.id,
+        })
+        if (editingSubtaskId === subtask.id) {
+          handleCancelEditingSubtask()
+        }
+      } catch (error) {
+        toast.error(
+          error instanceof Error ? error.message : 'Failed to delete subtask'
+        )
+      }
+    },
+    [card, deleteSubtaskMutation, editingSubtaskId, handleCancelEditingSubtask]
+  )
+
+  const handleMoveSubtask = useCallback(
+    (subtask: KanbanSubtask, direction: number) => {
+      if (!card || !card.boardId) {
+        return
+      }
+
+      const currentIndex = card.subtasks.findIndex(item => item.id === subtask.id)
+      if (currentIndex === -1) {
+        return
+      }
+
+      const targetIndex = currentIndex + direction
+      if (targetIndex < 0 || targetIndex >= card.subtasks.length) {
+        return
+      }
+
+      updateSubtaskMutation.mutate(
+        {
+          id: subtask.id,
+          boardId: card.boardId,
+          cardId: card.id,
+          targetPosition: targetIndex,
+        },
+        {
+          onError: (error: unknown) => {
+            toast.error(
+              error instanceof Error ? error.message : 'Failed to reorder subtask'
+            )
+          },
+        }
+      )
+    },
+    [card, updateSubtaskMutation]
   )
 
   if (!card || !column) {
@@ -424,6 +627,144 @@ export function TaskDetailsPanel({
                     className="[&_button[aria-expanded]]:rounded-2xl [&_button[aria-expanded]]:border-0 [&_button[aria-expanded]]:bg-muted/60"
                   />
                 </div>
+              </section>
+
+              <section className="space-y-4">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex flex-col gap-1">
+                    <Label className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
+                      Subtasks
+                    </Label>
+                    {totalSubtasks > 0 ? (
+                      <span className="text-xs font-medium text-muted-foreground">
+                        {completedSubtasks} of {totalSubtasks} completed
+                      </span>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">
+                        Break work into actionable steps
+                      </span>
+                    )}
+                  </div>
+                  {totalSubtasks > 0 && (
+                    <span className="text-xs font-semibold text-muted-foreground">
+                      {Math.round(subtaskProgress)}%
+                    </span>
+                  )}
+                </div>
+
+                {totalSubtasks > 0 ? (
+                  <Progress value={subtaskProgress} className="h-1.5" />
+                ) : null}
+
+                <div className="space-y-2">
+                  {card.subtasks.map((subtask, index) => (
+                    <div
+                      key={subtask.id}
+                      className={cn(
+                        'group flex items-center gap-3 rounded-2xl border border-border/60 bg-background px-4 py-3 transition-colors',
+                        subtask.isCompleted && 'bg-muted/50'
+                      )}
+                    >
+                      <Checkbox
+                        checked={subtask.isCompleted}
+                        onCheckedChange={value => handleToggleSubtask(subtask, value)}
+                        disabled={isSubtaskMutationPending}
+                        aria-label={`Mark ${subtask.title} as complete`}
+                      />
+
+                      <div className="flex-1">
+                        {editingSubtaskId === subtask.id ? (
+                          <form
+                            onSubmit={event => {
+                              event.preventDefault()
+                              void handleSubmitSubtaskTitle()
+                            }}
+                          >
+                            <Input
+                              value={subtaskDraft}
+                              onChange={event => setSubtaskDraft(event.target.value)}
+                              onBlur={() => void handleSubmitSubtaskTitle()}
+                              onKeyDown={handleSubtaskInputKeyDown}
+                              autoFocus
+                              disabled={isSubtaskMutationPending}
+                            />
+                          </form>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => handleStartEditingSubtask(subtask)}
+                            className="flex w-full items-start gap-2 text-left"
+                          >
+                            <span
+                              className={cn(
+                                'text-sm font-medium text-foreground transition-colors group-hover:text-foreground/80',
+                                subtask.isCompleted && 'text-muted-foreground line-through'
+                              )}
+                            >
+                              {subtask.title}
+                            </span>
+                          </button>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-1">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                          onClick={() => handleMoveSubtask(subtask, -1)}
+                          disabled={index === 0 || isSubtaskMutationPending}
+                          aria-label="Move subtask up"
+                        >
+                          <ArrowUp className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                          onClick={() => handleMoveSubtask(subtask, 1)}
+                          disabled={
+                            index === card.subtasks.length - 1 || isSubtaskMutationPending
+                          }
+                          aria-label="Move subtask down"
+                        >
+                          <ArrowDown className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-muted-foreground hover:text-rose-500"
+                          onClick={() => handleDeleteSubtask(subtask)}
+                          disabled={isSubtaskMutationPending}
+                          aria-label="Delete subtask"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <form onSubmit={handleCreateSubtask} className="flex items-center gap-3">
+                  <Input
+                    value={newSubtaskTitle}
+                    onChange={event => setNewSubtaskTitle(event.target.value)}
+                    placeholder="Add a new subtask"
+                    disabled={isSubtaskMutationPending || !card.boardId}
+                  />
+                  <Button
+                    type="submit"
+                    size="icon"
+                    className="h-9 w-9"
+                    disabled={isSubtaskMutationPending || !newSubtaskTitle.trim()}
+                    aria-label="Add subtask"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </form>
               </section>
 
               <section className="space-y-4">

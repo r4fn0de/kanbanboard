@@ -6,6 +6,7 @@ import type {
   KanbanBoard,
   KanbanCard,
   KanbanColumn,
+  KanbanSubtask,
   KanbanTag,
 } from '@/types/common'
 
@@ -20,6 +21,8 @@ export const kanbanQueryKeys = {
     [...kanbanQueryKeys.boards(), 'cards', boardId] as const,
   tags: (boardId: string) =>
     [...kanbanQueryKeys.boards(), 'tags', boardId] as const,
+  subtasks: (cardId: string) =>
+    [...kanbanQueryKeys.boards(), 'subtasks', cardId] as const,
 }
 
 export async function fetchBoards(): Promise<KanbanBoard[]> {
@@ -501,6 +504,298 @@ export async function createCard(input: CreateCardInput): Promise<void> {
   })
 }
 
+export interface CreateSubtaskInput {
+  id: string
+  boardId: string
+  cardId: string
+  title: string
+  position?: number
+}
+
+export async function createSubtask(input: CreateSubtaskInput): Promise<KanbanSubtask> {
+  return invoke<KanbanSubtask>('create_subtask', {
+    args: {
+      id: input.id,
+      boardId: input.boardId,
+      cardId: input.cardId,
+      title: input.title,
+      position: input.position ?? null,
+    },
+  })
+}
+
+export interface UpdateSubtaskInput {
+  id: string
+  boardId: string
+  cardId: string
+  title?: string
+  isCompleted?: boolean
+  targetPosition?: number
+}
+
+export async function updateSubtask(
+  input: UpdateSubtaskInput
+): Promise<KanbanSubtask> {
+  const payload: Record<string, unknown> = {
+    id: input.id,
+    boardId: input.boardId,
+    cardId: input.cardId,
+  }
+
+  if (Object.hasOwn(input, 'title')) {
+    payload.title = input.title
+  }
+  if (Object.hasOwn(input, 'isCompleted')) {
+    payload.isCompleted = input.isCompleted ?? false
+  }
+  if (Object.hasOwn(input, 'targetPosition')) {
+    payload.targetPosition = input.targetPosition ?? null
+  }
+
+  return invoke<KanbanSubtask>('update_subtask', { args: payload })
+}
+
+export interface DeleteSubtaskInput {
+  id: string
+  boardId: string
+  cardId: string
+}
+
+export async function deleteSubtask(input: DeleteSubtaskInput): Promise<void> {
+  await invoke('delete_subtask', {
+    args: {
+      id: input.id,
+      boardId: input.boardId,
+      cardId: input.cardId,
+    },
+  })
+}
+
+export function useCreateSubtask(boardId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: createSubtask,
+    onMutate: async input => {
+      const cardsKey = kanbanQueryKeys.cards(boardId)
+
+      await queryClient.cancelQueries({ queryKey: cardsKey })
+
+      const previousCards = queryClient.getQueryData<KanbanCard[]>(cardsKey)
+      const now = new Date().toISOString()
+
+      if (previousCards) {
+        const optimisticSubtask: KanbanSubtask = {
+          id: input.id,
+          boardId: input.boardId,
+          cardId: input.cardId,
+          title: input.title,
+          isCompleted: false,
+          position: input.position ?? previousCards.find(card => card.id === input.cardId)?.subtasks.length ?? 0,
+          createdAt: now,
+          updatedAt: now,
+        }
+
+        const next = previousCards.map(card => {
+          if (card.id !== input.cardId) {
+            return card
+          }
+
+          const subtasks = [...card.subtasks]
+          const insertAt = Math.max(0, Math.min(optimisticSubtask.position, subtasks.length))
+          subtasks.splice(insertAt, 0, optimisticSubtask)
+          const normalized = subtasks.map((subtask, index) => ({
+            ...subtask,
+            position: index,
+          }))
+
+          return {
+            ...card,
+            subtasks: normalized,
+            updatedAt: now,
+          }
+        })
+
+        queryClient.setQueryData<KanbanCard[]>(cardsKey, next)
+      }
+
+      return { previousCards }
+    },
+    onError: (_error, _variables, context) => {
+      if (context?.previousCards) {
+        queryClient.setQueryData(kanbanQueryKeys.cards(boardId), context.previousCards)
+      }
+    },
+    onSuccess: (createdSubtask, variables) => {
+      const cardsKey = kanbanQueryKeys.cards(boardId)
+      queryClient.setQueryData<KanbanCard[]>(cardsKey, cards =>
+        cards
+          ? cards.map(card =>
+              card.id === variables.cardId
+                ? {
+                    ...card,
+                    subtasks: card.subtasks.map(subtask =>
+                      subtask.id === createdSubtask.id ? createdSubtask : subtask
+                    ),
+                  }
+                : card
+            )
+          : cards
+      )
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: kanbanQueryKeys.cards(boardId) })
+    },
+  })
+}
+
+export function useUpdateSubtask(boardId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: updateSubtask,
+    onMutate: async input => {
+      const cardsKey = kanbanQueryKeys.cards(boardId)
+
+      await queryClient.cancelQueries({ queryKey: cardsKey })
+
+      const previousCards = queryClient.getQueryData<KanbanCard[]>(cardsKey)
+      const now = new Date().toISOString()
+
+      if (previousCards) {
+        const next = previousCards.map(card => {
+          if (card.id !== input.cardId) {
+            return card
+          }
+
+          const subtasks = [...card.subtasks]
+          const index = subtasks.findIndex(subtask => subtask.id === input.id)
+          if (index === -1) {
+            return card
+          }
+
+          const original = subtasks[index]
+          if (!original) {
+            return card
+          }
+
+          const updatedSubtask: KanbanSubtask = {
+            id: original.id,
+            boardId: original.boardId,
+            cardId: original.cardId,
+            position: original.position,
+            createdAt: original.createdAt,
+            title: input.title ?? original.title,
+            isCompleted:
+              input.isCompleted !== undefined
+                ? input.isCompleted
+                : original.isCompleted,
+            updatedAt: now,
+          }
+
+          const working = [...subtasks]
+          working[index] = updatedSubtask
+
+          let reordered = working
+
+          if (typeof input.targetPosition === 'number') {
+            const desiredIndex = Math.max(0, Math.min(input.targetPosition, working.length - 1))
+            reordered = [...working]
+            reordered.splice(index, 1)
+            reordered.splice(desiredIndex, 0, updatedSubtask)
+          }
+
+          const normalized = reordered.map((subtask, position) => ({
+            ...subtask,
+            position,
+          }))
+
+          return {
+            ...card,
+            subtasks: normalized,
+            updatedAt: now,
+          }
+        })
+
+        queryClient.setQueryData<KanbanCard[]>(cardsKey, next)
+      }
+
+      return { previousCards }
+    },
+    onError: (_error, _variables, context) => {
+      if (context?.previousCards) {
+        queryClient.setQueryData(kanbanQueryKeys.cards(boardId), context.previousCards)
+      }
+    },
+    onSuccess: (updatedSubtask, variables) => {
+      const cardsKey = kanbanQueryKeys.cards(boardId)
+      queryClient.setQueryData<KanbanCard[]>(cardsKey, cards =>
+        cards
+          ? cards.map(card =>
+              card.id === variables.cardId
+                ? {
+                    ...card,
+                    subtasks: card.subtasks.map(subtask =>
+                      subtask.id === updatedSubtask.id ? updatedSubtask : subtask
+                    ),
+                  }
+                : card
+            )
+          : cards
+      )
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: kanbanQueryKeys.cards(boardId) })
+    },
+  })
+}
+
+export function useDeleteSubtask(boardId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: deleteSubtask,
+    onMutate: async input => {
+      const cardsKey = kanbanQueryKeys.cards(boardId)
+
+      await queryClient.cancelQueries({ queryKey: cardsKey })
+
+      const previousCards = queryClient.getQueryData<KanbanCard[]>(cardsKey)
+
+      if (previousCards) {
+        const now = new Date().toISOString()
+        const next = previousCards.map(card => {
+          if (card.id !== input.cardId) {
+            return card
+          }
+
+          const remaining = card.subtasks
+            .filter(subtask => subtask.id !== input.id)
+            .map((subtask, index) => ({
+              ...subtask,
+              position: index,
+            }))
+
+          return {
+            ...card,
+            subtasks: remaining,
+            updatedAt: now,
+          }
+        })
+
+        queryClient.setQueryData<KanbanCard[]>(cardsKey, next)
+      }
+
+      return { previousCards }
+    },
+    onError: (_error, _variables, context) => {
+      if (context?.previousCards) {
+        queryClient.setQueryData(kanbanQueryKeys.cards(boardId), context.previousCards)
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: kanbanQueryKeys.cards(boardId) })
+    },
+  })
+}
+
 export interface UpdateCardInput {
   id: string
   boardId: string
@@ -612,6 +907,8 @@ export function useUpdateCard(boardId: string) {
                   : (card.dueDate ?? null)
             }
 
+            nextCard.subtasks = card.subtasks
+            
             return nextCard
           })
 
@@ -954,6 +1251,7 @@ export function useCreateCard(boardId: string) {
         position: input.position,
         priority: input.priority,
         dueDate: input.dueDate ?? null,
+        subtasks: [],
         tags: selectedTags,
         createdAt: now,
         updatedAt: now,

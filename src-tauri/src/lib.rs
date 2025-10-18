@@ -96,6 +96,261 @@ async fn establish_pool(app: &AppHandle) -> Result<DbPool, String> {
 }
 
 #[tauri::command]
+async fn create_subtask(
+    pool: State<'_, DbPool>,
+    args: CreateSubtaskArgs,
+) -> Result<Value, String> {
+    let title = args.title.trim().to_string();
+    if title.is_empty() {
+        return Err("O título da subtask não pode ser vazio.".to_string());
+    }
+    validate_string_input(&title, 200, "Título da subtask")?;
+
+    let mut tx = pool
+        .begin()
+        .await
+        .map_err(|e| format!("Falha ao abrir transação: {e}"))?;
+
+    let card_board_id = sqlx::query_scalar::<_, Option<String>>(
+        "SELECT board_id FROM kanban_cards WHERE id = ?",
+    )
+    .bind(&args.card_id)
+    .fetch_one(&mut *tx)
+    .await
+    .map_err(|e| format!("Falha ao carregar cartão: {e}"))?
+    .ok_or_else(|| "Cartão não encontrado.".to_string())?;
+
+    if card_board_id != args.board_id {
+        return Err("A subtask precisa pertencer ao mesmo quadro do cartão.".to_string());
+    }
+
+    let existing_count = sqlx::query_scalar::<_, Option<i64>>(
+        "SELECT COUNT(*) FROM kanban_subtasks WHERE card_id = ?",
+    )
+    .bind(&args.card_id)
+    .fetch_one(&mut *tx)
+    .await
+    .map_err(|e| format!("Falha ao contar subtasks: {e}"))?
+    .unwrap_or(0);
+
+    let mut target_position = args.position.unwrap_or(existing_count);
+    if target_position < 0 {
+        target_position = 0;
+    }
+    if target_position > existing_count {
+        target_position = existing_count;
+    }
+
+    sqlx::query(
+        "UPDATE kanban_subtasks SET position = position + 1, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE card_id = ? AND position >= ?",
+    )
+    .bind(&args.card_id)
+    .bind(target_position)
+    .execute(&mut *tx)
+    .await
+    .map_err(|e| format!("Falha ao ajustar posições das subtasks: {e}"))?;
+
+    sqlx::query(
+        "INSERT INTO kanban_subtasks (id, board_id, card_id, title, is_completed, position, created_at, updated_at) VALUES (?, ?, ?, ?, 0, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))",
+    )
+    .bind(&args.id)
+    .bind(&args.board_id)
+    .bind(&args.card_id)
+    .bind(&title)
+    .bind(target_position)
+    .execute(&mut *tx)
+    .await
+    .map_err(|e| format!("Falha ao criar subtask: {e}"))?;
+
+    normalize_subtask_positions_tx(&mut tx, &args.card_id)
+        .await
+        .map_err(|e| format!("Falha ao normalizar posições das subtasks: {e}"))?;
+
+    let row = sqlx::query(
+        "SELECT id, board_id, card_id, title, is_completed, position, created_at, updated_at FROM kanban_subtasks WHERE id = ?",
+    )
+    .bind(&args.id)
+    .fetch_one(&mut *tx)
+    .await
+    .map_err(|e| format!("Falha ao carregar subtask: {e}"))?;
+
+    let mapped = map_subtask_row(row).map_err(|e| e.to_string())?;
+
+    tx.commit()
+        .await
+        .map_err(|e| format!("Falha ao confirmar transação: {e}"))?;
+
+    Ok(mapped)
+}
+
+#[tauri::command]
+async fn update_subtask(
+    pool: State<'_, DbPool>,
+    args: UpdateSubtaskArgs,
+) -> Result<Value, String> {
+    let mut tx = pool
+        .begin()
+        .await
+        .map_err(|e| format!("Falha ao abrir transação: {e}"))?;
+
+    let record = sqlx::query_as::<_, (String, String)>(
+        "SELECT board_id, card_id FROM kanban_subtasks WHERE id = ?",
+    )
+    .bind(&args.id)
+    .fetch_optional(&mut *tx)
+    .await
+    .map_err(|e| format!("Falha ao carregar subtask: {e}"))?;
+
+    let Some((board_id_db, card_id_db)) = record else {
+        return Err("Subtask não encontrada.".to_string());
+    };
+
+    if board_id_db != args.board_id {
+        return Err("A subtask não pertence ao quadro informado.".to_string());
+    }
+
+    if card_id_db != args.card_id {
+        return Err("A subtask não pertence ao cartão informado.".to_string());
+    }
+
+    let mut builder = QueryBuilder::<Sqlite>::new(
+        "UPDATE kanban_subtasks SET updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')",
+    );
+    let mut has_changes = false;
+
+    if let Some(title) = args.title.as_ref() {
+        let trimmed = title.trim();
+        if trimmed.is_empty() {
+            return Err("O título da subtask não pode ser vazio.".to_string());
+        }
+        validate_string_input(trimmed, 200, "Título da subtask")?;
+        builder.push(", title = ");
+        builder.push_bind(trimmed);
+        has_changes = true;
+    }
+
+    if let Some(is_completed) = args.is_completed {
+        builder.push(", is_completed = ");
+        builder.push_bind(if is_completed { 1 } else { 0 });
+        has_changes = true;
+    }
+
+    if has_changes {
+        builder.push(" WHERE id = ");
+        builder.push_bind(&args.id);
+        builder.push(" AND card_id = ");
+        builder.push_bind(&args.card_id);
+
+        builder.build().execute(&mut *tx).await.map_err(|e| {
+            log::error!("Falha ao atualizar subtask: {e}");
+            e.to_string()
+        })?;
+    }
+
+    if let Some(target_position) = args.target_position {
+        let mut subtask_ids = sqlx::query_as::<_, (String,)>(
+            "SELECT id FROM kanban_subtasks WHERE card_id = ? ORDER BY position ASC, created_at ASC",
+        )
+        .bind(&args.card_id)
+        .fetch_all(&mut *tx)
+        .await
+        .map_err(|e| format!("Falha ao carregar subtasks: {e}"))?;
+
+        let current_index = subtask_ids
+            .iter()
+            .position(|(id,)| id == &args.id)
+            .ok_or_else(|| "Subtask não encontrada.".to_string())?;
+
+        let mut ordered: Vec<String> = subtask_ids.into_iter().map(|(id,)| id).collect();
+        let moving = ordered.remove(current_index);
+
+        let mut clamped = target_position;
+        if clamped < 0 {
+            clamped = 0;
+        }
+        if clamped as usize > ordered.len() {
+            clamped = ordered.len() as i64;
+        }
+
+        ordered.insert(clamped as usize, moving);
+
+        for (index, id) in ordered.iter().enumerate() {
+            sqlx::query(
+                "UPDATE kanban_subtasks SET position = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?",
+            )
+            .bind(index as i64)
+            .bind(id)
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| format!("Falha ao reordenar subtasks: {e}"))?;
+        }
+    }
+
+    let row = sqlx::query(
+        "SELECT id, board_id, card_id, title, is_completed, position, created_at, updated_at FROM kanban_subtasks WHERE id = ?",
+    )
+    .bind(&args.id)
+    .fetch_one(&mut *tx)
+    .await
+    .map_err(|e| format!("Falha ao recuperar subtask: {e}"))?;
+
+    let mapped = map_subtask_row(row).map_err(|e| e.to_string())?;
+
+    tx.commit()
+        .await
+        .map_err(|e| format!("Falha ao confirmar transação: {e}"))?;
+
+    Ok(mapped)
+}
+
+#[tauri::command]
+async fn delete_subtask(
+    pool: State<'_, DbPool>,
+    args: DeleteSubtaskArgs,
+) -> Result<(), String> {
+    let mut tx = pool
+        .begin()
+        .await
+        .map_err(|e| format!("Falha ao abrir transação: {e}"))?;
+
+    let record = sqlx::query_as::<_, (String, String)>(
+        "SELECT board_id, card_id FROM kanban_subtasks WHERE id = ?",
+    )
+    .bind(&args.id)
+    .fetch_optional(&mut *tx)
+    .await
+    .map_err(|e| format!("Falha ao carregar subtask: {e}"))?;
+
+    let Some((board_id_db, card_id_db)) = record else {
+        return Err("Subtask não encontrada.".to_string());
+    };
+
+    if board_id_db != args.board_id {
+        return Err("A subtask não pertence ao quadro informado.".to_string());
+    }
+
+    if card_id_db != args.card_id {
+        return Err("A subtask não pertence ao cartão informado.".to_string());
+    }
+
+    sqlx::query("DELETE FROM kanban_subtasks WHERE id = ?")
+        .bind(&args.id)
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| format!("Falha ao excluir subtask: {e}"))?;
+
+    normalize_subtask_positions_tx(&mut tx, &args.card_id)
+        .await
+        .map_err(|e| format!("Falha ao normalizar posições das subtasks: {e}"))?;
+
+    tx.commit()
+        .await
+        .map_err(|e| format!("Falha ao confirmar transação: {e}"))?;
+
+    Ok(())
+}
+
+#[tauri::command]
 async fn open_attachment(app: AppHandle, file_path: String) -> Result<(), String> {
     let app_data_dir = app
         .path()
@@ -132,6 +387,39 @@ struct UpdateCardArgs {
     priority: Option<String>,
     #[serde(default)]
     due_date: Option<Option<String>>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct CreateSubtaskArgs {
+    id: String,
+    board_id: String,
+    card_id: String,
+    title: String,
+    #[serde(default)]
+    position: Option<i64>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct UpdateSubtaskArgs {
+    id: String,
+    board_id: String,
+    card_id: String,
+    #[serde(default)]
+    title: Option<String>,
+    #[serde(default)]
+    is_completed: Option<bool>,
+    #[serde(default)]
+    target_position: Option<i64>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct DeleteSubtaskArgs {
+    id: String,
+    board_id: String,
+    card_id: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -815,6 +1103,19 @@ fn map_tag_row(row: SqliteRow) -> Result<Value, sqlx::Error> {
     }))
 }
 
+fn map_subtask_row(row: SqliteRow) -> Result<Value, sqlx::Error> {
+    Ok(json!({
+        "id": row.try_get::<String, _>("id")?,
+        "boardId": row.try_get::<String, _>("board_id")?,
+        "cardId": row.try_get::<String, _>("card_id")?,
+        "title": row.try_get::<String, _>("title")?,
+        "isCompleted": row.try_get::<i64, _>("is_completed")? != 0,
+        "position": row.try_get::<i64, _>("position")?,
+        "createdAt": row.try_get::<String, _>("created_at")?,
+        "updatedAt": row.try_get::<String, _>("updated_at")?,
+    }))
+}
+
 fn map_card_row(row: SqliteRow) -> Result<Value, sqlx::Error> {
     let attachments_json: Option<String> = row.try_get("attachments")?;
     let attachments: Option<Vec<String>> = match attachments_json {
@@ -824,6 +1125,12 @@ fn map_card_row(row: SqliteRow) -> Result<Value, sqlx::Error> {
 
     let tags_json: Option<String> = row.try_get("tags_json")?;
     let tags: Vec<Value> = tags_json
+        .as_deref()
+        .and_then(|json_str| serde_json::from_str(json_str).ok())
+        .unwrap_or_default();
+
+    let subtasks_json: Option<String> = row.try_get("subtasks_json")?;
+    let subtasks: Vec<Value> = subtasks_json
         .as_deref()
         .and_then(|json_str| serde_json::from_str(json_str).ok())
         .unwrap_or_default();
@@ -841,6 +1148,7 @@ fn map_card_row(row: SqliteRow) -> Result<Value, sqlx::Error> {
         "createdAt": row.try_get::<String, _>("created_at")?,
         "updatedAt": row.try_get::<String, _>("updated_at")?,
         "archivedAt": row.try_get::<Option<String>, _>("archived_at")?,
+        "subtasks": subtasks,
         "tags": tags,
     }))
 }
@@ -988,6 +1296,30 @@ async fn normalize_card_positions_tx(
         )
         .bind(index as i64)
         .bind(card_id)
+        .execute(&mut **tx)
+        .await?;
+    }
+
+    Ok(())
+}
+
+async fn normalize_subtask_positions_tx(
+    tx: &mut Transaction<'_, Sqlite>,
+    card_id: &str,
+) -> Result<(), sqlx::Error> {
+    let subtask_ids = sqlx::query_as::<_, (String,)>(
+        "SELECT id FROM kanban_subtasks WHERE card_id = ? ORDER BY position ASC, created_at ASC",
+    )
+    .bind(card_id)
+    .fetch_all(&mut **tx)
+    .await?;
+
+    for (index, (subtask_id,)) in subtask_ids.into_iter().enumerate() {
+        sqlx::query(
+            "UPDATE kanban_subtasks SET position = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?",
+        )
+        .bind(index as i64)
+        .bind(subtask_id)
         .execute(&mut **tx)
         .await?;
     }
@@ -1853,6 +2185,26 @@ async fn load_cards(pool: State<'_, DbPool>, board_id: String) -> Result<Vec<Val
             c.created_at,
             c.updated_at,
             c.archived_at,
+            (
+                SELECT json_group_array(
+                    json_object(
+                        'id', sub.id,
+                        'boardId', sub.board_id,
+                        'cardId', sub.card_id,
+                        'title', sub.title,
+                        'isCompleted', CASE WHEN sub.is_completed <> 0 THEN 1 ELSE 0 END,
+                        'position', sub.position,
+                        'createdAt', sub.created_at,
+                        'updatedAt', sub.updated_at
+                    )
+                )
+                FROM (
+                    SELECT st.id, st.board_id, st.card_id, st.title, st.is_completed, st.position, st.created_at, st.updated_at
+                    FROM kanban_subtasks st
+                    WHERE st.card_id = c.id
+                    ORDER BY st.position ASC, st.created_at ASC
+                ) sub
+            ) AS subtasks_json,
             (
                 SELECT json_group_array(
                     json_object(
@@ -3032,6 +3384,9 @@ pub fn run() {
             update_tag,
             delete_tag,
             set_card_tags,
+            create_subtask,
+            update_subtask,
+            delete_subtask,
             create_card,
             delete_card,
             update_card,

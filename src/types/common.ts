@@ -51,10 +51,22 @@ export interface KanbanCard {
   priority: KanbanPriority
   dueDate?: string | null
   attachments?: string[] | null
+  subtasks: KanbanSubtask[]
   tags: KanbanTag[]
   createdAt: string
   updatedAt: string
   archivedAt?: string | null
+}
+
+export interface KanbanSubtask {
+  id: EntityId
+  boardId: EntityId
+  cardId: EntityId
+  title: string
+  isCompleted: boolean
+  position: number
+  createdAt: string
+  updatedAt: string
 }
 
 export type BoardViewMode = 'kanban' | 'list' | 'timeline'

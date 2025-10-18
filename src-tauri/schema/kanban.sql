@@ -63,6 +63,17 @@ CREATE TABLE IF NOT EXISTS kanban_card_tags (
   PRIMARY KEY (card_id, tag_id)
 );
 
+CREATE TABLE IF NOT EXISTS kanban_subtasks (
+  id TEXT PRIMARY KEY,
+  board_id TEXT NOT NULL REFERENCES kanban_boards(id) ON DELETE CASCADE,
+  card_id TEXT NOT NULL REFERENCES kanban_cards(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  is_completed INTEGER NOT NULL DEFAULT 0,
+  position INTEGER NOT NULL,
+  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+  updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+);
+
 CREATE TABLE IF NOT EXISTS kanban_activity (
   id TEXT PRIMARY KEY,
   board_id TEXT NOT NULL REFERENCES kanban_boards(id) ON DELETE CASCADE,
@@ -88,4 +99,6 @@ CREATE TABLE IF NOT EXISTS notes (
 CREATE INDEX IF NOT EXISTS idx_columns_board_position ON kanban_columns(board_id, position);
 CREATE INDEX IF NOT EXISTS idx_cards_board_position ON kanban_cards(board_id, position);
 CREATE INDEX IF NOT EXISTS idx_cards_column_position ON kanban_cards(column_id, position);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_subtasks_card_position ON kanban_subtasks(card_id, position);
+CREATE INDEX IF NOT EXISTS idx_subtasks_card ON kanban_subtasks(card_id);
 CREATE INDEX IF NOT EXISTS idx_activity_board_created ON kanban_activity(board_id, created_at DESC);
