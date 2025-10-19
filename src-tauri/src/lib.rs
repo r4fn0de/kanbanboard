@@ -274,16 +274,21 @@ async fn update_subtask(
 
         ordered.insert(clamped as usize, moving);
 
+        let offset = ordered.len() as i64;
         for (index, id) in ordered.iter().enumerate() {
             sqlx::query(
                 "UPDATE kanban_subtasks SET position = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?",
             )
-            .bind(index as i64)
+            .bind(index as i64 + offset)
             .bind(id)
             .execute(&mut *tx)
             .await
             .map_err(|e| format!("Falha ao reordenar subtasks: {e}"))?;
         }
+
+        normalize_subtask_positions_tx(&mut tx, &args.card_id)
+            .await
+            .map_err(|e| format!("Falha ao normalizar posições das subtasks: {e}"))?;
     }
 
     let row = sqlx::query(

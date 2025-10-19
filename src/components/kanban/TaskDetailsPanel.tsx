@@ -661,8 +661,10 @@ export function TaskDetailsPanel({
                     <div
                       key={subtask.id}
                       className={cn(
-                        'group flex items-center gap-3 rounded-2xl border border-border/60 bg-background px-4 py-3 transition-colors',
-                        subtask.isCompleted && 'bg-muted/50'
+                        'group relative flex items-center gap-3 rounded-2xl border border-border/60 bg-background/80 px-4 py-3 transition-all duration-200 ease-out',
+                        'hover:-translate-y-0.5 hover:border-border hover:bg-muted/60 hover:shadow-sm',
+                        'focus-within:-translate-y-0.5 focus-within:border-foreground/30 focus-within:shadow-sm',
+                        subtask.isCompleted && 'border-border/40 bg-muted/60'
                       )}
                     >
                       <Checkbox
@@ -693,11 +695,11 @@ export function TaskDetailsPanel({
                           <button
                             type="button"
                             onClick={() => handleStartEditingSubtask(subtask)}
-                            className="flex w-full items-start gap-2 text-left"
+                            className="flex w-full items-start gap-2 rounded-xl px-1 py-0.5 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/20"
                           >
                             <span
                               className={cn(
-                                'text-sm font-medium text-foreground transition-colors group-hover:text-foreground/80',
+                                'text-sm font-medium text-foreground transition-colors group-hover:text-foreground',
                                 subtask.isCompleted && 'text-muted-foreground line-through'
                               )}
                             >
@@ -712,7 +714,7 @@ export function TaskDetailsPanel({
                           type="button"
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                          className="h-8 w-8 rounded-xl border border-transparent text-muted-foreground transition-colors hover:border-border/40 hover:bg-background/80 hover:text-foreground"
                           onClick={() => handleMoveSubtask(subtask, -1)}
                           disabled={index === 0 || isSubtaskMutationPending}
                           aria-label="Move subtask up"
@@ -723,7 +725,7 @@ export function TaskDetailsPanel({
                           type="button"
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                          className="h-8 w-8 rounded-xl border border-transparent text-muted-foreground transition-colors hover:border-border/40 hover:bg-background/80 hover:text-foreground"
                           onClick={() => handleMoveSubtask(subtask, 1)}
                           disabled={
                             index === card.subtasks.length - 1 || isSubtaskMutationPending
@@ -736,7 +738,7 @@ export function TaskDetailsPanel({
                           type="button"
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8 text-muted-foreground hover:text-rose-500"
+                          className="h-8 w-8 rounded-xl border border-transparent text-muted-foreground transition-colors hover:border-border/40 hover:bg-rose-500/10 hover:text-rose-500"
                           onClick={() => handleDeleteSubtask(subtask)}
                           disabled={isSubtaskMutationPending}
                           aria-label="Delete subtask"
