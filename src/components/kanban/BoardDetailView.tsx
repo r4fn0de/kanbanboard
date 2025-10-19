@@ -25,7 +25,7 @@ import {
 import { BoardKanbanView } from './views/BoardKanbanView'
 import { BoardListView } from './views/BoardListView'
 import { BoardTimelineView } from './views/BoardTimelineView'
-import { getCardDueMetadata } from './views/card-date'
+import { getCardDueMetadata, type CardDueStatus } from './views/card-date'
 import { TaskDetailsPanel } from '@/components/kanban/TaskDetailsPanel'
 import { ColumnManagerDialog } from '@/components/kanban/ColumnManagerDialog'
 import { BoardNavbar } from '@/components/kanban/BoardNavbar'
@@ -43,7 +43,8 @@ import {
   useMoveCard,
   useDeleteCard,
 } from '@/services/kanban'
-import { Plus, Settings2 } from 'lucide-react'
+import { Plus, Settings2, ArrowDown, ArrowUp, Minus, ListFilter } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import type {
   DragEndEvent,
   DragStartEvent,
@@ -55,6 +56,22 @@ interface BoardDetailViewProps {
   viewMode?: BoardViewMode
   onViewModeChange?: (mode: BoardViewMode) => void
 }
+
+type PriorityFilter = 'all' | KanbanPriority
+type DueFilter = 'all' | CardDueStatus | 'no_due'
+
+interface PriorityFilterOption {
+  value: PriorityFilter
+  label: string
+  icon: LucideIcon
+}
+
+const PRIORITY_FILTER_OPTIONS: PriorityFilterOption[] = [
+  { value: 'all', label: 'All priorities', icon: ListFilter },
+  { value: 'high', label: 'High', icon: ArrowUp },
+  { value: 'medium', label: 'Medium', icon: Minus },
+  { value: 'low', label: 'Low', icon: ArrowDown },
+]
 
 export function BoardDetailView({
   board,
@@ -76,6 +93,8 @@ export function BoardDetailView({
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null)
   const [activeDragCard, setActiveDragCard] = useState<KanbanCard | null>(null)
   const [activeNavTab, setActiveNavTab] = useState('tasks')
+  const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>('all')
+  const [dueFilter, setDueFilter] = useState<DueFilter>('all')
 
   const handleTabChange = useCallback(
     (tab: string) => {
@@ -174,8 +193,26 @@ export function BoardDetailView({
   )
 
   const visibleCards = useMemo(
-    () => allCards.filter(card => visibleColumnIds.has(card.columnId)),
-    [allCards, visibleColumnIds]
+    () =>
+      allCards
+        .filter(card => visibleColumnIds.has(card.columnId))
+        .filter(card => {
+          if (priorityFilter !== 'all' && card.priority !== priorityFilter) {
+            return false
+          }
+
+          if (dueFilter === 'all') {
+            return true
+          }
+
+          if (dueFilter === 'no_due') {
+            return !card.dueDate
+          }
+
+          const metadata = getCardDueMetadata(card.dueDate)
+          return metadata?.status === dueFilter
+        }),
+    [allCards, visibleColumnIds, priorityFilter, dueFilter]
   )
 
   const visibleColumnsById = useMemo(
@@ -516,7 +553,61 @@ export function BoardDetailView({
   }
 
   const taskControls = (
-    <>
+    <div className="flex flex-wrap items-center justify-end gap-3">
+      <div className="flex items-center gap-3 rounded-xl border border-border/60 bg-background/70 px-4 py-1.5 shadow-sm backdrop-blur">
+        <Select
+          value={priorityFilter}
+          onValueChange={value => setPriorityFilter(value as PriorityFilter)}
+        >
+          <SelectTrigger className="h-8 min-w-[130px] rounded-lg border-none bg-transparent px-3 text-sm font-medium text-muted-foreground hover:text-foreground">
+            <SelectValue placeholder="Priority">
+              {(() => {
+                const option = PRIORITY_FILTER_OPTIONS.find(item => item.value === priorityFilter)
+                const PriorityIcon = option?.icon ?? ListFilter
+                return (
+                  <span className="flex items-center gap-2">
+                    <PriorityIcon className="h-4 w-4" />
+                    {option?.label ?? 'Priority'}
+                  </span>
+                )
+              })()}
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent align="end" sideOffset={6}>
+            {PRIORITY_FILTER_OPTIONS.map(option => {
+              const Icon = option.icon
+              return (
+                <SelectItem
+                  key={option.value}
+                  value={option.value}
+                  className="flex items-center gap-2 text-sm"
+                >
+                  <Icon className="h-4 w-4" />
+                  {option.label}
+                </SelectItem>
+              )
+            })}
+          </SelectContent>
+        </Select>
+        <span className="hidden h-4 w-px bg-border/60 sm:block" />
+        <Select
+          value={dueFilter}
+          onValueChange={value => setDueFilter(value as DueFilter)}
+        >
+          <SelectTrigger className="h-8 min-w-[150px] rounded-lg border-none bg-transparent px-3 text-sm font-medium text-muted-foreground hover:text-foreground">
+            <SelectValue placeholder="Deadline" />
+          </SelectTrigger>
+          <SelectContent align="end" sideOffset={6}>
+            <SelectItem value="all">All deadlines</SelectItem>
+            <SelectItem value="overdue">Overdue</SelectItem>
+            <SelectItem value="today">Due today</SelectItem>
+            <SelectItem value="soon">Due soon</SelectItem>
+            <SelectItem value="upcoming">Upcoming</SelectItem>
+            <SelectItem value="no_due">No due date</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
       <ToggleGroup
         type="single"
         value={resolvedViewMode}
@@ -525,7 +616,7 @@ export function BoardDetailView({
             onViewModeChange(value)
           }
         }}
-        className="flex h-9 items-center gap-0 rounded-md border border-border/80 bg-card/80 backdrop-blur overflow-hidden"
+        className="flex h-9 items-center gap-2 rounded-xl border border-border/60 bg-background/70 px-2 shadow-sm backdrop-blur overflow-hidden"
       >
         {BOARD_VIEW_OPTIONS.map(option => (
           <BaseTooltip.Root key={option.value} delay={0} closeDelay={0}>
@@ -536,7 +627,7 @@ export function BoardDetailView({
                   {...triggerProps}
                   value={option.value}
                   aria-label={option.label}
-                  className="flex h-full w-9 items-center justify-center text-muted-foreground transition-all duration-150 hover:bg-muted/70 data-[state=on]:bg-primary/10 data-[state=on]:text-primary"
+                  className="flex h-7 w-7 items-center justify-center rounded-lg first:rounded-lg last:rounded-lg text-muted-foreground transition-all duration-150 hover:bg-muted/70 data-[state=on]:bg-primary/10 data-[state=on]:text-primary"
                 >
                   <option.icon className="h-4 w-4" />
                 </ToggleGroupItem>
@@ -555,14 +646,14 @@ export function BoardDetailView({
 
       <Button
         variant="outline"
-        className="shadow-none"
+        className="h-9 rounded-xl border-border/60 bg-background/80 px-4 text-sm font-medium shadow-sm hover:bg-background"
         onClick={() => setIsColumnManagerOpen(true)}
       >
         <Settings2 className="mr-2 h-4 w-4" />
         Manage Columns
       </Button>
-    </>
-  )
+    </div>
+  );
 
   return (
     <div className="flex flex-col h-screen max-h-screen overflow-hidden">
