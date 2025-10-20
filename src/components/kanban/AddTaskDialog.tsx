@@ -24,6 +24,7 @@ import {
   Check,
 } from 'lucide-react'
 import type { KanbanCard, KanbanColumn, KanbanPriority } from '@/types/common'
+import { createCardSchema } from '@/schemas/kanban'
 
 interface AddTaskDialogProps {
   isOpen: boolean
@@ -57,6 +58,7 @@ export function AddTaskDialog({
   const [dueDate, setDueDate] = useState('')
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([])
   const [isCreating, setIsCreating] = useState(false)
+  const [formError, setFormError] = useState<string | null>(null)
 
   const titleId = useId()
   const descriptionId = useId()
@@ -69,6 +71,7 @@ export function AddTaskDialog({
     setPriority('medium')
     setDueDate('')
     setSelectedTagIds([])
+    setFormError(null)
   }, [])
 
   const handleResetAndClose = useCallback(() => {
@@ -92,24 +95,41 @@ export function AddTaskDialog({
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault()
-      if (!title.trim() || !column) return
+      if (!column) {
+        setFormError('Select a column before creating a task.')
+        return
+      }
+
+      const payload = {
+        id: `temp-${Date.now()}`,
+        boardId,
+        columnId: column.id,
+        title: title.trim(),
+        description: description.trim() || undefined,
+        priority,
+        dueDate: dueDate || undefined,
+        position: 0,
+        tagIds: selectedTagIds,
+      }
+
+      const result = createCardSchema.safeParse(payload)
+      if (!result.success) {
+        const message = result.error.issues[0]?.message ?? 'Invalid task data'
+        setFormError(message)
+        toast.error(message)
+        return
+      }
+      setFormError(null)
 
       setIsCreating(true)
       try {
         // Position will be calculated by the parent component (BoardDetailView)
         // based on priority and alphabetical order
         await onCreateTask({
-          id: `temp-${Date.now()}`,
-          boardId,
-          columnId: column.id,
-          title: title.trim(),
-          description: description.trim() || undefined,
-          priority,
-          dueDate: dueDate || undefined,
+          ...result.data,
           tags: [],
-          tagIds: selectedTagIds,
-          position: 0, // Temporary position, will be recalculated by parent
           attachments: null,
+          subtasks: [],
         })
 
         resetForm()
@@ -294,6 +314,12 @@ export function AddTaskDialog({
                 />
               </div>
             </div>
+
+            {formError && (
+              <p className="text-sm text-destructive" role="alert">
+                {formError}
+              </p>
+            )}
 
             <div className="flex items-center justify-between border-t px-0 pt-4">
               <Dialog.Close

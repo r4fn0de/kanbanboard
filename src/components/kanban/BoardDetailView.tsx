@@ -50,6 +50,7 @@ import type {
   DragStartEvent,
   DragCancelEvent,
 } from '@dnd-kit/core'
+import { createCardSchema } from '@/schemas/kanban'
 
 interface BoardDetailViewProps {
   board: KanbanBoard
@@ -90,6 +91,7 @@ export function BoardDetailView({
   const [cardDialogColumn, setCardDialogColumn] = useState<KanbanColumn | null>(
     null
   )
+  const [cardFormError, setCardFormError] = useState<string | null>(null)
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null)
   const [activeDragCard, setActiveDragCard] = useState<KanbanCard | null>(null)
   const [activeNavTab, setActiveNavTab] = useState('tasks')
@@ -276,15 +278,40 @@ export function BoardDetailView({
     setCardDescription('')
     setCardPriority('medium')
     setCardDueDate('')
+    setCardFormError(null)
   }, [])
 
   const handleCreateCard = useCallback(
     async (event: React.FormEvent) => {
       event.preventDefault()
-      if (!cardTitle.trim() || !cardDialogColumn) return
+      if (!cardDialogColumn) {
+        setCardFormError('Select a column before creating a task.')
+        return
+      }
 
       try {
-        const trimmedTitle = cardTitle.trim()
+        const parsed = createCardSchema.safeParse({
+          id: `temp-${Date.now()}`,
+          boardId: board.id,
+          columnId: cardDialogColumn.id,
+          title: cardTitle.trim(),
+          description: cardDescription.trim() || undefined,
+          priority: cardPriority,
+          dueDate: cardDueDate || undefined,
+          position: 0,
+          tagIds: [],
+        })
+
+        if (!parsed.success) {
+          const message =
+            parsed.error.issues[0]?.message ?? 'Invalid task data provided'
+          setCardFormError(message)
+          toast.error(message)
+          return
+        }
+
+        setCardFormError(null)
+
         const columnCards = cardsByColumn.get(cardDialogColumn.id) || []
 
         // Always insert at the end of the column
@@ -293,15 +320,9 @@ export function BoardDetailView({
         const targetPosition = columnCards.length + 1
 
         await createCardMutation.mutateAsync({
-          id: `temp-${Date.now()}`,
-          boardId: board.id,
-          columnId: cardDialogColumn.id,
-          title: trimmedTitle,
-          description: cardDescription.trim() || undefined,
-          priority: cardPriority,
-          dueDate: cardDueDate || undefined,
+          ...parsed.data,
           position: targetPosition,
-          tagIds: [],
+          tagIds: parsed.data.tagIds ?? [],
         })
         resetCardForm()
         setIsCardDialogOpen(false)
@@ -313,14 +334,14 @@ export function BoardDetailView({
     },
     [
       board.id,
-      cardTitle,
-      cardDescription,
-      cardPriority,
-      cardDueDate,
       cardDialogColumn,
       createCardMutation,
       resetCardForm,
       cardsByColumn,
+      cardTitle,
+      cardDescription,
+      cardPriority,
+      cardDueDate,
     ]
   )
 
@@ -869,6 +890,11 @@ export function BoardDetailView({
                       />
                     </div>
                   </div>
+                  {cardFormError && (
+                    <p className="text-sm text-destructive" role="alert">
+                      {cardFormError}
+                    </p>
+                  )}
                   <div className="flex justify-end gap-2 mt-6">
                     <Button
                       type="button"

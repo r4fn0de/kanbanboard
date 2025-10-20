@@ -2,22 +2,15 @@ import { invoke } from '@tauri-apps/api/core'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import type { Workspace } from '@/types/common'
+import {
+  createWorkspaceSchema,
+  updateWorkspaceSchema,
+  type CreateWorkspaceInput,
+  type UpdateWorkspaceInput,
+} from '@/schemas/workspaces'
 
 export const workspaceQueryKeys = {
   all: ['workspaces'] as const,
-}
-
-export interface CreateWorkspaceInput {
-  id: string
-  name: string
-  color?: string | null
-  iconPath?: string | null
-}
-
-export interface UpdateWorkspaceInput {
-  id: string
-  name?: string
-  color?: string | null
 }
 
 export interface UpdateWorkspaceIconInput {
@@ -37,12 +30,14 @@ export async function fetchWorkspaces(): Promise<Workspace[]> {
 export async function createWorkspace(
   input: CreateWorkspaceInput
 ): Promise<Workspace> {
+  const payload = createWorkspaceSchema.parse(input)
+
   return invoke<Workspace>('create_workspace', {
     args: {
-      id: input.id,
-      name: input.name,
-      color: input.color ?? null,
-      iconPath: input.iconPath ?? null,
+      id: payload.id,
+      name: payload.name,
+      color: payload.color ?? null,
+      iconPath: payload.iconPath ?? null,
     },
   })
 }
@@ -50,11 +45,13 @@ export async function createWorkspace(
 export async function updateWorkspace(
   input: UpdateWorkspaceInput
 ): Promise<void> {
+  const payload = updateWorkspaceSchema.parse(input)
+
   return invoke('update_workspace', {
     args: {
-      id: input.id,
-      ...(input.name !== undefined ? { name: input.name } : {}),
-      ...(input.color !== undefined ? { color: input.color } : {}),
+      id: payload.id,
+      ...(payload.name !== undefined ? { name: payload.name } : {}),
+      ...(payload.color !== undefined ? { color: payload.color } : {}),
     },
   })
 }

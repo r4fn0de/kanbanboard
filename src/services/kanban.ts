@@ -2,6 +2,46 @@ import { invoke } from '@tauri-apps/api/core'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { DEFAULT_COLUMN_ICON } from '@/constants/kanban-columns'
+import {
+  createBoardSchema,
+  createCardSchema,
+  createColumnSchema,
+  createSubtaskSchema,
+  createTagSchema,
+  deleteBoardSchema,
+  deleteCardSchema,
+  deleteColumnSchema,
+  deleteSubtaskSchema,
+  deleteTagSchema,
+  moveCardSchema,
+  moveColumnSchema,
+  renameBoardSchema,
+  updateBoardIconSchema,
+  updateCardSchema,
+  updateCardTagsSchema,
+  updateColumnSchema,
+  updateSubtaskSchema,
+  updateTagSchema,
+  type CreateBoardInput,
+  type CreateCardInput,
+  type CreateColumnInput,
+  type CreateSubtaskInput,
+  type CreateTagInput,
+  type DeleteBoardInput,
+  type DeleteCardInput,
+  type DeleteColumnInput,
+  type DeleteSubtaskInput,
+  type DeleteTagInput,
+  type MoveCardInput,
+  type MoveColumnInput,
+  type RenameBoardInput,
+  type UpdateBoardIconInput,
+  type UpdateCardInput,
+  type UpdateCardTagsInput,
+  type UpdateColumnInput,
+  type UpdateSubtaskInput,
+  type UpdateTagInput,
+} from '@/schemas/kanban'
 import type {
   KanbanBoard,
   KanbanCard,
@@ -33,121 +73,85 @@ export async function fetchTags(boardId: string): Promise<KanbanTag[]> {
   return invoke<KanbanTag[]>('load_tags', { boardId })
 }
 
-export interface CreateBoardInput {
-  id: string
-  workspaceId: string
-  title: string
-  description?: string
-  icon?: string
-  emoji?: string
-  color?: string
-}
-
 export async function createBoard(input: CreateBoardInput): Promise<void> {
+  const payload = createBoardSchema.parse(input)
+
   // Tauri v2 uses camelCase for command parameters by default
   await invoke('create_board', {
     args: {
-      id: input.id,
-      workspaceId: input.workspaceId,
-      title: input.title,
-      description: input.description ?? null,
-      icon: input.icon ?? 'Folder',
-      emoji: input.emoji ?? null,
-      color: input.color ?? null,
+      id: payload.id,
+      workspaceId: payload.workspaceId,
+      title: payload.title,
+      description: payload.description ?? null,
+      icon: payload.icon ?? 'Folder',
+      emoji: payload.emoji ?? null,
+      color: payload.color ?? null,
     },
   })
 }
 
-export interface RenameBoardInput {
-  id: string
-  title: string
-  description?: string
-}
-
 export async function renameBoard(input: RenameBoardInput): Promise<void> {
-  await invoke('rename_board', {
-    id: input.id,
-    title: input.title,
-    description: input.description ?? null,
-  })
-}
+  const payload = renameBoardSchema.parse(input)
 
-export interface DeleteBoardInput {
-  id: string
+  await invoke('rename_board', {
+    id: payload.id,
+    title: payload.title,
+    description: payload.description ?? null,
+  })
 }
 
 export async function deleteBoard(input: DeleteBoardInput): Promise<void> {
-  await invoke('delete_board', {
-    id: input.id,
-  })
-}
+  const payload = deleteBoardSchema.parse(input)
 
-export interface UpdateBoardIconInput {
-  id: string
-  icon: string
+  await invoke('delete_board', {
+    id: payload.id,
+  })
 }
 
 export async function updateBoardIcon(
   input: UpdateBoardIconInput
 ): Promise<void> {
+  const payload = updateBoardIconSchema.parse(input)
+
   await invoke('update_board_icon', {
-    id: input.id,
-    icon: input.icon,
+    id: payload.id,
+    icon: payload.icon,
   })
 }
 
-export interface CreateTagInput {
-  id: string
-  boardId: string
-  label: string
-  color?: string | null
-}
-
 export async function createTag(input: CreateTagInput): Promise<KanbanTag> {
+  const payload = createTagSchema.parse(input)
+
   return invoke<KanbanTag>('create_tag', {
     args: {
-      id: input.id,
-      boardId: input.boardId,
-      label: input.label,
-      color: input.color ?? null,
+      id: payload.id,
+      boardId: payload.boardId,
+      label: payload.label,
+      color: payload.color ?? null,
     },
   })
 }
 
-export interface UpdateTagInput {
-  id: string
-  boardId: string
-  label?: string
-  color?: string | null
-}
-
 export async function updateTag(input: UpdateTagInput): Promise<KanbanTag> {
-  const payload: Record<string, unknown> = {
-    id: input.id,
-    boardId: input.boardId,
+  const payload = updateTagSchema.parse(input)
+
+  const args = {
+    id: payload.id,
+    boardId: payload.boardId,
+    ...(payload.label !== undefined ? { label: payload.label } : {}),
+    ...(payload.color !== undefined ? { color: payload.color ?? null } : {}),
   }
 
-  if (Object.hasOwn(input, 'label')) {
-    payload.label = input.label
-  }
-
-  if (Object.hasOwn(input, 'color')) {
-    payload.color = input.color ?? null
-  }
-
-  return invoke<KanbanTag>('update_tag', { args: payload })
-}
-
-export interface DeleteTagInput {
-  id: string
-  boardId: string
+  return invoke<KanbanTag>('update_tag', { args })
 }
 
 export async function deleteTag(input: DeleteTagInput): Promise<void> {
+  const payload = deleteTagSchema.parse(input)
+
   await invoke('delete_tag', {
     args: {
-      id: input.id,
-      boardId: input.boardId,
+      id: payload.id,
+      boardId: payload.boardId,
     },
   })
 }
@@ -393,89 +397,49 @@ export async function fetchColumns(boardId: string): Promise<KanbanColumn[]> {
   return invoke<KanbanColumn[]>('load_columns', { boardId })
 }
 
-export interface CreateColumnInput {
-  id: string
-  boardId: string
-  title: string
-  position: number
-  wipLimit?: number | null
-  color?: string | null
-  icon?: string | null
-  isEnabled?: boolean
-}
-
 export async function createColumn(input: CreateColumnInput): Promise<void> {
-  const isEnabled = input.isEnabled ?? true
+  const payload = createColumnSchema.parse(input)
+  const isEnabled = payload.isEnabled ?? true
   await invoke('create_column', {
-    ...input,
-    wipLimit: input.wipLimit ?? null,
-    color: input.color ?? null,
-    icon: input.icon ?? null,
+    ...payload,
+    wipLimit: payload.wipLimit ?? null,
+    color: payload.color ?? null,
+    icon: payload.icon ?? null,
     isEnabled,
   })
 }
 
-export interface UpdateColumnInput {
-  id: string
-  boardId: string
-  title?: string
-  color?: string | null
-  icon?: string | null
-  isEnabled?: boolean
-}
-
 export async function updateColumn(input: UpdateColumnInput): Promise<void> {
-  const payload: Record<string, unknown> = {
-    id: input.id,
-    boardId: input.boardId,
+  const payload = updateColumnSchema.parse(input)
+
+  const args = {
+    id: payload.id,
+    boardId: payload.boardId,
+    ...(payload.title !== undefined ? { title: payload.title } : {}),
+    ...(payload.color !== undefined ? { color: payload.color ?? null } : {}),
+    ...(payload.icon !== undefined ? { icon: payload.icon ?? null } : {}),
+    ...(payload.isEnabled !== undefined ? { isEnabled: payload.isEnabled } : {}),
   }
 
-  if (Object.hasOwn(input, 'title')) {
-    payload.title = input.title
-  }
-
-  if (Object.hasOwn(input, 'color')) {
-    payload.color = input.color ?? null
-  }
-
-  if (Object.hasOwn(input, 'icon')) {
-    payload.icon = input.icon ?? null
-  }
-
-  if (Object.hasOwn(input, 'isEnabled')) {
-    payload.isEnabled = input.isEnabled
-  }
-
-  if (Object.keys(payload).length <= 2) {
-    return
-  }
-
-  await invoke('update_column', { args: payload })
-}
-
-export interface MoveColumnInput {
-  boardId: string
-  columnId: string
-  targetIndex: number
+  await invoke('update_column', { args })
 }
 
 export async function moveColumn(input: MoveColumnInput): Promise<void> {
+  const payload = moveColumnSchema.parse(input)
+
   await invoke('move_column', {
-    boardId: input.boardId,
-    columnId: input.columnId,
-    targetIndex: input.targetIndex,
+    boardId: payload.boardId,
+    columnId: payload.columnId,
+    targetIndex: payload.targetIndex,
   })
 }
 
-export interface DeleteColumnInput {
-  id: string
-  boardId: string
-}
-
 export async function deleteColumn(input: DeleteColumnInput): Promise<void> {
+  const payload = deleteColumnSchema.parse(input)
+
   await invoke('delete_column', {
-    id: input.id,
-    boardId: input.boardId,
+    id: payload.id,
+    boardId: payload.boardId,
   })
 }
 
@@ -483,90 +447,60 @@ export async function fetchCards(boardId: string): Promise<KanbanCard[]> {
   return invoke<KanbanCard[]>('load_cards', { boardId })
 }
 
-export interface CreateCardInput {
-  id: string
-  boardId: string
-  columnId: string
-  title: string
-  description?: string
-  position: number
-  priority: KanbanCard['priority']
-  dueDate?: string | null
-  tagIds?: string[]
-}
-
 export async function createCard(input: CreateCardInput): Promise<void> {
-  await invoke('create_card', {
-    ...input,
-    description: input.description ?? null,
-    dueDate: input.dueDate ?? null,
-    tagIds: input.tagIds ?? [],
-  })
-}
+  const payload = createCardSchema.parse(input)
 
-export interface CreateSubtaskInput {
-  id: string
-  boardId: string
-  cardId: string
-  title: string
-  position?: number
+  await invoke('create_card', {
+    ...payload,
+    description: payload.description ?? null,
+    dueDate: payload.dueDate ?? null,
+    tagIds: payload.tagIds ?? [],
+  })
 }
 
 export async function createSubtask(input: CreateSubtaskInput): Promise<KanbanSubtask> {
+  const payload = createSubtaskSchema.parse(input)
+
   return invoke<KanbanSubtask>('create_subtask', {
     args: {
-      id: input.id,
-      boardId: input.boardId,
-      cardId: input.cardId,
-      title: input.title,
-      position: input.position ?? null,
+      id: payload.id,
+      boardId: payload.boardId,
+      cardId: payload.cardId,
+      title: payload.title,
+      position: payload.position ?? null,
     },
   })
-}
-
-export interface UpdateSubtaskInput {
-  id: string
-  boardId: string
-  cardId: string
-  title?: string
-  isCompleted?: boolean
-  targetPosition?: number
 }
 
 export async function updateSubtask(
   input: UpdateSubtaskInput
 ): Promise<KanbanSubtask> {
-  const payload: Record<string, unknown> = {
-    id: input.id,
-    boardId: input.boardId,
-    cardId: input.cardId,
+  const payload = updateSubtaskSchema.parse(input)
+
+  const args = {
+    id: payload.id,
+    boardId: payload.boardId,
+    cardId: payload.cardId,
+    ...(payload.title !== undefined ? { title: payload.title } : {}),
+    ...(payload.isCompleted !== undefined
+      ? { isCompleted: payload.isCompleted }
+      : {}),
+    ...(payload.targetPosition !== undefined
+      ? { targetPosition: payload.targetPosition ?? null }
+      : {}),
   }
 
-  if (Object.hasOwn(input, 'title')) {
-    payload.title = input.title
-  }
-  if (Object.hasOwn(input, 'isCompleted')) {
-    payload.isCompleted = input.isCompleted ?? false
-  }
-  if (Object.hasOwn(input, 'targetPosition')) {
-    payload.targetPosition = input.targetPosition ?? null
-  }
-
-  return invoke<KanbanSubtask>('update_subtask', { args: payload })
-}
-
-export interface DeleteSubtaskInput {
-  id: string
-  boardId: string
-  cardId: string
+  return invoke<KanbanSubtask>('update_subtask', { args })
 }
 
 export async function deleteSubtask(input: DeleteSubtaskInput): Promise<void> {
+  const payload = deleteSubtaskSchema.parse(input)
+
   await invoke('delete_subtask', {
     args: {
-      id: input.id,
-      boardId: input.boardId,
-      cardId: input.cardId,
+      id: payload.id,
+      boardId: payload.boardId,
+      cardId: payload.cardId,
     },
   })
 }
@@ -796,65 +730,43 @@ export function useDeleteSubtask(boardId: string) {
   })
 }
 
-export interface UpdateCardInput {
-  id: string
-  boardId: string
-  title?: string
-  description?: string | null
-  priority?: KanbanCard['priority']
-  dueDate?: string | null
-}
-
 export async function updateCard(input: UpdateCardInput): Promise<void> {
-  const payload: Record<string, unknown> = {
-    id: input.id,
-    board_id: input.boardId,
+  const payload = updateCardSchema.parse(input)
+
+  const args = {
+    id: payload.id,
+    board_id: payload.boardId,
+    ...(payload.title !== undefined ? { title: payload.title } : {}),
+    ...(payload.description !== undefined
+      ? { description: payload.description }
+      : {}),
+    ...(payload.priority !== undefined ? { priority: payload.priority } : {}),
+    ...(payload.dueDate !== undefined ? { due_date: payload.dueDate } : {}),
   }
 
-  if (Object.hasOwn(input, 'title')) {
-    payload.title = input.title
-  }
-  if (Object.hasOwn(input, 'description')) {
-    payload.description = input.description
-  }
-  if (Object.hasOwn(input, 'priority')) {
-    payload.priority = input.priority
-  }
-  if (Object.hasOwn(input, 'dueDate')) {
-    payload.due_date = input.dueDate
-  }
-
-  console.log('Sending update_card request:', { args: payload })
-  await invoke('update_card', { args: payload })
-}
-
-export interface DeleteCardInput {
-  id: string
-  boardId: string
-  columnId: string
+  console.log('Sending update_card request:', { args })
+  await invoke('update_card', { args })
 }
 
 export async function deleteCard(input: DeleteCardInput): Promise<void> {
-  await invoke('delete_card', {
-    id: input.id,
-    boardId: input.boardId,
-  })
-}
+  const payload = deleteCardSchema.parse(input)
 
-export interface UpdateCardTagsInput {
-  cardId: string
-  boardId: string
-  tagIds: string[]
+  await invoke('delete_card', {
+    id: payload.id,
+    boardId: payload.boardId,
+  })
 }
 
 export async function updateCardTags(
   input: UpdateCardTagsInput
 ): Promise<KanbanTag[]> {
+  const payload = updateCardTagsSchema.parse(input)
+
   return invoke<KanbanTag[]>('set_card_tags', {
     args: {
-      cardId: input.cardId,
-      boardId: input.boardId,
-      tagIds: input.tagIds,
+      cardId: payload.cardId,
+      boardId: payload.boardId,
+      tagIds: payload.tagIds,
     },
   })
 }
@@ -972,21 +884,15 @@ export function useDeleteCard(boardId: string) {
   })
 }
 
-export interface MoveCardInput {
-  boardId: string
-  cardId: string
-  fromColumnId: string
-  toColumnId: string
-  targetIndex: number
-}
-
 export async function moveCard(input: MoveCardInput): Promise<void> {
+  const payload = moveCardSchema.parse(input)
+
   await invoke('move_card', {
-    boardId: input.boardId,
-    cardId: input.cardId,
-    fromColumnId: input.fromColumnId,
-    toColumnId: input.toColumnId,
-    targetIndex: input.targetIndex,
+    boardId: payload.boardId,
+    cardId: payload.cardId,
+    fromColumnId: payload.fromColumnId,
+    toColumnId: payload.toColumnId,
+    targetIndex: payload.targetIndex,
   })
 }
 

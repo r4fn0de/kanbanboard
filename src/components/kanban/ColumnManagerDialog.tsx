@@ -74,6 +74,7 @@ import {
   useCreateColumn,
   useDeleteColumn,
 } from '@/services/kanban'
+import { createColumnSchema } from '@/schemas/kanban'
 import { Check, GripVertical, Edit2, X, Plus, Trash2 } from 'lucide-react'
 
 interface ColumnWithMeta extends KanbanColumn {
@@ -115,6 +116,7 @@ export function ColumnManagerDialog({
   const [newColumnColor, setNewColumnColor] = useState<string | null>(null)
   const [newColumnIcon, setNewColumnIcon] =
     useState<string>(DEFAULT_COLUMN_ICON)
+  const [newColumnError, setNewColumnError] = useState<string | null>(null)
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -174,23 +176,33 @@ export function ColumnManagerDialog({
   )
 
   const handleCreateColumn = useCallback(async () => {
-    if (!newColumnTitle.trim()) return
+    const payload = {
+      id: `temp-${Date.now()}`,
+      boardId,
+      title: newColumnTitle.trim(),
+      icon: newColumnIcon,
+      color: (newColumnColor || DEFAULT_MONOCHROMATIC_COLOR) ?? null,
+      position: columns.length,
+    }
+
+    const result = createColumnSchema.safeParse(payload)
+    if (!result.success) {
+      const message =
+        result.error.issues[0]?.message ?? 'Invalid column configuration'
+      setNewColumnError(message)
+      toast.error(message)
+      return
+    }
 
     try {
-      await createColumn.mutateAsync({
-        id: `temp-${Date.now()}`,
-        boardId,
-        title: newColumnTitle.trim(),
-        icon: newColumnIcon,
-        color: newColumnColor || DEFAULT_MONOCHROMATIC_COLOR,
-        position: columns.length,
-      })
+      await createColumn.mutateAsync(result.data)
 
       // Reset form
       setNewColumnTitle('')
       setNewColumnColor(null)
       setNewColumnIcon(DEFAULT_COLUMN_ICON)
       setIsCreatingNew(false)
+      setNewColumnError(null)
 
       toast.success('Column created successfully')
     } catch (error) {
@@ -212,6 +224,7 @@ export function ColumnManagerDialog({
     setNewColumnColor(null)
     setNewColumnIcon(DEFAULT_COLUMN_ICON)
     setIsCreatingNew(false)
+    setNewColumnError(null)
   }
 
   return (
@@ -337,13 +350,23 @@ export function ColumnManagerDialog({
 
                   <Input
                     value={newColumnTitle}
-                    onChange={e => setNewColumnTitle(e.target.value)}
+                    onChange={e => {
+                      setNewColumnTitle(e.target.value)
+                      if (newColumnError) {
+                        setNewColumnError(null)
+                      }
+                    }}
                     placeholder="Enter column name..."
                     disabled={createColumn.isPending}
                     className="flex-1"
                     autoFocus
                   />
                 </div>
+                {newColumnError && (
+                  <p className="text-sm text-destructive" role="alert">
+                    {newColumnError}
+                  </p>
+                )}
 
                 <div className="flex items-center justify-end gap-2">
                   <Button
