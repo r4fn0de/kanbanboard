@@ -10,14 +10,31 @@ import {
   FileText,
   FileArchive,
   File as FileIcon,
+  RotateCcw,
+  Trash2,
+  MoreHorizontal,
 } from 'lucide-react'
+import type { KanbanAttachment } from '@/types/common'
+import {
+  useDeleteAttachment,
+  useRestoreAttachment,
+} from '@/services/kanban'
+import {
+  Menu,
+  MenuTrigger,
+  MenuPortal,
+  MenuPositioner,
+  MenuPopup,
+  MenuItem,
+  MenuSeparator,
+} from '@/components/ui/base-ui-menu'
 
 interface ImageUploadProps {
   cardId: string
   boardId: string
-  attachments?: string[] | null
-  onUploadComplete?: (filePath: string) => void
-  onRemoveComplete?: (filePath: string) => void
+  attachments?: KanbanAttachment[] | null
+  onUploadComplete?: (attachment: KanbanAttachment) => void
+  onRemoveComplete?: (attachmentId: string) => void
 }
 
 export function ImageUpload({
@@ -28,9 +45,12 @@ export function ImageUpload({
   onRemoveComplete,
 }: ImageUploadProps) {
   const [isUploading, setIsUploading] = useState(false)
-  const [isRemoving, setIsRemoving] = useState<string | null>(null)
   const [previewUrls, setPreviewUrls] = useState<Map<string, string>>(new Map())
-  const [selectedImage, setSelectedImage] = useState<string | null>(null)
+  const [selectedAttachment, setSelectedAttachment] = useState<KanbanAttachment | null>(null)
+  const [selectedPreviewUrl, setSelectedPreviewUrl] = useState<string | null>(null)
+
+  const restoreMutation = useRestoreAttachment(boardId, cardId)
+  const deleteMutation = useDeleteAttachment(boardId, cardId)
 
   const imageExtensions = useMemo(
     () =>
@@ -76,16 +96,37 @@ export function ImageUpload({
     return Array.from(new Set([...imageExtensions, ...documentExtensions]))
   }, [documentExtensions, imageExtensions])
 
+  const formatBytes = useCallback((bytes?: number | null) => {
+    if (!bytes || bytes <= 0) {
+      return null
+    }
+
+    const units = ['B', 'KB', 'MB', 'GB', 'TB']
+    const exponent = Math.min(
+      Math.floor(Math.log(bytes) / Math.log(1024)),
+      units.length - 1
+    )
+    const value = bytes / Math.pow(1024, exponent)
+    return `${value.toFixed(value >= 100 || exponent === 0 ? 0 : 1)} ${units[exponent]}`
+  }, [])
+
+  const formatTimestamp = useCallback((iso?: string) => {
+    if (!iso) return null
+    const date = new Date(iso)
+    if (Number.isNaN(date.getTime())) return null
+    return date.toLocaleString()
+  }, [])
+
   const isImageAttachment = useCallback(
-    (filePath: string) => {
-      const extension = filePath.split('.').pop()?.toLowerCase() ?? ''
+    (attachment: KanbanAttachment) => {
+      const extension = attachment.storagePath.split('.').pop()?.toLowerCase() ?? ''
       return imageExtensions.has(extension)
     },
     [imageExtensions]
   )
 
-  const getAttachmentIcon = (filePath: string) => {
-    const extension = filePath.split('.').pop()?.toLowerCase() ?? ''
+  const getAttachmentIcon = (attachment: KanbanAttachment) => {
+    const extension = attachment.storagePath.split('.').pop()?.toLowerCase() ?? ''
 
     if (imageExtensions.has(extension)) {
       return ImageIcon
@@ -100,14 +141,14 @@ export function ImageUpload({
   }
 
   const loadImageUrl = useCallback(
-    async (filePath: string) => {
-      if (previewUrls.has(filePath)) {
-        return previewUrls.get(filePath)
+    async (attachment: KanbanAttachment) => {
+      if (previewUrls.has(attachment.id)) {
+        return previewUrls.get(attachment.id) ?? null
       }
 
       try {
-        const url = (await invoke('get_attachment_url', { filePath })) as string
-        setPreviewUrls(prev => new Map(prev).set(filePath, url))
+        const url = (await invoke('get_attachment_url', { filePath: attachment.storagePath })) as string
+        setPreviewUrls(prev => new Map(prev).set(attachment.id, url))
         return url
       } catch (error) {
         console.error('Failed to load image URL:', error)
@@ -117,14 +158,33 @@ export function ImageUpload({
     [previewUrls]
   )
 
-  // Preload image URLs when attachments change
   useEffect(() => {
-    attachments?.forEach(filePath => {
-      if (isImageAttachment(filePath)) {
-        loadImageUrl(filePath)
+    attachments?.forEach(attachment => {
+      if (isImageAttachment(attachment)) {
+        void loadImageUrl(attachment)
       }
     })
   }, [attachments, isImageAttachment, loadImageUrl])
+
+  const handlePreview = useCallback(
+    async (attachment: KanbanAttachment) => {
+      const existing = previewUrls.get(attachment.id)
+      let url = existing ?? null
+
+      if (!url) {
+        url = await loadImageUrl(attachment)
+      }
+
+      if (!url) {
+        toast.error('Failed to load image preview')
+        return
+      }
+
+      setSelectedAttachment(attachment)
+      setSelectedPreviewUrl(url)
+    },
+    [loadImageUrl, previewUrls]
+  )
 
   const handleUpload = useCallback(async () => {
     try {
@@ -146,13 +206,19 @@ export function ImageUpload({
         cardId,
         boardId,
         filePath: selected,
-      })) as { success: boolean; filePath: string; error?: string }
+      })) as {
+        success: boolean
+        filePath: string
+        attachment?: KanbanAttachment
+        error?: string
+      }
 
       if (response.success) {
         toast.success('Attachment uploaded successfully')
-        onUploadComplete?.(response.filePath)
+        if (response.attachment) {
+          onUploadComplete?.(response.attachment)
+        }
       } else {
-        console.error('Upload failed:', response.error)
         toast.error(response.error || 'Failed to upload attachment')
       }
     } catch (error) {
@@ -164,36 +230,70 @@ export function ImageUpload({
     }
   }, [boardId, cardId, onUploadComplete, supportedExtensions])
 
-  const handleRemove = useCallback(
-    async (filePath: string) => {
-      try {
-        setIsRemoving(filePath)
-        await invoke('remove_image', {
-          cardId,
-          boardId,
-          filePath,
-        })
-        toast.success('Image removed successfully')
-        onRemoveComplete?.(filePath)
-      } catch (error) {
-        const message =
-          error instanceof Error ? error.message : 'Failed to remove attachment'
-        toast.error(message)
-      } finally {
-        setIsRemoving(null)
-      }
-    },
-    [cardId, boardId, onRemoveComplete]
-  )
-
-  const handleOpenAttachment = useCallback(async (filePath: string) => {
+  const handleOpenAttachment = useCallback(async (attachment: KanbanAttachment) => {
     try {
-      await invoke('open_attachment', { filePath })
+      await invoke('open_attachment', { filePath: attachment.storagePath })
     } catch (error) {
       console.error('Failed to open attachment:', error)
       toast.error('Failed to open attachment')
     }
   }, [])
+
+  const handleRestore = useCallback(
+    async (attachment: KanbanAttachment) => {
+      try {
+        await restoreMutation.mutateAsync({
+          attachmentId: attachment.id,
+          version: attachment.version,
+        })
+        toast.success('Attachment restored')
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : 'Failed to restore attachment'
+        toast.error(message)
+      }
+    },
+    [restoreMutation]
+  )
+
+  const handleDelete = useCallback(
+    async (attachment: KanbanAttachment) => {
+      try {
+        await deleteMutation.mutateAsync({
+          attachmentId: attachment.id,
+          version: attachment.version,
+        })
+        toast.success('Attachment deleted')
+        onRemoveComplete?.(attachment.id)
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : 'Failed to delete attachment'
+        toast.error(message)
+      }
+    },
+    [deleteMutation, onRemoveComplete]
+  )
+
+  const closePreview = useCallback(() => {
+    setSelectedAttachment(null)
+    setSelectedPreviewUrl(null)
+  }, [])
+
+  useEffect(() => {
+    if (!selectedAttachment) {
+      return
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault()
+        closePreview()
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [closePreview, selectedAttachment])
 
   if (!attachments || attachments.length === 0) {
     return (
@@ -228,144 +328,134 @@ export function ImageUpload({
         </Button>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        {attachments.map(filePath => {
-          const isImage = isImageAttachment(filePath)
-          const previewUrl = isImage ? previewUrls.get(filePath) : null
-          const filename = filePath.split('/').pop() || filePath
-          const AttachmentIcon = getAttachmentIcon(filePath)
+      <div className="space-y-3">
+        {attachments.map(attachment => {
+          const Icon = getAttachmentIcon(attachment)
+          const isImage = isImageAttachment(attachment)
+          const previewUrl = previewUrls.get(attachment.id)
+          const formattedSize = formatBytes(attachment.sizeBytes)
+          const formattedUpdatedAt = formatTimestamp(attachment.updatedAt)
+          const restoreVariables = restoreMutation.variables
+          const deleteVariables = deleteMutation.variables
+          const isRestoring =
+            restoreMutation.isPending &&
+            restoreVariables?.attachmentId === attachment.id &&
+            (restoreVariables.version ?? attachment.version) === attachment.version
+          const isDeleting =
+            deleteMutation.isPending &&
+            deleteVariables?.attachmentId === attachment.id &&
+            (deleteVariables.version ?? attachment.version) === attachment.version
 
           return (
             <div
-              key={filePath}
-              className="relative group border rounded-lg overflow-hidden"
+              key={`${attachment.id}-${attachment.version}`}
+              className="flex flex-col gap-3 rounded-lg border p-3 md:flex-row md:items-center md:justify-between"
             >
-              <div className="aspect-square bg-muted flex items-center justify-center">
-                {isImage ? (
-                  previewUrl ? (
-                    <button
-                      type="button"
-                      className="w-full h-full object-cover cursor-pointer hover:scale-105 transition-transform border-0 bg-transparent p-0"
-                      onClick={() => setSelectedImage(filePath)}
-                      onKeyDown={e => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          setSelectedImage(filePath)
-                        }
-                      }}
-                    >
-                      <img
-                        src={previewUrl}
-                        alt={filename}
-                        className="w-full h-full object-cover"
-                      />
-                    </button>
-                  ) : (
-                    <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                      <ImageIcon className="h-8 w-8" />
-                      <span className="text-xs">Loading...</span>
-                    </div>
-                  )
-                ) : (
-                  <button
-                    type="button"
-                    className="flex h-full w-full flex-col items-center justify-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
-                    onClick={() => handleOpenAttachment(filePath)}
-                    onKeyDown={event => {
-                      if (event.key === 'Enter' || event.key === ' ') {
-                        event.preventDefault()
-                        handleOpenAttachment(filePath)
-                      }
-                    }}
-                  >
-                    <AttachmentIcon className="h-8 w-8" />
-                    <span className="text-xs uppercase tracking-wide">{filename.split('.').pop()?.toUpperCase()}</span>
-                  </button>
-                )}
-              </div>
-
-              <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                <Button
-                  type="button"
-                  variant="destructive"
-                  size="sm"
-                  onClick={() => handleRemove(filePath)}
-                  disabled={isRemoving === filePath}
-                  className="h-6 w-6 p-0"
-                >
-                  <X className="h-3 w-3" />
-                </Button>
-              </div>
-
-              <div className="p-2 bg-background">
-                <div className="flex items-center justify-between gap-2 text-xs">
-                  <p className="truncate font-medium" title={filename}>
-                    {filename}
-                  </p>
-                  <button
-                    type="button"
-                    className="text-muted-foreground hover:text-foreground"
-                    onClick={() =>
-                      isImage
-                        ? setSelectedImage(filePath)
-                        : handleOpenAttachment(filePath)
-                    }
-                    onKeyDown={event => {
-                      if (event.key === 'Enter' || event.key === ' ') {
-                        event.preventDefault()
-                        if (isImage) {
-                          setSelectedImage(filePath)
-                        } else {
-                          handleOpenAttachment(filePath)
-                        }
-                      }
-                    }}
-                  >
-                    Abrir
-                  </button>
+              <div className="flex items-start gap-3 min-w-0">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border bg-muted">
+                  <Icon className="h-5 w-5" />
+                </div>
+                <div className="space-y-1 min-w-0">
+                  <span className="block text-sm font-medium truncate">
+                    {attachment.filename || attachment.originalName}
+                  </span>
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+                    <span>Version {attachment.version}</span>
+                    {attachment.mimeType ? <span>• {attachment.mimeType}</span> : null}
+                    {formattedSize ? <span>• {formattedSize}</span> : null}
+                    {formattedUpdatedAt ? <span>• {formattedUpdatedAt}</span> : null}
+                  </div>
                 </div>
               </div>
+
+              <Menu>
+                <MenuTrigger asChild>
+                  <span className="inline-flex">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      aria-label="Attachment actions"
+                      data-anchor
+                    >
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </span>
+                </MenuTrigger>
+                <MenuPortal>
+                  <MenuPositioner side="bottom" align="end" sideOffset={6}>
+                    <MenuPopup className="w-48">
+                      {isImage && previewUrl ? (
+                        <MenuItem
+                          onClick={() => {
+                            void handlePreview(attachment)
+                          }}
+                          disabled={isRestoring || isDeleting}
+                        >
+                          Preview
+                        </MenuItem>
+                      ) : null}
+                      <MenuItem
+                        onClick={() => {
+                          handleOpenAttachment(attachment)
+                        }}
+                        disabled={isRestoring || isDeleting}
+                      >
+                        Open
+                      </MenuItem>
+                      <MenuSeparator />
+                      <MenuItem
+                        onClick={() => {
+                          void handleRestore(attachment)
+                        }}
+                        disabled={isRestoring}
+                      >
+                        <RotateCcw className="mr-2 h-4 w-4" /> Restore
+                      </MenuItem>
+                      <MenuItem
+                        onClick={() => {
+                          void handleDelete(attachment)
+                        }}
+                        disabled={isDeleting}
+                        destructive
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" /> {isDeleting ? 'Deleting…' : 'Delete'}
+                      </MenuItem>
+                    </MenuPopup>
+                  </MenuPositioner>
+                </MenuPortal>
+              </Menu>
             </div>
           )
         })}
       </div>
 
-      {selectedImage && (
-        <Button
-          type="button"
-          variant="ghost"
-          className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 hover:bg-black/80"
-          onClick={() => setSelectedImage(null)}
-          onKeyDown={e => {
-            if (e.key === 'Escape') {
-              setSelectedImage(null)
-            }
-          }}
+      {selectedAttachment && selectedPreviewUrl ? (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
         >
-          <div
-            className="relative max-w-4xl max-h-full bg-background rounded-lg overflow-hidden"
-            onPointerDown={e => e.stopPropagation()}
-          >
-            <div className="absolute top-2 right-2 z-10">
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                onClick={() => setSelectedImage(null)}
-              >
+          <button
+            type="button"
+            className="absolute inset-0 cursor-default"
+            aria-label="Close attachment preview"
+            onClick={closePreview}
+          />
+          <div className="relative max-h-[80vh] max-w-[80vw] overflow-hidden rounded-lg bg-background shadow-lg">
+            <div className="absolute top-2 right-2 z-10 flex gap-2">
+              <Button type="button" variant="secondary" size="sm" onClick={closePreview}>
                 <X className="h-4 w-4" />
               </Button>
             </div>
-
-            <div className="max-h-[80vh] max-w-[80vw] overflow-auto">
-              <img
-                src={previewUrls.get(selectedImage)}
-                alt={selectedImage.split('/').pop()}
-                className="w-full h-full object-contain"
-              />
-            </div>
+            <img
+              src={selectedPreviewUrl}
+              alt={selectedAttachment.filename || selectedAttachment.originalName}
+              className="h-full w-full object-contain"
+            />
           </div>
-        </Button>
-      )}
+        </div>
+      ) : null}
     </div>
   )
 }

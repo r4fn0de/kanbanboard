@@ -2,15 +2,16 @@ import { useState } from 'react'
 import { invoke } from '@tauri-apps/api/core'
 import { Button } from '@/components/ui/button'
 import { X, ZoomIn, Download, ExternalLink } from 'lucide-react'
+import type { KanbanAttachment } from '@/types/common'
 
 interface ImageGalleryProps {
-  attachments?: string[] | null
-  onRemove?: (filePath: string) => void
+  attachments?: KanbanAttachment[] | null
+  onRemove?: (attachment: KanbanAttachment) => void
   showRemoveButton?: boolean
 }
 
 interface ImageItem {
-  filePath: string
+  attachment: KanbanAttachment
   url: string
   filename: string
 }
@@ -24,13 +25,13 @@ export function ImageGallery({
   const [loadingImages, setLoadingImages] = useState<Set<string>>(new Set())
   const [selectedImage, setSelectedImage] = useState<ImageItem | null>(null)
 
-  const loadImageUrl = async (filePath: string): Promise<string | null> => {
-    if (loadingImages.has(filePath)) return null
+  const loadImageUrl = async (attachment: KanbanAttachment): Promise<string | null> => {
+    if (loadingImages.has(attachment.storagePath)) return null
 
-    setLoadingImages(prev => new Set(prev).add(filePath))
+    setLoadingImages(prev => new Set(prev).add(attachment.storagePath))
 
     try {
-      const url = (await invoke('get_attachment_url', { filePath })) as string
+      const url = (await invoke('get_attachment_url', { filePath: attachment.storagePath })) as string
       return `file://${url}`
     } catch (error) {
       console.error('Failed to get image URL:', error)
@@ -38,21 +39,21 @@ export function ImageGallery({
     } finally {
       setLoadingImages(prev => {
         const next = new Set(prev)
-        next.delete(filePath)
+        next.delete(attachment.storagePath)
         return next
       })
     }
   }
 
-  const handleImageClick = async (filePath: string) => {
-    let image = images.find(img => img.filePath === filePath)
+  const handleImageClick = async (attachment: KanbanAttachment) => {
+    let image = images.find(img => img.attachment.id === attachment.id)
 
     if (!image) {
-      const url = await loadImageUrl(filePath)
+      const url = await loadImageUrl(attachment)
       if (!url) return
 
-      const filename = filePath.split('/').pop() || filePath
-      const newImage = { filePath, url, filename }
+      const filename = attachment.filename || attachment.originalName
+      const newImage = { attachment, url, filename }
       setImages(prev => [...prev, newImage])
       image = newImage
     }
@@ -86,22 +87,16 @@ export function ImageGallery({
       <div className="space-y-3">
         <h4 className="text-sm font-medium">Images</h4>
         <div className="grid grid-cols-2 gap-3">
-          {attachments.map(filePath => {
-            const image = images.find(img => img.filePath === filePath)
-            const filename = filePath.split('/').pop() || filePath
+          {attachments.map(attachment => {
+            const image = images.find(img => img.attachment.id === attachment.id && img.attachment.version === attachment.version)
+            const filename = attachment.filename || attachment.originalName
 
             return (
-              <div
-                key={filePath}
-                className="relative group border rounded-lg overflow-hidden cursor-pointer hover:border-primary transition-colors"
-                onClick={() => handleImageClick(filePath)}
-                role="button"
-                tabIndex={0}
-                onKeyDown={e => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    handleImageClick(filePath)
-                  }
-                }}
+              <button
+                key={`${attachment.id}-${attachment.version}`}
+                type="button"
+                className="relative group border rounded-lg overflow-hidden text-left hover:border-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                onClick={() => handleImageClick(attachment)}
               >
                 <div className="aspect-square bg-muted flex items-center justify-center">
                   {image ? (
@@ -128,7 +123,7 @@ export function ImageGallery({
                     size="sm"
                     onClick={e => {
                       e.stopPropagation()
-                      handleImageClick(filePath)
+                      handleImageClick(attachment)
                     }}
                   >
                     <ZoomIn className="h-4 w-4" />
@@ -141,7 +136,7 @@ export function ImageGallery({
                       size="sm"
                       onClick={e => {
                         e.stopPropagation()
-                        onRemove(filePath)
+                        onRemove(attachment)
                       }}
                     >
                       <X className="h-4 w-4" />
@@ -152,28 +147,15 @@ export function ImageGallery({
                 <div className="p-2 bg-background">
                   <p className="text-xs truncate font-medium">{filename}</p>
                 </div>
-              </div>
+              </button>
             )
           })}
         </div>
       </div>
 
       {selectedImage && (
-        <div
-          className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4"
-          onClick={() => setSelectedImage(null)}
-          role="button"
-          tabIndex={0}
-          onKeyDown={e => {
-            if (e.key === 'Escape') {
-              setSelectedImage(null)
-            }
-          }}
-        >
-          <div
-            className="relative max-w-4xl max-h-full bg-background rounded-lg overflow-hidden"
-            onClick={e => e.stopPropagation()}
-          >
+        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+          <div className="relative max-w-4xl max-h-full bg-background rounded-lg overflow-hidden">
             <div className="absolute top-2 right-2 z-10 flex gap-2">
               <Button
                 type="button"
@@ -210,9 +192,9 @@ export function ImageGallery({
             </div>
 
             <div className="p-4 border-t">
-              <p className="text-sm font-medium">{selectedImage.filename}</p>
+              <p className="text-sm font-medium" id="image-modal-title">{selectedImage.filename}</p>
               <p className="text-xs text-muted-foreground">
-                {selectedImage.filePath}
+                {selectedImage.attachment.storagePath}
               </p>
             </div>
           </div>

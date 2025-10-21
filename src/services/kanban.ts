@@ -43,6 +43,7 @@ import {
 	type UpdateTagInput,
 } from "@/schemas/kanban";
 import type {
+	KanbanAttachment,
 	KanbanBoard,
 	KanbanCard,
 	KanbanColumn,
@@ -63,6 +64,8 @@ export const kanbanQueryKeys = {
 		[...kanbanQueryKeys.boards(), "tags", boardId] as const,
 	subtasks: (cardId: string) =>
 		[...kanbanQueryKeys.boards(), "subtasks", cardId] as const,
+	attachments: (cardId: string) =>
+		[...kanbanQueryKeys.boards(), "attachments", cardId] as const,
 };
 
 export async function fetchBoards(): Promise<KanbanBoard[]> {
@@ -398,6 +401,270 @@ export function useMoveCard(boardId: string) {
 
 export async function fetchColumns(boardId: string): Promise<KanbanColumn[]> {
 	return invoke<KanbanColumn[]>("load_columns", { boardId });
+}
+
+export async function listCardAttachments(input: {
+	boardId: string;
+	cardId: string;
+}): Promise<KanbanAttachment[]> {
+	return invoke<KanbanAttachment[]>("list_card_attachments", {
+		boardId: input.boardId,
+		cardId: input.cardId,
+	});
+}
+
+export async function restoreAttachmentVersion(input: {
+	boardId: string;
+	cardId: string;
+	attachmentId: string;
+	version?: number;
+}): Promise<KanbanAttachment> {
+	return invoke<KanbanAttachment>("restore_attachment_version", {
+		boardId: input.boardId,
+		cardId: input.cardId,
+		attachmentId: input.attachmentId,
+		targetVersion: input.version ?? null,
+	});
+}
+
+export async function deleteAttachmentVersion(input: {
+	boardId: string;
+	cardId: string;
+	attachmentId: string;
+	version?: number;
+}): Promise<void> {
+	await invoke("delete_attachment_version", {
+		boardId: input.boardId,
+		cardId: input.cardId,
+		attachmentId: input.attachmentId,
+		targetVersion: input.version ?? null,
+	});
+}
+
+interface AttachmentMutationContext {
+	previousCards?: KanbanCard[];
+	previousAttachments?: KanbanAttachment[] | undefined;
+}
+
+interface AttachmentMutationVariables {
+	attachmentId: string;
+	version?: number;
+}
+
+export function useRestoreAttachment(boardId: string, cardId: string) {
+	const queryClient = useQueryClient();
+	const cardsKey = kanbanQueryKeys.cards(boardId);
+	const attachmentsKey = kanbanQueryKeys.attachments(cardId);
+
+	return useMutation<KanbanAttachment, unknown, AttachmentMutationVariables, AttachmentMutationContext>({
+		mutationFn: variables =>
+			restoreAttachmentVersion({
+				boardId,
+				cardId,
+				attachmentId: variables.attachmentId,
+				version: variables.version,
+			}),
+		onMutate: async variables => {
+			await queryClient.cancelQueries({ queryKey: cardsKey });
+			await queryClient.cancelQueries({ queryKey: attachmentsKey });
+
+			const previousCards = queryClient.getQueryData<KanbanCard[]>(cardsKey);
+			const previousAttachments = queryClient.getQueryData<KanbanAttachment[]>(attachmentsKey);
+
+			if (previousCards) {
+				const updatedCards = previousCards.map(card => {
+					if (card.id !== cardId) {
+						return card;
+					}
+
+					const attachments: KanbanAttachment[] = card.attachments ? [...card.attachments] : [];
+					const index = attachments.findIndex(att => {
+						const versionMatches =
+							variables.version === undefined || att.version === variables.version;
+						return att.id === variables.attachmentId && versionMatches;
+					});
+
+					if (index !== -1) {
+						const restored = attachments.splice(index, 1)[0];
+						if (restored) {
+							attachments.unshift(restored);
+						}
+					}
+
+					return {
+						...card,
+						attachments,
+					};
+				});
+
+				queryClient.setQueryData(cardsKey, updatedCards);
+			}
+
+			if (previousAttachments) {
+				const reordered = [...previousAttachments];
+				const index = reordered.findIndex(att => {
+					const versionMatches =
+						variables.version === undefined || att.version === variables.version;
+					return att.id === variables.attachmentId && versionMatches;
+				});
+				if (index !== -1) {
+					const restored = reordered.splice(index, 1)[0];
+					if (restored) {
+						reordered.unshift(restored);
+						queryClient.setQueryData(attachmentsKey, reordered);
+					}
+				}
+			}
+
+			return { previousCards, previousAttachments };
+		},
+		onError: (_error, _variables, context) => {
+			if (context?.previousCards) {
+				queryClient.setQueryData(cardsKey, context.previousCards);
+			}
+			if (context?.previousAttachments) {
+				queryClient.setQueryData(attachmentsKey, context.previousAttachments);
+			}
+		},
+		onSuccess: data => {
+			queryClient.setQueryData<KanbanCard[]>(cardsKey, current => {
+				if (!current) {
+					return current;
+				}
+
+				return current.map(card => {
+					if (card.id !== cardId) {
+						return card;
+					}
+
+					const attachments: KanbanAttachment[] = card.attachments ? [...card.attachments] : [];
+					const existingIndex = attachments.findIndex(att => att.id === data.id && att.version === data.version);
+
+					if (existingIndex !== -1) {
+						attachments[existingIndex] = data;
+						const restored = attachments.splice(existingIndex, 1)[0];
+						if (restored) {
+							attachments.unshift(restored);
+						}
+					} else {
+						attachments.unshift(data);
+					}
+
+					return {
+						...card,
+						attachments,
+					};
+				});
+			});
+
+			queryClient.setQueryData<KanbanAttachment[]>(attachmentsKey, current => {
+				if (!current) {
+					return [data];
+				}
+
+				const next = [...current];
+				const existingIndex = next.findIndex(att => att.id === data.id && att.version === data.version);
+				if (existingIndex !== -1) {
+					next[existingIndex] = data;
+					const restored = next.splice(existingIndex, 1)[0];
+					if (restored) {
+						next.unshift(restored);
+					}
+					return next;
+				}
+
+				next.unshift(data);
+				return next;
+			});
+		},
+		onSettled: () => {
+			queryClient.invalidateQueries({ queryKey: cardsKey });
+			queryClient.invalidateQueries({ queryKey: attachmentsKey });
+		},
+	});
+}
+
+export function useDeleteAttachment(boardId: string, cardId: string) {
+	const queryClient = useQueryClient();
+	const cardsKey = kanbanQueryKeys.cards(boardId);
+	const attachmentsKey = kanbanQueryKeys.attachments(cardId);
+
+	return useMutation<unknown, unknown, AttachmentMutationVariables, AttachmentMutationContext>({
+		mutationFn: async variables => {
+			await deleteAttachmentVersion({
+				boardId,
+				cardId,
+				attachmentId: variables.attachmentId,
+				version: variables.version,
+			});
+		},
+		onMutate: async variables => {
+			await queryClient.cancelQueries({ queryKey: cardsKey });
+			await queryClient.cancelQueries({ queryKey: attachmentsKey });
+
+			const previousCards = queryClient.getQueryData<KanbanCard[]>(cardsKey);
+			const previousAttachments = queryClient.getQueryData<KanbanAttachment[]>(attachmentsKey);
+
+			if (previousCards) {
+				const updatedCards = previousCards.map(card => {
+					if (card.id !== cardId) {
+						return card;
+					}
+
+					const filtered = (card.attachments ?? []).filter(att => {
+						const sameAttachment = att.id === variables.attachmentId;
+						if (!sameAttachment) {
+							return true;
+						}
+
+						if (variables.version === undefined) {
+							return false;
+						}
+
+						return att.version !== variables.version;
+					});
+
+					return {
+						...card,
+						attachments: filtered,
+					};
+				});
+
+				queryClient.setQueryData(cardsKey, updatedCards);
+			}
+
+			if (previousAttachments) {
+				const filtered = previousAttachments.filter(att => {
+					const sameAttachment = att.id === variables.attachmentId;
+					if (!sameAttachment) {
+						return true;
+					}
+
+					if (variables.version === undefined) {
+						return false;
+					}
+
+					return att.version !== variables.version;
+				});
+
+				queryClient.setQueryData(attachmentsKey, filtered);
+			}
+
+			return { previousCards, previousAttachments };
+		},
+		onError: (_error, _variables, context) => {
+			if (context?.previousCards) {
+				queryClient.setQueryData(cardsKey, context.previousCards);
+			}
+			if (context?.previousAttachments) {
+				queryClient.setQueryData(attachmentsKey, context.previousAttachments);
+			}
+		},
+		onSettled: () => {
+			queryClient.invalidateQueries({ queryKey: cardsKey });
+			queryClient.invalidateQueries({ queryKey: attachmentsKey });
+		},
+	});
 }
 
 export async function createColumn(input: CreateColumnInput): Promise<void> {

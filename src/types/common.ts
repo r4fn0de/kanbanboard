@@ -50,12 +50,28 @@ export interface KanbanCard {
   position: number
   priority: KanbanPriority
   dueDate?: string | null
-  attachments?: string[] | null
+  attachments?: KanbanAttachment[] | null
   subtasks: KanbanSubtask[]
   tags: KanbanTag[]
   createdAt: string
   updatedAt: string
   archivedAt?: string | null
+}
+
+export interface KanbanAttachment {
+  id: EntityId
+  boardId: EntityId
+  cardId: EntityId
+  version: number
+  filename: string
+  originalName: string
+  mimeType?: string | null
+  sizeBytes?: number | null
+  checksum?: string | null
+  storagePath: string
+  thumbnailPath?: string | null
+  createdAt: string
+  updatedAt: string
 }
 
 export interface KanbanSubtask {

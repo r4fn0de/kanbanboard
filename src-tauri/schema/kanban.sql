@@ -48,6 +48,23 @@ CREATE TABLE IF NOT EXISTS kanban_cards (
   archived_at TEXT
 );
 
+CREATE TABLE IF NOT EXISTS kanban_attachments (
+  id TEXT NOT NULL,
+  card_id TEXT NOT NULL REFERENCES kanban_cards(id) ON DELETE CASCADE,
+  board_id TEXT NOT NULL REFERENCES kanban_boards(id) ON DELETE CASCADE,
+  version INTEGER NOT NULL DEFAULT 1,
+  filename TEXT NOT NULL,
+  original_name TEXT NOT NULL,
+  mime_type TEXT,
+  size_bytes INTEGER,
+  checksum TEXT,
+  storage_path TEXT NOT NULL,
+  thumbnail_path TEXT,
+  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+  updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+  PRIMARY KEY (id, version)
+);
+
 CREATE TABLE IF NOT EXISTS kanban_tags (
   id TEXT PRIMARY KEY,
   board_id TEXT NOT NULL REFERENCES kanban_boards(id) ON DELETE CASCADE,

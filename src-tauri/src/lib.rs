@@ -8,12 +8,15 @@ use sqlx::{
     sqlite::{SqliteConnectOptions, SqliteJournalMode, SqlitePool, SqlitePoolOptions, SqliteRow},
 };
 use std::collections::{BTreeSet, HashMap};
+use std::convert::TryInto;
 use std::fs;
 use std::path::PathBuf;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tauri::menu::{MenuBuilder, MenuItemBuilder, PredefinedMenuItem, SubmenuBuilder};
 use tauri::{AppHandle, Emitter, Manager, State};
 use tauri_plugin_opener::OpenerExt;
+use uuid::Uuid;
+use sha2::{Digest, Sha256};
 
 const KANBAN_SCHEMA: &str = include_str!("../schema/kanban.sql");
 const DATABASE_FILE: &str = "flowspace.db";
@@ -1121,11 +1124,125 @@ fn map_subtask_row(row: SqliteRow) -> Result<Value, sqlx::Error> {
     }))
 }
 
+#[derive(Debug, Clone)]
+struct AttachmentRecord {
+    id: String,
+    card_id: String,
+    board_id: String,
+    version: i64,
+    filename: String,
+    original_name: String,
+    mime_type: Option<String>,
+    size_bytes: Option<i64>,
+    checksum: Option<String>,
+    storage_path: String,
+    thumbnail_path: Option<String>,
+    created_at: String,
+    updated_at: String,
+}
+
+impl AttachmentRecord {
+    fn from_row(row: SqliteRow) -> Result<Self, sqlx::Error> {
+        Ok(Self {
+            id: row.try_get("id")?,
+            card_id: row.try_get("card_id")?,
+            board_id: row.try_get("board_id")?,
+            version: row.try_get("version")?,
+            filename: row.try_get("filename")?,
+            original_name: row.try_get("original_name")?,
+            mime_type: row.try_get("mime_type")?,
+            size_bytes: row.try_get("size_bytes")?,
+            checksum: row.try_get("checksum")?,
+            storage_path: row.try_get("storage_path")?,
+            thumbnail_path: row.try_get("thumbnail_path")?,
+            created_at: row.try_get("created_at")?,
+            updated_at: row.try_get("updated_at")?,
+        })
+    }
+
+    fn into_json(self) -> Value {
+        json!({
+            "id": self.id,
+            "boardId": self.board_id,
+            "cardId": self.card_id,
+            "version": self.version,
+            "filename": self.filename,
+            "originalName": self.original_name,
+            "mimeType": self.mime_type,
+            "sizeBytes": self.size_bytes,
+            "checksum": self.checksum,
+            "storagePath": self.storage_path,
+            "thumbnailPath": self.thumbnail_path,
+            "createdAt": self.created_at,
+            "updatedAt": self.updated_at,
+        })
+    }
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct ListAttachmentsArgs {
+    board_id: String,
+    card_id: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct ManageAttachmentVersionArgs {
+    board_id: String,
+    card_id: String,
+    attachment_id: String,
+    target_version: Option<i64>,
+}
+
 fn map_card_row(row: SqliteRow) -> Result<Value, sqlx::Error> {
-    let attachments_json: Option<String> = row.try_get("attachments")?;
-    let attachments: Option<Vec<String>> = match attachments_json {
-        Some(json_str) => serde_json::from_str(&json_str).ok(),
-        None => None,
+    let card_id: String = row.try_get("id")?;
+    let board_id: String = row.try_get("board_id")?;
+    let column_id: String = row.try_get("column_id")?;
+    let title: String = row.try_get("title")?;
+    let description: Option<String> = row.try_get("description")?;
+    let position: i64 = row.try_get("position")?;
+    let priority: String = row.try_get("priority")?;
+    let due_date: Option<String> = row.try_get("due_date")?;
+    let created_at: String = row.try_get("created_at")?;
+    let updated_at: String = row.try_get("updated_at")?;
+    let archived_at: Option<String> = row.try_get("archived_at")?;
+
+    let attachments_json: Option<String> = row.try_get("attachments_json")?;
+    let legacy_attachments_json: Option<String> = row.try_get("legacy_attachments")?;
+
+    let attachments: Vec<Value> = if let Some(json_str) = attachments_json {
+        serde_json::from_str::<Vec<Value>>(&json_str).unwrap_or_default()
+    } else if let Some(json_str) = legacy_attachments_json {
+        serde_json::from_str::<Vec<String>>(&json_str)
+            .unwrap_or_default()
+            .into_iter()
+            .map(|storage_path| {
+                let filename = storage_path
+                    .split('/')
+                    .last()
+                    .map(|segment| segment.to_string())
+                    .unwrap_or_else(|| storage_path.clone());
+
+                json!({
+                    "id": storage_path.clone(),
+                    "cardId": card_id.clone(),
+                    "boardId": board_id.clone(),
+                    "version": 1,
+                    "filename": filename.clone(),
+                    "originalName": filename,
+                    "mimeType": Value::Null,
+                    "sizeBytes": Value::Null,
+                    "checksum": Value::Null,
+                    "storagePath": storage_path,
+                    "thumbnailPath": Value::Null,
+                    "createdAt": created_at.clone(),
+                    "updatedAt": updated_at.clone(),
+                })
+            })
+            .collect()
+    } else {
+        Vec::new()
     };
 
     let tags_json: Option<String> = row.try_get("tags_json")?;
@@ -1141,18 +1258,18 @@ fn map_card_row(row: SqliteRow) -> Result<Value, sqlx::Error> {
         .unwrap_or_default();
 
     Ok(json!({
-        "id": row.try_get::<String, _>("id")?,
-        "boardId": row.try_get::<String, _>("board_id")?,
-        "columnId": row.try_get::<String, _>("column_id")?,
-        "title": row.try_get::<String, _>("title")?,
-        "description": row.try_get::<Option<String>, _>("description")?,
-        "position": row.try_get::<i64, _>("position")?,
-        "priority": row.try_get::<String, _>("priority")?,
-        "dueDate": row.try_get::<Option<String>, _>("due_date")?,
+        "id": card_id,
+        "boardId": board_id,
+        "columnId": column_id,
+        "title": title,
+        "description": description,
+        "position": position,
+        "priority": priority,
+        "dueDate": due_date,
         "attachments": attachments,
-        "createdAt": row.try_get::<String, _>("created_at")?,
-        "updatedAt": row.try_get::<String, _>("updated_at")?,
-        "archivedAt": row.try_get::<Option<String>, _>("archived_at")?,
+        "createdAt": created_at,
+        "updatedAt": updated_at,
+        "archivedAt": archived_at,
         "subtasks": subtasks,
         "tags": tags,
     }))
@@ -2186,7 +2303,29 @@ async fn load_cards(pool: State<'_, DbPool>, board_id: String) -> Result<Vec<Val
             c.position,
             c.priority,
             c.due_date,
-            c.attachments,
+            c.attachments AS legacy_attachments,
+            (
+                SELECT json_group_array(
+                    json_object(
+                        'id', att.id,
+                        'boardId', att.board_id,
+                        'cardId', att.card_id,
+                        'version', att.version,
+                        'filename', att.filename,
+                        'originalName', att.original_name,
+                        'mimeType', att.mime_type,
+                        'sizeBytes', att.size_bytes,
+                        'checksum', att.checksum,
+                        'storagePath', att.storage_path,
+                        'thumbnailPath', att.thumbnail_path,
+                        'createdAt', att.created_at,
+                        'updatedAt', att.updated_at
+                    )
+                )
+                FROM kanban_attachments att
+                WHERE att.card_id = c.id
+                ORDER BY att.created_at ASC, att.version ASC
+            ) AS attachments_json,
             c.created_at,
             c.updated_at,
             c.archived_at,
@@ -3415,6 +3554,8 @@ pub fn run() {
 struct UploadImageResponse {
     success: bool,
     file_path: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    attachment: Option<Value>,
     error: Option<String>,
 }
 
@@ -3617,6 +3758,7 @@ async fn upload_image(
         return Ok(UploadImageResponse {
             success: false,
             file_path: String::new(),
+            attachment: None,
             error: Some("Source file does not exist".to_string()),
         });
     }
@@ -3648,6 +3790,7 @@ async fn upload_image(
         return Ok(UploadImageResponse {
             success: false,
             file_path: String::new(),
+            attachment: None,
             error: Some(format!("Unsupported attachment type: .{}", file_extension)),
         });
     }
@@ -3743,48 +3886,67 @@ async fn upload_image(
 
     println!("Generated relative path: {}", relative_path);
 
+    let file_metadata = fs::metadata(&destination_path).map_err(|e| {
+        println!("Failed to read file metadata: {}", e);
+        format!("Failed to read file metadata: {e}")
+    })?;
+
+    let file_size: i64 = file_metadata.len().try_into().unwrap_or(i64::MAX);
+
+    let mut file_reader = fs::File::open(&destination_path).map_err(|e| {
+        println!("Failed to open file for checksum: {}", e);
+        format!("Failed to open file for checksum: {e}")
+    })?;
+
+    let mut hasher = Sha256::new();
+    use std::io::Read;
+    let mut buffer = [0u8; 8192];
+    loop {
+        let bytes_read = file_reader
+            .read(&mut buffer)
+            .map_err(|e| format!("Failed to read file for checksum: {e}"))?;
+        if bytes_read == 0 {
+            break;
+        }
+        hasher.update(&buffer[..bytes_read]);
+    }
+
+    let checksum = format!("{:x}", hasher.finalize());
+
+    let now = chrono::Utc::now().to_rfc3339();
+    let mime_string = mime_type.essence_str().to_string();
+
     let mut tx = pool.begin().await.map_err(|e| {
         println!("Failed to begin transaction: {}", e);
         format!("Failed to begin transaction: {e}")
     })?;
 
-    println!("Fetching existing attachments for card: {}", card_id);
+    // Maintain legacy attachment JSON for existing clients
+    let existing_attachments: Option<String> = sqlx::query_scalar(
+        "SELECT attachments FROM kanban_cards WHERE id = ? AND board_id = ?",
+    )
+    .bind(&card_id)
+    .bind(&board_id)
+    .fetch_one(&mut *tx)
+    .await
+    .map_err(|e| {
+        println!("Failed to fetch legacy attachments: {}", e);
+        format!("Failed to fetch legacy attachments: {e}")
+    })?;
 
-    let existing_attachments: Option<String> =
-        sqlx::query_scalar("SELECT attachments FROM kanban_cards WHERE id = ? AND board_id = ?")
-            .bind(&card_id)
-            .bind(&board_id)
-            .fetch_one(&mut *tx)
-            .await
-            .map_err(|e| {
-                println!("Failed to fetch existing attachments: {}", e);
-                format!("Failed to fetch existing attachments: {e}")
-            })?;
-
-    println!("Existing attachments: {:?}", existing_attachments);
-
-    let mut attachments_vec = match existing_attachments {
-        Some(json_str) => serde_json::from_str(&json_str).unwrap_or_else(|e| {
-            println!(
-                "Failed to parse existing attachments JSON: {}, using empty array",
-                e
-            );
-            vec![]
-        }),
-        None => vec![],
-    };
-
+    let mut attachments_vec: Vec<String> = existing_attachments
+        .as_deref()
+        .and_then(|json_str| serde_json::from_str(json_str).ok())
+        .unwrap_or_default();
     attachments_vec.push(relative_path.clone());
 
     let attachments_json = serde_json::to_string(&attachments_vec).map_err(|e| {
-        println!("Failed to serialize attachments: {}", e);
-        format!("Failed to serialize attachments: {e}")
+        println!("Failed to serialize attachments JSON: {}", e);
+        format!("Failed to serialize attachments JSON: {e}")
     })?;
 
-    println!("Updating card with attachments: {}", attachments_json);
-
     sqlx::query(
-        "UPDATE kanban_cards SET attachments = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ? AND board_id = ?"
+        "UPDATE kanban_cards SET attachments = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ? AND board_id = ?",
     )
     .bind(&attachments_json)
     .bind(&card_id)
@@ -3792,22 +3954,91 @@ async fn upload_image(
     .execute(&mut *tx)
     .await
     .map_err(|e| {
-        println!("Failed to update card attachments: {}", e);
-        format!("Failed to update card attachments: {e}")
+        println!("Failed to update legacy attachments column: {}", e);
+        format!("Failed to update legacy attachments column: {e}")
     })?;
 
-    tx.commit().await.map_err(|e| {
-        println!("Failed to commit transaction: {}", e);
-        format!("Failed to commit transaction: {e}")
+    let attachment_id = Uuid::new_v4().to_string();
+    let version = 1i64;
+
+    sqlx::query(
+        "INSERT INTO kanban_attachments (
+            id, card_id, board_id, version, filename, original_name, mime_type, size_bytes,
+            checksum, storage_path, thumbnail_path, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    )
+    .bind(&attachment_id)
+    .bind(&card_id)
+    .bind(&board_id)
+    .bind(version)
+    .bind(&original_name)
+    .bind(&original_name)
+    .bind(&mime_string)
+    .bind(file_size)
+    .bind(&checksum)
+    .bind(&relative_path)
+    .bind(Option::<String>::None)
+    .bind(&now)
+    .bind(&now)
+    .execute(&mut *tx)
+    .await
+    .map_err(|e| {
+        println!("Failed to insert attachment metadata: {}", e);
+        format!("Failed to insert attachment metadata: {e}")
     })?;
 
-    println!("Upload completed successfully");
+    tx.commit()
+        .await
+        .map_err(|e| format!("Failed to commit transaction: {e}"))?;
+
+    println!("Attachment uploaded successfully: {}", relative_path);
 
     Ok(UploadImageResponse {
         success: true,
-        file_path: relative_path,
+        file_path: relative_path.clone(),
+        attachment: Some(json!({
+            "id": attachment_id,
+            "boardId": board_id,
+            "cardId": card_id,
+            "version": version,
+            "filename": original_name.clone(),
+            "originalName": original_name,
+            "mimeType": mime_string,
+            "sizeBytes": file_size,
+            "checksum": checksum,
+            "storagePath": relative_path,
+            "thumbnailPath": Value::Null,
+            "createdAt": now,
+            "updatedAt": now,
+        })),
         error: None,
     })
+}
+
+#[tauri::command]
+async fn list_card_attachments(
+    pool: State<'_, DbPool>,
+    args: ListAttachmentsArgs,
+) -> Result<Value, String> {
+    let attachments = sqlx::query(
+        "SELECT id, card_id, board_id, version, filename, original_name, mime_type, size_bytes, checksum, storage_path, thumbnail_path, created_at, updated_at FROM kanban_attachments WHERE board_id = ? AND card_id = ? ORDER BY created_at DESC, version DESC",
+    )
+    .bind(&args.board_id)
+    .bind(&args.card_id)
+    .map(|row: SqliteRow| AttachmentRecord::from_row(row))
+    .fetch_all(&*pool)
+    .await
+    .map_err(|e| format!("Failed to load attachments: {e}"))?
+    .into_iter()
+    .collect::<Result<Vec<_>, _>>()
+    .map_err(|e| format!("Failed to map attachment row: {e}"))?;
+
+    Ok(Value::Array(
+        attachments
+            .into_iter()
+            .map(AttachmentRecord::into_json)
+            .collect(),
+    ))
 }
 
 #[tauri::command]
@@ -3828,26 +4059,48 @@ async fn remove_image(
         .await
         .map_err(|e| format!("Failed to begin transaction: {e}"))?;
 
-    let existing_attachments: Option<String> =
-        sqlx::query_scalar("SELECT attachments FROM kanban_cards WHERE id = ? AND board_id = ?")
-            .bind(&card_id)
-            .bind(&board_id)
-            .fetch_one(&mut *tx)
-            .await
-            .map_err(|e| format!("Failed to fetch existing attachments: {e}"))?;
+    let attachment_row: Option<(String, i64)> = sqlx::query_as(
+        "SELECT id, version FROM kanban_attachments WHERE card_id = ? AND board_id = ? AND storage_path = ? ORDER BY version DESC LIMIT 1",
+    )
+    .bind(&card_id)
+    .bind(&board_id)
+    .bind(&file_path)
+    .fetch_optional(&mut *tx)
+    .await
+    .map_err(|e| format!("Failed to look up attachment metadata: {e}"))?;
 
-    let mut attachments_vec: Vec<String> = match existing_attachments {
-        Some(json_str) => serde_json::from_str(&json_str).unwrap_or_else(|_| vec![]),
-        None => vec![],
-    };
+    if let Some((_id, _version)) = attachment_row {
+        sqlx::query(
+            "DELETE FROM kanban_attachments WHERE card_id = ? AND board_id = ? AND storage_path = ?",
+        )
+        .bind(&card_id)
+        .bind(&board_id)
+        .bind(&file_path)
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| format!("Failed to delete attachment metadata: {e}"))?;
+    }
 
+    let existing_attachments: Option<String> = sqlx::query_scalar(
+        "SELECT attachments FROM kanban_cards WHERE id = ? AND board_id = ?",
+    )
+    .bind(&card_id)
+    .bind(&board_id)
+    .fetch_one(&mut *tx)
+    .await
+    .map_err(|e| format!("Failed to fetch existing attachments: {e}"))?;
+
+    let mut attachments_vec: Vec<String> = existing_attachments
+        .as_deref()
+        .and_then(|json_str| serde_json::from_str(json_str).ok())
+        .unwrap_or_default();
     attachments_vec.retain(|path| path != &file_path);
 
     let attachments_json = serde_json::to_string(&attachments_vec)
         .map_err(|e| format!("Failed to serialize attachments: {e}"))?;
 
     sqlx::query(
-        "UPDATE kanban_cards SET attachments = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ? AND board_id = ?"
+        "UPDATE kanban_cards SET attachments = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ? AND board_id = ?",
     )
     .bind(&attachments_json)
     .bind(&card_id)
@@ -3860,15 +4113,25 @@ async fn remove_image(
         .await
         .map_err(|e| format!("Failed to commit transaction: {e}"))?;
 
-    let full_file_path = app_data_dir.join(&file_path);
-    if full_file_path.exists()
-        && let Err(e) = fs::remove_file(&full_file_path)
-    {
-        eprintln!(
-            "Warning: Failed to delete file {}: {}",
-            full_file_path.display(),
-            e
-        );
+    let remaining_references: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*) FROM kanban_attachments WHERE storage_path = ?",
+    )
+    .bind(&file_path)
+    .fetch_one(&*pool)
+    .await
+    .map_err(|e| format!("Failed to check attachment references: {e}"))?;
+
+    if remaining_references == 0 {
+        let full_file_path = app_data_dir.join(&file_path);
+        if full_file_path.exists()
+            && let Err(e) = fs::remove_file(&full_file_path)
+        {
+            eprintln!(
+                "Warning: Failed to delete file {}: {}",
+                full_file_path.display(),
+                e
+            );
+        }
     }
 
     Ok(())
@@ -3910,4 +4173,212 @@ async fn get_attachment_url(app: AppHandle, file_path: String) -> Result<String,
     let data_url = format!("data:{};base64,{}", mime_type, base64_data);
 
     Ok(data_url)
+}
+
+#[tauri::command]
+async fn restore_attachment_version(
+    pool: State<'_, DbPool>,
+    args: ManageAttachmentVersionArgs,
+) -> Result<Value, String> {
+    let ManageAttachmentVersionArgs {
+        board_id,
+        card_id,
+        attachment_id,
+        target_version,
+    } = args;
+
+    let mut tx = pool
+        .begin()
+        .await
+        .map_err(|e| format!("Failed to begin transaction: {e}"))?;
+
+    let version = match target_version {
+        Some(version) => version,
+        None => sqlx::query_scalar::<_, Option<i64>>(
+            "SELECT MAX(version) FROM kanban_attachments WHERE id = ? AND board_id = ? AND card_id = ?",
+        )
+        .bind(&attachment_id)
+        .bind(&board_id)
+        .bind(&card_id)
+        .fetch_one(&mut *tx)
+        .await
+        .map_err(|e| format!("Failed to load attachment versions: {e}"))?
+        .ok_or_else(|| "Attachment not found".to_string())?,
+    };
+
+    let attachment = sqlx::query(
+        "SELECT id, card_id, board_id, version, filename, original_name, mime_type, size_bytes, checksum, storage_path, thumbnail_path, created_at, updated_at FROM kanban_attachments WHERE id = ? AND board_id = ? AND card_id = ? AND version = ?",
+    )
+    .bind(&attachment_id)
+    .bind(&board_id)
+    .bind(&card_id)
+    .bind(version)
+    .map(|row: SqliteRow| AttachmentRecord::from_row(row))
+    .fetch_optional(&mut *tx)
+    .await
+    .map_err(|e| format!("Failed to load attachment version: {e}"))?
+    .ok_or_else(|| "Attachment version not found".to_string())?
+    .map_err(|e| format!("Failed to parse attachment row: {e}"))?;
+
+    let attachment_clone = attachment.clone();
+
+    let existing_attachments: Option<String> = sqlx::query_scalar(
+        "SELECT attachments FROM kanban_cards WHERE id = ? AND board_id = ?",
+    )
+    .bind(&card_id)
+    .bind(&board_id)
+    .fetch_one(&mut *tx)
+    .await
+    .map_err(|e| format!("Failed to fetch existing attachments: {e}"))?;
+
+    let mut attachments_vec: Vec<String> = existing_attachments
+        .as_deref()
+        .and_then(|json_str| serde_json::from_str(json_str).ok())
+        .unwrap_or_default();
+    if !attachments_vec.contains(&attachment.storage_path) {
+        attachments_vec.push(attachment.storage_path.clone());
+    }
+
+    let attachments_json = serde_json::to_string(&attachments_vec)
+        .map_err(|e| format!("Failed to serialize attachments: {e}"))?;
+
+    sqlx::query(
+        "UPDATE kanban_cards SET attachments = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ? AND board_id = ?",
+    )
+    .bind(&attachments_json)
+    .bind(&card_id)
+    .bind(&board_id)
+    .execute(&mut *tx)
+    .await
+    .map_err(|e| format!("Failed to update card attachments: {e}"))?;
+
+    tx.commit()
+        .await
+        .map_err(|e| format!("Failed to commit transaction: {e}"))?;
+
+    Ok(attachment_clone.into_json())
+}
+
+#[tauri::command]
+async fn delete_attachment_version(
+    app: AppHandle,
+    pool: State<'_, DbPool>,
+    args: ManageAttachmentVersionArgs,
+) -> Result<(), String> {
+    let ManageAttachmentVersionArgs {
+        board_id,
+        card_id,
+        attachment_id,
+        target_version,
+    } = args;
+
+    let app_data_dir = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| format!("Failed to resolve app data directory: {e}"))?;
+
+    let mut tx = pool
+        .begin()
+        .await
+        .map_err(|e| format!("Failed to begin transaction: {e}"))?;
+
+    let storage_paths_to_check: Vec<String> = if let Some(version) = target_version {
+        sqlx::query_scalar(
+            "SELECT storage_path FROM kanban_attachments WHERE id = ? AND board_id = ? AND card_id = ? AND version = ?",
+        )
+        .bind(&attachment_id)
+        .bind(&board_id)
+        .bind(&card_id)
+        .bind(version)
+        .fetch_all(&mut *tx)
+        .await
+        .map_err(|e| format!("Failed to fetch attachment storage path: {e}"))?
+    } else {
+        sqlx::query_scalar(
+            "SELECT storage_path FROM kanban_attachments WHERE id = ? AND board_id = ? AND card_id = ?",
+        )
+        .bind(&attachment_id)
+        .bind(&board_id)
+        .bind(&card_id)
+        .fetch_all(&mut *tx)
+        .await
+        .map_err(|e| format!("Failed to fetch attachment storage paths: {e}"))?
+    };
+
+    if storage_paths_to_check.is_empty() {
+        return Err("Attachment version not found".to_string());
+    }
+
+    let delete_query = if let Some(version) = target_version {
+        sqlx::query(
+            "DELETE FROM kanban_attachments WHERE id = ? AND board_id = ? AND card_id = ? AND version = ?",
+        )
+        .bind(&attachment_id)
+        .bind(&board_id)
+        .bind(&card_id)
+        .bind(version)
+    } else {
+        sqlx::query(
+            "DELETE FROM kanban_attachments WHERE id = ? AND board_id = ? AND card_id = ?",
+        )
+        .bind(&attachment_id)
+        .bind(&board_id)
+        .bind(&card_id)
+    };
+
+    delete_query
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| format!("Failed to delete attachment version: {e}"))?;
+
+    let remaining_storage_paths: Vec<String> = sqlx::query_scalar(
+        "SELECT DISTINCT storage_path FROM kanban_attachments WHERE card_id = ? AND board_id = ?",
+    )
+    .bind(&card_id)
+    .bind(&board_id)
+    .fetch_all(&mut *tx)
+    .await
+    .map_err(|e| format!("Failed to fetch remaining attachments: {e}"))?;
+
+    let attachments_json = serde_json::to_string(&remaining_storage_paths)
+        .map_err(|e| format!("Failed to serialize attachments: {e}"))?;
+
+    sqlx::query(
+        "UPDATE kanban_cards SET attachments = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ? AND board_id = ?",
+    )
+    .bind(&attachments_json)
+    .bind(&card_id)
+    .bind(&board_id)
+    .execute(&mut *tx)
+    .await
+    .map_err(|e| format!("Failed to update card attachments: {e}"))?;
+
+    tx.commit()
+        .await
+        .map_err(|e| format!("Failed to commit transaction: {e}"))?;
+
+    for storage_path in storage_paths_to_check {
+        let remaining: i64 = sqlx::query_scalar(
+            "SELECT COUNT(*) FROM kanban_attachments WHERE storage_path = ?",
+        )
+        .bind(&storage_path)
+        .fetch_one(&*pool)
+        .await
+        .map_err(|e| format!("Failed to check attachment references: {e}"))?;
+
+        if remaining == 0 {
+            let full_file_path = app_data_dir.join(&storage_path);
+            if full_file_path.exists()
+                && let Err(e) = fs::remove_file(&full_file_path)
+            {
+                eprintln!(
+                    "Warning: Failed to delete file {}: {}",
+                    full_file_path.display(),
+                    e
+                );
+            }
+        }
+    }
+
+    Ok(())
 }
