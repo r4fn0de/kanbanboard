@@ -442,7 +442,7 @@ export function TaskDetailsPanel({
         />
         <motion.div
           key={card.id}
-          className="flex h-full w-full max-w-[420px] flex-col overflow-hidden rounded-3xl border border-border/80 bg-card shadow-2xl"
+          className="flex h-full w-full max-w-[420px] flex-col overflow-hidden rounded-xl border border-border/80 bg-card shadow-2xl"
           initial={{
             opacity: 0,
             x: 40,
@@ -465,7 +465,7 @@ export function TaskDetailsPanel({
               <div className="flex min-w-0 flex-1 flex-col gap-3">
                 <span
                   className={cn(
-                    'inline-flex items-center gap-2 self-start rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.25em]',
+                    'inline-flex items-center gap-2 self-start rounded-lg border px-3 py-1 text-xs font-semibold uppercase tracking-[0.25em]',
                     'border-border/50 text-muted-foreground'
                   )}
                   style={
@@ -548,14 +548,14 @@ export function TaskDetailsPanel({
                       placeholder="Add a description..."
                       disabled={updateCard.isPending}
                       rows={5}
-                      className="min-h-[140px] resize-none rounded-2xl border-0 bg-muted/40 px-4 py-3 text-sm leading-relaxed text-foreground shadow-none focus-visible:ring-2 focus-visible:ring-foreground/20 focus-visible:ring-offset-0"
+                      className="min-h-[140px] resize-none rounded-lg border-0 bg-muted/40 px-4 py-3 text-sm leading-relaxed text-foreground shadow-none focus-visible:ring-2 focus-visible:ring-foreground/20 focus-visible:ring-offset-0"
                       autoFocus
                     />
                   </form>
                 ) : (
                   <button
                     type="button"
-                    className="relative w-full rounded-2xl border border-border/60 bg-background px-4 py-3 text-left transition-colors hover:border-foreground/20"
+                    className="relative w-full rounded-lg border border-border/60 bg-background px-4 py-3 text-left transition-colors hover:border-foreground/20"
                     onClick={() => setIsEditingDescription(true)}
                     onKeyDown={e => {
                       if (e.key === 'Enter' || e.key === ' ') {
@@ -577,7 +577,7 @@ export function TaskDetailsPanel({
               </section>
 
               <section className="space-y-4">
-                <div className="flex items-center justify-between rounded-2xl border border-border/60 bg-background px-4 py-3">
+                <div className="flex items-center justify-between rounded-lg border border-border/60 bg-background px-4 py-3">
                   <div className="flex flex-wrap items-center gap-3">
                     <CalendarDays className="h-4 w-4 text-muted-foreground" />
                     <span className="text-sm font-medium text-muted-foreground">
@@ -586,7 +586,7 @@ export function TaskDetailsPanel({
                     {dueMetadata && (
                       <Badge
                         className={cn(
-                          'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold',
+                          'inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold',
                           CARD_DUE_STATUS_STYLES[dueMetadata.status]
                         )}
                       >
@@ -610,7 +610,7 @@ export function TaskDetailsPanel({
                     className="rounded-full border-0 bg-transparent px-3 py-1 text-sm font-semibold text-foreground/80 transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/20"
                   />
                 </div>
-                <div className="flex flex-col gap-2 rounded-2xl border border-border/60 bg-background px-4 py-3">
+                <div className="flex flex-col gap-2 rounded-lg border border-border/60 bg-background px-4 py-3">
                   <div className="flex items-center gap-3">
                     <Tag className="h-4 w-4 text-muted-foreground" />
                     <span className="text-sm font-medium text-muted-foreground">
@@ -624,7 +624,7 @@ export function TaskDetailsPanel({
                     disabled={
                       updateCard.isPending || updateCardTagsMutation.isPending
                     }
-                    className="[&_button[aria-expanded]]:rounded-2xl [&_button[aria-expanded]]:border-0 [&_button[aria-expanded]]:bg-muted/60"
+                    className="[&_button[aria-expanded]]:rounded-lg [&_button[aria-expanded]]:border-0 [&_button[aria-expanded]]:bg-muted/60"
                   />
                 </div>
               </section>
@@ -661,7 +661,7 @@ export function TaskDetailsPanel({
                     <div
                       key={subtask.id}
                       className={cn(
-                        'group relative flex items-center gap-3 rounded-2xl border border-border/60 bg-background/80 px-4 py-3 transition-all duration-200 ease-out',
+                        'group relative flex items-center gap-3 rounded-lg border border-border/60 bg-background/80 px-4 py-3 transition-all duration-200 ease-out',
                         'hover:-translate-y-0.5 hover:border-border hover:bg-muted/60 hover:shadow-sm',
                         'focus-within:-translate-y-0.5 focus-within:border-foreground/30 focus-within:shadow-sm',
                         subtask.isCompleted && 'border-border/40 bg-muted/60'
@@ -695,7 +695,7 @@ export function TaskDetailsPanel({
                           <button
                             type="button"
                             onClick={() => handleStartEditingSubtask(subtask)}
-                            className="flex w-full items-start gap-2 rounded-xl px-1 py-0.5 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/20"
+                            className="flex w-full items-start gap-2 rounded-lg px-1 py-0.5 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/20"
                           >
                             <span
                               className={cn(
@@ -714,7 +714,7 @@ export function TaskDetailsPanel({
                           type="button"
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8 rounded-xl border border-transparent text-muted-foreground transition-colors hover:border-border/40 hover:bg-background/80 hover:text-foreground"
+                          className="h-8 w-8 rounded-lg border border-transparent text-muted-foreground transition-colors hover:border-border/40 hover:bg-background/80 hover:text-foreground"
                           onClick={() => handleMoveSubtask(subtask, -1)}
                           disabled={index === 0 || isSubtaskMutationPending}
                           aria-label="Move subtask up"
@@ -725,7 +725,7 @@ export function TaskDetailsPanel({
                           type="button"
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8 rounded-xl border border-transparent text-muted-foreground transition-colors hover:border-border/40 hover:bg-background/80 hover:text-foreground"
+                          className="h-8 w-8 rounded-lg border border-transparent text-muted-foreground transition-colors hover:border-border/40 hover:bg-background/80 hover:text-foreground"
                           onClick={() => handleMoveSubtask(subtask, 1)}
                           disabled={
                             index === card.subtasks.length - 1 || isSubtaskMutationPending
@@ -738,7 +738,7 @@ export function TaskDetailsPanel({
                           type="button"
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8 rounded-xl border border-transparent text-muted-foreground transition-colors hover:border-border/40 hover:bg-rose-500/10 hover:text-rose-500"
+                          className="h-8 w-8 rounded-lg border border-transparent text-muted-foreground transition-colors hover:border-border/40 hover:bg-rose-500/10 hover:text-rose-500"
                           onClick={() => handleDeleteSubtask(subtask)}
                           disabled={isSubtaskMutationPending}
                           aria-label="Delete subtask"

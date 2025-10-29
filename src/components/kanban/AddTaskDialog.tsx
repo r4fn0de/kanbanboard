@@ -175,7 +175,7 @@ export function AddTaskDialog({
     <Dialog.Root open={isOpen} onOpenChange={handleOpenChange}>
       <Dialog.Portal>
         <Dialog.Backdrop className="fixed inset-0 bg-black/50 z-50" />
-        <Dialog.Popup className="fixed left-1/2 top-1/2 z-50 w-full max-w-[760px] -translate-x-1/2 -translate-y-1/2 rounded-2xl border bg-background">
+        <Dialog.Popup className="fixed left-1/2 top-1/2 z-50 w-full max-w-[760px] -translate-x-1/2 -translate-y-1/2 rounded-xl border bg-background">
           <div className="border-b px-6 py-4">
             <Breadcrumb>
               <BreadcrumbList className="items-center gap-1 text-xs font-medium text-muted-foreground">
@@ -234,7 +234,7 @@ export function AddTaskDialog({
             </div>
 
             <div className="flex flex-wrap items-center gap-3">
-              <div className="flex items-center gap-2 rounded-full border px-3 py-2 text-sm transition-colors hover:bg-accent/50">
+              <div className="flex items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors hover:bg-accent/50">
                 <span className="font-medium text-foreground">
                   {column ? column.title : 'Column'}
                 </span>
@@ -249,7 +249,7 @@ export function AddTaskDialog({
                 disabled={isCreating}
                 items={priorityItems}
               >
-                <Select.Trigger className="h-auto w-auto rounded-full border bg-transparent px-3 py-2 text-sm font-medium shadow-none transition-colors hover:bg-accent/50 focus:ring-0 focus:ring-offset-0">
+                <Select.Trigger className="h-auto w-auto rounded-lg border bg-transparent px-3 py-2 text-sm font-medium shadow-none transition-colors hover:bg-accent/50 focus:ring-0 focus:ring-offset-0">
                   <Select.Value>
                     {(value: KanbanPriority) => (
                       <div className="flex items-center gap-2">
@@ -289,7 +289,7 @@ export function AddTaskDialog({
                 </Select.Portal>
               </Select.Root>
 
-              <div className="flex items-center gap-2 rounded-full border px-3 py-2 text-sm transition-colors hover:bg-accent/50">
+              <div className="flex items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors hover:bg-accent/50">
                 <CalendarDays className="h-4 w-4" />
                 <Label htmlFor={dueDateId} className="sr-only">
                   Due date
@@ -310,7 +310,7 @@ export function AddTaskDialog({
                   selectedTagIds={selectedTagIds}
                   onChange={setSelectedTagIds}
                   disabled={isCreating}
-                  className="space-y-0 [&>div:first-child]:hidden [&_button]:shadow-none [&_button[aria-expanded]]:rounded-full [&_button[aria-expanded]]:border [&_button[aria-expanded]]:bg-transparent [&_button[aria-expanded]]:px-3 [&_button[aria-expanded]]:py-2 [&_button[aria-expanded]]:hover:bg-accent/50"
+                  className="space-y-0 [&>div:first-child]:hidden [&_button]:shadow-none [&_button[aria-expanded]]:rounded-lg [&_button[aria-expanded]]:border [&_button[aria-expanded]]:bg-transparent [&_button[aria-expanded]]:px-3 [&_button[aria-expanded]]:py-2 [&_button[aria-expanded]]:hover:bg-accent/50"
                 />
               </div>
             </div>
@@ -337,7 +337,7 @@ export function AddTaskDialog({
               <Button
                 type="submit"
                 disabled={isCreating || !title.trim() || !column}
-                className="rounded-full px-6"
+                className="rounded-xl px-6"
               >
                 {isCreating ? 'Creating…' : 'Create Task'}
               </Button>

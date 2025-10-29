@@ -74,7 +74,7 @@ export function CardContent({ card }: { card: KanbanCard }) {
             return (
               <Badge
                 key={tag.id}
-                className="rounded-full px-3 py-1 text-xs font-semibold leading-none opacity-100"
+                className="rounded-lg px-3 py-1 text-xs font-semibold leading-none opacity-100"
                 style={
                   tag.color
                     ? {
@@ -93,7 +93,7 @@ export function CardContent({ card }: { card: KanbanCard }) {
           {remainingTags > 0 ? (
             <Badge
               variant="secondary"
-              className="rounded-full px-3 py-1 text-xs font-semibold leading-none"
+              className="rounded-lg px-3 py-1 text-xs font-semibold leading-none"
             >
               +{remainingTags}
             </Badge>
@@ -109,7 +109,7 @@ export function CardContent({ card }: { card: KanbanCard }) {
           {dueMetadata && (
             <Badge
               className={cn(
-                'rounded-full px-3 py-1 text-xs font-semibold leading-none flex items-center gap-1',
+                'rounded-lg px-3 py-1 text-xs font-semibold leading-none flex items-center gap-1',
                 CARD_DUE_STATUS_STYLES[dueMetadata.status]
               )}
             >

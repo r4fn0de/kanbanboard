@@ -294,7 +294,7 @@ function CardOverlay({ card }: { card: KanbanCard }) {
               <Badge
                 key={tag.id}
                 variant="secondary"
-                className="rounded-md px-2.5 py-0.5 text-xs font-medium border"
+                className="rounded-lg px-2.5 py-0.5 text-xs font-medium border"
                 style={
                   tag.color
                     ? {
@@ -312,7 +312,7 @@ function CardOverlay({ card }: { card: KanbanCard }) {
           {remainingTags > 0 && (
             <Badge
               variant="outline"
-              className="rounded-md px-2.5 py-0.5 text-xs font-medium"
+              className="rounded-lg px-2.5 py-0.5 text-xs font-medium"
             >
               +{remainingTags}
             </Badge>
@@ -337,7 +337,7 @@ function CardOverlay({ card }: { card: KanbanCard }) {
         {/* Priority Badge */}
         <div
           className={cn(
-            'inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium border',
+            'inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-medium border',
             priorityConfig.className
           )}
         >
@@ -349,7 +349,7 @@ function CardOverlay({ card }: { card: KanbanCard }) {
         {dueMetadata && (
           <Badge
             className={cn(
-              'inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium',
+              'inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-medium',
               CARD_DUE_STATUS_STYLES[dueMetadata.status]
             )}
           >
@@ -360,7 +360,7 @@ function CardOverlay({ card }: { card: KanbanCard }) {
 
         {/* Attachments */}
         {hasAttachments && (
-          <div className="inline-flex items-center gap-1.5 rounded-md border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700 dark:border-blue-800 dark:bg-blue-950/50 dark:text-blue-400">
+          <div className="inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700 dark:border-blue-800 dark:bg-blue-950/50 dark:text-blue-400">
             <Paperclip className="h-3 w-3" />
             <span>{card.attachments?.length}</span>
           </div>
@@ -416,95 +416,103 @@ function DraggableColumn({
     FALLBACK_COLUMN_COLORS[accentIndex % FALLBACK_COLUMN_COLORS.length] ??
     FALLBACK_COLUMN_COLORS[0]
   const baseColor = column.color ?? fallbackColor
-  const headerBackground = hexToRgba(baseColor, 0.14) ?? undefined
-  const headerBorder = hexToRgba(baseColor, 0.35) ?? undefined
-  const countBackground = hexToRgba(baseColor, 0.18) ?? undefined
+  const iconBackground = hexToRgba(baseColor, 0.12) ?? 'rgba(148, 163, 184, 0.12)'
+  const iconRing = hexToRgba(baseColor, 0.55) ?? 'rgba(148, 163, 184, 0.45)'
+  const countBackground = hexToRgba(baseColor, 0.14) ?? 'rgba(148, 163, 184, 0.18)'
   const countColor = baseColor
-  const iconBackground = hexToRgba(baseColor, 0.18) ?? undefined
   const ColumnIcon = getColumnIconComponent(column.icon ?? DEFAULT_COLUMN_ICON)
 
   return (
     <div
       ref={setNodeRef}
       style={style}
-      className="group flex h-full w-[320px] flex-shrink-0 flex-col gap-5 rounded-lg border border-border bg-muted p-5 transition-all duration-200"
+      className="group flex h-full w-[320px] flex-shrink-0 flex-col gap-4"
     >
       <div
         className={cn(
-          'flex items-center justify-between gap-3 rounded-xl border bg-card px-5 py-4'
+          'flex items-center justify-between gap-3 px-1',
+          isDragging && 'opacity-80'
         )}
-        style={{
-          borderColor: headerBorder,
-          backgroundColor: headerBackground,
-        }}
+        {...attributes}
+        {...listeners}
       >
-        <div className="flex items-center gap-3" {...attributes} {...listeners}>
-          <div className="flex items-center gap-2">
-            <span
-              className="flex h-8 w-8 items-center justify-center rounded-full border"
-              style={{
-                backgroundColor: iconBackground,
-                borderColor: headerBorder,
-                color: countColor,
-              }}
-            >
-              <ColumnIcon className="h-4 w-4" />
-            </span>
-          </div>
-          <h2 className="text-lg font-semibold text-foreground">
+        <div className="flex min-w-0 items-center gap-3">
+          <span
+            className="flex h-8 w-8 items-center justify-center rounded-full border-2"
+            style={{
+              backgroundColor: iconBackground,
+              borderColor: iconRing,
+              color: countColor,
+            }}
+          >
+            <ColumnIcon className="h-4 w-4" />
+          </span>
+          <h2 className="truncate text-sm font-semibold text-foreground md:text-base">
             {column.title}
           </h2>
         </div>
-        <span
-          className={cn('rounded-full px-3 py-1 text-xs font-semibold')}
+        <div className="flex items-center gap-2">
+          <span
+            className="rounded-full px-3 py-1 text-xs font-semibold"
+            style={{
+              backgroundColor: countBackground,
+              color: countColor,
+            }}
+          >
+            {columnCards.length}
+          </span>
+          <button
+            type="button"
+            onClick={onAddCard}
+            disabled={isCreatingCard}
+            className="flex h-8 w-8 items-center justify-center rounded-full border border-dashed border-border/70 text-muted-foreground transition hover:border-transparent hover:bg-primary hover:text-primary-foreground disabled:cursor-not-allowed disabled:opacity-60"
+            aria-label={`Adicionar tarefa em ${column.title}`}
+          >
+            <Plus className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+      <div className="flex flex-1 flex-col gap-4 px-1 transition-all duration-200">
+        <div
+          ref={setDroppableRef}
+          className="flex flex-1 flex-col gap-4 overflow-y-auto overflow-x-visible min-h-0 transition-all duration-200 kanban-column-cards"
           style={{
-            backgroundColor: countBackground,
-            color: countColor,
+            scrollbarWidth: 'none',
+            msOverflowStyle: 'none',
           }}
         >
-          {columnCards.length}
-        </span>
+          {columnCards.length > 0 ? (
+            <>
+              {columnCards.map(card => (
+                <KanbanCardItem
+                  key={card.id}
+                  card={card}
+                  onSelect={onCardSelect}
+                  isSelected={selectedCardId === card.id}
+                  onDelete={onDeleteCard}
+                />
+              ))}
+              {/* Drop zone at the end of cards */}
+              <ColumnEndDropZone columnId={column.id} accentColor={baseColor} />
+            </>
+          ) : (
+            <EmptyColumnDropZone columnId={column.id} accentColor={baseColor} />
+          )}
+        </div>
+        <Button
+          variant="ghost"
+          onClick={onAddCard}
+          disabled={isCreatingCard}
+          className="flex items-center justify-center gap-2 rounded-xl border border-dashed border-border/70 bg-transparent py-3 text-sm font-medium text-muted-foreground transition hover:border-transparent hover:bg-primary hover:text-primary-foreground disabled:cursor-not-allowed disabled:opacity-60"
+          style={{
+            color: countColor,
+            backgroundColor: hexToRgba(baseColor, 0.12) ?? undefined,
+          }}
+        >
+          <Plus className="h-4 w-4" />
+          Add Task
+        </Button>
       </div>
-      <div
-        ref={setDroppableRef}
-        className="flex flex-1 flex-col gap-4 overflow-y-auto overflow-x-visible min-h-0 rounded-lg transition-all duration-200 kanban-column-cards"
-        style={{
-          scrollbarWidth: 'none',
-          msOverflowStyle: 'none',
-        }}
-      >
-        {columnCards.length > 0 ? (
-          <>
-            {columnCards.map(card => (
-              <KanbanCardItem
-                key={card.id}
-                card={card}
-                onSelect={onCardSelect}
-                isSelected={selectedCardId === card.id}
-                onDelete={onDeleteCard}
-              />
-            ))}
-            {/* Drop zone at the end of cards */}
-            <ColumnEndDropZone columnId={column.id} accentColor={baseColor} />
-          </>
-        ) : (
-          <EmptyColumnDropZone columnId={column.id} accentColor={baseColor} />
-        )}
-      </div>
-      <Button
-        variant="ghost"
-        onClick={onAddCard}
-        disabled={isCreatingCard}
-        className="flex items-center justify-center gap-2 rounded-xl bg-card py-3 text-sm font-medium text-card-foreground transition disabled:cursor-not-allowed disabled:opacity-60"
-        style={{
-          borderColor: headerBorder,
-          color: countColor,
-          backgroundColor: hexToRgba(baseColor, 0.12) ?? undefined,
-        }}
-      >
-        <Plus className="h-4 w-4" />
-        Add Task
-      </Button>
     </div>
   )
 }

@@ -418,7 +418,7 @@ export function TagSelector({
                       type="button"
                       onClick={() => setColor(option)}
                       className={cn(
-                        'h-8 w-8 rounded-full border-2 transition',
+                        'h-8 w-8 rounded-lg border-2 transition',
                         color === option
                           ? 'border-primary scale-105'
                           : 'border-transparent'
