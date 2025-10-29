@@ -1,5 +1,5 @@
-import { useMemo } from 'react'
-import { Pin, Calendar, Trash2 } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { Pin, Calendar, Trash2, Edit3 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { Note } from '@/services/notes'
 import { useNotes, useUpdateNote, useDeleteNote } from '@/services/notes'
@@ -12,6 +12,7 @@ import {
   ContextMenuTrigger,
 } from '@/components/ui/context-menu'
 import { Skeleton } from '@/components/ui/skeleton'
+import { NoteContentRenderer } from './NoteContentRenderer'
 import { extractNotePreview } from './utils'
 
 const NOTE_LIST_SKELETON_KEYS = [
@@ -33,8 +34,21 @@ export function NotesList({
   searchQuery,
 }: NotesListProps) {
   const { data: notes = [], isLoading } = useNotes(boardId)
+  const [expandedNotes, setExpandedNotes] = useState<Set<string>>(new Set())
 
-  const normalizedQuery = searchQuery.trim().toLowerCase()
+const normalizedQuery = searchQuery.trim().toLowerCase()
+
+  const toggleNoteExpanded = (noteId: string) => {
+    setExpandedNotes(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(noteId)) {
+        newSet.delete(noteId)
+      } else {
+        newSet.add(noteId)
+      }
+      return newSet
+    })
+  }
 
   const processedNotes = useMemo(() => {
     const matchesQuery = normalizedQuery
@@ -84,13 +98,15 @@ export function NotesList({
                   <Pin className="h-3.5 w-3.5" />
                   Pinned Notes
                 </div>
-                <div className="space-y-2">
+<div className="space-y-2">
                   {pinnedNotes.map(note => (
                     <NoteCard
                       key={note.id}
                       note={note}
                       onClick={() => onSelectNote(note)}
                       boardId={boardId}
+                      expanded={expandedNotes.has(note.id)}
+                      onToggleExpanded={() => toggleNoteExpanded(note.id)}
                     />
                   ))}
                 </div>
@@ -105,13 +121,15 @@ export function NotesList({
                     All Notes
                   </div>
                 )}
-                <div className="space-y-2">
+<div className="space-y-2">
                   {unpinnedNotes.map(note => (
                     <NoteCard
                       key={note.id}
                       note={note}
                       onClick={() => onSelectNote(note)}
                       boardId={boardId}
+                      expanded={expandedNotes.has(note.id)}
+                      onToggleExpanded={() => toggleNoteExpanded(note.id)}
                     />
                   ))}
                 </div>
@@ -128,9 +146,11 @@ interface NoteCardProps {
   note: Note
   onClick: () => void
   boardId: string
+  expanded: boolean
+  onToggleExpanded: () => void
 }
 
-function NoteCard({ note, onClick, boardId }: NoteCardProps) {
+function NoteCard({ note, onClick, boardId, expanded, onToggleExpanded }: NoteCardProps) {
   const updateNote = useUpdateNote(boardId)
   const deleteNote = useDeleteNote(boardId)
 
@@ -184,13 +204,26 @@ function NoteCard({ note, onClick, boardId }: NoteCardProps) {
         >
           <div className="flex items-start justify-between gap-3 mb-2">
             <h3 className="font-semibold line-clamp-1">{note.title}</h3>
-            {note.pinned && (
-              <Pin className="h-3.5 w-3.5 text-primary flex-shrink-0" />
-            )}
+            <div className="flex items-center gap-1">
+              <Edit3 className="h-3 w-3 text-muted-foreground" />
+              {note.pinned && (
+                <Pin className="h-3.5 w-3.5 text-primary flex-shrink-0" />
+              )}
+            </div>
           </div>
-          <p className="text-sm text-muted-foreground line-clamp-3 mb-3 flex-1">
-            {preview}
-          </p>
+          
+{/* Rich content preview */}
+          <div className="mb-3">
+            <NoteContentRenderer
+              content={note.content}
+              className="text-sm"
+              maxHeight="120px"
+              expanded={expanded}
+              onToggleExpanded={onToggleExpanded}
+              id={note.id}
+            />
+          </div>
+          
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <Calendar className="h-3 w-3" />
             <span>Created {createdAt}</span>

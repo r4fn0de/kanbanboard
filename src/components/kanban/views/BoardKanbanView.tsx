@@ -427,11 +427,11 @@ function DraggableColumn({
     <div
       ref={setNodeRef}
       style={style}
-      className="group flex h-full w-[320px] flex-shrink-0 flex-col gap-5 rounded-[2rem] border border-border bg-muted p-5 transition-all duration-200"
+      className="group flex h-full w-[320px] flex-shrink-0 flex-col gap-5 rounded-lg border border-border bg-muted p-5 transition-all duration-200"
     >
       <div
         className={cn(
-          'flex items-center justify-between gap-3 rounded-3xl border bg-card px-5 py-4'
+          'flex items-center justify-between gap-3 rounded-xl border bg-card px-5 py-4'
         )}
         style={{
           borderColor: headerBorder,
@@ -467,7 +467,7 @@ function DraggableColumn({
       </div>
       <div
         ref={setDroppableRef}
-        className="flex flex-1 flex-col gap-4 overflow-y-auto overflow-x-visible min-h-0 rounded-xl transition-all duration-200 kanban-column-cards"
+        className="flex flex-1 flex-col gap-4 overflow-y-auto overflow-x-visible min-h-0 rounded-lg transition-all duration-200 kanban-column-cards"
         style={{
           scrollbarWidth: 'none',
           msOverflowStyle: 'none',
@@ -495,7 +495,7 @@ function DraggableColumn({
         variant="ghost"
         onClick={onAddCard}
         disabled={isCreatingCard}
-        className="flex items-center justify-center gap-2 rounded-2xl bg-card py-3 text-sm font-medium text-card-foreground transition disabled:cursor-not-allowed disabled:opacity-60"
+        className="flex items-center justify-center gap-2 rounded-xl bg-card py-3 text-sm font-medium text-card-foreground transition disabled:cursor-not-allowed disabled:opacity-60"
         style={{
           borderColor: headerBorder,
           color: countColor,
@@ -528,7 +528,7 @@ function EmptyColumnDropZone({
     <div
       ref={setNodeRef}
       className={cn(
-        'flex flex-col items-center justify-center rounded-3xl border border-dashed border-border bg-card/70 p-8 text-center text-sm text-muted-foreground transition-all duration-300 min-h-[160px] m-2',
+        'flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-card/70 p-8 text-center text-sm text-muted-foreground transition-all duration-300 min-h-[160px] m-2',
         isOver && 'border-solid scale-[1.02] shadow-lg'
       )}
       style={
@@ -588,7 +588,7 @@ function ColumnEndDropZone({
     <div
       ref={setNodeRef}
       className={cn(
-        'mt-4 min-h-[20px] transition-all duration-300 rounded-2xl border-2 border-transparent',
+        'mt-4 min-h-[20px] transition-all duration-300 rounded-xl border-2 border-transparent',
         isOver && 'min-h-[60px] shadow-lg scale-[1.02]'
       )}
       style={

@@ -594,7 +594,7 @@ export function BoardDetailView({
               })()}
             </SelectValue>
           </SelectTrigger>
-          <SelectContent align="end" sideOffset={6}>
+          <SelectContent align="end" sideOffset={6} className="rounded-md">
             {PRIORITY_FILTER_OPTIONS.map(option => {
               const Icon = option.icon
               return (
@@ -618,7 +618,7 @@ export function BoardDetailView({
           <SelectTrigger className="h-6 min-w-[115px] rounded-lg border-none bg-transparent px-2 text-xs font-medium text-muted-foreground hover:text-foreground">
             <SelectValue placeholder="Deadline" />
           </SelectTrigger>
-          <SelectContent align="end" sideOffset={6}>
+          <SelectContent align="end" sideOffset={6} className="rounded-md">
             <SelectItem value="all" className="text-xs">All deadlines</SelectItem>
             <SelectItem value="overdue" className="text-xs">Overdue</SelectItem>
             <SelectItem value="today" className="text-xs">Due today</SelectItem>
