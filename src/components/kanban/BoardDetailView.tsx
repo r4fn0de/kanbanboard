@@ -574,20 +574,20 @@ export function BoardDetailView({
   }
 
   const taskControls = (
-    <div className="flex flex-wrap items-center justify-end gap-3">
-      <div className="flex items-center gap-3 rounded-xl border border-border/60 bg-background/70 px-4 py-1.5 shadow-sm backdrop-blur">
+    <div className="flex flex-wrap items-center justify-end gap-1.5">
+      <div className="flex items-center gap-1.5 rounded-xl border border-border bg-background px-2 py-0.5">
         <Select
           value={priorityFilter}
           onValueChange={value => setPriorityFilter(value as PriorityFilter)}
         >
-          <SelectTrigger className="h-8 min-w-[130px] rounded-lg border-none bg-transparent px-3 text-sm font-medium text-muted-foreground hover:text-foreground">
+          <SelectTrigger className="h-6 min-w-[110px] rounded-lg border-none bg-transparent px-2 text-xs font-medium text-muted-foreground hover:text-foreground">
             <SelectValue placeholder="Priority">
               {(() => {
                 const option = PRIORITY_FILTER_OPTIONS.find(item => item.value === priorityFilter)
                 const PriorityIcon = option?.icon ?? ListFilter
                 return (
-                  <span className="flex items-center gap-2">
-                    <PriorityIcon className="h-4 w-4" />
+                  <span className="flex items-center gap-1">
+                    <PriorityIcon className="h-3.5 w-3.5" />
                     {option?.label ?? 'Priority'}
                   </span>
                 )
@@ -601,30 +601,30 @@ export function BoardDetailView({
                 <SelectItem
                   key={option.value}
                   value={option.value}
-                  className="flex items-center gap-2 text-sm"
+                  className="flex items-center gap-2 text-xs"
                 >
-                  <Icon className="h-4 w-4" />
+                  <Icon className="h-3.5 w-3.5" />
                   {option.label}
                 </SelectItem>
               )
             })}
           </SelectContent>
         </Select>
-        <span className="hidden h-4 w-px bg-border/60 sm:block" />
+        <span className="hidden h-2 w-px bg-border sm:block" />
         <Select
           value={dueFilter}
           onValueChange={value => setDueFilter(value as DueFilter)}
         >
-          <SelectTrigger className="h-8 min-w-[150px] rounded-lg border-none bg-transparent px-3 text-sm font-medium text-muted-foreground hover:text-foreground">
+          <SelectTrigger className="h-6 min-w-[115px] rounded-lg border-none bg-transparent px-2 text-xs font-medium text-muted-foreground hover:text-foreground">
             <SelectValue placeholder="Deadline" />
           </SelectTrigger>
           <SelectContent align="end" sideOffset={6}>
-            <SelectItem value="all">All deadlines</SelectItem>
-            <SelectItem value="overdue">Overdue</SelectItem>
-            <SelectItem value="today">Due today</SelectItem>
-            <SelectItem value="soon">Due soon</SelectItem>
-            <SelectItem value="upcoming">Upcoming</SelectItem>
-            <SelectItem value="no_due">No due date</SelectItem>
+            <SelectItem value="all" className="text-xs">All deadlines</SelectItem>
+            <SelectItem value="overdue" className="text-xs">Overdue</SelectItem>
+            <SelectItem value="today" className="text-xs">Due today</SelectItem>
+            <SelectItem value="soon" className="text-xs">Due soon</SelectItem>
+            <SelectItem value="upcoming" className="text-xs">Upcoming</SelectItem>
+            <SelectItem value="no_due" className="text-xs">No due date</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -637,7 +637,7 @@ export function BoardDetailView({
             onViewModeChange(value)
           }
         }}
-        className="flex h-9 items-center gap-2 rounded-xl border border-border/60 bg-background/70 px-2 shadow-sm backdrop-blur overflow-hidden"
+        className="flex h-7 items-center gap-1 rounded-lg border border-border bg-background px-1 overflow-hidden"
       >
         {BOARD_VIEW_OPTIONS.map(option => (
           <BaseTooltip.Root key={option.value} delay={0} closeDelay={0}>
@@ -648,15 +648,15 @@ export function BoardDetailView({
                   {...triggerProps}
                   value={option.value}
                   aria-label={option.label}
-                  className="flex h-7 w-7 items-center justify-center rounded-lg first:rounded-lg last:rounded-lg text-muted-foreground transition-all duration-150 hover:bg-muted/70 data-[state=on]:bg-primary/10 data-[state=on]:text-primary"
+                  className="flex h-5 w-5 items-center justify-center rounded-sm first:rounded-sm last:rounded-sm text-muted-foreground transition-all duration-150 hover:bg-accent data-[state=on]:bg-accent data-[state=on]:text-accent-foreground"
                 >
-                  <option.icon className="h-4 w-4" />
+                  <option.icon className="h-3 w-3" />
                 </ToggleGroupItem>
               )}
             />
             <BaseTooltip.Portal>
               <BaseTooltip.Positioner sideOffset={8}>
-                <BaseTooltip.Popup className="z-50 w-fit rounded-md bg-primary px-3 py-1.5 text-xs text-primary-foreground">
+                <BaseTooltip.Popup className="z-50 w-fit rounded-md bg-popover px-2 py-1 text-xs text-popover-foreground border border-border shadow-md">
                   {option.label}
                 </BaseTooltip.Popup>
               </BaseTooltip.Positioner>
@@ -667,10 +667,10 @@ export function BoardDetailView({
 
       <Button
         variant="outline"
-        className="h-9 rounded-xl border-border/60 bg-background/80 px-4 text-sm font-medium shadow-sm hover:bg-background"
+        className="h-7 rounded-lg border-border bg-background px-2.5 text-xs font-medium hover:bg-accent"
         onClick={() => setIsColumnManagerOpen(true)}
       >
-        <Settings2 className="mr-2 h-4 w-4" />
+        <Settings2 className="mr-1 h-3 w-3" />
         Manage Columns
       </Button>
     </div>

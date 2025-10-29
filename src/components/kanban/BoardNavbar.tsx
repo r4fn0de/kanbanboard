@@ -167,17 +167,17 @@ export function BoardNavbar({
             {dueSummary && activeTab === 'tasks' ? (
               <div className="hidden md:flex items-center gap-2">
                 {dueSummary.overdue > 0 && (
-                  <Badge className="bg-rose-500/10 text-rose-600 border border-rose-500/20 dark:text-rose-300">
+                  <Badge variant="destructive">
                     Overdue {dueSummary.overdue}
                   </Badge>
                 )}
                 {dueSummary.today > 0 && (
-                  <Badge className="bg-amber-500/10 text-amber-600 border border-amber-500/20 dark:text-amber-300">
+                  <Badge className="bg-yellow-500/10 text-yellow-600 border border-yellow-500/20 dark:text-yellow-300">
                     Due today {dueSummary.today}
                   </Badge>
                 )}
                 {dueSummary.soon > 0 && (
-                  <Badge className="bg-amber-500/10 text-amber-600 border border-amber-500/20 dark:text-amber-300">
+                  <Badge className="bg-yellow-500/10 text-yellow-600 border border-yellow-500/20 dark:text-yellow-300">
                     Due soon {dueSummary.soon}
                   </Badge>
                 )}

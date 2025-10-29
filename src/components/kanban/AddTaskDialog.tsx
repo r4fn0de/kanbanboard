@@ -217,7 +217,7 @@ export function AddTaskDialog({
                 disabled={isCreating}
                 autoFocus
                 required
-                className="border-none bg-transparent px-0 text-2xl font-semibold shadow-none focus-visible:ring-0"
+                className="border-none bg-transparent px-0 text-2xl font-semibold shadow-none focus-visible:ring-0 dark:bg-transparent"
               />
 
               <Label htmlFor={descriptionId} className="sr-only">
@@ -229,7 +229,7 @@ export function AddTaskDialog({
                 onChange={e => setDescription(e.target.value)}
                 placeholder="Add a task description"
                 disabled={isCreating}
-                className="min-h-[96px] border-none bg-transparent px-0 text-sm text-muted-foreground shadow-none focus-visible:ring-0"
+                className="min-h-[96px] resize-none border-none bg-transparent px-0 text-sm text-muted-foreground shadow-none focus-visible:ring-0 dark:bg-transparent"
               />
             </div>
 

@@ -3,7 +3,7 @@ import {
   ResizablePanel,
   ResizableHandle,
 } from '@/components/ui/resizable'
-import { LeftSideBar } from './LeftSideBar'
+import { LeftSideBar } from './'
 import { RightSideBar } from './RightSideBar'
 import { MainWindowContent } from './MainWindowContent'
 import { CommandPalette } from '@/components/command-palette/CommandPalette'
