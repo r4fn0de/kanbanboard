@@ -43,7 +43,14 @@ import {
   useMoveCard,
   useDeleteCard,
 } from '@/services/kanban'
-import { Plus, Settings2, ArrowDown, ArrowUp, Minus, ListFilter } from 'lucide-react'
+import {
+  Plus,
+  Settings2,
+  ArrowDown,
+  ArrowUp,
+  Minus,
+  ListFilter,
+} from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import type {
   DragEndEvent,
@@ -574,61 +581,183 @@ export function BoardDetailView({
   }
 
   const taskControls = (
-    <div className="flex flex-wrap items-center justify-end gap-1.5">
-      <div className="flex items-center gap-1.5 rounded-xl border border-border bg-background px-2 py-0.5">
-        <Select
-          value={priorityFilter}
-          onValueChange={value => setPriorityFilter(value as PriorityFilter)}
-        >
-          <SelectTrigger className="h-6 min-w-[110px] rounded-lg border-none bg-transparent px-2 text-xs font-medium text-muted-foreground hover:text-foreground">
-            <SelectValue placeholder="Priority">
-              {(() => {
-                const option = PRIORITY_FILTER_OPTIONS.find(item => item.value === priorityFilter)
-                const PriorityIcon = option?.icon ?? ListFilter
+    <div className="flex flex-wrap items-center justify-end gap-2">
+      {/* Filtros de Prioridade e Deadline */}
+      <div className="flex items-center gap-2 rounded-lg border border-border/40 bg-background/70 px-2.5 py-1.5 shadow-none">
+        <div className="flex items-center gap-1.5">
+          <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground/70">
+            PRIORITY
+          </span>
+          <Select
+            value={priorityFilter}
+            onValueChange={value => setPriorityFilter(value as PriorityFilter)}
+          >
+            <SelectTrigger className="h-7 min-w-[104px] rounded-md border border-border/30 bg-background/70 px-2 text-xs font-medium text-muted-foreground transition-colors duration-150 hover:text-foreground hover:bg-accent/30">
+              <SelectValue placeholder="All">
+                {(() => {
+                  const option = PRIORITY_FILTER_OPTIONS.find(
+                    item => item.value === priorityFilter
+                  )
+                  const PriorityIcon = option?.icon ?? ListFilter
+                  const isActive = priorityFilter !== 'all'
+                  return (
+                    <span className="flex items-center gap-1.5">
+                      <PriorityIcon
+                        className={`h-3 w-3 ${isActive ? 'text-foreground' : 'text-muted-foreground/70'}`}
+                      />
+                      <span
+                        className={`truncate ${isActive ? 'text-foreground font-medium' : 'text-muted-foreground/90'}`}
+                      >
+                        {option?.label ?? 'All'}
+                      </span>
+                    </span>
+                  )
+                })()}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent
+              align="end"
+              sideOffset={4}
+              className="rounded-md border border-border/40 bg-popover/95 shadow-md"
+            >
+              {PRIORITY_FILTER_OPTIONS.map(option => {
+                const Icon = option.icon
+                const isSelected = option.value === priorityFilter
                 return (
-                  <span className="flex items-center gap-1">
-                    <PriorityIcon className="h-3.5 w-3.5" />
-                    {option?.label ?? 'Priority'}
-                  </span>
+                  <SelectItem
+                    key={option.value}
+                    value={option.value}
+                    className="flex items-center gap-2 text-xs transition-colors duration-150 hover:bg-muted cursor-pointer data-[state=checked]:bg-accent data-[state=checked]:text-accent-foreground"
+                  >
+                    <Icon className="h-3 w-3" />
+                    {option.label}
+                    {isSelected && (
+                      <div className="ml-auto h-1.5 w-1.5 rounded-full bg-foreground" />
+                    )}
+                  </SelectItem>
                 )
-              })()}
-            </SelectValue>
-          </SelectTrigger>
-          <SelectContent align="end" sideOffset={6} className="rounded-md">
-            {PRIORITY_FILTER_OPTIONS.map(option => {
-              const Icon = option.icon
-              return (
-                <SelectItem
-                  key={option.value}
-                  value={option.value}
-                  className="flex items-center gap-2 text-xs"
-                >
-                  <Icon className="h-3.5 w-3.5" />
-                  {option.label}
-                </SelectItem>
-              )
-            })}
-          </SelectContent>
-        </Select>
-        <span className="hidden h-2 w-px bg-border sm:block" />
-        <Select
-          value={dueFilter}
-          onValueChange={value => setDueFilter(value as DueFilter)}
-        >
-          <SelectTrigger className="h-6 min-w-[115px] rounded-lg border-none bg-transparent px-2 text-xs font-medium text-muted-foreground hover:text-foreground">
-            <SelectValue placeholder="Deadline" />
-          </SelectTrigger>
-          <SelectContent align="end" sideOffset={6} className="rounded-md">
-            <SelectItem value="all" className="text-xs">All deadlines</SelectItem>
-            <SelectItem value="overdue" className="text-xs">Overdue</SelectItem>
-            <SelectItem value="today" className="text-xs">Due today</SelectItem>
-            <SelectItem value="soon" className="text-xs">Due soon</SelectItem>
-            <SelectItem value="upcoming" className="text-xs">Upcoming</SelectItem>
-            <SelectItem value="no_due" className="text-xs">No due date</SelectItem>
-          </SelectContent>
-        </Select>
+              })}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="mx-1.5 h-5 w-px bg-border/40" />
+
+        <div className="flex items-center gap-1.5">
+          <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground/70">
+            DEADLINE
+          </span>
+          <Select
+            value={dueFilter}
+            onValueChange={value => setDueFilter(value as DueFilter)}
+          >
+            <SelectTrigger className="h-7 min-w-[112px] rounded-md border border-border/30 bg-background/70 px-2 text-xs font-medium text-muted-foreground transition-colors duration-150 hover:text-foreground hover:bg-accent/30">
+              <SelectValue placeholder="All">
+                {(() => {
+                  const isActive = dueFilter !== 'all'
+                  return (
+                    <span
+                      className={`truncate ${isActive ? 'text-foreground font-medium' : 'text-muted-foreground/90'}`}
+                    >
+                      {dueFilter === 'all'
+                        ? 'All'
+                        : dueFilter === 'overdue'
+                          ? 'Overdue'
+                          : dueFilter === 'today'
+                            ? 'Today'
+                            : dueFilter === 'soon'
+                              ? 'Soon'
+                              : dueFilter === 'upcoming'
+                                ? 'Upcoming'
+                                : dueFilter === 'no_due'
+                                  ? 'No date'
+                                  : 'All'}
+                    </span>
+                  )
+                })()}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent
+              align="end"
+              sideOffset={4}
+              className="rounded-md border border-border/40 bg-popover/95 shadow-md"
+            >
+              <SelectItem
+                value="all"
+                className="text-xs transition-colors duration-150 hover:bg-muted cursor-pointer data-[state=checked]:bg-accent data-[state=checked]:text-accent-foreground"
+              >
+                <div className="flex items-center gap-2">
+                  <span>All deadlines</span>
+                  {dueFilter === 'all' && (
+                    <div className="ml-auto h-1.5 w-1.5 rounded-full bg-foreground" />
+                  )}
+                </div>
+              </SelectItem>
+              <SelectItem
+                value="overdue"
+                className="text-xs transition-colors duration-150 hover:bg-muted cursor-pointer data-[state=checked]:bg-accent data-[state=checked]:text-accent-foreground"
+              >
+                <div className="flex items-center gap-2">
+                  <div className="h-2 w-2 rounded-full bg-destructive" />
+                  <span>Overdue</span>
+                  {dueFilter === 'overdue' && (
+                    <div className="ml-auto h-1.5 w-1.5 rounded-full bg-foreground" />
+                  )}
+                </div>
+              </SelectItem>
+              <SelectItem
+                value="today"
+                className="text-xs transition-colors duration-150 hover:bg-muted cursor-pointer data-[state=checked]:bg-accent data-[state=checked]:text-accent-foreground"
+              >
+                <div className="flex items-center gap-2">
+                  <div className="h-2 w-2 rounded-full bg-orange-500" />
+                  <span>Due today</span>
+                  {dueFilter === 'today' && (
+                    <div className="ml-auto h-1.5 w-1.5 rounded-full bg-foreground" />
+                  )}
+                </div>
+              </SelectItem>
+              <SelectItem
+                value="soon"
+                className="text-xs transition-colors duration-150 hover:bg-muted cursor-pointer data-[state=checked]:bg-accent data-[state=checked]:text-accent-foreground"
+              >
+                <div className="flex items-center gap-2">
+                  <div className="h-2 w-2 rounded-full bg-yellow-500" />
+                  <span>Due soon</span>
+                  {dueFilter === 'soon' && (
+                    <div className="ml-auto h-1.5 w-1.5 rounded-full bg-foreground" />
+                  )}
+                </div>
+              </SelectItem>
+              <SelectItem
+                value="upcoming"
+                className="text-xs transition-colors duration-150 hover:bg-muted cursor-pointer data-[state=checked]:bg-accent data-[state=checked]:text-accent-foreground"
+              >
+                <div className="flex items-center gap-2">
+                  <div className="h-2 w-2 rounded-full bg-blue-500" />
+                  <span>Upcoming</span>
+                  {dueFilter === 'upcoming' && (
+                    <div className="ml-auto h-1.5 w-1.5 rounded-full bg-foreground" />
+                  )}
+                </div>
+              </SelectItem>
+              <SelectItem
+                value="no_due"
+                className="text-xs transition-colors duration-150 hover:bg-muted cursor-pointer data-[state=checked]:bg-accent data-[state=checked]:text-accent-foreground"
+              >
+                <div className="flex items-center gap-2">
+                  <span>No due date</span>
+                  {dueFilter === 'no_due' && (
+                    <div className="ml-auto h-1.5 w-1.5 rounded-full bg-foreground" />
+                  )}
+                </div>
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
+      {/* Toggle de Visualização */}
       <ToggleGroup
         type="single"
         value={resolvedViewMode}
@@ -637,7 +766,7 @@ export function BoardDetailView({
             onViewModeChange(value)
           }
         }}
-        className="flex h-7 items-center gap-1 rounded-lg border border-border bg-background px-1 overflow-hidden"
+        className="flex h-8 items-center gap-1 rounded-md border border-border/40 bg-background/70 px-1.5 shadow-none"
       >
         {BOARD_VIEW_OPTIONS.map(option => (
           <BaseTooltip.Root key={option.value} delay={0} closeDelay={0}>
@@ -648,15 +777,15 @@ export function BoardDetailView({
                   {...triggerProps}
                   value={option.value}
                   aria-label={option.label}
-                  className="flex h-5 w-5 items-center justify-center rounded-sm first:rounded-sm last:rounded-sm text-muted-foreground transition-all duration-150 hover:bg-accent data-[state=on]:bg-accent data-[state=on]:text-accent-foreground"
+                  className="flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground data-[state=on]:bg-accent data-[state=on]:text-accent-foreground"
                 >
-                  <option.icon className="h-3 w-3" />
+                  <option.icon className="h-4 w-4" />
                 </ToggleGroupItem>
               )}
             />
             <BaseTooltip.Portal>
-              <BaseTooltip.Positioner sideOffset={8}>
-                <BaseTooltip.Popup className="z-50 w-fit rounded-md bg-popover px-2 py-1 text-xs text-popover-foreground border border-border shadow-md">
+              <BaseTooltip.Positioner sideOffset={6}>
+                <BaseTooltip.Popup className="z-50 w-fit rounded-md bg-popover/95 px-2 py-1 text-xs text-popover-foreground border border-border/60 shadow-lg backdrop-blur-sm">
                   {option.label}
                 </BaseTooltip.Popup>
               </BaseTooltip.Positioner>
@@ -665,16 +794,17 @@ export function BoardDetailView({
         ))}
       </ToggleGroup>
 
+      {/* Botão de Gerenciar Colunas */}
       <Button
         variant="outline"
-        className="h-7 rounded-lg border-border bg-background px-2.5 text-xs font-medium hover:bg-accent"
+        className="h-9 rounded-lg border-border/60 bg-background/80 backdrop-blur-sm px-3.5 text-xs font-medium transition-all duration-200 hover:bg-accent hover:text-accent-foreground hover:shadow-sm hover:border-border"
         onClick={() => setIsColumnManagerOpen(true)}
       >
-        <Settings2 className="mr-1 h-3 w-3" />
-        Manage Columns
+        <Settings2 className="mr-1.5 h-3.5 w-3.5" />
+        Manage
       </Button>
     </div>
-  );
+  )
 
   return (
     <div className="flex flex-col h-screen max-h-screen overflow-hidden">

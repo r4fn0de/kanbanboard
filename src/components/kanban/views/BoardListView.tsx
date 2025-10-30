@@ -277,7 +277,7 @@ export function BoardListView({
                   })
                 ) : (
                   <div className="flex flex-col items-center justify-center gap-2 px-6 py-12 text-center text-sm text-muted-foreground">
-                    <span>No cards in this column</span>
+                    <span>No tasks in this column</span>
                     <Button
                       variant="ghost"
                       onClick={() => handleAddCard(column)}

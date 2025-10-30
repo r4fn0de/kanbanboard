@@ -567,7 +567,7 @@ function EmptyColumnDropZone({
         </div>
       ) : (
         <div className="flex flex-col items-center gap-2">
-          <span className="text-muted-foreground">No cards yet.</span>
+          <span className="text-muted-foreground">No tasks yet.</span>
           <span className="text-muted-foreground text-xs">
             Add the first one to get started.
           </span>
