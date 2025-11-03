@@ -2,7 +2,7 @@
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "Modulo",
   "version": "0.1.0",
-  "identifier": "com.modulo.app",
+  "identifier": "com.novon.modulo",
   "build": {
     "removeUnusedCommands": true,
     "beforeDevCommand": "npm run dev",
@@ -28,7 +28,9 @@
         "shadow": false,
         "dragDropEnabled": true,
         "windowEffects": {
-          "effects": ["hudWindow"],
+          "effects": [
+            "hudWindow"
+          ],
           "radius": 12.0,
           "state": "active"
         }
@@ -50,11 +52,11 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
-    "publisher": "Rafael Porto",
+    "publisher": "r4fn0de",
     "category": "DeveloperTool",
-    "shortDescription": "A Offline Workspace App",
-    "longDescription": "A modern Workspace App made for users to create, edit, and manage their projects offline.",
-    "copyright": "Copyright © 2025 Rafael Porto. All rights reserved.",
+    "shortDescription": "A lightweight, elegant offline kanban board for productivity",
+    "longDescription": "Flowspace is a kanban board application designed for developers, entrepreneurs, and creators who prefer productivity without depending on the cloud. Built with modern technologies for a fast, offline-first desktop experience.",
+    "copyright": "Copyright © 2025 r4fn0de. All rights reserved.",
     "macOS": {
       "frameworks": [],
       "minimumSystemVersion": "10.15",
@@ -68,7 +70,7 @@
     "updater": {
       "active": true,
       "endpoints": [
-        "https://github.com/rafaelporto/modulo/releases/latest/download/latest.json"
+        "https://github.com/r4fn0de/kanbanboard/releases/latest/download/latest.json"
       ],
       "dialog": true,
       "pubkey": "YOUR_UPDATER_PUBLIC_KEY_HERE"

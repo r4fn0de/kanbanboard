@@ -82,17 +82,15 @@ export function KanbanCardItem({
     listeners,
     setNodeRef,
     transform,
-    transition,
     isDragging,
-  } = useSortable({ id: `card-${card.id}` })
+  } = useSortable({
+    id: `card-${card.id}`,
+    animateLayoutChanges: () => false,
+  })
 
   const style: React.CSSProperties = {
     transform: transform ? CSS.Transform.toString(transform) : undefined,
-    transition: isDragging
-      ? 'none'
-      : (transition ?? 'transform 220ms cubic-bezier(0.2, 0, 0, 1)'),
-    // Hide the original item completely while dragging so only the DragOverlay is visible.
-    // This prevents any visual "snap back" of the source element when dropping.
+    transition: 'none',
     opacity: isDragging ? 0 : undefined,
     cursor: isDragging ? 'grabbing' : 'grab',
     willChange: 'transform',
@@ -225,7 +223,6 @@ export function KanbanCardItem({
             try {
               await onDelete?.(card)
             } finally {
-              // Reset after a delay to prevent rapid clicks
               setTimeout(() => setIsDeleting(false), 1000)
             }
           }}

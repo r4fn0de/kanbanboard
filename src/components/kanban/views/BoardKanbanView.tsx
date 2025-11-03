@@ -7,17 +7,24 @@ import {
   useDroppable,
   useSensor,
   useSensors,
+  MeasuringStrategy,
+  closestCenter,
+  closestCorners,
+  rectIntersection,
   type Announcements,
   type DragCancelEvent,
   type DragEndEvent,
   type DragStartEvent,
+  type CollisionDetection,
+  type DropAnimation,
 } from '@dnd-kit/core'
-import { snapCenterToCursor } from '@dnd-kit/modifiers'
+import { snapCenterToCursor, restrictToWindowEdges } from '@dnd-kit/modifiers'
 import {
   SortableContext,
   horizontalListSortingStrategy,
   sortableKeyboardCoordinates,
   useSortable,
+  verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { Button } from '@/components/ui/button'
@@ -47,6 +54,7 @@ import {
   FALLBACK_COLUMN_COLORS,
 } from '@/constants/kanban-columns'
 
+
 interface BoardKanbanViewProps {
   columns: KanbanColumn[]
   columnOrder: string[]
@@ -67,6 +75,7 @@ interface BoardKanbanViewProps {
   onDeleteTask?: (card: KanbanCard) => void
 }
 
+
 function hexToRgba(hex: string | null | undefined, alpha: number) {
   if (!hex || !/^#([0-9a-fA-F]{6})$/.test(hex)) {
     return null
@@ -78,6 +87,38 @@ function hexToRgba(hex: string | null | undefined, alpha: number) {
   const b = parseInt(value.slice(4, 6), 16)
   return `rgba(${r}, ${g}, ${b}, ${alpha})`
 }
+
+
+// Colisão composta: pointer → rectIntersection → cards/ends com closestCenter → colunas com closestCorners
+const collisionDetection: CollisionDetection = (args) => {
+  const { active, droppableContainers } = args
+  const activeId = String(active.id)
+
+  // 1) Precisão por ponteiro
+  const pointer = pointerWithin(args)
+  if (pointer.length > 0) return pointer
+
+  // 2) Tolerância por interseção de retângulos (útil p/ teclado e sem ponteiro)
+  const rects = rectIntersection(args)
+  if (rects.length > 0) return rects
+
+  // 3) Cards priorizam alvos relevantes (itens, área de cards e fim da coluna)
+  if (activeId.startsWith('card-')) {
+    const filtered = droppableContainers.filter((c) => {
+      const cid = String(c.id)
+      return cid.includes('-cards') || cid.endsWith('-end') || cid.startsWith('card-')
+    })
+    return closestCenter({ ...args, droppableContainers: filtered })
+  }
+
+  // 4) Colunas funcionam melhor com cantos mais próximos
+  return closestCorners(args)
+}
+
+
+// Drop animation sem flicker, ocultando o nó ativo durante o drop
+const dropAnimation: DropAnimation = null
+
 
 export function BoardKanbanView({
   columns,
@@ -129,7 +170,7 @@ export function BoardKanbanView({
     [onCreateTask]
   )
 
-  // Accessibility announcements for screen readers
+  // Accessibility announcements para leitores de tela
   const announcements: Announcements = useMemo<Announcements>(
     () => ({
       onDragStart() {
@@ -188,17 +229,18 @@ export function BoardKanbanView({
     <>
       <DndContext
         sensors={sensors}
-        collisionDetection={pointerWithin}
+        collisionDetection={collisionDetection}
         onDragStart={onDragStart}
         onDragCancel={onDragCancel}
         onDragEnd={onDragEnd}
         accessibility={{ announcements }}
+        measuring={{ droppable: { strategy: MeasuringStrategy.WhileDragging } }}
       >
         <SortableContext
           items={columnOrder.map(id => `column-${id}`)}
           strategy={horizontalListSortingStrategy}
         >
-          <div className="flex h-full items-stretch gap-4 overflow-x-auto pb-4 min-h-0 p-2">
+          <div className="flex h-full items-stretch gap-4 overflow-x-auto pb-4 pt-4 min-h-0 px-6">
             {columnOrder.map((columnId, index) => {
               const column = columnsMap.get(columnId)
               if (!column) {
@@ -221,13 +263,10 @@ export function BoardKanbanView({
             })}
           </div>
         </SortableContext>
+
         <DragOverlay
-          // Disable drop animation to avoid the overlay "jumping" back to the
-          // previous column before settling in the destination column.
-          // The card itself moves optimistically, so animating the overlay on drop
-          // causes a visual bounce. Removing the animation fixes the flicker.
-          dropAnimation={null}
-          modifiers={[snapCenterToCursor]}
+          dropAnimation={dropAnimation}
+          modifiers={[snapCenterToCursor, restrictToWindowEdges]}
         >
           {activeCard ? <CardOverlay card={activeCard} /> : null}
         </DragOverlay>
@@ -246,6 +285,7 @@ export function BoardKanbanView({
     </>
   )
 }
+
 
 function CardOverlay({ card }: { card: KanbanCard }) {
   const tagList = card.tags ?? []
@@ -370,6 +410,7 @@ function CardOverlay({ card }: { card: KanbanCard }) {
   )
 }
 
+
 function DraggableColumn({
   column,
   columnCards,
@@ -394,21 +435,20 @@ function DraggableColumn({
     listeners,
     setNodeRef,
     transform,
-    transition,
     isDragging,
   } = useSortable({
     id: `column-${column.id}`,
+    animateLayoutChanges: () => false,
   })
 
-  const { setNodeRef: setDroppableRef } = useDroppable({
+  const { isOver: isColumnOver, setNodeRef: setDroppableRef } = useDroppable({
     id: `column-${column.id}-cards`,
   })
 
   const style: React.CSSProperties = {
     transform: transform ? CSS.Transform.toString(transform) : undefined,
-    transition: isDragging
-      ? 'none'
-      : (transition ?? 'transform 240ms cubic-bezier(0.22, 1, 0.36, 1)'),
+    transition: 'none',
+    // Optimize GPU acceleration para animações mais suaves
     willChange: 'transform',
   }
 
@@ -426,11 +466,12 @@ function DraggableColumn({
     <div
       ref={setNodeRef}
       style={style}
-      className="group flex h-full w-[320px] flex-shrink-0 flex-col gap-4"
+      className="group flex h-full w-[320px] flex-shrink-0 flex-col"
     >
+      {/* Fixed Header */}
       <div
         className={cn(
-          'flex items-center justify-between gap-3 px-1',
+          'flex items-center justify-between gap-3 px-1 py-2 sticky top-0 z-10',
           isDragging && 'opacity-80'
         )}
         {...attributes}
@@ -472,163 +513,107 @@ function DraggableColumn({
           </button>
         </div>
       </div>
-      <div className="flex flex-1 flex-col gap-4 px-1 transition-all duration-200">
+
+      {/* Scrollable Content Area */}
+      <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
         <div
           ref={setDroppableRef}
-          className="flex flex-1 flex-col gap-4 overflow-y-auto overflow-x-visible min-h-0 transition-all duration-200 kanban-column-cards"
+          className="flex-1 overflow-y-auto overflow-x-visible transition-all duration-200 kanban-column-cards"
           style={{
             scrollbarWidth: 'none',
             msOverflowStyle: 'none',
           }}
         >
-          {columnCards.length > 0 ? (
-            <>
-              {columnCards.map(card => (
-                <KanbanCardItem
-                  key={card.id}
-                  card={card}
-                  onSelect={onCardSelect}
-                  isSelected={selectedCardId === card.id}
-                  onDelete={onDeleteCard}
+          <div className="flex flex-col gap-4 p-1 pt-4">
+            <SortableContext
+              id={`column-${column.id}-cards`}
+              items={columnCards.map(card => `card-${card.id}`)}
+              strategy={verticalListSortingStrategy}
+            >
+              {columnCards.length > 0 ? (
+                <>
+                  {columnCards.map(card => (
+                    <KanbanCardItem
+                      key={card.id}
+                      card={card}
+                      onSelect={onCardSelect}
+                      isSelected={selectedCardId === card.id}
+                      onDelete={onDeleteCard}
+                    />
+                  ))}
+                  {/* Drop zone at the end of cards */}
+                  <ColumnEndDropZone columnId={column.id} accentColor={baseColor} />
+                </>
+              ) : (
+                <EmptyColumnDropZone
+                  accentColor={baseColor}
+                  isOver={isColumnOver}
                 />
-              ))}
-              {/* Drop zone at the end of cards */}
-              <ColumnEndDropZone columnId={column.id} accentColor={baseColor} />
-            </>
-          ) : (
-            <EmptyColumnDropZone columnId={column.id} accentColor={baseColor} />
-          )}
+              )}
+            </SortableContext>
+          </div>
         </div>
-        <Button
-          variant="ghost"
-          onClick={onAddCard}
-          disabled={isCreatingCard}
-          className="flex items-center justify-center gap-2 rounded-xl border border-dashed border-border/70 bg-transparent py-3 text-sm font-medium text-muted-foreground transition hover:border-transparent hover:bg-primary hover:text-primary-foreground disabled:cursor-not-allowed disabled:opacity-60"
-          style={{
-            color: countColor,
-            backgroundColor: hexToRgba(baseColor, 0.12) ?? undefined,
-          }}
-        >
-          <Plus className="h-4 w-4" />
-          Add Task
-        </Button>
+
+        {/* Fixed Add Task Button */}
+        <div className="p-1 pt-2">
+          <Button
+            variant="ghost"
+            onClick={onAddCard}
+            disabled={isCreatingCard}
+            className="w-full flex items-center justify-center gap-2 rounded-xl border border-dashed border-border/70 bg-transparent py-3 text-sm font-medium text-muted-foreground transition hover:border-transparent hover:bg-primary hover:text-primary-foreground disabled:cursor-not-allowed disabled:opacity-60"
+            style={{
+              color: countColor,
+              backgroundColor: hexToRgba(baseColor, 0.12) ?? undefined,
+            }}
+          >
+            <Plus className="h-4 w-4" />
+            Add Task
+          </Button>
+        </div>
       </div>
     </div>
   )
 }
 
+
 function EmptyColumnDropZone({
-  columnId,
-  accentColor,
+  accentColor: _accentColor,
+  isOver: _isOver,
 }: {
-  columnId: string
   accentColor: string
+  isOver: boolean
 }) {
-  const { isOver, setNodeRef } = useDroppable({
-    id: `column-${columnId}-cards`,
-  })
-
-  const highlightBg = hexToRgba(accentColor, 0.18)
-  const highlightBorder = hexToRgba(accentColor, 0.4)
-  const highlightText = accentColor
-
   return (
-    <div
-      ref={setNodeRef}
-      className={cn(
-        'flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-card/70 p-8 text-center text-sm text-muted-foreground transition-all duration-300 min-h-[160px] m-2',
-        isOver && 'border-solid scale-[1.02] shadow-lg'
-      )}
-      style={
-        isOver
-          ? {
-              backgroundColor: highlightBg ?? undefined,
-              borderColor: highlightBorder ?? undefined,
-              color: highlightText,
-            }
-          : undefined
-      }
-    >
-      {isOver ? (
-        <div className="flex flex-col items-center gap-4">
-          <div
-            className="h-0.5 w-16 rounded-full"
-            style={{ backgroundColor: highlightText }}
-          />
-          <span
-            className="font-semibold text-base rounded-full px-4 py-2"
-            style={{
-              backgroundColor: hexToRgba(accentColor, 0.12) ?? undefined,
-              color: highlightText,
-            }}
-          >
-            Drop card here
-          </span>
-        </div>
-      ) : (
-        <div className="flex flex-col items-center gap-2">
-          <span className="text-muted-foreground">No tasks yet.</span>
-          <span className="text-muted-foreground text-xs">
-            Add the first one to get started.
-          </span>
-        </div>
-      )}
+    <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-card/70 p-8 text-center text-sm text-muted-foreground min-h-[160px] m-2">
+      <div className="flex flex-col items-center gap-2">
+        <span className="text-muted-foreground">No tasks yet.</span>
+        <span className="text-muted-foreground text-xs">
+          Add the first one to get started.
+        </span>
+      </div>
     </div>
   )
 }
+
 
 function ColumnEndDropZone({
   columnId,
-  accentColor,
+  accentColor: _accentColor,
 }: {
   columnId: string
   accentColor: string
 }) {
-  const { isOver, setNodeRef } = useDroppable({
+  const { setNodeRef } = useDroppable({
     id: `column-${columnId}-end`,
   })
-
-  const highlightBg = hexToRgba(accentColor, 0.12)
-  const highlightBorder = hexToRgba(accentColor, 0.4)
-  const highlightText = accentColor
 
   return (
     <div
       ref={setNodeRef}
-      className={cn(
-        'mt-4 min-h-[20px] transition-all duration-300 rounded-xl border-2 border-transparent',
-        isOver && 'min-h-[60px] shadow-lg scale-[1.02]'
-      )}
-      style={
-        isOver
-          ? {
-              backgroundColor: highlightBg ?? undefined,
-              borderColor: highlightBorder ?? undefined,
-            }
-          : undefined
-      }
-    >
-      {isOver && (
-        <div className="flex items-center justify-center h-full py-3">
-          <div className="flex flex-col items-center gap-2">
-            <div
-              className="h-0.5 w-16 rounded-full"
-              style={{ backgroundColor: highlightText }}
-            />
-            <span
-              className="font-medium text-sm rounded-full px-3 py-1"
-              style={{
-                backgroundColor: hexToRgba(accentColor, 0.12) ?? undefined,
-                color: highlightText,
-              }}
-            >
-              Drop here
-            </span>
-          </div>
-        </div>
-      )}
-    </div>
+      className="mt-4 min-h-[20px] rounded-xl border-2 border-transparent"
+    />
   )
 }
+
 
 export type { DragEndEvent, DragStartEvent, DragCancelEvent }

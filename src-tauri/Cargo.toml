@@ -1,8 +1,8 @@
 [package]
 name = "modulo"
 version = "0.1.0"
-description = "A Offline Workspace App"
-authors = ["Rafael Porto"]
+description = "A lightweight, elegant offline kanban board for productivity"
+authors = ["r4fn0de"]
 edition = "2024"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html

@@ -2,7 +2,7 @@ import { Badge } from '@/components/ui/badge'
 import type { KanbanCard, KanbanColumn } from '@/types/common'
 import { Calendar, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { useMemo } from 'react'
+import { useMemo, type CSSProperties } from 'react'
 import { useTheme } from '@/hooks/use-theme'
 import { PriorityBadge } from './board-shared'
 import {
@@ -117,15 +117,15 @@ export function BoardTimelineView({
 
   return (
     <div className="relative flex-1">
-      <div className="absolute left-[18px] top-4 bottom-4 hidden border-l border-border sm:block" />
+      <div className="absolute left-[18px] top-4 bottom-4 hidden border-l border-border/60 sm:block" />
       <div className="space-y-8">
         {groups.map(group => (
           <div
             key={group.key}
-            className="relative flex flex-col gap-4 sm:flex-row sm:gap-6"
+            className="relative flex flex-col gap-4 rounded-3xl border border-border/40 bg-card/60 p-4 sm:flex-row sm:items-start sm:gap-6"
           >
             <div className="flex items-center gap-3 sm:w-64">
-              <div className="flex h-9 w-9 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-sm">
+              <div className="flex h-9 w-9 items-center justify-center rounded-full border border-border/70 bg-muted/40 text-muted-foreground">
                 <Calendar className="h-4 w-4" />
               </div>
               <div>
@@ -146,7 +146,26 @@ export function BoardTimelineView({
                 const baseColor =
                   columnBaseColors.get(card.columnId) ??
                   FALLBACK_COLUMN_COLORS[0]
-                const iconBackground = hexToRgba(baseColor, 0.18) ?? undefined
+                const iconBackground = hexToRgba(baseColor, 0.16) ?? undefined
+                const iconBorder = hexToRgba(baseColor, 0.3) ?? undefined
+                const cardBackground = hexToRgba(baseColor, 0.08)
+                const cardHoverBackground = hexToRgba(baseColor, 0.16)
+                const cardBorder = hexToRgba(baseColor, 0.28)
+                const cardStyle = cardBackground
+                  ? ({
+                      '--timeline-card-bg': cardBackground,
+                      '--timeline-card-hover-bg':
+                        cardHoverBackground ?? cardBackground,
+                      '--timeline-card-border': cardBorder ?? undefined,
+                    } as CSSProperties)
+                  : undefined
+                const cardClasses = cn(
+                  'rounded-3xl border px-5 py-4 transition-all duration-300',
+                  cardBackground
+                    ? 'bg-[color:var(--timeline-card-bg)] hover:bg-[color:var(--timeline-card-hover-bg)] border-[color:var(--timeline-card-border)]'
+                    : 'bg-card hover:bg-muted/60 border-border',
+                  'focus-within:ring-2 focus-within:ring-primary/40'
+                )
                 const IconComponent = getColumnIconComponent(
                   column?.icon ?? DEFAULT_COLUMN_ICON
                 )
@@ -157,7 +176,7 @@ export function BoardTimelineView({
                 return (
                   <ContextMenu key={card.id}>
                     <ContextMenuTrigger asChild>
-                      <div className="rounded-[1.75rem] border border-border bg-card p-4">
+                      <div className={cardClasses} style={cardStyle}>
                         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                           <div className="flex flex-col gap-1">
                             <span className="text-sm font-semibold text-foreground">
@@ -165,11 +184,10 @@ export function BoardTimelineView({
                             </span>
                             <span className="flex items-center gap-2 text-xs uppercase tracking-wide text-muted-foreground">
                               <span
-                                className="flex h-6 w-6 items-center justify-center rounded-full border"
+                                className="flex h-6 w-6 items-center justify-center rounded-full border transition-colors"
                                 style={{
                                   backgroundColor: iconBackground,
-                                  borderColor:
-                                    hexToRgba(baseColor, 0.35) ?? undefined,
+                                  borderColor: iconBorder,
                                   color: baseColor,
                                 }}
                               >

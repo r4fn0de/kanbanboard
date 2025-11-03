@@ -11,7 +11,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import type { KanbanBoard } from '@/types/common'
-import { PROJECT_ICON_MAP, DEFAULT_PROJECT_ICON } from './constants'
+import { PROJECT_ICON_MAP } from './constants'
 
 interface ProjectListProps {
   boards: KanbanBoard[]
@@ -66,11 +66,11 @@ function ProjectListItem({
             'flex grow items-center gap-2.5 rounded-lg px-3 py-1.5 text-left text-sm transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
             useTransparentStyle
               ? isActive
-                ? 'bg-white/20 text-white backdrop-blur-sm'
-                : 'text-white/70 hover:bg-white/12 hover:text-white hover:backdrop-blur-sm'
+                ? 'bg-white/55 text-white backdrop-blur-sm'
+                : 'text-white/85 hover:bg-white/45 hover:text-white hover:backdrop-blur-sm'
               : isActive
-                ? 'bg-muted text-foreground'
-                : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                ? 'bg-accent text-accent-foreground shadow-sm'
+                : 'text-muted-foreground/90 hover:bg-accent/70 hover:text-accent-foreground'
           )
         }
       >
@@ -93,8 +93,8 @@ function ProjectListItem({
               'group-hover:opacity-100 group-hover:pointer-events-auto',
               'data-[state=open]:opacity-100 data-[state=open]:pointer-events-auto',
               useTransparentStyle
-                ? 'text-white/60 hover:bg-white/15 hover:text-white data-[state=open]:bg-white/15 data-[state=open]:text-white'
-                : 'text-muted-foreground hover:bg-accent/20 data-[state=open]:bg-accent data-[state=open]:text-accent-foreground'
+                ? 'text-white/85 hover:bg-white/35 hover:text-white data-[state=open]:bg-white/45 data-[state=open]:text-white'
+                : 'text-muted-foreground/90 hover:bg-accent/60 data-[state=open]:bg-accent/70 data-[state=open]:text-accent-foreground'
             )}
             aria-label={`Open actions for ${board.title}`}
           >
@@ -144,7 +144,7 @@ export const ProjectList = memo(function ProjectList({
     <motion.nav
       className={cn(
         'mt-1 flex flex-col gap-2 px-4 pb-4 text-sm',
-        useTransparentStyle ? 'text-white/85' : 'text-foreground'
+        useTransparentStyle ? 'text-white/95' : 'text-foreground'
       )}
       initial={false}
       animate={{
@@ -165,11 +165,11 @@ export const ProjectList = memo(function ProjectList({
             'flex items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
             useTransparentStyle
               ? isActive
-                ? 'bg-white/20 text-white backdrop-blur-sm'
-                : 'text-white/70 hover:bg-white/12 hover:text-white hover:backdrop-blur-sm'
+                ? 'bg-white/35 text-white backdrop-blur-sm'
+                : 'text-white/70 hover:bg-white/30 hover:text-white hover:backdrop-blur-sm'
               : isActive
-                ? 'bg-muted text-foreground'
-                : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                ? 'bg-accent text-accent-foreground shadow-sm'
+                : 'text-muted-foreground/90 hover:bg-accent/70 hover:text-accent-foreground'
           )
         }
       >
@@ -181,7 +181,7 @@ export const ProjectList = memo(function ProjectList({
         <div
           className={cn(
             'flex items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm transition-all duration-200',
-            useTransparentStyle ? 'text-white/85 font-semibold' : 'text-foreground'
+            useTransparentStyle ? 'text-white/95 font-semibold' : 'text-foreground'
           )}
         >
           <span className="font-bold">Projects</span>
@@ -206,16 +206,16 @@ export const ProjectList = memo(function ProjectList({
                   className={cn(
                     'flex items-center gap-3 rounded-lg px-3 py-2 text-sm',
                     useTransparentStyle
-                      ? 'text-white/60'
-                      : 'text-muted-foreground'
+                      ? 'text-white/85'
+                      : 'text-accent-foreground bg-accent/20'
                   )}
                 >
                   <div
                     className={cn(
                       'h-3 w-3 animate-pulse rounded-full',
                       useTransparentStyle
-                        ? 'bg-white/40'
-                        : 'bg-muted-foreground/50'
+                        ? 'bg-white/70'
+                        : 'bg-accent/60'
                     )}
                   ></div>
                   <span>Loading…</span>
@@ -257,16 +257,16 @@ export const ProjectList = memo(function ProjectList({
                   className={cn(
                     'flex items-center gap-3 rounded-lg px-3 py-2 text-sm',
                     useTransparentStyle
-                      ? 'text-white/60'
-                      : 'text-muted-foreground'
+                      ? 'text-white/85'
+                      : 'text-accent-foreground bg-accent/15'
                   )}
                 >
                   <div
                     className={cn(
                       'h-2 w-2 rounded-full',
                       useTransparentStyle
-                        ? 'bg-white/40'
-                        : 'bg-muted-foreground/50'
+                        ? 'bg-white/70'
+                        : 'bg-accent/60'
                     )}
                   ></div>
                   <span>No projects yet</span>
@@ -280,8 +280,8 @@ export const ProjectList = memo(function ProjectList({
             className={cn(
               'mt-2 flex items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
               useTransparentStyle
-                ? 'text-white/70 hover:bg-white/12 hover:text-white hover:backdrop-blur-sm'
-                : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                ? 'text-white/90 hover:bg-white/45 hover:text-white hover:backdrop-blur-sm'
+                : 'text-muted-foreground/90 hover:bg-accent/70 hover:text-accent-foreground'
             )}
             onClick={onCreateProject}
             disabled={!selectedWorkspaceId || isLoadingWorkspaces}

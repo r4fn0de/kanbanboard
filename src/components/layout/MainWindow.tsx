@@ -103,7 +103,7 @@ export function MainWindow() {
                 onMouseEnter={() => setIsHoveringEdge(true)}
                 onMouseLeave={() => setIsHoveringEdge(false)}
                 className={cn(
-                  'absolute left-0 top-0 bottom-0 z-20 w-64 shadow-2xl rounded-r-[12px] overflow-hidden bg-background'
+                  'absolute left-0 top-0 bottom-0 z-40 w-64 shadow-2xl rounded-r-[12px] overflow-hidden bg-background'
                 )}
               >
                 <LeftSideBar className="h-full bg-background" forceSolidStyle />

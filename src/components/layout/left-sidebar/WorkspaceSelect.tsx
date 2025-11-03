@@ -277,7 +277,7 @@ export function WorkspaceSelect({
           className={cn(
             'w-full border-0 bg-transparent px-2.5 py-2 text-left focus:ring-0 focus:ring-offset-0 min-w-0 hover:bg-accent/50 rounded-lg transition-colors',
             useTransparentStyle &&
-              'text-white/90 hover:text-white hover:bg-white/12 focus:bg-white/16'
+              'text-white/90 hover:text-white hover:bg-white/30 focus:bg-white/35'
           )}
           onClick={e => {
             // Prevent opening if dialog is open
@@ -347,8 +347,8 @@ export function WorkspaceSelect({
                   className={cn(
                     'rounded-md px-2 py-2 my-0.5',
                     useTransparentStyle
-                      ? 'data-[state=checked]:bg-accent/20 data-[state=checked]:text-popover-foreground hover:bg-muted/60 text-popover-foreground'
-                      : 'data-[state=checked]:bg-accent/80'
+                      ? 'data-[state=checked]:bg-accent/35 data-[state=checked]:text-popover-foreground hover:bg-muted/80 text-popover-foreground'
+                      : 'data-[state=checked]:bg-accent/60 hover:bg-accent/40'
                   )}
                 >
                   <SortableWorkspaceItem
@@ -365,8 +365,8 @@ export function WorkspaceSelect({
             className={cn(
               'flex w-full items-center gap-2.5 rounded-md px-2 py-2 text-sm font-medium transition-colors',
               useTransparentStyle
-                ? 'hover:bg-muted/60 text-muted-foreground hover:text-foreground'
-                : 'hover:bg-accent/80 text-muted-foreground hover:text-foreground'
+                ? 'hover:bg-muted/80 text-muted-foreground hover:text-foreground'
+                : 'hover:bg-accent/40 text-muted-foreground hover:text-foreground'
             )}
             onClick={e => {
               e.preventDefault()

@@ -229,28 +229,50 @@ export function BoardDetailView({
     [visibleColumns]
   )
 
-  const cardsByColumn = useMemo(
-    () =>
-      new Map(
-        visibleColumns.map(column => [
-          column.id,
-          visibleCards
-            .filter(card => card.columnId === column.id)
-            .sort((a, b) => {
-              const priorityOrder = { high: 3, medium: 2, low: 1 }
-              const priorityDiff =
-                priorityOrder[b.priority] - priorityOrder[a.priority]
+  const cardsByColumn = useMemo(() => {
+    const grouped = new Map<string, KanbanCard[]>()
 
-              if (priorityDiff !== 0) {
-                return priorityDiff
-              }
+    visibleColumns.forEach(column => {
+      grouped.set(column.id, [])
+    })
 
-              return a.title.localeCompare(b.title)
-            }),
-        ])
-      ),
-    [visibleColumns, visibleCards]
-  )
+    visibleCards.forEach(card => {
+      const list = grouped.get(card.columnId)
+      if (!list) {
+        return
+      }
+      list.push(card)
+    })
+
+    grouped.forEach(list => {
+      list.sort((a, b) => {
+        const positionA = a.position ?? Number.MAX_SAFE_INTEGER
+        const positionB = b.position ?? Number.MAX_SAFE_INTEGER
+
+        if (positionA !== positionB) {
+          return positionA - positionB
+        }
+
+        const updatedA = a.updatedAt ? Date.parse(a.updatedAt) : 0
+        const updatedB = b.updatedAt ? Date.parse(b.updatedAt) : 0
+
+        if (updatedA !== updatedB) {
+          return updatedA - updatedB
+        }
+
+        const createdA = a.createdAt ? Date.parse(a.createdAt) : 0
+        const createdB = b.createdAt ? Date.parse(b.createdAt) : 0
+
+        if (createdA !== createdB) {
+          return createdA - createdB
+        }
+
+        return a.title.localeCompare(b.title)
+      })
+    })
+
+    return grouped
+  }, [visibleColumns, visibleCards])
 
   const dueSummary = useMemo(() => {
     const summary = { overdue: 0, today: 0, soon: 0 }
@@ -416,7 +438,12 @@ export function BoardDetailView({
         | { sortable?: { containerId?: string | number; index: number } }
         | undefined
       let destinationColumnId: string | null = null
-      let targetIndex = 0
+      let targetIndex: number | null = null
+
+      const rawOverId = over.id.toString()
+      if (rawOverId === rawActiveId) {
+        return
+      }
 
       // Try to get column ID from sortable container first (when dropping between cards)
       if (overData?.sortable?.containerId) {
@@ -424,8 +451,8 @@ export function BoardDetailView({
         targetIndex = overData.sortable.index ?? 0
       }
       // If no container, check if we're dropping on a card directly
-      else if (over.id.toString().startsWith('card-')) {
-        const overCardId = parseCardId(over.id)
+      else if (rawOverId.startsWith('card-')) {
+        const overCardId = parseCardId(rawOverId)
         const overCard = visibleCards.find(card => card.id === overCardId)
         if (overCard) {
           destinationColumnId = overCard.columnId
@@ -437,26 +464,16 @@ export function BoardDetailView({
       }
       // Finally, try to parse the over.id directly (when dropping on empty column or end zone)
       else {
-        destinationColumnId = parseColumnId(over.id)
+        destinationColumnId = parseColumnId(rawOverId)
         const columnCards = cardsByColumn.get(destinationColumnId ?? '') ?? []
 
         // If dropping on end zone, always add to the end
-        if (over.id.toString().endsWith('-end')) {
+        if (rawOverId.endsWith('-end')) {
           targetIndex = columnCards.length
         } else {
           targetIndex = columnCards.length // Add to end if dropping on empty area
         }
       }
-
-      console.log('Drag end debug:', {
-        activeId: active.id,
-        overId: over.id,
-        overData,
-        destinationColumnId,
-        targetIndex,
-        availableColumns: columns.map(c => ({ id: c.id, title: c.title })),
-        activeCard: { id: activeCard.id, columnId: activeCard.columnId },
-      })
 
       if (!destinationColumnId) {
         console.warn('Could not determine destination column ID')
@@ -470,15 +487,47 @@ export function BoardDetailView({
       }
 
       const columnCards = cardsByColumn.get(destinationColumnId) ?? []
+      const activeIndexInColumn = columnCards.findIndex(
+        card => card.id === activeCardId
+      )
 
-      // Check if we're moving within the same column - if so, do nothing
-      if (destinationColumnId === activeCard.columnId) {
-        console.log('Ignoring reorder within same column')
-        return
+      if (targetIndex == null) {
+        if (rawOverId.startsWith('card-')) {
+          const overCardId = parseCardId(rawOverId)
+          targetIndex = columnCards.findIndex(card => card.id === overCardId)
+          if (targetIndex === -1) {
+            targetIndex = columnCards.length
+          }
+        } else {
+          targetIndex = columnCards.length
+        }
       }
 
-      // Moving to a different column - target index should be within the destination column's bounds
-      targetIndex = Math.max(0, Math.min(targetIndex, columnCards.length))
+      const isSameColumn = destinationColumnId === activeCard.columnId
+
+      if (isSameColumn) {
+        if (activeIndexInColumn === -1) {
+          return
+        }
+
+        if (columnCards.length <= 1) {
+          return
+        }
+
+        if (targetIndex >= columnCards.length) {
+          targetIndex = columnCards.length - 1
+        }
+
+        if (targetIndex === activeIndexInColumn) {
+          return
+        }
+      }
+
+      // Target index should respect destination bounds
+      const maxIndex = isSameColumn
+        ? Math.max(0, columnCards.length - 1)
+        : columnCards.length
+      targetIndex = Math.max(0, Math.min(targetIndex, maxIndex))
 
       // Final validation before API call
       if (!activeCardId || !destinationColumnId) {
@@ -488,14 +537,6 @@ export function BoardDetailView({
 
       // Only proceed with the API call if there's an actual position change
       try {
-        console.log('Moving card:', {
-          cardId: activeCardId,
-          fromColumnId: activeCard.columnId,
-          toColumnId: destinationColumnId,
-          targetIndex,
-          columnCardsCount: columnCards.length,
-        })
-
         await moveCardMutation.mutateAsync({
           boardId: board.id,
           cardId: activeCardId,
@@ -503,8 +544,6 @@ export function BoardDetailView({
           toColumnId: destinationColumnId,
           targetIndex,
         })
-
-        console.log('Card moved successfully')
       } catch (error) {
         console.error('Failed to move card:', {
           error,
@@ -581,10 +620,10 @@ export function BoardDetailView({
   }
 
   const taskControls = (
-    <div className="flex flex-wrap items-center justify-end gap-2">
+    <div className="flex w-full flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
       {/* Filtros de Prioridade e Deadline */}
-      <div className="flex items-center gap-2 rounded-lg border border-border/40 bg-background/70 px-2.5 py-1.5 shadow-none">
-        <div className="flex items-center gap-1.5">
+      <div className="flex w-full flex-wrap items-center gap-2 rounded-lg border border-border/40 bg-background/70 px-2.5 py-1.5 shadow-none sm:w-auto sm:flex-nowrap">
+        <div className="flex flex-1 items-center gap-1.5 sm:flex-initial">
           <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground/70">
             PRIORITY
           </span>
@@ -592,7 +631,7 @@ export function BoardDetailView({
             value={priorityFilter}
             onValueChange={value => setPriorityFilter(value as PriorityFilter)}
           >
-            <SelectTrigger className="h-7 min-w-[104px] rounded-md border border-border/30 bg-background/70 px-2 text-xs font-medium text-muted-foreground transition-colors duration-150 hover:text-foreground hover:bg-accent/30">
+            <SelectTrigger className="h-7 w-full rounded-md border border-border/30 bg-background/70 px-2 text-xs font-medium text-muted-foreground transition-colors duration-150 hover:text-foreground hover:bg-accent/30 sm:w-auto sm:min-w-[104px]">
               <SelectValue placeholder="All">
                 {(() => {
                   const option = PRIORITY_FILTER_OPTIONS.find(
@@ -641,9 +680,9 @@ export function BoardDetailView({
           </Select>
         </div>
 
-        <div className="mx-1.5 h-5 w-px bg-border/40" />
+        <div className="hidden h-5 w-px bg-border/40 sm:mx-1.5 sm:block" />
 
-        <div className="flex items-center gap-1.5">
+        <div className="flex flex-1 items-center gap-1.5 sm:flex-initial">
           <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground/70">
             DEADLINE
           </span>
@@ -651,7 +690,7 @@ export function BoardDetailView({
             value={dueFilter}
             onValueChange={value => setDueFilter(value as DueFilter)}
           >
-            <SelectTrigger className="h-7 min-w-[112px] rounded-md border border-border/30 bg-background/70 px-2 text-xs font-medium text-muted-foreground transition-colors duration-150 hover:text-foreground hover:bg-accent/30">
+            <SelectTrigger className="h-7 w-full rounded-md border border-border/30 bg-background/70 px-2 text-xs font-medium text-muted-foreground transition-colors duration-150 hover:text-foreground hover:bg-accent/30 sm:w-auto sm:min-w-[112px]">
               <SelectValue placeholder="All">
                 {(() => {
                   const isActive = dueFilter !== 'all'
@@ -822,12 +861,12 @@ export function BoardDetailView({
       />
 
       {/* Main Content */}
-      <div className="flex flex-col gap-6 p-6 flex-1 overflow-hidden">
+      <div className="flex-1 overflow-hidden">
         {activeNavTab === 'tasks' ? (
           <>
             {columnsWithCounts.length === 0 ? (
-              <div className="flex flex-col items-center justify-center gap-4 py-12">
-                <div className="text-center">
+              <div className="flex flex-col items-center justify-center h-full gap-6">
+                <div className="text-center space-y-2">
                   <h2 className="text-lg font-semibold">No columns yet</h2>
                   <p className="text-muted-foreground">
                     Create your first column to start organizing tasks
@@ -839,7 +878,7 @@ export function BoardDetailView({
                 </Button>
               </div>
             ) : visibleColumns.length === 0 ? (
-              <div className="flex flex-col items-center justify-center gap-4 py-12">
+              <div className="flex flex-col items-center justify-center h-full">
                 <div className="text-center max-w-md">
                   <h2 className="text-lg font-semibold">
                     All columns are hidden
@@ -858,79 +897,77 @@ export function BoardDetailView({
                 </Button>
               </div>
             ) : (
-              <div className="flex flex-1 min-h-0 overflow-hidden">
-                <div className="flex-1 min-h-0 overflow-hidden">
-                  {isKanbanView ? (
-                    <BoardKanbanView
-                      columns={visibleColumns}
-                      columnOrder={visibleColumns.map(col => col.id)}
-                      cardsByColumn={cardsByColumn}
-                      isCreatingCard={isCreatingCard}
-                      onDragStart={handleDragStart}
-                      onDragCancel={handleDragCancel}
-                      onDragEnd={handleDragEnd}
-                      activeCard={activeDragCard}
-                      onCardSelect={handleCardSelect}
-                      selectedCardId={selectedCardId}
-                      boardId={board.id}
-                      onDeleteTask={handleDeleteCard}
-                      onCreateTask={async task => {
-                        // Always insert at the end of the column
-                        // The frontend displays cards sorted by priority and name,
-                        // but the backend position is just sequential (0, 1, 2...)
-                        const columnCards =
-                          cardsByColumn.get(task.columnId) || []
-                        const targetPosition = columnCards.length + 1
+              <div className="h-full overflow-hidden">
+                {isKanbanView ? (
+                  <BoardKanbanView
+                    columns={visibleColumns}
+                    columnOrder={visibleColumns.map(col => col.id)}
+                    cardsByColumn={cardsByColumn}
+                    isCreatingCard={isCreatingCard}
+                    onDragStart={handleDragStart}
+                    onDragCancel={handleDragCancel}
+                    onDragEnd={handleDragEnd}
+                    activeCard={activeDragCard}
+                    onCardSelect={handleCardSelect}
+                    selectedCardId={selectedCardId}
+                    boardId={board.id}
+                    onDeleteTask={handleDeleteCard}
+                    onCreateTask={async task => {
+                      // Always insert at the end of the column
+                      // The frontend displays cards sorted by priority and name,
+                      // but the backend position is just sequential (0, 1, 2...)
+                      const columnCards =
+                        cardsByColumn.get(task.columnId) || []
+                      const targetPosition = columnCards.length + 1
 
-                        await createCardMutation.mutateAsync({
-                          id: task.id,
-                          boardId: task.boardId,
-                          columnId: task.columnId,
-                          title: task.title,
-                          description: task.description || undefined,
-                          priority: task.priority,
-                          dueDate: task.dueDate ?? undefined,
-                          position: targetPosition,
-                          tagIds: task.tagIds ?? [],
-                        })
-                      }}
-                    />
-                  ) : resolvedViewMode === 'list' ? (
-                    <BoardListView
-                      columns={visibleColumns}
-                      cardsByColumn={cardsByColumn}
-                      isCreatingCard={isCreatingCard}
-                      onCardSelect={handleCardSelect}
-                      selectedCardId={selectedCardId}
-                      boardId={board.id}
-                      onDeleteTask={handleDeleteCard}
-                      onCreateTask={async task => {
-                        await createCardMutation.mutateAsync({
-                          id: task.id,
-                          boardId: task.boardId,
-                          columnId: task.columnId,
-                          title: task.title,
-                          description: task.description || undefined,
-                          priority: task.priority,
-                          dueDate: task.dueDate ?? undefined,
-                          position: task.position,
-                          tagIds: task.tagIds ?? [],
-                        })
-                      }}
-                    />
-                  ) : (
-                    <BoardTimelineView
-                      cards={visibleCards}
-                      columnsById={visibleColumnsById}
-                      onDeleteTask={handleDeleteCard}
-                    />
-                  )}
-                </div>
+                      await createCardMutation.mutateAsync({
+                        id: task.id,
+                        boardId: task.boardId,
+                        columnId: task.columnId,
+                        title: task.title,
+                        description: task.description || undefined,
+                        priority: task.priority,
+                        dueDate: task.dueDate ?? undefined,
+                        position: targetPosition,
+                        tagIds: task.tagIds ?? [],
+                      })
+                    }}
+                  />
+                ) : resolvedViewMode === 'list' ? (
+                  <BoardListView
+                    columns={visibleColumns}
+                    cardsByColumn={cardsByColumn}
+                    isCreatingCard={isCreatingCard}
+                    onCardSelect={handleCardSelect}
+                    selectedCardId={selectedCardId}
+                    boardId={board.id}
+                    onDeleteTask={handleDeleteCard}
+                    onCreateTask={async task => {
+                      await createCardMutation.mutateAsync({
+                        id: task.id,
+                        boardId: task.boardId,
+                        columnId: task.columnId,
+                        title: task.title,
+                        description: task.description || undefined,
+                        priority: task.priority,
+                        dueDate: task.dueDate ?? undefined,
+                        position: task.position,
+                        tagIds: task.tagIds ?? [],
+                      })
+                    }}
+                  />
+                ) : (
+                  <BoardTimelineView
+                    cards={visibleCards}
+                    columnsById={visibleColumnsById}
+                    onDeleteTask={handleDeleteCard}
+                  />
+                )}
               </div>
             )}
           </>
         ) : (
-          <div className="flex flex-col items-center justify-center gap-4 py-12 flex-1">
+          <div className="flex flex-col items-center justify-center h-full">
             <div className="text-center">
               <h2 className="text-lg font-semibold capitalize">
                 {activeNavTab}
