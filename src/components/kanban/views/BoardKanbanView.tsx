@@ -73,6 +73,7 @@ interface BoardKanbanViewProps {
     }
   ) => Promise<void>
   onDeleteTask?: (card: KanbanCard) => void
+  onDuplicateTask?: (card: KanbanCard) => void
 }
 
 
@@ -134,6 +135,7 @@ export function BoardKanbanView({
   boardId,
   onCreateTask,
   onDeleteTask,
+  onDuplicateTask,
 }: BoardKanbanViewProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [selectedColumn, setSelectedColumn] = useState<KanbanColumn | null>(
@@ -258,6 +260,7 @@ export function BoardKanbanView({
                   onCardSelect={onCardSelect}
                   selectedCardId={selectedCardId}
                   onDeleteCard={onDeleteTask}
+                  onDuplicateCard={onDuplicateTask}
                 />
               )
             })}
@@ -420,6 +423,7 @@ function DraggableColumn({
   onCardSelect,
   selectedCardId,
   onDeleteCard,
+  onDuplicateCard,
 }: {
   column: KanbanColumn
   columnCards: KanbanCard[]
@@ -429,6 +433,7 @@ function DraggableColumn({
   onCardSelect?: (card: KanbanCard) => void
   selectedCardId?: string | null
   onDeleteCard?: (card: KanbanCard) => void
+  onDuplicateCard?: (card: KanbanCard) => void
 }) {
   const {
     attributes,
@@ -539,6 +544,7 @@ function DraggableColumn({
                       onSelect={onCardSelect}
                       isSelected={selectedCardId === card.id}
                       onDelete={onDeleteCard}
+                      onDuplicate={onDuplicateCard}
                     />
                   ))}
                   {/* Drop zone at the end of cards */}

@@ -30,7 +30,7 @@ tauri-plugin-notification = "2"
 tauri-plugin-persisted-scope = "2"
 tauri-plugin-process = "2"
 log = "0.4"
-sqlx = { version = "0.8", default-features = false, features = ["runtime-tokio-rustls", "sqlite", "macros"] }
+sqlx = { version = "0.8", default-features = false, features = ["runtime-tokio-rustls", "sqlite"] }
 anyhow = "1.0"
 regex = "1.11.1"
 mime_guess = "2.0"

@@ -12,7 +12,7 @@ import type {
 } from '@blocknote/core'
 import { blockHasType, editorHasBlockWithType } from '@blocknote/core'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft, ChevronRight, Pin, PinOff, Trash2 } from 'lucide-react'
+import { ArrowLeft, Check, ChevronRight, Pin, PinOff, Trash2 } from 'lucide-react'
 import { MdDragIndicator } from 'react-icons/md'
 import { cn } from '@/lib/utils'
 import type { Note } from '@/services/notes'
@@ -311,8 +311,45 @@ function BaseUIDragHandleButton(props: DefaultSideMenuProps) {
   }) && editorHasBlockWithType(editor, block.type, { backgroundColor: 'string' })
 
   const blockProps = (block.props ?? {}) as Record<string, unknown>
-  const currentTextColor = (blockProps.textColor as string | undefined) ?? 'default'
-  const currentBackgroundColor = (blockProps.backgroundColor as string | undefined) ?? 'default'
+  const nextTextColor = (blockProps.textColor as string | undefined) ?? 'default'
+  const nextBackgroundColor =
+    (blockProps.backgroundColor as string | undefined) ?? 'default'
+
+  const [currentTextColor, setCurrentTextColor] = useState(nextTextColor)
+  const [currentBackgroundColor, setCurrentBackgroundColor] = useState(
+    nextBackgroundColor
+  )
+
+  const pendingTextColorRef = useRef<string | null>(null)
+  const pendingBackgroundColorRef = useRef<string | null>(null)
+
+  useEffect(() => {
+    if (pendingTextColorRef.current !== null) {
+      if (nextTextColor === pendingTextColorRef.current) {
+        pendingTextColorRef.current = null
+      } else {
+        return
+      }
+    }
+
+    if (currentTextColor !== nextTextColor) {
+      setCurrentTextColor(nextTextColor)
+    }
+  }, [nextTextColor, currentTextColor])
+
+  useEffect(() => {
+    if (pendingBackgroundColorRef.current !== null) {
+      if (nextBackgroundColor === pendingBackgroundColorRef.current) {
+        pendingBackgroundColorRef.current = null
+      } else {
+        return
+      }
+    }
+
+    if (currentBackgroundColor !== nextBackgroundColor) {
+      setCurrentBackgroundColor(nextBackgroundColor)
+    }
+  }, [nextBackgroundColor, currentBackgroundColor])
 
   const handleOpenChange = (next: boolean) => {
     setOpen(next)
@@ -347,8 +384,12 @@ function BaseUIDragHandleButton(props: DefaultSideMenuProps) {
   const handleSelectTextColor = (color: string) => {
     if (!supportsTextColor) return
     if (color === 'default') {
+      pendingTextColorRef.current = 'default'
+      setCurrentTextColor('default')
       updateBlockProps({ textColor: undefined })
     } else {
+      pendingTextColorRef.current = color
+      setCurrentTextColor(color)
       updateBlockProps({ textColor: color })
     }
   }
@@ -356,8 +397,12 @@ function BaseUIDragHandleButton(props: DefaultSideMenuProps) {
   const handleSelectBackgroundColor = (color: string) => {
     if (!supportsBackgroundColor) return
     if (color === 'default') {
+      pendingBackgroundColorRef.current = 'default'
+      setCurrentBackgroundColor('default')
       updateBlockProps({ backgroundColor: undefined })
     } else {
+      pendingBackgroundColorRef.current = color
+      setCurrentBackgroundColor(color)
       updateBlockProps({ backgroundColor: color })
     }
   }
@@ -375,7 +420,7 @@ function BaseUIDragHandleButton(props: DefaultSideMenuProps) {
         />
       </Popover.Trigger>
       <Popover.Portal>
-        <Popover.Positioner side="right" align="start" sideOffset={6}>
+        <Popover.Positioner side="bottom" align="start" sideOffset={12}>
           <Popover.Popup className="bg-popover border border-border rounded-lg shadow-lg p-3 w-60 space-y-3">
             <div className="space-y-2">
               <button
@@ -395,24 +440,41 @@ function BaseUIDragHandleButton(props: DefaultSideMenuProps) {
                   <div className="space-y-1">
                     <p className="text-[11px] font-medium text-muted-foreground">Text</p>
                     <div className="grid grid-cols-8 gap-1">
-                      {SIDE_MENU_COLORS.map(color => (
-                        <button
-                          key={`text-${color}`}
-                          type="button"
-                          onClick={() => handleSelectTextColor(color)}
-                          className={cn(
-                            'h-6 w-6 rounded border border-border transition-transform hover:scale-105',
-                            currentTextColor === color && 'ring-2 ring-primary border-primary'
-                          )}
-                          style={{
-                            backgroundColor: color === 'default' ? 'transparent' : color,
-                            color: color === 'default' ? 'inherit' : '#fff',
-                          }}
-                          title={color}
-                        >
-                          {color === 'default' ? 'A' : ''}
-                        </button>
-                      ))}
+                      {SIDE_MENU_COLORS.map(color => {
+                        const isSelected = currentTextColor === color
+
+                        return (
+                          <button
+                            key={`text-${color}`}
+                            type="button"
+                            onClick={() => handleSelectTextColor(color)}
+                            className={cn(
+                              'relative flex h-6 w-6 items-center justify-center rounded border transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-0',
+                              isSelected
+                                ? 'border-primary scale-110 shadow-sm'
+                                : 'border-border'
+                            )}
+                            style={{
+                              backgroundColor: color === 'default' ? 'transparent' : color,
+                              color: color === 'default' ? 'inherit' : '#fff',
+                            }}
+                            title={color}
+                            aria-pressed={isSelected}
+                          >
+                            {color === 'default' ? 'A' : ''}
+                            {isSelected && (
+                              <Check
+                                className={cn(
+                                  'absolute inset-0 m-auto size-3',
+                                  color === 'default'
+                                    ? 'text-foreground'
+                                    : 'text-white'
+                                )}
+                              />
+                            )}
+                          </button>
+                        )
+                      })}
                     </div>
                   </div>
                 )}
@@ -420,24 +482,41 @@ function BaseUIDragHandleButton(props: DefaultSideMenuProps) {
                   <div className="space-y-1">
                     <p className="text-[11px] font-medium text-muted-foreground">Background</p>
                     <div className="grid grid-cols-8 gap-1">
-                      {SIDE_MENU_COLORS.map(color => (
-                        <button
-                          key={`background-${color}`}
-                          type="button"
-                          onClick={() => handleSelectBackgroundColor(color)}
-                          className={cn(
-                            'h-6 w-6 rounded border border-border transition-transform hover:scale-105',
-                            currentBackgroundColor === color && 'ring-2 ring-primary border-primary'
-                          )}
-                          style={{
-                            backgroundColor: color === 'default' ? 'transparent' : color,
-                            color: color === 'default' ? 'inherit' : '#fff',
-                          }}
-                          title={color}
-                        >
-                          {color === 'default' ? '•' : ''}
-                        </button>
-                      ))}
+                      {SIDE_MENU_COLORS.map(color => {
+                        const isSelected = currentBackgroundColor === color
+
+                        return (
+                          <button
+                            key={`background-${color}`}
+                            type="button"
+                            onClick={() => handleSelectBackgroundColor(color)}
+                            className={cn(
+                              'relative flex h-6 w-6 items-center justify-center rounded border border-border transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-0',
+                              isSelected
+                                ? 'border-primary scale-110 shadow-sm'
+                                : ''
+                            )}
+                            style={{
+                              backgroundColor: color === 'default' ? 'transparent' : color,
+                              color: color === 'default' ? 'inherit' : '#fff',
+                            }}
+                            title={color}
+                            aria-pressed={isSelected}
+                          >
+                            {color === 'default' ? '•' : ''}
+                            {isSelected && (
+                              <Check
+                                className={cn(
+                                  'absolute inset-0 m-auto size-3',
+                                  color === 'default'
+                                    ? 'text-foreground'
+                                    : 'text-white'
+                                )}
+                              />
+                            )}
+                          </button>
+                        )
+                      })}
                     </div>
                   </div>
                 )}

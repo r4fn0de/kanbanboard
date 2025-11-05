@@ -21,7 +21,6 @@ import { MarkToolbarButton } from './mark-toolbar-button'
 import { MoreToolbarButton } from './more-toolbar-button'
 import { SuggestionToolbarButton } from './suggestion-toolbar-button'
 import { ToolbarGroup } from './toolbar'
-import { TurnIntoToolbarButton } from './turn-into-toolbar-button'
 
 export function FloatingToolbarButtons() {
   const readOnly = useEditorReadOnly()
@@ -38,8 +37,6 @@ export function FloatingToolbarButtons() {
           </ToolbarGroup>
 
           <ToolbarGroup>
-            <TurnIntoToolbarButton />
-
             <MarkToolbarButton nodeType={KEYS.bold} tooltip="Bold (⌘+B)">
               <BoldIcon />
             </MarkToolbarButton>

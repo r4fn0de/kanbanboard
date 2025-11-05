@@ -42,6 +42,7 @@ import {
   useCreateCard,
   useMoveCard,
   useDeleteCard,
+  useDuplicateCard,
 } from '@/services/kanban'
 import {
   Plus,
@@ -401,6 +402,35 @@ export function BoardDetailView({
       }
     },
     [board.id, deleteCardMutation]
+  )
+
+  const duplicateCardMutation = useDuplicateCard(board.id)
+
+  const handleDuplicateCard = useCallback(
+    async (card: KanbanCard) => {
+      try {
+        // Get current cards in the same column to find the next available position
+        const columnCards = cardsByColumn.get(card.columnId) || []
+        const maxPosition = Math.max(...columnCards.map(c => c.position), -1)
+        const nextPosition = maxPosition + 1
+        
+        await duplicateCardMutation.mutateAsync({
+          id: `card-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          boardId: board.id,
+          columnId: card.columnId,
+          title: card.title + " (copy)",
+          description: card.description,
+          priority: card.priority,
+          dueDate: card.dueDate,
+          position: nextPosition, // Use calculated next position
+        })
+        toast.success('Task duplicated')
+      } catch (error) {
+        console.error('Failed to duplicate task', error)
+        toast.error('Failed to duplicate task')
+      }
+    },
+    [duplicateCardMutation, board.id, cardsByColumn]
   )
 
   const handleDragStart = useCallback(
@@ -912,6 +942,7 @@ export function BoardDetailView({
                     selectedCardId={selectedCardId}
                     boardId={board.id}
                     onDeleteTask={handleDeleteCard}
+                    onDuplicateTask={handleDuplicateCard}
                     onCreateTask={async task => {
                       // Always insert at the end of the column
                       // The frontend displays cards sorted by priority and name,

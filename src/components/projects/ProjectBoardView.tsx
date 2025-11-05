@@ -72,7 +72,7 @@ export function ProjectBoardView() {
   )
 
   const handleBack = useCallback(() => {
-    navigate('/projects/all')
+    navigate('/')
   }, [navigate])
 
   if (!boardId) {

@@ -1,5 +1,5 @@
 import React from 'react'
-import { render, type RenderOptions } from '@testing-library/react'
+import { render, type RenderOptions, renderHook as renderHookRTL, type RenderHookOptions } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
 const createTestQueryClient = () =>
@@ -31,5 +31,8 @@ const customRender = (
   options?: Omit<RenderOptions, 'wrapper'>
 ) => render(ui, { wrapper: AllTheProviders, ...options })
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const customRenderHook = (hookFn: any, options?: any) => renderHookRTL(hookFn, { wrapper: AllTheProviders, ...options })
+
 export * from '@testing-library/react'
-export { customRender as render }
+export { customRender as render, customRenderHook as renderHook }

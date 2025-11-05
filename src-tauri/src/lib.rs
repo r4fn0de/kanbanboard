@@ -844,6 +844,7 @@ async fn initialize_schema(pool: &DbPool) -> Result<(), String> {
     ensure_card_attachments_column(pool).await?;
     ensure_column_customization_columns(pool).await?;
     ensure_notes_board_id_column(pool).await?;
+    ensure_board_favorite_column(pool).await?;
 
     Ok(())
 }
@@ -3138,6 +3139,35 @@ async fn ensure_notes_board_id_column(pool: &DbPool) -> Result<(), String> {
     Ok(())
 }
 
+async fn ensure_board_favorite_column(pool: &DbPool) -> Result<(), String> {
+    let column_exists = sqlx::query_scalar::<_, Option<i64>>(
+        "SELECT 1 FROM pragma_table_info('kanban_boards') WHERE name = 'is_favorite' LIMIT 1",
+    )
+    .fetch_optional(pool)
+    .await
+    .map_err(|e| format!("Failed to inspect kanban_boards schema: {e}"))?
+    .flatten()
+    .is_some();
+
+    if !column_exists {
+        sqlx::query("ALTER TABLE kanban_boards ADD COLUMN is_favorite INTEGER NOT NULL DEFAULT 0")
+            .execute(pool)
+            .await
+            .map_err(|e| format!("Failed to add is_favorite column to kanban_boards: {e}"))?;
+        sqlx::query("UPDATE kanban_boards SET is_favorite = 0 WHERE is_favorite IS NULL")
+            .execute(pool)
+            .await
+            .map_err(|e| format!("Failed to backfill is_favorite values in kanban_boards: {e}"))?;
+    } else {
+        sqlx::query("UPDATE kanban_boards SET is_favorite = 0 WHERE is_favorite IS NULL")
+            .execute(pool)
+            .await
+            .map_err(|e| format!("Failed to normalize is_favorite values in kanban_boards: {e}"))?;
+    }
+
+    Ok(())
+}
+
 // ============================================================================
 // NOTES COMMANDS
 // ============================================================================
@@ -3295,7 +3325,7 @@ async fn delete_note(pool: State<'_, DbPool>, id: String, board_id: String) -> R
 #[tauri::command]
 async fn archive_note(pool: State<'_, DbPool>, id: String, board_id: String) -> Result<(), String> {
     sqlx::query(
-        "UPDATE notes 
+        "UPDATE notes
          SET archived_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now'),
              updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
          WHERE id = ? AND board_id = ?",
@@ -3307,6 +3337,444 @@ async fn archive_note(pool: State<'_, DbPool>, id: String, board_id: String) -> 
     .map_err(|e| format!("Failed to archive note: {e}"))?;
 
     Ok(())
+}
+
+// ============================================================================
+// HOME DASHBOARD COMMANDS
+// ============================================================================
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TaskStats {
+    pub total_projects: i64,
+    pub active_projects: i64,
+    pub tasks_today: i64,
+    pub tasks_this_week: i64,
+    pub completed_today: i64,
+    pub completed_this_week: i64,
+    pub overdue_tasks: i64,
+}
+
+#[tauri::command]
+async fn get_task_statistics(
+    pool: State<'_, DbPool>,
+) -> Result<TaskStats, String> {
+    let query = r#"
+        SELECT
+            COUNT(DISTINCT b.id) as total_projects,
+            COUNT(DISTINCT CASE WHEN b.archived_at IS NULL THEN b.id END) as active_projects,
+            COUNT(CASE WHEN date(t.due_date) = date('now') AND t.archived_at IS NULL THEN 1 END) as tasks_today,
+            COUNT(CASE WHEN t.due_date >= date('now', '-7 days') AND t.archived_at IS NULL THEN 1 END) as tasks_this_week,
+            COUNT(CASE WHEN t.archived_at IS NULL AND (
+                SELECT COUNT(*) FROM kanban_columns c2 WHERE c2.id = t.column_id AND (
+                    LOWER(c2.title) LIKE '%done%' OR
+                    LOWER(c2.title) LIKE '%complete%' OR
+                    LOWER(c2.title) LIKE '%finished%'
+                )
+            ) > 0 THEN 1 END) as completed_today,
+            COUNT(CASE WHEN t.archived_at IS NULL AND t.updated_at >= date('now', '-7 days') AND (
+                SELECT COUNT(*) FROM kanban_columns c2 WHERE c2.id = t.column_id AND (
+                    LOWER(c2.title) LIKE '%done%' OR
+                    LOWER(c2.title) LIKE '%complete%' OR
+                    LOWER(c2.title) LIKE '%finished%'
+                )
+            ) > 0 THEN 1 END) as completed_this_week,
+            COUNT(CASE WHEN t.due_date < datetime('now') AND t.archived_at IS NULL AND (
+                SELECT COUNT(*) FROM kanban_columns c2 WHERE c2.id = t.column_id AND (
+                    LOWER(c2.title) NOT LIKE '%done%' AND
+                    LOWER(c2.title) NOT LIKE '%complete%' AND
+                    LOWER(c2.title) NOT LIKE '%finished%'
+                )
+            ) > 0 THEN 1 END) as overdue_tasks
+        FROM kanban_boards b
+        LEFT JOIN kanban_columns col ON col.board_id = b.id
+        LEFT JOIN kanban_cards t ON t.column_id = col.id
+    "#;
+
+    let row = sqlx::query(query)
+        .fetch_one(&*pool)
+        .await
+        .map_err(|e| format!("Failed to get task statistics: {e}"))?;
+
+    Ok(TaskStats {
+        total_projects: row.get::<i64, _>("total_projects"),
+        active_projects: row.get::<i64, _>("active_projects"),
+        tasks_today: row.get::<i64, _>("tasks_today"),
+        tasks_this_week: row.get::<i64, _>("tasks_this_week"),
+        completed_today: row.get::<i64, _>("completed_today"),
+        completed_this_week: row.get::<i64, _>("completed_this_week"),
+        overdue_tasks: row.get::<i64, _>("overdue_tasks"),
+    })
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Activity {
+    pub id: String,
+    pub activity_type: String,
+    pub title: String,
+    pub board_name: String,
+    pub board_icon: Option<String>,
+    pub timestamp: String,
+    pub entity_id: String,
+    pub entity_type: String,
+}
+
+#[tauri::command]
+async fn get_recent_activity(
+    pool: State<'_, DbPool>,
+    limit: Option<i32>,
+) -> Result<Vec<Activity>, String> {
+    let limit = limit.unwrap_or(10);
+
+    let query = r#"
+        SELECT
+            'card_created' as activity_type,
+            c.id as entity_id,
+            'card' as entity_type,
+            c.title,
+            b.title as board_name,
+            b.icon as board_icon,
+            c.created_at as timestamp
+        FROM kanban_cards c
+        JOIN kanban_boards b ON b.id = c.board_id
+        WHERE c.archived_at IS NULL
+
+        UNION ALL
+
+        SELECT
+            'card_updated' as activity_type,
+            c.id as entity_id,
+            'card' as entity_type,
+            c.title,
+            b.title as board_name,
+            b.icon as board_icon,
+            c.updated_at as timestamp
+        FROM kanban_cards c
+        JOIN kanban_boards b ON b.id = c.board_id
+        WHERE c.archived_at IS NULL
+
+        UNION ALL
+
+        SELECT
+            'board_created' as activity_type,
+            b.id as entity_id,
+            'board' as entity_type,
+            b.title,
+            b.title as board_name,
+            b.icon as board_icon,
+            b.created_at as timestamp
+        FROM kanban_boards b
+        WHERE b.archived_at IS NULL
+
+        ORDER BY timestamp DESC
+        LIMIT ?
+    "#;
+
+    let activities = sqlx::query(query)
+        .bind(limit)
+        .fetch_all(&*pool)
+        .await
+        .map_err(|e| format!("Failed to get recent activity: {e}"))?;
+
+    let mapped_activities: Vec<Activity> = activities
+        .into_iter()
+        .map(|row| {
+            let activity_type = row.get::<String, _>("activity_type");
+            let entity_id = row.get::<String, _>("entity_id");
+            let title = row.get::<String, _>("title");
+            let board_name = row.get::<String, _>("board_name");
+            let board_icon = row.get::<Option<String>, _>("board_icon");
+            let timestamp = row.get::<String, _>("timestamp");
+            let entity_type = row.get::<String, _>("entity_type");
+
+            Activity {
+                id: format!("{}-{}", activity_type, entity_id),
+                activity_type,
+                title,
+                board_name,
+                board_icon,
+                timestamp,
+                entity_id,
+                entity_type,
+            }
+        })
+        .collect();
+
+    Ok(mapped_activities)
+}
+
+#[tauri::command]
+async fn get_favorite_boards(
+    pool: State<'_, DbPool>,
+) -> Result<Vec<Value>, String> {
+    let query = r#"
+        SELECT
+            b.id,
+            b.title,
+            b.icon,
+            b.emoji,
+            b.color,
+            b.created_at,
+            b.updated_at,
+            b.is_favorite,
+            COUNT(DISTINCT c.id) as total_cards,
+            COUNT(DISTINCT CASE WHEN c.archived_at IS NULL THEN c.id END) as active_cards
+        FROM kanban_boards b
+        LEFT JOIN kanban_columns col ON col.board_id = b.id
+        LEFT JOIN kanban_cards c ON c.column_id = col.id
+        WHERE b.is_favorite = 1 AND b.archived_at IS NULL
+        GROUP BY b.id
+        ORDER BY b.updated_at DESC
+    "#;
+
+    let boards = sqlx::query(query)
+        .fetch_all(&*pool)
+        .await
+        .map_err(|e| format!("Failed to get favorite boards: {e}"))?;
+
+    let mapped_boards: Vec<Value> = boards
+        .into_iter()
+        .map(|board| {
+            let id = board.get::<String, _>("id");
+            let title = board.get::<String, _>("title");
+            let icon = board.get::<String, _>("icon");
+            let emoji = board.get::<Option<String>, _>("emoji");
+            let color = board.get::<Option<String>, _>("color");
+            let created_at = board.get::<String, _>("created_at");
+            let updated_at = board.get::<String, _>("updated_at");
+            let is_favorite: i32 = board.get("is_favorite");
+            let total_cards: i64 = board.get("total_cards");
+            let active_cards: i64 = board.get("active_cards");
+
+            json!({
+                "id": id,
+                "title": title,
+                "icon": icon,
+                "emoji": emoji,
+                "color": color,
+                "isFavorite": is_favorite != 0,
+                "createdAt": created_at,
+                "updatedAt": updated_at,
+                "totalCards": total_cards,
+                "activeCards": active_cards,
+            })
+        })
+        .collect();
+
+    Ok(mapped_boards)
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TaskWithDeadline {
+    pub id: String,
+    pub title: String,
+    pub deadline: String,
+    pub board_name: String,
+    pub board_id: String,
+    pub is_overdue: bool,
+    pub days_until: i64,
+}
+
+#[tauri::command]
+async fn get_upcoming_deadlines(
+    pool: State<'_, DbPool>,
+    days_ahead: Option<i32>,
+) -> Result<Vec<TaskWithDeadline>, String> {
+    let days_ahead = days_ahead.unwrap_or(7);
+
+    let query = r#"
+        SELECT
+            c.id,
+            c.title,
+            c.due_date,
+            b.title as board_name,
+            b.id as board_id
+        FROM kanban_cards c
+        JOIN kanban_columns col ON col.id = c.column_id
+        JOIN kanban_boards b ON b.id = col.board_id
+        WHERE c.due_date IS NOT NULL
+        AND c.archived_at IS NULL
+        AND date(c.due_date) <= date('now', '+' || ? || ' days')
+        AND b.archived_at IS NULL
+        ORDER BY c.due_date ASC
+    "#;
+
+    let tasks = sqlx::query(query)
+        .bind(days_ahead as i64)
+        .fetch_all(&*pool)
+        .await
+        .map_err(|e| format!("Failed to get upcoming deadlines: {e}"))?;
+
+    let mapped_tasks: Vec<TaskWithDeadline> = tasks
+        .into_iter()
+        .map(|task| {
+            let id = task.get::<String, _>("id");
+            let title = task.get::<String, _>("title");
+            let due_date: String = task.get("due_date");
+            let board_name = task.get::<String, _>("board_name");
+            let board_id = task.get::<String, _>("board_id");
+            let is_overdue = due_date < chrono::Utc::now().to_rfc3339();
+
+            TaskWithDeadline {
+                id,
+                title,
+                deadline: due_date,
+                board_name,
+                board_id,
+                is_overdue,
+                days_until: 0, // Will be calculated below
+            }
+        })
+        .collect();
+
+    // Calculate days until for each task
+    let mut mapped_tasks_with_days: Vec<TaskWithDeadline> = Vec::new();
+    for task in mapped_tasks {
+        let days_until = sqlx::query_scalar::<_, Option<i64>>(
+            "SELECT CAST(julianday(?) - julianday('now') AS INTEGER)"
+        )
+        .bind(&task.deadline)
+        .fetch_one(&*pool)
+        .await
+        .unwrap_or(None)
+        .unwrap_or(0);
+
+        mapped_tasks_with_days.push(TaskWithDeadline {
+            days_until,
+            ..task
+        });
+    }
+
+    Ok(mapped_tasks_with_days)
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SearchResult {
+    pub id: String,
+    pub title: String,
+    pub item_type: String,
+    pub board_id: String,
+    pub board_name: String,
+    pub description: Option<String>,
+}
+
+#[tauri::command]
+async fn global_search(
+    pool: State<'_, DbPool>,
+    query: String,
+) -> Result<Vec<SearchResult>, String> {
+    let search_term = format!("%{}%", query.trim());
+    let mut results = Vec::new();
+
+    // Search in boards
+    let board_rows = sqlx::query(
+        r#"
+        SELECT
+            b.id,
+            b.title,
+            b.description,
+            b.title as board_name,
+            'board' as item_type,
+            b.id as board_id
+        FROM kanban_boards b
+        WHERE b.archived_at IS NULL
+        AND (b.title LIKE ? OR b.description LIKE ?)
+        ORDER BY b.title ASC
+        LIMIT 20
+        "#
+    )
+    .bind(&search_term)
+    .bind(&search_term)
+    .fetch_all(&*pool)
+    .await
+    .map_err(|e| format!("Failed to search boards: {e}"))?;
+
+    for row in board_rows {
+        results.push(SearchResult {
+            id: row.get("id"),
+            title: row.get("title"),
+            item_type: "board".to_string(),
+            board_id: row.get("board_id"),
+            board_name: row.get("board_name"),
+            description: row.get("description"),
+        });
+    }
+
+    // Search in cards
+    let card_rows = sqlx::query(
+        r#"
+        SELECT
+            c.id,
+            c.title,
+            c.description,
+            b.title as board_name,
+            b.id as board_id,
+            'card' as item_type
+        FROM kanban_cards c
+        JOIN kanban_columns col ON col.id = c.column_id
+        JOIN kanban_boards b ON b.id = col.board_id
+        WHERE c.archived_at IS NULL
+        AND (c.title LIKE ? OR c.description LIKE ?)
+        ORDER BY c.updated_at DESC
+        LIMIT 50
+        "#
+    )
+    .bind(&search_term)
+    .bind(&search_term)
+    .fetch_all(&*pool)
+    .await
+    .map_err(|e| format!("Failed to search cards: {e}"))?;
+
+    for row in card_rows {
+        results.push(SearchResult {
+            id: row.get("id"),
+            title: row.get("title"),
+            item_type: "card".to_string(),
+            board_id: row.get("board_id"),
+            board_name: row.get("board_name"),
+            description: row.get("description"),
+        });
+    }
+
+    // Search in notes
+    let note_rows = sqlx::query(
+        r#"
+        SELECT
+            n.id,
+            n.title,
+            n.content as description,
+            b.title as board_name,
+            b.id as board_id,
+            'note' as item_type
+        FROM notes n
+        JOIN kanban_boards b ON b.id = n.board_id
+        WHERE n.archived_at IS NULL
+        AND (n.title LIKE ? OR n.content LIKE ?)
+        ORDER BY n.updated_at DESC
+        LIMIT 30
+        "#
+    )
+    .bind(&search_term)
+    .bind(&search_term)
+    .fetch_all(&*pool)
+    .await
+    .map_err(|e| format!("Failed to search notes: {e}"))?;
+
+    for row in note_rows {
+        results.push(SearchResult {
+            id: row.get("id"),
+            title: row.get("title"),
+            item_type: "note".to_string(),
+            board_id: row.get("board_id"),
+            board_name: row.get("board_name"),
+            description: row.get("description"),
+        });
+    }
+
+    Ok(results)
 }
 
 #[tauri::command]
@@ -3543,7 +4011,12 @@ pub fn run() {
             create_note,
             update_note,
             delete_note,
-            archive_note
+            archive_note,
+            get_task_statistics,
+            get_recent_activity,
+            get_favorite_boards,
+            get_upcoming_deadlines,
+            global_search
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

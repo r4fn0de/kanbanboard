@@ -76,10 +76,12 @@ const normalizedQuery = searchQuery.trim().toLowerCase()
       {/* Notes List */}
       <div className="flex-1 overflow-auto">
         {isLoading ? (
-          <div className="space-y-3 px-6 py-6">
-            {NOTE_LIST_SKELETON_KEYS.map(key => (
-              <Skeleton key={key} className="h-24 rounded-xl" />
-            ))}
+          <div className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {NOTE_LIST_SKELETON_KEYS.map(key => (
+                <Skeleton key={key} className="h-48 rounded-xl" />
+              ))}
+            </div>
           </div>
         ) : filteredNotes.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 px-6 text-center">
@@ -98,7 +100,7 @@ const normalizedQuery = searchQuery.trim().toLowerCase()
                   <Pin className="h-3.5 w-3.5" />
                   Pinned Notes
                 </div>
-<div className="space-y-2">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                   {pinnedNotes.map(note => (
                     <NoteCard
                       key={note.id}
@@ -121,7 +123,7 @@ const normalizedQuery = searchQuery.trim().toLowerCase()
                     All Notes
                   </div>
                 )}
-<div className="space-y-2">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                   {unpinnedNotes.map(note => (
                     <NoteCard
                       key={note.id}

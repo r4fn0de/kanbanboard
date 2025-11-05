@@ -17,6 +17,7 @@ import {
   Paperclip,
   Trash2,
   Calendar,
+  Copy,
 } from 'lucide-react'
 import type { ComponentType } from 'react'
 import * as React from 'react'
@@ -31,6 +32,7 @@ interface KanbanCardItemProps {
   onSelect?: (card: KanbanCard) => void
   isSelected: boolean
   onDelete?: (card: KanbanCard) => void
+  onDuplicate?: (card: KanbanCard) => void
   maxVisibleTags?: number
 }
 
@@ -67,9 +69,11 @@ export function KanbanCardItem({
   onSelect,
   isSelected,
   onDelete,
+  onDuplicate,
   maxVisibleTags = 3,
 }: KanbanCardItemProps) {
   const [isDeleting, setIsDeleting] = React.useState(false)
+  const [isDuplicating, setIsDuplicating] = React.useState(false)
   const { theme } = useTheme()
   const isDarkMode =
     theme === 'dark' ||
@@ -214,6 +218,21 @@ export function KanbanCardItem({
         </button>
       </ContextMenuTrigger>
       <ContextMenuContent>
+        <ContextMenuItem
+          disabled={isDuplicating}
+          onSelect={async () => {
+            if (isDuplicating) return
+            setIsDuplicating(true)
+            try {
+              await onDuplicate?.(card)
+            } finally {
+              setTimeout(() => setIsDuplicating(false), 1000)
+            }
+          }}
+        >
+          <Copy className="h-4 w-4" />
+          {isDuplicating ? 'Duplicating...' : 'Duplicate task'}
+        </ContextMenuItem>
         <ContextMenuItem
           variant="destructive"
           disabled={isDeleting}

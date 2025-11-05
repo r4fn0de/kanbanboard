@@ -30,7 +30,6 @@ import {
   IndentToolbarButton,
   OutdentToolbarButton,
 } from './indent-toolbar-button'
-import { InsertToolbarButton } from './insert-toolbar-button'
 import { LineHeightToolbarButton } from './line-height-toolbar-button'
 import { LinkToolbarButton } from './link-toolbar-button'
 import {
@@ -45,7 +44,6 @@ import { MoreToolbarButton } from './more-toolbar-button'
 import { TableToolbarButton } from './table-toolbar-button'
 import { ToggleToolbarButton } from './toggle-toolbar-button'
 import { ToolbarGroup } from './toolbar'
-import { TurnIntoToolbarButton } from './turn-into-toolbar-button'
 
 export function FixedToolbarButtons() {
   const readOnly = useEditorReadOnly()
@@ -74,8 +72,6 @@ export function FixedToolbarButtons() {
           </ToolbarGroup>
 
           <ToolbarGroup>
-            <InsertToolbarButton />
-            <TurnIntoToolbarButton />
             <FontSizeToolbarButton />
           </ToolbarGroup>
 

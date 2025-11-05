@@ -1,4 +1,4 @@
-import { Settings, Palette, Zap, FolderIcon } from 'lucide-react'
+import { Palette, FolderIcon } from 'lucide-react'
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -24,19 +24,12 @@ import {
   SidebarProvider,
 } from '@/components/ui/sidebar'
 import { useUIStore } from '@/store/ui-store'
-import { GeneralPane } from './panes/GeneralPane'
 import { AppearancePane } from './panes/AppearancePane'
-import { AdvancedPane } from './panes/AdvancedPane'
 import { WorkspacesPane } from './panes/WorkspacesPane'
 
-type PreferencePane = 'general' | 'appearance' | 'workspaces' | 'advanced'
+type PreferencePane = 'appearance' | 'workspaces'
 
 const navigationItems = [
-  {
-    id: 'general' as const,
-    name: 'General',
-    icon: Settings,
-  },
   {
     id: 'appearance' as const,
     name: 'Appearance',
@@ -47,25 +40,16 @@ const navigationItems = [
     name: 'Workspaces',
     icon: FolderIcon,
   },
-  {
-    id: 'advanced' as const,
-    name: 'Advanced',
-    icon: Zap,
-  },
 ]
 
 const getPaneTitle = (pane: PreferencePane): string => {
   switch (pane) {
-    case 'general':
-      return 'General'
     case 'appearance':
       return 'Appearance'
     case 'workspaces':
       return 'Workspaces'
-    case 'advanced':
-      return 'Advanced'
     default:
-      return 'General'
+      return 'Appearance'
   }
 }
 
@@ -144,12 +128,10 @@ export function PreferencesDialog() {
             </header>
 
             <div className="flex flex-1 flex-col gap-4 overflow-y-auto p-4 pt-0 max-h-[calc(600px-4rem)]">
-              {activePane === 'general' && <GeneralPane />}
               {activePane === 'appearance' && <AppearancePane />}
               {activePane === 'workspaces' && (
                 <WorkspacesPane editingWorkspaceId={editingWorkspaceId} />
               )}
-              {activePane === 'advanced' && <AdvancedPane />}
             </div>
           </main>
         </SidebarProvider>

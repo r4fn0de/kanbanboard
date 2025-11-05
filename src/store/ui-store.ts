@@ -1,14 +1,25 @@
 import { create } from 'zustand'
 import { devtools } from 'zustand/middleware'
 
+type PreferencePane = 'appearance' | 'workspaces'
+
+export interface WidgetConfig {
+  id: string
+  type: string
+  title: string
+  visible: boolean
+  order: number
+}
+
 interface UIState {
   leftSidebarVisible: boolean
   leftSidebarLocked: boolean
   rightSidebarVisible: boolean
   commandPaletteOpen: boolean
   preferencesOpen: boolean
-  preferencesActivePane: 'general' | 'appearance' | 'workspaces' | 'advanced'
+  preferencesActivePane: PreferencePane
   editingWorkspaceId: string | null
+  widgetLayout: WidgetConfig[]
 
   toggleLeftSidebar: () => void
   setLeftSidebarVisible: (visible: boolean) => void
@@ -20,13 +31,12 @@ interface UIState {
   togglePreferences: () => void
   setPreferencesOpen: (open: boolean) => void
   openPreferencesWithPane: (
-    pane: 'general' | 'appearance' | 'workspaces' | 'advanced',
+    pane: PreferencePane,
     workspaceId?: string | null
   ) => void
-  setPreferencesActivePane: (
-    pane: 'general' | 'appearance' | 'workspaces' | 'advanced'
-  ) => void
+  setPreferencesActivePane: (pane: PreferencePane) => void
   setEditingWorkspaceId: (id: string | null) => void
+  setWidgetLayout: (layout: WidgetConfig[]) => void
 }
 
 export const useUIStore = create<UIState>()(
@@ -37,8 +47,9 @@ export const useUIStore = create<UIState>()(
       rightSidebarVisible: false,
       commandPaletteOpen: false,
       preferencesOpen: false,
-      preferencesActivePane: 'general',
+      preferencesActivePane: 'appearance',
       editingWorkspaceId: null,
+      widgetLayout: [],
 
       toggleLeftSidebar: () =>
         set(
@@ -111,6 +122,9 @@ export const useUIStore = create<UIState>()(
 
       setEditingWorkspaceId: id =>
         set({ editingWorkspaceId: id }, undefined, 'setEditingWorkspaceId'),
+
+      setWidgetLayout: layout =>
+        set({ widgetLayout: layout }, undefined, 'setWidgetLayout'),
     }),
     {
       name: 'ui-store',

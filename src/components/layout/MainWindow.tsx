@@ -6,7 +6,6 @@ import {
 import { LeftSideBar } from './'
 import { RightSideBar } from './RightSideBar'
 import { MainWindowContent } from './MainWindowContent'
-import { CommandPalette } from '@/components/command-palette/CommandPalette'
 import { PreferencesDialog } from '@/components/preferences/PreferencesDialog'
 import { Toaster } from 'sonner'
 import { useTheme } from '@/hooks/use-theme'
@@ -103,8 +102,9 @@ export function MainWindow() {
                 onMouseEnter={() => setIsHoveringEdge(true)}
                 onMouseLeave={() => setIsHoveringEdge(false)}
                 className={cn(
-                  'absolute left-0 top-0 bottom-0 z-40 w-64 shadow-2xl rounded-r-[12px] overflow-hidden bg-background'
+                  'absolute left-0 top-0 bottom-0 w-64 shadow-2xl rounded-r-[12px] overflow-hidden bg-background'
                 )}
+                style={{ zIndex: 10001 }}
               >
                 <LeftSideBar className="h-full bg-background" forceSolidStyle />
               </motion.div>
@@ -158,7 +158,6 @@ export function MainWindow() {
       </div>
 
       {/* Global UI Components (hidden until triggered) */}
-      <CommandPalette />
       <PreferencesDialog />
       <Toaster
         position="bottom-right"

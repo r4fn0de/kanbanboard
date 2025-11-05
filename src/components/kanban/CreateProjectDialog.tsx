@@ -188,45 +188,65 @@ export function CreateProjectDialog({
               </button>
             </div>
 
-            {/* Icon Selector (only when not using emoji) */}
+            {/* Icon & Color (only when not using emoji) */}
             {!useEmoji && (
               <div className="space-y-2">
-                <Label className="text-sm font-medium">Icon</Label>
-                <Select value={projectIcon} onValueChange={setProjectIcon}>
-                  <SelectTrigger className="h-10">
-                    <SelectValue>
-                      <div className="flex items-center gap-2">
-                        <IconComponent className="h-4 w-4" />
-                        <span>
-                          {PROJECT_ICON_OPTIONS.find(
-                            opt => opt.value === projectIcon
-                          )?.label ?? 'Select icon'}
-                        </span>
-                      </div>
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    {PROJECT_ICON_SECTIONS.map((section, sectionIndex) => (
-                      <div key={section.label}>
-                        {sectionIndex > 0 && <SelectSeparator />}
-                        <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
-                          {section.label}
+                <Label htmlFor={projectColorId} className="text-sm font-medium">
+                  Icon & Color
+                </Label>
+                <div className="grid gap-3 sm:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
+                  <Select value={projectIcon} onValueChange={setProjectIcon}>
+                    <SelectTrigger className="h-10">
+                      <SelectValue>
+                        <div className="flex items-center gap-2">
+                          <IconComponent className="h-4 w-4" />
+                          <span>
+                            {PROJECT_ICON_OPTIONS.find(
+                              opt => opt.value === projectIcon
+                            )?.label ?? 'Select icon'}
+                          </span>
                         </div>
-                        {section.options.map(option => {
-                          const OptionIconComponent = option.icon
-                          return (
-                            <SelectItem key={option.value} value={option.value}>
-                              <div className="flex items-center gap-2">
-                                <OptionIconComponent className="h-4 w-4" />
-                                <span>{option.label}</span>
-                              </div>
-                            </SelectItem>
-                          )
-                        })}
-                      </div>
-                    ))}
-                  </SelectContent>
-                </Select>
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PROJECT_ICON_SECTIONS.map((section, sectionIndex) => (
+                        <div key={section.label}>
+                          {sectionIndex > 0 && <SelectSeparator />}
+                          <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
+                            {section.label}
+                          </div>
+                          {section.options.map(option => {
+                            const OptionIconComponent = option.icon
+                            return (
+                              <SelectItem key={option.value} value={option.value}>
+                                <div className="flex items-center gap-2">
+                                  <OptionIconComponent className="h-4 w-4" />
+                                  <span>{option.label}</span>
+                                </div>
+                              </SelectItem>
+                            )
+                          })}
+                        </div>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  <div className="flex items-center gap-2">
+                    <input
+                      id={projectColorId}
+                      type="color"
+                      value={projectColor}
+                      onChange={event => setProjectColor(event.target.value)}
+                      className="h-10 w-14 cursor-pointer rounded-md"
+                    />
+                    <Input
+                      value={projectColor}
+                      onChange={event => setProjectColor(event.target.value)}
+                      placeholder="#6366F1"
+                      className="h-10 flex-1 font-mono text-sm"
+                    />
+                  </div>
+                </div>
               </div>
             )}
 
@@ -253,27 +273,6 @@ export function CreateProjectDialog({
               </div>
             )}
 
-            {/* Color Picker */}
-            <div className="space-y-2">
-              <Label htmlFor={projectColorId} className="text-sm font-medium">
-                Color
-              </Label>
-              <div className="flex gap-2">
-                <input
-                  id={projectColorId}
-                  type="color"
-                  value={projectColor}
-                  onChange={event => setProjectColor(event.target.value)}
-                  className="h-10 w-14 cursor-pointer rounded-md"
-                />
-                <Input
-                  value={projectColor}
-                  onChange={event => setProjectColor(event.target.value)}
-                  placeholder="#6366F1"
-                  className="h-10 flex-1 font-mono text-sm"
-                />
-              </div>
-            </div>
           </div>
 
           {/* Description */}

@@ -49,7 +49,7 @@ export function DeleteProjectDialog({
           handleClose(false)
 
           if (location.pathname === `/projects/${targetId}`) {
-            navigate('/projects/all')
+            navigate('/')
           }
         },
         onError: error => {

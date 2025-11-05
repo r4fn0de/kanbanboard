@@ -1068,6 +1068,10 @@ export async function deleteCard(input: DeleteCardInput): Promise<void> {
 	});
 }
 
+// Use createCard directly - duplicating card is just creating a new card with existing data
+// The UI will handle showing it as a "duplicate" operation
+export const duplicateCard = createCard
+
 export async function updateCardTags(
 	input: UpdateCardTagsInput,
 ): Promise<KanbanTag[]> {
@@ -1190,6 +1194,18 @@ export function useDeleteCard(boardId: string) {
 			});
 			queryClient.invalidateQueries({
 				queryKey: kanbanQueryKeys.columns(boardId),
+			});
+		},
+	});
+}
+
+export function useDuplicateCard(boardId: string) {
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: duplicateCard,
+		onSuccess: () => {
+			queryClient.invalidateQueries({
+				queryKey: kanbanQueryKeys.cards(boardId),
 			});
 		},
 	});
