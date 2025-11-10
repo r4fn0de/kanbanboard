@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { devtools } from 'zustand/middleware'
 
-type PreferencePane = 'appearance' | 'workspaces'
+type PreferencePane = 'appearance' | 'workspaces' | 'storage'
 
 export interface WidgetConfig {
   id: string

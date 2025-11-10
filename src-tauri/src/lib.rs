@@ -4,13 +4,13 @@ use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use sqlx::{
-    QueryBuilder, Row, Sqlite, Transaction,
+    Acquire, QueryBuilder, Row, Sqlite, Transaction,
     sqlite::{SqliteConnectOptions, SqliteJournalMode, SqlitePool, SqlitePoolOptions, SqliteRow},
 };
 use std::collections::{BTreeSet, HashMap};
 use std::convert::TryInto;
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tauri::menu::{MenuBuilder, MenuItemBuilder, PredefinedMenuItem, SubmenuBuilder};
 use tauri::{AppHandle, Emitter, Manager, State};
@@ -19,7 +19,7 @@ use uuid::Uuid;
 use sha2::{Digest, Sha256};
 
 const KANBAN_SCHEMA: &str = include_str!("../schema/kanban.sql");
-const DATABASE_FILE: &str = "flowspace.db";
+const DATABASE_FILE: &str = "modulo.db";
 const DEFAULT_BOARD_ICON: &str = "Folder";
 const DEFAULT_WORKSPACE_ID: &str = "workspace-default";
 const DEFAULT_WORKSPACE_NAME: &str = "Default Workspace";
@@ -354,6 +354,207 @@ async fn delete_subtask(
     tx.commit()
         .await
         .map_err(|e| format!("Falha ao confirmar transação: {e}"))?;
+
+    Ok(())
+}
+
+fn directory_size(path: &Path) -> Result<u64, std::io::Error> {
+    let mut total = 0;
+    if !path.exists() {
+        return Ok(0);
+    }
+
+    for entry in fs::read_dir(path)? {
+        let entry = entry?;
+        let metadata = entry.metadata()?;
+        if metadata.is_dir() {
+            total += directory_size(&entry.path())?;
+        } else {
+            total += metadata.len();
+        }
+    }
+
+    Ok(total)
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct StorageStats {
+    database_bytes: u64,
+    attachments_bytes: u64,
+    workspace_icons_bytes: u64,
+    preferences_bytes: u64,
+    total_bytes: u64,
+    database_path: String,
+    attachments_path: String,
+    workspace_icons_path: String,
+    preferences_path: String,
+}
+
+#[tauri::command]
+async fn get_storage_stats(app: AppHandle) -> Result<StorageStats, String> {
+    let app_data_dir = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| format!("Failed to resolve app data directory: {e}"))?;
+
+    let db_path = app_data_dir.join(DATABASE_FILE);
+    let attachments_path = app_data_dir.join("attachments");
+    let workspace_icons_path = app_data_dir.join(WORKSPACE_ICON_DIR);
+    let preferences_path = get_preferences_path(&app).map_err(|e| format!("{e}"))?;
+
+    let database_bytes = fs::metadata(&db_path).map(|m| m.len()).unwrap_or(0);
+    let attachments_bytes = directory_size(&attachments_path).map_err(|e| {
+        log::error!("Failed to measure attachments directory size: {e}");
+        format!("Failed to measure attachments directory size: {e}")
+    })?;
+    let workspace_icons_bytes = directory_size(&workspace_icons_path).map_err(|e| {
+        log::error!("Failed to measure workspace icon directory size: {e}");
+        format!("Failed to measure workspace icon directory size: {e}")
+    })?;
+    let preferences_bytes = fs::metadata(&preferences_path).map(|m| m.len()).unwrap_or(0);
+
+    Ok(StorageStats {
+        database_bytes,
+        attachments_bytes,
+        workspace_icons_bytes,
+        preferences_bytes,
+        total_bytes: database_bytes + attachments_bytes + workspace_icons_bytes + preferences_bytes,
+        database_path: db_path
+            .to_string_lossy()
+            .into_owned(),
+        attachments_path: attachments_path
+            .to_string_lossy()
+            .into_owned(),
+        workspace_icons_path: workspace_icons_path
+            .to_string_lossy()
+            .into_owned(),
+        preferences_path: preferences_path
+            .to_string_lossy()
+            .into_owned(),
+    })
+}
+
+#[tauri::command]
+async fn clear_attachments(app: AppHandle) -> Result<(), String> {
+    let app_data_dir = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| format!("Failed to resolve app data directory: {e}"))?;
+    let attachments_dir = app_data_dir.join("attachments");
+
+    if attachments_dir.exists() {
+        fs::remove_dir_all(&attachments_dir)
+            .map_err(|e| format!("Failed to delete attachments directory: {e}"))?;
+    }
+
+    fs::create_dir_all(&attachments_dir)
+        .map_err(|e| format!("Failed to recreate attachments directory: {e}"))?;
+
+    Ok(())
+}
+
+#[tauri::command]
+async fn reset_application_data(app: AppHandle, pool: State<'_, DbPool>) -> Result<(), String> {
+    let app_data_dir = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| format!("Failed to resolve app data directory: {e}"))?;
+
+    if app_data_dir.exists() {
+        // Remove everything except the directory itself
+        for entry in fs::read_dir(&app_data_dir)
+            .map_err(|e| format!("Failed to read application data directory: {e}"))?
+        {
+            let entry = entry.map_err(|e| format!("Failed to access entry: {e}"))?;
+            let path = entry.path();
+            if path.is_dir() {
+                fs::remove_dir_all(&path)
+                    .map_err(|e| format!("Failed to remove directory {path:?}: {e}"))?;
+            } else {
+                fs::remove_file(&path)
+                    .map_err(|e| format!("Failed to remove file {path:?}: {e}"))?;
+            }
+        }
+    }
+
+    // Ensure critical directories exist again
+    let attachments_dir = app_data_dir.join("attachments");
+    fs::create_dir_all(&attachments_dir)
+        .map_err(|e| format!("Failed to recreate attachments directory: {e}"))?;
+
+    let icons_dir = app_data_dir.join(WORKSPACE_ICON_DIR);
+    fs::create_dir_all(&icons_dir)
+        .map_err(|e| format!("Failed to recreate workspace icon directory: {e}"))?;
+
+    if let Ok(pref_path) = get_preferences_path(&app) {
+        if pref_path.exists() {
+            fs::remove_file(&pref_path)
+                .map_err(|e| format!("Failed to remove preferences file: {e}"))?;
+        }
+    }
+
+    // Clear database contents
+    let mut conn = pool
+        .acquire()
+        .await
+        .map_err(|e| format!("Failed to acquire database connection: {e}"))?;
+
+    let mut tx = conn
+        .begin()
+        .await
+        .map_err(|e| format!("Failed to begin reset transaction: {e}"))?;
+
+    sqlx::query("PRAGMA foreign_keys = OFF")
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| format!("Failed to disable foreign keys: {e}"))?;
+
+    for table in [
+        "kanban_activity",
+        "kanban_subtasks",
+        "kanban_card_tags",
+        "kanban_attachments",
+        "kanban_cards",
+        "kanban_columns",
+        "kanban_tags",
+        "kanban_boards",
+        "notes",
+        "workspaces",
+    ] {
+        let stmt = format!("DELETE FROM {table}");
+        sqlx::query(&stmt)
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| format!("Failed to reset table {table}: {e}"))?;
+    }
+
+    sqlx::query("PRAGMA foreign_keys = ON")
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| format!("Failed to re-enable foreign keys: {e}"))?;
+
+    tx.commit()
+        .await
+        .map_err(|e| format!("Failed to finalize reset transaction: {e}"))?;
+
+    // Run maintenance to reclaim space after data purge
+    let pool_ref = pool.inner();
+
+    sqlx::query("VACUUM")
+        .execute(pool_ref)
+        .await
+        .map_err(|e| format!("Failed to vacuum database: {e}"))?;
+
+    sqlx::query("ANALYZE")
+        .execute(pool_ref)
+        .await
+        .map_err(|e| format!("Failed to analyze database: {e}"))?;
+
+    // Reinitialize schema artifacts and default data
+    initialize_schema(pool_ref)
+        .await
+        .map_err(|e| format!("Failed to reinitialize schema after reset: {e}"))?;
 
     Ok(())
 }
@@ -4007,6 +4208,9 @@ pub fn run() {
             remove_image,
             get_attachment_url,
             open_attachment,
+            get_storage_stats,
+            clear_attachments,
+            reset_application_data,
             load_notes,
             create_note,
             update_note,

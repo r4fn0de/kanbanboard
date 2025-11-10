@@ -1,4 +1,4 @@
-import { Palette, FolderIcon } from 'lucide-react'
+import { Palette, FolderIcon, HardDrive } from 'lucide-react'
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -26,8 +26,7 @@ import {
 import { useUIStore } from '@/store/ui-store'
 import { AppearancePane } from './panes/AppearancePane'
 import { WorkspacesPane } from './panes/WorkspacesPane'
-
-type PreferencePane = 'appearance' | 'workspaces'
+import { StoragePane } from './panes/StoragePane'
 
 const navigationItems = [
   {
@@ -40,7 +39,14 @@ const navigationItems = [
     name: 'Workspaces',
     icon: FolderIcon,
   },
-]
+  {
+    id: 'storage' as const,
+    name: 'Storage',
+    icon: HardDrive,
+  },
+ ] as const
+
+type PreferencePane = (typeof navigationItems)[number]['id']
 
 const getPaneTitle = (pane: PreferencePane): string => {
   switch (pane) {
@@ -48,6 +54,8 @@ const getPaneTitle = (pane: PreferencePane): string => {
       return 'Appearance'
     case 'workspaces':
       return 'Workspaces'
+    case 'storage':
+      return 'Storage'
     default:
       return 'Appearance'
   }
@@ -132,6 +140,7 @@ export function PreferencesDialog() {
               {activePane === 'workspaces' && (
                 <WorkspacesPane editingWorkspaceId={editingWorkspaceId} />
               )}
+              {activePane === 'storage' && <StoragePane />}
             </div>
           </main>
         </SidebarProvider>

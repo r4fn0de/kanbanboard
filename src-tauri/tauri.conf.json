@@ -55,7 +55,7 @@
     "publisher": "r4fn0de",
     "category": "DeveloperTool",
     "shortDescription": "A lightweight, elegant offline kanban board for productivity",
-    "longDescription": "Flowspace is a kanban board application designed for developers, entrepreneurs, and creators who prefer productivity without depending on the cloud. Built with modern technologies for a fast, offline-first desktop experience.",
+    "longDescription": "Modulo is a kanban board application designed for developers, entrepreneurs, and creators who prefer productivity without depending on the cloud. Built with modern technologies for a fast, offline-first desktop experience.",
     "copyright": "Copyright © 2025 r4fn0de. All rights reserved.",
     "macOS": {
       "frameworks": [],

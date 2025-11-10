@@ -1,6 +1,6 @@
 # 🏠 Home Screen Redesign - Sugestões
 
-> Documento de planejamento para redesign da tela inicial do Flowspace/Modulo
+> Documento de planejamento para redesign da tela inicial do Modulo/Modulo
 
 ## 📋 Visão Geral
 

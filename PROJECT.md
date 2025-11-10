@@ -1,4 +1,4 @@
-# 🧩 Flowspace — Offline Kanban Board
+# 🧩 Modulo — Offline Kanban Board
 
 > Um aplicativo de **Kanban offline**, leve e elegante, criado com **Tauri v2**, **React 19** e **SQLite**.  
 > Ideal para desenvolvedores, empreendedores e criadores que preferem produtividade **sem depender da nuvem**.
