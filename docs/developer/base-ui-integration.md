@@ -78,7 +78,7 @@ function MyDialog() {
 
           <DialogFooter>
             <DialogClose asChild>
-              <Button variant="outline">Cancel</Button>
+              <Button variant="ghost">Cancel</Button>
             </DialogClose>
             <Button type="submit">Save</Button>
           </DialogFooter>
@@ -341,7 +341,7 @@ function DeleteConfirmDialog({ item, onConfirm, open, onOpenChange }) {
           </DialogHeader>
           <DialogFooter>
             <DialogClose asChild>
-              <Button variant="outline">Cancelar</Button>
+              <Button variant="ghost">Cancelar</Button>
             </DialogClose>
             <Button variant="destructive" onClick={onConfirm}>
               Excluir
@@ -396,7 +396,7 @@ function CreateWorkspaceDialog({ open, onOpenChange }) {
 
             <DialogFooter>
               <DialogClose asChild>
-                <Button variant="outline" disabled={isPending}>
+                <Button variant="ghost" disabled={isPending}>
                   Cancelar
                 </Button>
               </DialogClose>

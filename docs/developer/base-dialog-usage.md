@@ -241,7 +241,7 @@ Or use the `onCancel` callback:
       <DialogFooter>
         <Button
           type="button"
-          variant="outline"
+          variant="ghost"
           onClick={() => setOpen(false)}
           disabled={isPending}
         >

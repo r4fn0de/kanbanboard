@@ -277,7 +277,7 @@ export function WorkspaceSelect({
           className={cn(
             'w-full border-0 bg-transparent px-2.5 py-2 text-left focus:ring-0 focus:ring-offset-0 min-w-0 hover:bg-accent/50 rounded-lg transition-colors',
             useTransparentStyle &&
-              'text-white/90 hover:text-white hover:bg-white/30 focus:bg-white/35'
+              'text-white/95 hover:text-white hover:bg-white/20 focus:bg-white/25'
           )}
           onClick={e => {
             // Prevent opening if dialog is open
@@ -327,7 +327,7 @@ export function WorkspaceSelect({
           className={cn(
             'min-w-[220px] max-w-[300px] p-1.5',
             useTransparentStyle &&
-              'backdrop-blur-xl bg-popover/95 dark:bg-popover/95 supports-[backdrop-filter]:bg-popover/90 dark:supports-[backdrop-filter]:bg-popover/90 border border-border',
+              'backdrop-blur-xl bg-popover/90 dark:bg-popover/95 supports-[backdrop-filter]:bg-popover/85 dark:supports-[backdrop-filter]:bg-popover/90 border border-border/60',
             activeId &&
               '[&>*:not([data-dnd-kit-sortable])]:pointer-events-none'
           )}
@@ -347,7 +347,7 @@ export function WorkspaceSelect({
                   className={cn(
                     'rounded-md px-2 py-2 my-0.5',
                     useTransparentStyle
-                      ? 'data-[state=checked]:bg-accent/35 data-[state=checked]:text-popover-foreground hover:bg-muted/80 text-popover-foreground'
+                      ? 'data-[state=checked]:bg-accent/60 dark:data-[state=checked]:bg-white/20 data-[state=checked]:text-accent-foreground dark:data-[state=checked]:text-white hover:bg-accent/40 dark:hover:bg-white/30 text-foreground dark:text-white/95'
                       : 'data-[state=checked]:bg-accent/60 hover:bg-accent/40'
                   )}
                 >
@@ -365,7 +365,7 @@ export function WorkspaceSelect({
             className={cn(
               'flex w-full items-center gap-2.5 rounded-md px-2 py-2 text-sm font-medium transition-colors',
               useTransparentStyle
-                ? 'hover:bg-muted/80 text-muted-foreground hover:text-foreground'
+                ? 'hover:bg-accent/40 dark:hover:bg-white/25 text-foreground dark:text-white/90 hover:text-foreground dark:hover:text-white'
                 : 'hover:bg-accent/40 text-muted-foreground hover:text-foreground'
             )}
             onClick={e => {

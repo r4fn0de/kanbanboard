@@ -66,8 +66,8 @@ function ProjectListItem({
             'flex grow items-center gap-2.5 rounded-lg px-3 py-1.5 text-left text-sm transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
             useTransparentStyle
               ? isActive
-                ? 'bg-white/55 text-white backdrop-blur-sm'
-                : 'text-white/85 hover:bg-white/45 hover:text-white hover:backdrop-blur-sm'
+                ? 'bg-white/25 text-white backdrop-blur-sm'
+                : 'text-white/90 hover:bg-white/20 hover:text-white hover:backdrop-blur-sm'
               : isActive
                 ? 'bg-accent text-accent-foreground shadow-sm'
                 : 'text-muted-foreground/90 hover:bg-accent/70 hover:text-accent-foreground'
@@ -93,7 +93,7 @@ function ProjectListItem({
               'group-hover:opacity-100 group-hover:pointer-events-auto',
               'data-[state=open]:opacity-100 data-[state=open]:pointer-events-auto',
               useTransparentStyle
-                ? 'text-white/85 hover:bg-white/35 hover:text-white data-[state=open]:bg-white/45 data-[state=open]:text-white'
+                ? 'text-white/90 hover:bg-white/25 hover:text-white data-[state=open]:bg-white/30 data-[state=open]:text-white'
                 : 'text-muted-foreground/90 hover:bg-accent/60 data-[state=open]:bg-accent/70 data-[state=open]:text-accent-foreground'
             )}
             aria-label={`Open actions for ${board.title}`}
@@ -107,7 +107,7 @@ function ProjectListItem({
           className={cn(
             'w-44',
             useTransparentStyle &&
-              'backdrop-blur-xl bg-popover/80 supports-[backdrop-filter]:bg-popover/60'
+              'backdrop-blur-xl bg-popover/85 dark:bg-popover/90 supports-[backdrop-filter]:bg-popover/80 dark:supports-[backdrop-filter]:bg-popover/85 border border-border/60'
           )}
         >
           <DropdownMenuItem onSelect={() => onOpenSettings(board)}>
@@ -165,8 +165,8 @@ export const ProjectList = memo(function ProjectList({
             'flex items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
             useTransparentStyle
               ? isActive
-                ? 'bg-white/35 text-white backdrop-blur-sm'
-                : 'text-white/70 hover:bg-white/30 hover:text-white hover:backdrop-blur-sm'
+                ? 'bg-white/25 text-white backdrop-blur-sm'
+                : 'text-white/85 hover:bg-white/20 hover:text-white hover:backdrop-blur-sm'
               : isActive
                 ? 'bg-accent text-accent-foreground shadow-sm'
                 : 'text-muted-foreground/90 hover:bg-accent/70 hover:text-accent-foreground'
@@ -181,7 +181,7 @@ export const ProjectList = memo(function ProjectList({
         <div
           className={cn(
             'flex items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm transition-all duration-200',
-            useTransparentStyle ? 'text-white/95 font-semibold' : 'text-foreground'
+            useTransparentStyle ? 'text-white/90 font-semibold' : 'text-foreground'
           )}
         >
           <span className="font-bold">Projects</span>
@@ -280,7 +280,7 @@ export const ProjectList = memo(function ProjectList({
             className={cn(
               'mt-2 flex items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
               useTransparentStyle
-                ? 'text-white/90 hover:bg-white/45 hover:text-white hover:backdrop-blur-sm'
+                ? 'text-white/90 hover:bg-white/25 hover:text-white hover:backdrop-blur-sm'
                 : 'text-muted-foreground/90 hover:bg-accent/70 hover:text-accent-foreground'
             )}
             onClick={onCreateProject}

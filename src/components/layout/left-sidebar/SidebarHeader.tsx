@@ -33,7 +33,7 @@ export function SidebarHeader({
           className={cn(
             'h-6 w-6 hover:bg-accent/30',
             useTransparentStyle
-              ? 'text-white/80 hover:text-white hover:bg-white/10'
+              ? 'text-white/85 hover:text-white hover:bg-white/15'
               : 'text-foreground/70 hover:text-foreground'
           )}
           title={leftSidebarVisible ? 'Hide Left Sidebar' : 'Show Left Sidebar'}
@@ -52,7 +52,7 @@ export function SidebarHeader({
           className={cn(
             'h-6 w-6 hover:bg-accent/30',
             useTransparentStyle
-              ? 'text-white/80 hover:text-white hover:bg-white/10'
+              ? 'text-white/85 hover:text-white hover:bg-white/15'
               : 'text-foreground/70 hover:text-foreground'
           )}
           title="Settings"

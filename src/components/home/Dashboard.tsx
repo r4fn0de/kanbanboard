@@ -1,332 +1,352 @@
-import { DndContext, closestCenter, DragEndEvent } from '@dnd-kit/core'
-import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
-import { useState, useEffect, useCallback, useMemo } from 'react'
-import { Link } from 'react-router-dom'
-import { Settings, Search } from 'lucide-react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { useWidgetLayout } from '@/hooks/useWidgetLayout'
-import { useWorkspaceStatus } from '@/hooks/useWorkspaceStatus'
-import { useUIStore } from '@/store/ui-store'
-import { usePerformanceMonitor } from '@/hooks/usePerformanceMonitor'
-import { ErrorBoundary } from '@/components/error/ErrorBoundary'
-import { OverviewSection } from './sections/OverviewSection'
-import { QuickActionsSection } from './sections/QuickActionsSection'
-import { FavoritesSection } from './sections/FavoritesSection'
-import { ActivitySection } from './sections/ActivitySection'
-import { DeadlinesSection } from './sections/DeadlinesSection'
-import { WidgetContainer } from './WidgetContainer'
-import { Button } from '@/components/ui/button'
-import { SettingsDialog } from './SettingsDialog'
-import { GlobalSearch } from '@/components/search/GlobalSearch'
-import { EmptyOnboarding, NewUserOnboarding } from '@/components/onboarding'
+import { DndContext, closestCenter, DragEndEvent } from "@dnd-kit/core";
+import {
+	SortableContext,
+	verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { Link } from "react-router-dom";
+import { Settings, Search } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { useWidgetLayout } from "@/hooks/useWidgetLayout";
+import { useWorkspaceStatus } from "@/hooks/useWorkspaceStatus";
+import { useUIStore } from "@/store/ui-store";
+import { usePerformanceMonitor } from "@/hooks/usePerformanceMonitor";
+import { ErrorBoundary } from "@/components/error/ErrorBoundary";
+import { OverviewSection } from "./sections/OverviewSection";
+import { QuickActionsSection } from "./sections/QuickActionsSection";
+import { FavoritesSection } from "./sections/FavoritesSection";
+import { ActivitySection } from "./sections/ActivitySection";
+import { DeadlinesSection } from "./sections/DeadlinesSection";
+import { WidgetContainer } from "./WidgetContainer";
+import { Button } from "@/components/ui/button";
+import { SettingsDialog } from "./SettingsDialog";
+import { GlobalSearch } from "@/components/search/GlobalSearch";
+import { EmptyOnboarding, NewUserOnboarding } from "@/components/onboarding";
 
 export function Dashboard() {
-  usePerformanceMonitor('Dashboard')
+	usePerformanceMonitor("Dashboard");
 
-  const { widgets, reorderWidgets, toggleWidget } = useWidgetLayout()
-  const { data: workspaceStatus, isLoading: statusLoading } = useWorkspaceStatus()
-  const [settingsOpen, setSettingsOpen] = useState(false)
-  const [showNewUserTips, setShowNewUserTips] = useState(true)
-  const { commandPaletteOpen, setCommandPaletteOpen } = useUIStore()
+	const { widgets, reorderWidgets, toggleWidget } = useWidgetLayout();
+	const { data: workspaceStatus, isLoading: statusLoading } =
+		useWorkspaceStatus();
+	const [settingsOpen, setSettingsOpen] = useState(false);
+	const [showNewUserTips, setShowNewUserTips] = useState(true);
+	const { commandPaletteOpen, setCommandPaletteOpen } = useUIStore();
 
-  // Check if this is a new user (has boards but no activity)
-  const isNewUser = workspaceStatus?.isNewUser ?? false
-  const isEmpty = workspaceStatus?.isEmpty ?? false
+	// Check if this is a new user (has boards but no activity)
+	const isNewUser = workspaceStatus?.isNewUser ?? false;
+	const isEmpty = workspaceStatus?.isEmpty ?? false;
 
-  // Memoize handlers to prevent unnecessary re-renders
-  const handleDragEnd = useCallback((event: DragEndEvent) => {
-    const { active, over } = event
+	// Memoize handlers to prevent unnecessary re-renders
+	const handleDragEnd = useCallback(
+		(event: DragEndEvent) => {
+			const { active, over } = event;
 
-    if (over && active.id !== over.id) {
-      reorderWidgets(active.id as string, over.id as string)
-    }
-  }, [reorderWidgets])
+			if (over && active.id !== over.id) {
+				reorderWidgets(active.id as string, over.id as string);
+			}
+		},
+		[reorderWidgets],
+	);
 
-  const handleSettingsOpen = useCallback(() => setSettingsOpen(true), [])
-  const handleSettingsClose = useCallback((open: boolean) => setSettingsOpen(open), [])
-  const handleSearchOpen = useCallback(() => setCommandPaletteOpen(true), [setCommandPaletteOpen])
-  const handleDismissNewUserTips = useCallback(() => setShowNewUserTips(false), [])
-  const handleCreateBoard = useCallback(() => {
-    // TODO: Open create board dialog
-    console.log('Create board')
-  }, [])
+	const handleSettingsOpen = useCallback(() => setSettingsOpen(true), []);
+	const handleSettingsClose = useCallback(
+		(open: boolean) => setSettingsOpen(open),
+		[],
+	);
+	const handleSearchOpen = useCallback(
+		() => setCommandPaletteOpen(true),
+		[setCommandPaletteOpen],
+	);
+	const handleDismissNewUserTips = useCallback(
+		() => setShowNewUserTips(false),
+		[],
+	);
+	const handleCreateBoard = useCallback(() => {
+		// TODO: Open create board dialog
+		console.log("Create board");
+	}, []);
 
-  // Memoize renderWidget function
-  const renderWidget = useCallback((widget: any) => {
-    const actionButtons = {
-      'favorites': (
-        <Button variant="ghost" size="sm" asChild>
-          <Link to="/projects/favorites">View All</Link>
-        </Button>
-      ),
-      'activity': (
-        <Button variant="ghost" size="sm">
-          <Link to="/activity">View All</Link>
-        </Button>
-      ),
-      'deadlines': (
-        <Button variant="ghost" size="sm">
-          <Link to="/deadlines">View All</Link>
-        </Button>
-      ),
-    }
+	// Memoize renderWidget function
+	const renderWidget = useCallback(
+		(widget: any) => {
+			const actionButtons = {
+				favorites: (
+					<Button variant="ghost" size="sm" asChild>
+						<Link to="/projects/favorites">View All</Link>
+					</Button>
+				),
+				activity: (
+					<Button variant="ghost" size="sm">
+						<Link to="/activity">View All</Link>
+					</Button>
+				),
+				deadlines: (
+					<Button variant="ghost" size="sm">
+						<Link to="/deadlines">View All</Link>
+					</Button>
+				),
+			};
 
-    const commonProps = {
-      key: widget.id,
-      id: widget.id,
-      title: widget.title,
-      onToggle: () => toggleWidget(widget.id),
-      actionButton: actionButtons[widget.type as keyof typeof actionButtons] || null,
-    }
+			const commonProps = {
+				key: widget.id,
+				id: widget.id,
+				title: widget.title,
+				onToggle: () => toggleWidget(widget.id),
+				actionButton:
+					actionButtons[widget.type as keyof typeof actionButtons] || null,
+			};
 
-    switch (widget.type) {
-      case 'overview':
-        return (
-          <WidgetContainer {...commonProps}>
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.3 }}
-            >
-              <ErrorBoundary>
-                <OverviewSection />
-              </ErrorBoundary>
-            </motion.div>
-          </WidgetContainer>
-        )
+			switch (widget.type) {
+				case "overview":
+					return (
+						<WidgetContainer {...commonProps}>
+							<motion.div
+								initial={{ opacity: 0, y: 20 }}
+								animate={{ opacity: 1, y: 0 }}
+								exit={{ opacity: 0, y: -20 }}
+								transition={{ duration: 0.3 }}
+							>
+								<ErrorBoundary>
+									<OverviewSection />
+								</ErrorBoundary>
+							</motion.div>
+						</WidgetContainer>
+					);
 
-      case 'quick-actions':
-        return (
-          <WidgetContainer {...commonProps}>
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.3, delay: 0.1 }}
-            >
-              <ErrorBoundary>
-                <QuickActionsSection />
-              </ErrorBoundary>
-            </motion.div>
-          </WidgetContainer>
-        )
+				case "quick-actions":
+					return (
+						<WidgetContainer {...commonProps}>
+							<motion.div
+								initial={{ opacity: 0, y: 20 }}
+								animate={{ opacity: 1, y: 0 }}
+								exit={{ opacity: 0, y: -20 }}
+								transition={{ duration: 0.3, delay: 0.1 }}
+							>
+								<ErrorBoundary>
+									<QuickActionsSection />
+								</ErrorBoundary>
+							</motion.div>
+						</WidgetContainer>
+					);
 
-      case 'favorites':
-        return (
-          <WidgetContainer {...commonProps}>
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.3, delay: 0.2 }}
-            >
-              <ErrorBoundary>
-                <FavoritesSection />
-              </ErrorBoundary>
-            </motion.div>
-          </WidgetContainer>
-        )
+				case "favorites":
+					return (
+						<WidgetContainer {...commonProps}>
+							<motion.div
+								initial={{ opacity: 0, y: 20 }}
+								animate={{ opacity: 1, y: 0 }}
+								exit={{ opacity: 0, y: -20 }}
+								transition={{ duration: 0.3, delay: 0.2 }}
+							>
+								<ErrorBoundary>
+									<FavoritesSection />
+								</ErrorBoundary>
+							</motion.div>
+						</WidgetContainer>
+					);
 
-      case 'activity':
-        return (
-          <WidgetContainer {...commonProps}>
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.3, delay: 0.3 }}
-            >
-              <ErrorBoundary>
-                <ActivitySection />
-              </ErrorBoundary>
-            </motion.div>
-          </WidgetContainer>
-        )
+				case "activity":
+					return (
+						<WidgetContainer {...commonProps}>
+							<motion.div
+								initial={{ opacity: 0, y: 20 }}
+								animate={{ opacity: 1, y: 0 }}
+								exit={{ opacity: 0, y: -20 }}
+								transition={{ duration: 0.3, delay: 0.3 }}
+							>
+								<ErrorBoundary>
+									<ActivitySection />
+								</ErrorBoundary>
+							</motion.div>
+						</WidgetContainer>
+					);
 
-      case 'deadlines':
-        return (
-          <WidgetContainer {...commonProps}>
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.3, delay: 0.4 }}
-            >
-              <ErrorBoundary>
-                <DeadlinesSection />
-              </ErrorBoundary>
-            </motion.div>
-          </WidgetContainer>
-        )
+				case "deadlines":
+					return (
+						<WidgetContainer {...commonProps}>
+							<motion.div
+								initial={{ opacity: 0, y: 20 }}
+								animate={{ opacity: 1, y: 0 }}
+								exit={{ opacity: 0, y: -20 }}
+								transition={{ duration: 0.3, delay: 0.4 }}
+							>
+								<ErrorBoundary>
+									<DeadlinesSection />
+								</ErrorBoundary>
+							</motion.div>
+						</WidgetContainer>
+					);
 
-      default:
-        return null
-    }
-  }, [toggleWidget])
+				default:
+					return null;
+			}
+		},
+		[toggleWidget],
+	);
 
-  // Memoize visible widgets
-  const visibleWidgets = useMemo(() => widgets.filter(w => w.visible), [widgets])
+	// Memoize visible widgets
+	const visibleWidgets = useMemo(
+		() => widgets.filter((w) => w.visible),
+		[widgets],
+	);
 
-  // Keyboard shortcut for search
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-        e.preventDefault()
-        handleSearchOpen()
-      }
-    }
+	// Keyboard shortcut for search
+	useEffect(() => {
+		const handleKeyDown = (e: KeyboardEvent) => {
+			if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+				e.preventDefault();
+				handleSearchOpen();
+			}
+		};
 
-    document.addEventListener('keydown', handleKeyDown)
-    return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [handleSearchOpen])
+		document.addEventListener("keydown", handleKeyDown);
+		return () => document.removeEventListener("keydown", handleKeyDown);
+	}, [handleSearchOpen]);
 
-  // Show loading skeleton while checking workspace status
-  if (statusLoading) {
-    return (
-      <div className="flex h-full flex-col gap-6 p-6 overflow-y-auto">
-        <div className="flex items-center justify-between">
-          <div className="space-y-2">
-            <div className="h-8 w-64 bg-muted animate-pulse rounded" />
-            <div className="h-4 w-96 bg-muted animate-pulse rounded" />
-          </div>
-        </div>
-        <div className="space-y-8">
-          <div className="space-y-4">
-            <div className="h-6 w-32 bg-muted animate-pulse rounded" />
-            <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="h-32 bg-muted animate-pulse rounded-lg" />
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-    )
-  }
+	// Show loading skeleton while checking workspace status
+	if (statusLoading) {
+		return (
+			<div className="flex h-full flex-col gap-6 p-6 overflow-y-auto">
+				<div className="flex items-center justify-between">
+					<div className="space-y-2">
+						<div className="h-8 w-64 bg-muted animate-pulse rounded" />
+						<div className="h-4 w-96 bg-muted animate-pulse rounded" />
+					</div>
+				</div>
+				<div className="space-y-8">
+					<div className="space-y-4">
+						<div className="h-6 w-32 bg-muted animate-pulse rounded" />
+						<div className="grid gap-4 grid-cols-2 md:grid-cols-4">
+							{Array.from({ length: 4 }).map((_, i) => (
+								<div
+									key={i}
+									className="h-32 bg-muted animate-pulse rounded-lg"
+								/>
+							))}
+						</div>
+					</div>
+				</div>
+			</div>
+		);
+	}
 
-  // Show empty state onboarding when workspace is empty
-  if (isEmpty) {
-    return (
-      <>
-        <div className="flex h-full flex-col gap-6 p-6 overflow-y-auto">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-                Welcome to Modulo
-              </h1>
-              <p className="text-sm text-muted-foreground">
-                Organize your work, keep projects on track, and stay focused
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                onClick={handleSearchOpen}
-                className="gap-2"
-                title="Search (Cmd+K)"
-              >
-                <Search className="h-4 w-4" />
-                <span className="hidden sm:inline text-sm">Search</span>
-              </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={handleSettingsOpen}
-                title="Customize dashboard"
-              >
-                <Settings className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
+	// Show empty state onboarding when workspace is empty
+	if (isEmpty) {
+		return (
+			<>
+				<div className="flex h-full flex-col gap-6 p-6 overflow-y-auto">
+					<div className="flex items-center justify-between">
+						<div>
+							<h1 className="text-2xl font-semibold tracking-tight text-foreground">
+								Welcome to Modulo
+							</h1>
+							<p className="text-sm text-muted-foreground">
+								Organize your work, keep projects on track, and stay focused
+							</p>
+						</div>
+						<div className="flex items-center gap-2">
+							<Button
+								variant="ghost"
+								onClick={handleSearchOpen}
+								className="gap-2"
+								title="Search (Cmd+K)"
+							>
+								<Search className="h-4 w-4" />
+								<span className="hidden sm:inline text-sm">Search</span>
+							</Button>
+							<Button
+								variant="ghost"
+								size="icon"
+								onClick={handleSettingsOpen}
+								title="Customize dashboard"
+							>
+								<Settings className="h-4 w-4" />
+							</Button>
+						</div>
+					</div>
 
-          <EmptyOnboarding onCreateBoard={handleCreateBoard} />
-        </div>
+					<EmptyOnboarding onCreateBoard={handleCreateBoard} />
+				</div>
 
-        <SettingsDialog
-          open={settingsOpen}
-          onOpenChange={handleSettingsClose}
-        />
-      </>
-    )
-  }
+				<SettingsDialog
+					open={settingsOpen}
+					onOpenChange={handleSettingsClose}
+				/>
+			</>
+		);
+	}
 
-  return (
-    <>
-      <div className="flex h-full flex-col gap-6 p-6 overflow-y-auto">
-        <div className="flex flex-col gap-2">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-                Welcome to Modulo
-              </h1>
-              <p className="text-sm text-muted-foreground">
-                Organize your work, keep projects on track, and stay focused
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                onClick={handleSearchOpen}
-                className="gap-2"
-                title="Search (Cmd+K)"
-              >
-                <Search className="h-4 w-4" />
-                <span className="hidden sm:inline text-sm">Search</span>
-                <span className="text-xs text-muted-foreground ml-2 hidden sm:inline-flex items-center gap-1">
-                  <kbd className="px-1 py-0.5 rounded bg-muted text-xs">⌘</kbd>
-                  <kbd className="px-1 py-0.5 rounded bg-muted text-xs">K</kbd>
-                </span>
-              </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={handleSettingsOpen}
-                title="Customize dashboard"
-              >
-                <Settings className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        </div>
+	return (
+		<>
+			<div className="flex h-full flex-col gap-6 p-6 overflow-y-auto">
+				<div className="flex flex-col gap-2">
+					<div className="flex items-center justify-between">
+						<div>
+							<h1 className="text-2xl font-semibold tracking-tight text-foreground">
+								Welcome to Modulo
+							</h1>
+							<p className="text-sm text-muted-foreground">
+								Organize your work, keep projects on track, and stay focused
+							</p>
+						</div>
+						<div className="flex items-center gap-2">
+							<Button
+								variant="ghost"
+								onClick={handleSearchOpen}
+								className="gap-2"
+								title="Search (Cmd+K)"
+							>
+								<Search className="h-4 w-4" />
+								<span className="hidden sm:inline text-sm">Search</span>
+								<span className="text-xs text-muted-foreground ml-2 hidden sm:inline-flex items-center gap-1">
+									<kbd className="px-1 py-0.5 rounded bg-muted text-xs">⌘</kbd>
+									<kbd className="px-1 py-0.5 rounded bg-muted text-xs">K</kbd>
+								</span>
+							</Button>
+							<Button
+								variant="ghost"
+								size="icon"
+								onClick={handleSettingsOpen}
+								title="Customize dashboard"
+							>
+								<Settings className="h-4 w-4" />
+							</Button>
+						</div>
+					</div>
+				</div>
 
-        {/* New User Onboarding Tips */}
-        {isNewUser && showNewUserTips && (
-          <NewUserOnboarding
-            onDismiss={handleDismissNewUserTips}
-            onOpenSearch={handleSearchOpen}
-          />
-        )}
+				{/* New User Onboarding Tips */}
+				{isNewUser && showNewUserTips && (
+					<NewUserOnboarding
+						onDismiss={handleDismissNewUserTips}
+						onOpenSearch={handleSearchOpen}
+					/>
+				)}
 
-        <DndContext
-          collisionDetection={closestCenter}
-          onDragEnd={handleDragEnd}
-        >
-          <SortableContext
-            items={visibleWidgets.map(w => w.id)}
-            strategy={verticalListSortingStrategy}
-          >
-            <motion.div
-              className="space-y-8"
-              layout
-            >
-              <AnimatePresence mode="popLayout">
-                {visibleWidgets.map((widget) => renderWidget(widget))}
-              </AnimatePresence>
-            </motion.div>
-          </SortableContext>
-        </DndContext>
-      </div>
+				<DndContext
+					collisionDetection={closestCenter}
+					onDragEnd={handleDragEnd}
+				>
+					<SortableContext
+						items={visibleWidgets.map((w) => w.id)}
+						strategy={verticalListSortingStrategy}
+					>
+						<motion.div className="space-y-8" layout>
+							<AnimatePresence mode="popLayout">
+								{visibleWidgets.map((widget) => renderWidget(widget))}
+							</AnimatePresence>
+						</motion.div>
+					</SortableContext>
+				</DndContext>
+			</div>
 
-      <SettingsDialog
-        open={settingsOpen}
-        onOpenChange={handleSettingsClose}
-      />
+			<SettingsDialog open={settingsOpen} onOpenChange={handleSettingsClose} />
 
-      <GlobalSearch
-        open={commandPaletteOpen}
-        onOpenChange={setCommandPaletteOpen}
-      />
-    </>
-  )
+			<GlobalSearch
+				open={commandPaletteOpen}
+				onOpenChange={setCommandPaletteOpen}
+			/>
+		</>
+	);
 }
