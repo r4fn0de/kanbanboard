@@ -10,8 +10,6 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { RotateCcw } from "lucide-react";
 import { useWidgetLayout } from "@/hooks/useWidgetLayout";
-import { motion } from "framer-motion";
-import { useState } from "react";
 import { cn } from "@/lib/utils";
 
 interface SettingsDialogProps {
@@ -41,12 +39,9 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
 				</DialogHeader>
 
 				<div className="space-y-4 py-4">
-					{widgets.map((widget, index) => (
-						<motion.div
+					{widgets.map((widget) => (
+						<div
 							key={widget.id}
-							initial={{ opacity: 0, x: -20 }}
-							animate={{ opacity: 1, x: 0 }}
-							transition={{ delay: index * 0.05 }}
 							className={cn(
 								"flex items-center justify-between p-3 rounded-lg border transition-all",
 								"hover:bg-muted/50",
@@ -65,7 +60,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
 								checked={widget.visible}
 								onCheckedChange={() => handleToggle(widget.id)}
 							/>
-						</motion.div>
+						</div>
 					))}
 				</div>
 

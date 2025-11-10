@@ -1,12 +1,6 @@
-import { DndContext, closestCenter, DragEndEvent } from "@dnd-kit/core";
-import {
-	SortableContext,
-	verticalListSortingStrategy,
-} from "@dnd-kit/sortable";
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { Settings, Search } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
 import { useWidgetLayout } from "@/hooks/useWidgetLayout";
 import { useWorkspaceStatus } from "@/hooks/useWorkspaceStatus";
 import { useUIStore } from "@/store/ui-store";
@@ -26,7 +20,7 @@ import { EmptyOnboarding, NewUserOnboarding } from "@/components/onboarding";
 export function Dashboard() {
 	usePerformanceMonitor("Dashboard");
 
-	const { widgets, reorderWidgets, toggleWidget } = useWidgetLayout();
+	const { widgets } = useWidgetLayout();
 	const { data: workspaceStatus, isLoading: statusLoading } =
 		useWorkspaceStatus();
 	const [settingsOpen, setSettingsOpen] = useState(false);
@@ -36,18 +30,6 @@ export function Dashboard() {
 	// Check if this is a new user (has boards but no activity)
 	const isNewUser = workspaceStatus?.isNewUser ?? false;
 	const isEmpty = workspaceStatus?.isEmpty ?? false;
-
-	// Memoize handlers to prevent unnecessary re-renders
-	const handleDragEnd = useCallback(
-		(event: DragEndEvent) => {
-			const { active, over } = event;
-
-			if (over && active.id !== over.id) {
-				reorderWidgets(active.id as string, over.id as string);
-			}
-		},
-		[reorderWidgets],
-	);
 
 	const handleSettingsOpen = useCallback(() => setSettingsOpen(true), []);
 	const handleSettingsClose = useCallback(
@@ -90,9 +72,7 @@ export function Dashboard() {
 
 			const commonProps = {
 				key: widget.id,
-				id: widget.id,
 				title: widget.title,
-				onToggle: () => toggleWidget(widget.id),
 				actionButton:
 					actionButtons[widget.type as keyof typeof actionButtons] || null,
 			};
@@ -101,80 +81,55 @@ export function Dashboard() {
 				case "overview":
 					return (
 						<WidgetContainer {...commonProps}>
-							<motion.div
-								initial={{ opacity: 0, y: 20 }}
-								animate={{ opacity: 1, y: 0 }}
-								exit={{ opacity: 0, y: -20 }}
-								transition={{ duration: 0.3 }}
-							>
+							<div>
 								<ErrorBoundary>
 									<OverviewSection />
 								</ErrorBoundary>
-							</motion.div>
+							</div>
 						</WidgetContainer>
 					);
 
 				case "quick-actions":
 					return (
 						<WidgetContainer {...commonProps}>
-							<motion.div
-								initial={{ opacity: 0, y: 20 }}
-								animate={{ opacity: 1, y: 0 }}
-								exit={{ opacity: 0, y: -20 }}
-								transition={{ duration: 0.3, delay: 0.1 }}
-							>
+							<div>
 								<ErrorBoundary>
 									<QuickActionsSection />
 								</ErrorBoundary>
-							</motion.div>
+							</div>
 						</WidgetContainer>
 					);
 
 				case "favorites":
 					return (
 						<WidgetContainer {...commonProps}>
-							<motion.div
-								initial={{ opacity: 0, y: 20 }}
-								animate={{ opacity: 1, y: 0 }}
-								exit={{ opacity: 0, y: -20 }}
-								transition={{ duration: 0.3, delay: 0.2 }}
-							>
+							<div>
 								<ErrorBoundary>
 									<FavoritesSection />
 								</ErrorBoundary>
-							</motion.div>
+							</div>
 						</WidgetContainer>
 					);
 
 				case "activity":
 					return (
 						<WidgetContainer {...commonProps}>
-							<motion.div
-								initial={{ opacity: 0, y: 20 }}
-								animate={{ opacity: 1, y: 0 }}
-								exit={{ opacity: 0, y: -20 }}
-								transition={{ duration: 0.3, delay: 0.3 }}
-							>
+							<div>
 								<ErrorBoundary>
 									<ActivitySection />
 								</ErrorBoundary>
-							</motion.div>
+							</div>
 						</WidgetContainer>
 					);
 
 				case "deadlines":
 					return (
 						<WidgetContainer {...commonProps}>
-							<motion.div
-								initial={{ opacity: 0, y: 20 }}
-								animate={{ opacity: 1, y: 0 }}
-								exit={{ opacity: 0, y: -20 }}
-								transition={{ duration: 0.3, delay: 0.4 }}
-							>
+							<div>
 								<ErrorBoundary>
 									<DeadlinesSection />
 								</ErrorBoundary>
-							</motion.div>
+							</div>
 						</WidgetContainer>
 					);
 
@@ -182,7 +137,7 @@ export function Dashboard() {
 					return null;
 			}
 		},
-		[toggleWidget],
+		[],
 	);
 
 	// Memoize visible widgets
@@ -324,21 +279,9 @@ export function Dashboard() {
 					/>
 				)}
 
-				<DndContext
-					collisionDetection={closestCenter}
-					onDragEnd={handleDragEnd}
-				>
-					<SortableContext
-						items={visibleWidgets.map((w) => w.id)}
-						strategy={verticalListSortingStrategy}
-					>
-						<motion.div className="space-y-8" layout>
-							<AnimatePresence mode="popLayout">
-								{visibleWidgets.map((widget) => renderWidget(widget))}
-							</AnimatePresence>
-						</motion.div>
-					</SortableContext>
-				</DndContext>
+				<div className="space-y-8">
+					{visibleWidgets.map((widget) => renderWidget(widget))}
+				</div>
 			</div>
 
 			<SettingsDialog open={settingsOpen} onOpenChange={handleSettingsClose} />

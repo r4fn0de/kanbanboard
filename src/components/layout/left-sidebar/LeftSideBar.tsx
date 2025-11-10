@@ -106,7 +106,7 @@ export function LeftSideBar({
   const sidebarClasses = cn(
     'flex h-full flex-col rounded-l-[12px]',
     useTransparentStyle
-      ? 'bg-background/8 backdrop-blur-lg supports-[backdrop-filter]:bg-background/5 supports-[backdrop-filter]:backdrop-blur-xl'
+      ? 'bg-background/20 backdrop-blur-lg supports-[backdrop-filter]:bg-background/10 supports-[backdrop-filter]:backdrop-blur-xl'
       : 'bg-background'
   )
 
