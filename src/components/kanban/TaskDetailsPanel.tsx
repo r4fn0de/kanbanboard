@@ -3,22 +3,23 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { toast } from 'sonner'
 import { useQueryClient } from '@tanstack/react-query'
 
+import { Plus, X } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { AttachmentIcon2, CalendarIcon, TagIcon, TrashIcon, TriangleArrowDownIcon, TriangleArrowUpIcon } from '@/components/ui/icons'
 import { Checkbox } from '@/components/ui/checkbox'
+import { ImageUpload } from '@/components/ui/image-upload'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Progress } from '@/components/ui/progress'
 import { Textarea } from '@/components/ui/textarea'
-import { ArrowDown, ArrowUp, CalendarDays, Paperclip, Plus, Tag, X } from 'lucide-react'
-import { TrashIcon } from '@/components/ui/icons'
+import { getColumnIconComponent } from '@/components/kanban/column-icon-options'
+import { TagSelector } from '@/components/kanban/tags/TagSelector'
 import { PrioritySelector } from './views/board-shared'
-import { cn } from '@/lib/utils'
 import {
   CARD_DUE_STATUS_STYLES,
   getCardDueMetadata,
 } from './views/card-date'
-import { getColumnIconComponent } from '@/components/kanban/column-icon-options'
 import {
   kanbanQueryKeys,
   useCreateSubtask,
@@ -27,9 +28,7 @@ import {
   useUpdateCardTags,
   useUpdateSubtask,
 } from '@/services/kanban'
-import { ImageUpload } from '@/components/ui/image-upload'
-import { TagSelector } from '@/components/kanban/tags/TagSelector'
-
+import { cn } from '@/lib/utils'
 import type { KanbanCard, KanbanColumn, KanbanSubtask } from '@/types/common'
 
 interface TaskDetailsPanelProps {
@@ -577,7 +576,7 @@ export function TaskDetailsPanel({
               <section className="space-y-4">
                 <div className="flex items-center justify-between rounded-lg border border-border/60 bg-background px-4 py-3">
                   <div className="flex flex-wrap items-center gap-3">
-                    <CalendarDays className="h-4 w-4 text-muted-foreground" />
+                    <CalendarIcon className="h-4 w-4 text-muted-foreground" />
                     <span className="text-sm font-medium text-muted-foreground">
                       Due date
                     </span>
@@ -610,7 +609,7 @@ export function TaskDetailsPanel({
                 </div>
                 <div className="flex flex-col gap-2 rounded-lg border border-border/60 bg-background px-4 py-3">
                   <div className="flex items-center gap-3">
-                    <Tag className="h-4 w-4 text-muted-foreground" />
+                    <TagIcon className="h-4 w-4 text-muted-foreground" />
                     <span className="text-sm font-medium text-muted-foreground">
                       Tags
                     </span>
@@ -700,8 +699,6 @@ export function TaskDetailsPanel({
                       key={subtask.id}
                       className={cn(
                         'group relative flex items-center gap-3 rounded-lg border border-border/60 bg-background/80 px-4 py-3 transition-all duration-200 ease-out',
-                        'hover:-translate-y-0.5 hover:border-border hover:bg-muted/60 hover:shadow-sm',
-                        'focus-within:-translate-y-0.5 focus-within:border-foreground/30 focus-within:shadow-sm',
                         subtask.isCompleted && 'border-border/40 bg-muted/60'
                       )}
                     >
@@ -757,7 +754,7 @@ export function TaskDetailsPanel({
                           disabled={index === 0 || isSubtaskMutationPending}
                           aria-label="Move subtask up"
                         >
-                          <ArrowUp className="h-4 w-4" />
+                          <TriangleArrowUpIcon className="h-4 w-4" />
                         </Button>
                         <Button
                           type="button"
@@ -770,7 +767,7 @@ export function TaskDetailsPanel({
                           }
                           aria-label="Move subtask down"
                         >
-                          <ArrowDown className="h-4 w-4" />
+                          <TriangleArrowDownIcon className="h-4 w-4" />
                         </Button>
                         <Button
                           type="button"
@@ -814,7 +811,7 @@ export function TaskDetailsPanel({
                   </Label>
                   {card.attachments && card.attachments.length > 0 ? (
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <Paperclip className="h-3.5 w-3.5" />
+                      <AttachmentIcon2 className="h-3.5 w-3.5 scale-x-[-1]" />
                       {card.attachments.length}
                     </div>
                   ) : null}

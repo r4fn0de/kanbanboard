@@ -5,7 +5,6 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
 	X,
-	Upload,
 	Image as ImageIcon,
 	FileText,
 	FileArchive,
@@ -25,6 +24,7 @@ import {
 	MenuItem,
 	MenuSeparator,
 } from "@/components/ui/base-ui-menu";
+import { ShipUploadIcon } from "@/components/ui/icons";
 
 interface ImageUploadProps {
 	cardId: string;
@@ -318,7 +318,7 @@ export function ImageUpload({
 					disabled={isUploading}
 					className="flex items-center gap-2"
 				>
-					<Upload className="h-4 w-4" />
+					<ShipUploadIcon className="h-4 w-4" />
 					{isUploading ? "Uploading..." : "Add Attachment"}
 				</Button>
 			</div>
@@ -336,7 +336,7 @@ export function ImageUpload({
 					disabled={isUploading}
 					className="flex items-center gap-2"
 				>
-					<Upload className="h-4 w-4" />
+					<ShipUploadIcon className="h-4 w-4" />
 					{isUploading ? "Uploading..." : "Add Attachment"}
 				</Button>
 			</div>
