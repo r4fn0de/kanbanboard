@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label'
 import { Progress } from '@/components/ui/progress'
 import { Textarea } from '@/components/ui/textarea'
 import { ArrowDown, ArrowUp, CalendarDays, Paperclip, Plus, Tag, Trash2, X } from 'lucide-react'
-import { PriorityBadge } from './views/board-shared'
+import { PrioritySelector } from './views/board-shared'
 import { cn } from '@/lib/utils'
 import {
   CARD_DUE_STATUS_STYLES,
@@ -201,6 +201,27 @@ export function TaskDetailsPanel({
       } catch (err) {
         toast.error(
           err instanceof Error ? err.message : 'Failed to update due date'
+        )
+      }
+    },
+    [card, updateCard]
+  )
+
+  const handlePriorityChange = useCallback(
+    async (newPriority: KanbanCard['priority']) => {
+      if (!card || !card.boardId) {
+        return
+      }
+
+      try {
+        await updateCard.mutateAsync({
+          id: card.id,
+          boardId: card.boardId,
+          priority: newPriority,
+        })
+      } catch (err) {
+        toast.error(
+          err instanceof Error ? err.message : 'Failed to update priority'
         )
       }
     },
@@ -463,29 +484,6 @@ export function TaskDetailsPanel({
           <div className="border-b border-border/80 px-6 py-5">
             <div className="flex items-start justify-between gap-4">
               <div className="flex min-w-0 flex-1 flex-col gap-3">
-                <span
-                  className={cn(
-                    'inline-flex items-center gap-2 self-start rounded-lg border px-3 py-1 text-xs font-semibold uppercase tracking-[0.25em]',
-                    'border-border/50 text-muted-foreground'
-                  )}
-                  style={
-                    column.color
-                      ? {
-                          backgroundColor: `${column.color}1A`,
-                          borderColor: `${column.color}33`,
-                          color: column.color,
-                        }
-                      : undefined
-                  }
-                >
-                  {(() => {
-                    const ColumnIcon = getColumnIconComponent(
-                      column.icon ?? null
-                    )
-                    return <ColumnIcon className="h-3.5 w-3.5" />
-                  })()}
-                  {column.title}
-                </span>
                 {isEditingTitle ? (
                   <form onSubmit={handleTitleSubmit} className="min-w-0">
                     <Input
@@ -515,7 +513,6 @@ export function TaskDetailsPanel({
                 )}
               </div>
               <div className="flex flex-shrink-0 items-start gap-3">
-                <PriorityBadge priority={card.priority} />
                 <button
                   type="button"
                   onClick={onClose}
@@ -626,6 +623,46 @@ export function TaskDetailsPanel({
                     }
                     className="[&_button[aria-expanded]]:rounded-lg [&_button[aria-expanded]]:border-0 [&_button[aria-expanded]]:bg-muted/60"
                   />
+                </div>
+                <div className="flex items-center justify-between rounded-lg border border-border/60 bg-background px-4 py-3">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <span className="text-sm font-medium text-muted-foreground">
+                      Column
+                    </span>
+                    <span
+                      className={cn(
+                        'inline-flex items-center gap-2 self-start rounded-lg border px-3 py-1 text-xs font-semibold uppercase tracking-[0.25em]',
+                        'border-border/50 text-muted-foreground'
+                      )}
+                      style={
+                        column.color
+                          ? {
+                              backgroundColor: `${column.color}1A`,
+                              borderColor: `${column.color}33`,
+                              color: column.color,
+                            }
+                          : undefined
+                      }
+                    >
+                      {(() => {
+                        const ColumnIcon = getColumnIconComponent(
+                          column.icon ?? null
+                        )
+                        return <ColumnIcon className="h-3.5 w-3.5" />
+                      })()}
+                      {column.title}
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-sm font-medium text-muted-foreground">
+                      Priority
+                    </span>
+                    <PrioritySelector
+                      priority={card.priority}
+                      onChange={handlePriorityChange}
+                      disabled={updateCard.isPending}
+                    />
+                  </div>
                 </div>
               </section>
 

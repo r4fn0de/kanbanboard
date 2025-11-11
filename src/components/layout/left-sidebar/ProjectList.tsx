@@ -188,7 +188,7 @@ export const ProjectList = memo(function ProjectList({
         </div>
 
         <motion.div
-          className="mt-2 flex flex-col gap-2 ml-6"
+          className="mt-2 flex flex-col gap-2"
           initial={false}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.3, delay: 0.15 }}
