@@ -1,4 +1,3 @@
-import { Palette, FolderIcon, HardDrive } from 'lucide-react'
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -27,12 +26,13 @@ import { useUIStore } from '@/store/ui-store'
 import { AppearancePane } from './panes/AppearancePane'
 import { WorkspacesPane } from './panes/WorkspacesPane'
 import { StoragePane } from './panes/StoragePane'
+import { PaintPaletteIcon, FolderIcon, HardDriveIcon } from '@/components/ui/icons'
 
 const navigationItems = [
   {
     id: 'appearance' as const,
     name: 'Appearance',
-    icon: Palette,
+    icon: PaintPaletteIcon,
   },
   {
     id: 'workspaces' as const,
@@ -42,9 +42,9 @@ const navigationItems = [
   {
     id: 'storage' as const,
     name: 'Storage',
-    icon: HardDrive,
+    icon: HardDriveIcon,
   },
- ] as const
+] as const
 
 type PreferencePane = (typeof navigationItems)[number]['id']
 

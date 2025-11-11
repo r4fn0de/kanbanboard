@@ -1,2 +1,7 @@
+export { FolderIcon } from './folder-icon'
+export { HardDriveIcon } from './hard-drive-icon'
+export { HomeIcon } from './home-icon'
+export { LeftSidebarIcon } from './left-sidebar-icon'
+export { PaintPaletteIcon } from './paint-palette-icon'
 export { SettingsIcon } from './settings'
 export { SidebarIcon } from './sidebar'

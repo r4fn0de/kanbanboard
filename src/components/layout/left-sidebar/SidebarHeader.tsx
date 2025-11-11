@@ -1,8 +1,9 @@
 import { cn } from '@/lib/utils'
-import { PanelLeft, PanelLeftClose, Settings } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { MacOSWindowControls } from '@/components/titlebar/MacOSWindowControls'
 import { executeCommand, useCommandContext } from '@/lib/commands'
+import { LeftSidebarIcon } from '@/components/ui/icons/left-sidebar-icon'
+import { SettingsIcon } from '@/components/ui/icons/settings'
 
 interface SidebarHeaderProps {
   useTransparentStyle?: boolean
@@ -39,11 +40,7 @@ export function SidebarHeader({
           title={leftSidebarVisible ? 'Hide Left Sidebar' : 'Show Left Sidebar'}
           disabled={leftSidebarLocked}
         >
-          {leftSidebarVisible ? (
-            <PanelLeftClose className="h-3 w-3" />
-          ) : (
-            <PanelLeft className="h-3 w-3" />
-          )}
+          <LeftSidebarIcon className="h-3 w-3" collapsed={!leftSidebarVisible} />
         </Button>
         <Button
           onClick={() => executeCommand('open-preferences', commandContext)}
@@ -57,7 +54,7 @@ export function SidebarHeader({
           )}
           title="Settings"
         >
-          <Settings className="h-3 w-3" />
+          <SettingsIcon className="h-3 w-3" />
         </Button>
       </div>
     </div>

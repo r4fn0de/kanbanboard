@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
-import { AlertTriangle, HardDriveIcon, RefreshCw, Trash2 } from 'lucide-react'
+import { AlertTriangle, RefreshCw, Trash2 } from 'lucide-react'
+import { HardDriveIcon } from '@/components/ui/icons'
 
 import { Button } from '@/components/ui/button'
 import {

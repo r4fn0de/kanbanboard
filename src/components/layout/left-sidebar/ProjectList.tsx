@@ -1,8 +1,9 @@
 import { memo } from 'react'
 import { NavLink } from 'react-router-dom'
-import { cn } from '@/lib/utils'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Home, Plus, MoreHorizontal, Folder } from 'lucide-react'
+import { Plus, MoreHorizontal, Folder } from 'lucide-react'
+import { cn } from '@/lib/utils'
+import { HomeIcon } from '@/components/ui/icons/home-icon'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -173,7 +174,7 @@ export const ProjectList = memo(function ProjectList({
           )
         }
       >
-        <Home className="h-3.5 w-3.5" />
+        <HomeIcon className="h-3.5 w-3.5" />
         <span className="font-medium">Home</span>
       </NavLink>
 
