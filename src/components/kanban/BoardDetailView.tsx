@@ -44,14 +44,8 @@ import {
 	useDeleteCard,
 	useDuplicateCard,
 } from "@/services/kanban";
-import {
-	Plus,
-	Settings2,
-	ArrowDown,
-	ArrowUp,
-	Minus,
-	ListFilter,
-} from "lucide-react";
+import { Plus } from "lucide-react";
+import { HorizontalSliderIcon, PriorityIcon, PriorityLowIcon, PriorityMediumIcon, PriorityHighIcon } from "@/components/ui/icons";
 import type { LucideIcon } from "lucide-react";
 import type {
 	DragEndEvent,
@@ -76,10 +70,10 @@ interface PriorityFilterOption {
 }
 
 const PRIORITY_FILTER_OPTIONS: PriorityFilterOption[] = [
-	{ value: "all", label: "All priorities", icon: ListFilter },
-	{ value: "high", label: "High", icon: ArrowUp },
-	{ value: "medium", label: "Medium", icon: Minus },
-	{ value: "low", label: "Low", icon: ArrowDown },
+	{ value: "all", label: "All priorities", icon: PriorityIcon },
+	{ value: "high", label: "High", icon: PriorityHighIcon },
+	{ value: "medium", label: "Medium", icon: PriorityMediumIcon },
+	{ value: "low", label: "Low", icon: PriorityLowIcon },
 ];
 
 export function BoardDetailView({
@@ -669,11 +663,11 @@ export function BoardDetailView({
 									const option = PRIORITY_FILTER_OPTIONS.find(
 										(item) => item.value === priorityFilter,
 									);
-									const PriorityIcon = option?.icon ?? ListFilter;
+									const FilterIcon = option?.icon ?? PriorityIcon;
 									const isActive = priorityFilter !== "all";
 									return (
 										<span className="flex items-center gap-1.5">
-											<PriorityIcon
+											<FilterIcon
 												className={`h-3 w-3 ${isActive ? "text-foreground" : "text-muted-foreground/70"}`}
 											/>
 											<span
@@ -871,7 +865,7 @@ export function BoardDetailView({
 				className="h-9 rounded-lg bg-background/80 backdrop-blur-sm px-3.5 text-xs font-medium transition-all duration-200 hover:bg-accent hover:text-accent-foreground hover:shadow-sm"
 				onClick={() => setIsColumnManagerOpen(true)}
 			>
-				<Settings2 className="mr-1.5 h-3.5 w-3.5" />
+				<HorizontalSliderIcon className="mr-1.5 h-3.5 w-3.5" />
 				Manage
 			</Button>
 		</div>
@@ -926,7 +920,7 @@ export function BoardDetailView({
 									variant="ghost"
 									onClick={() => setIsColumnManagerOpen(true)}
 								>
-									<Settings2 className="mr-2 h-4 w-4" />
+									<HorizontalSliderIcon className="mr-2 h-4 w-4" />
 									Manage columns
 								</Button>
 							</div>

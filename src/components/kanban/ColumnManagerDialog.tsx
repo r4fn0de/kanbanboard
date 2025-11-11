@@ -75,7 +75,8 @@ import {
 	useDeleteColumn,
 } from "@/services/kanban";
 import { createColumnSchema } from "@/schemas/kanban";
-import { Check, GripVertical, Edit2, X, Plus, Trash2 } from "lucide-react";
+import { Check, GripVertical, Edit2, X, Plus } from "lucide-react";
+import { TrashIcon } from "@/components/ui/icons";
 
 interface ColumnWithMeta extends KanbanColumn {
 	cardCount: number;
@@ -771,7 +772,7 @@ function ColumnManagerRow({
 											(isUpdating && "opacity-50 cursor-not-allowed"),
 									)}
 								>
-									<Trash2
+									<TrashIcon
 										className={cn(
 											"h-4 w-4",
 											column.cardCount > 0 || isUpdating ? "" : "text-white",

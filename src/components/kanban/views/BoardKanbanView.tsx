@@ -32,12 +32,10 @@ import { cn } from "@/lib/utils";
 import type { KanbanCard, KanbanColumn } from "@/types/common";
 import {
 	Plus,
-	ArrowDown,
-	ArrowUp,
-	Minus,
 	Paperclip,
 	Calendar,
 } from "lucide-react";
+import { PriorityLowIcon, PriorityMediumIcon, PriorityHighIcon } from "@/components/ui/icons";
 import { Badge } from "@/components/ui/badge";
 import { useMemo, useState, useCallback } from "react";
 import "../../../styles/kanban.css";
@@ -296,20 +294,20 @@ function CardOverlay({ card }: { card: KanbanCard }) {
 		low: {
 			label: "Low",
 			className:
-				"bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-400 dark:border-emerald-800",
-			icon: ArrowDown,
+				"bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-400 dark:border-emerald-800",
+			icon: PriorityLowIcon,
 		},
 		medium: {
 			label: "Medium",
 			className:
-				"bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/50 dark:text-amber-400 dark:border-amber-800",
-			icon: Minus,
+				"bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-950/50 dark:text-amber-400 dark:border-amber-800",
+			icon: PriorityMediumIcon,
 		},
 		high: {
 			label: "High",
 			className:
-				"bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/50 dark:text-rose-400 dark:border-rose-800",
-			icon: ArrowUp,
+				"bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-950/50 dark:text-rose-400 dark:border-rose-800",
+			icon: PriorityHighIcon,
 		},
 	}[card.priority];
 

@@ -1,19 +1,13 @@
 import { useMemo, useState } from 'react'
-import { AlertTriangle, RefreshCw, Trash2 } from 'lucide-react'
-import { HardDriveIcon } from '@/components/ui/icons'
+import type { ReactNode } from 'react'
+import { RefreshCw } from 'lucide-react'
+import { HardDriveIcon, TrashIcon, WarningIcon } from '@/components/ui/icons'
 
 import { Button } from '@/components/ui/button'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Progress } from '@/components/ui/progress'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Separator } from '@/components/ui/separator'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,6 +23,33 @@ import {
   useResetApplicationData,
   useStorageStats,
 } from '@/services/storage'
+
+const SettingsField: React.FC<{
+  label: string
+  children: ReactNode
+  description?: ReactNode
+}> = ({ label, children, description }) => (
+  <div className="space-y-2">
+    <Label className="text-sm font-medium text-foreground">{label}</Label>
+    {children}
+    {description && (
+      <div className="text-sm text-muted-foreground">{description}</div>
+    )}
+  </div>
+)
+
+const SettingsSection: React.FC<{
+  title: string
+  children: ReactNode
+}> = ({ title, children }) => (
+  <div className="space-y-4">
+    <div>
+      <h3 className="text-lg font-medium text-foreground">{title}</h3>
+      <Separator className="mt-2" />
+    </div>
+    <div className="space-y-4">{children}</div>
+  </div>
+)
 
 function formatBytes(bytes: number): string {
   if (!Number.isFinite(bytes) || bytes <= 0) {
@@ -119,89 +140,87 @@ export function StoragePane() {
 
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader className="gap-1">
-          <CardTitle className="flex items-center gap-2">
-            <HardDriveIcon className="h-5 w-5" /> Storage usage
-          </CardTitle>
-          <CardDescription>
+      <SettingsSection title="Storage usage">
+        <div className="flex items-center gap-2">
+          <HardDriveIcon className="h-5 w-5" />
+          <p className="text-sm text-muted-foreground">
             Monitor how Modulo uses local disk storage. Clearing attachments
             only removes files that are safe to delete. Resetting data wipes the
             entire workspace, including the database.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {isLoading ? (
-            <div className="space-y-4">
-              <Skeleton className="h-8 w-40" />
-              <Skeleton className="h-4 w-full" />
-              <Skeleton className="h-4 w-3/4" />
-              <Skeleton className="h-4 w-2/3" />
-            </div>
-          ) : stats ? (
-            <div className="space-y-6">
-              <div>
-                <Label className="text-sm font-medium text-muted-foreground">
-                  Total usage
-                </Label>
-                <div className="mt-1 text-2xl font-semibold">
-                  {formatBytes(stats.totalBytes)}
-                </div>
-                {isRefetching ? (
-                  <div className="text-xs text-muted-foreground">
-                    Refreshing metrics…
-                  </div>
-                ) : null}
+          </p>
+        </div>
+
+        {isLoading ? (
+          <div className="space-y-4">
+            <Skeleton className="h-8 w-40" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-3/4" />
+            <Skeleton className="h-4 w-2/3" />
+          </div>
+        ) : stats ? (
+          <div className="space-y-6">
+            <div>
+              <Label className="text-sm font-medium text-muted-foreground">
+                Total usage
+              </Label>
+              <div className="mt-1 text-2xl font-semibold">
+                {formatBytes(stats.totalBytes)}
               </div>
+              {isRefetching ? (
+                <div className="text-xs text-muted-foreground">
+                  Refreshing metrics…
+                </div>
+              ) : null}
+            </div>
 
-              <div className="space-y-5">
-                {storageBreakdown.map(item => {
-                  const percent = totalBytes
-                    ? Math.round((item.value / totalBytes) * 1000) / 10
-                    : 0
+            <div className="space-y-5">
+              {storageBreakdown.map(item => {
+                const percent = totalBytes
+                  ? Math.round((item.value / totalBytes) * 1000) / 10
+                  : 0
 
-                  return (
-                    <div key={item.id} className="space-y-2">
-                      <div className="flex items-center justify-between gap-4">
-                        <div>
-                          <div className="text-sm font-medium text-foreground">
-                            {item.label}
-                          </div>
-                          <p className="text-sm text-muted-foreground">
-                            {item.description}
-                          </p>
+                return (
+                  <div key={item.id} className="space-y-2">
+                    <div className="flex items-center justify-between gap-4">
+                      <div>
+                        <div className="text-sm font-medium text-foreground">
+                          {item.label}
                         </div>
-                        <div className="text-right">
-                          <div className="text-sm font-medium">
-                            {formatBytes(item.value)}
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            {item.path}
-                          </div>
-                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          {item.description}
+                        </p>
                       </div>
-                      <Progress value={percent} aria-label={`${item.label} usage`} />
-                      <div className="text-xs text-muted-foreground">
-                        {percent}% of total storage
+                      <div className="text-right">
+                        <div className="text-sm font-medium">
+                          {formatBytes(item.value)}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {item.path}
+                        </div>
                       </div>
                     </div>
-                  )
-                })}
-              </div>
+                    <Progress value={percent} aria-label={`${item.label} usage`} />
+                    <div className="text-xs text-muted-foreground">
+                      {percent}% of total storage
+                    </div>
+                  </div>
+                )
+              })}
             </div>
-          ) : (
-            <div className="rounded-md border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive">
-              Failed to load storage usage.{' '}
-              <button
-                className="font-medium underline underline-offset-4"
-                onClick={() => statsQuery.refetch()}
-              >
-                Try again
-              </button>
-            </div>
-          )}
-        </CardContent>
-        <CardFooter className="flex flex-wrap justify-between gap-2">
+          </div>
+        ) : (
+          <div className="rounded-md border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive">
+            Failed to load storage usage.{' '}
+            <button
+              className="font-medium underline underline-offset-4"
+              onClick={() => statsQuery.refetch()}
+            >
+              Try again
+            </button>
+          </div>
+        )}
+
+        <div className="flex flex-wrap justify-between gap-2">
           <div className="text-xs text-muted-foreground">
             Stats are updated locally and never leave your device.
           </div>
@@ -213,57 +232,49 @@ export function StoragePane() {
           >
             <RefreshCw className="mr-2 h-4 w-4" /> Refresh
           </Button>
-        </CardFooter>
-      </Card>
+        </div>
+      </SettingsSection>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Trash2 className="h-5 w-5" /> Clear attachments
-          </CardTitle>
-          <CardDescription>
+      <SettingsSection title="Clear attachments">
+        <div className="space-y-4">
+          <p className="text-sm text-muted-foreground">
             Delete all card attachments from disk. Card metadata is preserved,
             but file downloads will be removed.
-          </CardDescription>
-        </CardHeader>
-        <CardFooter className="flex justify-between gap-4">
-          <div className="text-xs text-muted-foreground">
+          </p>
+          <p className="text-xs text-muted-foreground">
             Use this if disk usage is high and you no longer need stored files.
-          </div>
+          </p>
           <Button
             variant="secondary"
             onClick={() => setConfirmClearOpen(true)}
             disabled={clearAttachmentsMutation.isPending || isLoading}
           >
+            <TrashIcon className="mr-2 h-4 w-4" />
             Clear attachments
           </Button>
-        </CardFooter>
-      </Card>
+        </div>
+      </SettingsSection>
 
-      <Card className="border-destructive/40">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-destructive">
-            <AlertTriangle className="h-5 w-5" /> Reset Modulo data
-          </CardTitle>
-          <CardDescription>
+      <SettingsSection title="Reset Modulo data">
+        <div className="space-y-4">
+          <p className="text-sm text-muted-foreground">
             Removes every workspace, board, card, attachment, and preference.
             This action is irreversible.
-          </CardDescription>
-        </CardHeader>
-        <CardFooter className="flex justify-between gap-4">
-          <div className="text-xs text-muted-foreground">
+          </p>
+          <p className="text-xs text-muted-foreground">
             Modulo will restart after completion. Make sure everything is
             backed up.
-          </div>
+          </p>
           <Button
             variant="destructive"
             onClick={() => setConfirmResetOpen(true)}
             disabled={resetDataMutation.isPending || isLoading}
           >
+            <WarningIcon className="mr-2 h-4 w-4" />
             Reset application
           </Button>
-        </CardFooter>
-      </Card>
+        </div>
+      </SettingsSection>
 
       <AlertDialog open={confirmClearOpen} onOpenChange={setConfirmClearOpen}>
         <AlertDialogContent>

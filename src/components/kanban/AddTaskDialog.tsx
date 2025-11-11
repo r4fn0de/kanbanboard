@@ -18,11 +18,9 @@ import {
 import {
   CalendarDays,
   Columns3,
-  ArrowDown,
-  ArrowUp,
-  Minus,
   Check,
 } from 'lucide-react'
+import { PriorityLowIcon, PriorityMediumIcon, PriorityHighIcon } from '@/components/ui/icons'
 import type { KanbanCard, KanbanColumn, KanbanPriority } from '@/types/common'
 import { createCardSchema } from '@/schemas/kanban'
 
@@ -162,12 +160,12 @@ export function AddTaskDialog({
     switch (value) {
       case 'low':
         return (
-          <ArrowDown className="h-3 w-3 text-emerald-700 dark:text-emerald-300" />
+          <PriorityLowIcon className="h-3 w-3 text-emerald-700 dark:text-emerald-300" />
         )
       case 'high':
-        return <ArrowUp className="h-3 w-3 text-rose-700 dark:text-rose-300" />
+        return <PriorityHighIcon className="h-3 w-3 text-rose-700 dark:text-rose-300" />
       default:
-        return <Minus className="h-3 w-3 text-amber-700 dark:text-amber-300" />
+        return <PriorityMediumIcon className="h-3 w-3 text-amber-700 dark:text-amber-300" />
     }
   }
 
