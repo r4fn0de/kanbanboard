@@ -105,16 +105,6 @@ export function KanbanCardItem({
   const priorityConfig = PRIORITY_CONFIG[card.priority]
   const PriorityIcon = priorityConfig.icon
 
-  const dueBorderClass = dueMetadata
-    ? dueMetadata.status === 'overdue'
-      ? 'border-rose-500/40'
-      : dueMetadata.status === 'today'
-        ? 'border-amber-500/40'
-        : dueMetadata.status === 'soon'
-          ? 'border-amber-500/30'
-          : ''
-    : ''
-
   return (
     <ContextMenu>
       <ContextMenuTrigger asChild>
@@ -134,7 +124,6 @@ export function KanbanCardItem({
             'hover:border-border',
             'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
             'active:cursor-grabbing',
-            dueBorderClass,
             isSelected && 'bg-accent/50 border-accent-foreground/20 shadow-sm',
             isDragging && 'shadow-xl border-primary/30'
           )}
