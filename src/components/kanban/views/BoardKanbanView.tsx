@@ -32,9 +32,8 @@ import { cn } from "@/lib/utils";
 import type { KanbanCard, KanbanColumn } from "@/types/common";
 import {
 	Plus,
-	Paperclip,
 } from "lucide-react";
-import { PriorityLowIcon, PriorityMediumIcon, PriorityHighIcon, CalendarIcon } from "@/components/ui/icons";
+import { PaperclipIcon, PriorityLowIcon, PriorityMediumIcon, PriorityHighIcon, CalendarIcon } from "@/components/ui/icons";
 import { Badge } from "@/components/ui/badge";
 import { useMemo, useState, useCallback } from "react";
 import "../../../styles/kanban.css";
@@ -396,7 +395,7 @@ function CardOverlay({ card }: { card: KanbanCard }) {
 				{/* Attachments */}
 				{hasAttachments && (
 					<div className="inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700 dark:border-blue-800 dark:bg-blue-950/50 dark:text-blue-400">
-						<Paperclip className="h-3 w-3" />
+						<PaperclipIcon className="h-3 w-3 scale-x-[-1]" />
 						<span>{card.attachments?.length}</span>
 					</div>
 				)}

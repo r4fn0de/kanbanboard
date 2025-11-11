@@ -11,11 +11,10 @@ import { useTheme } from '@/hooks/use-theme'
 import { cn } from '@/lib/utils'
 import type { KanbanCard } from '@/types/common'
 import {
-  Paperclip,
   Trash2,
   Copy,
 } from 'lucide-react'
-import { PriorityLowIcon, PriorityMediumIcon, PriorityHighIcon, CalendarIcon } from '@/components/ui/icons'
+import { PaperclipIcon, PriorityLowIcon, PriorityMediumIcon, PriorityHighIcon, CalendarIcon } from '@/components/ui/icons'
 import type { ComponentType } from 'react'
 import * as React from 'react'
 import {
@@ -207,7 +206,7 @@ export function KanbanCardItem({
 
             {hasAttachments && (
               <div className="inline-flex items-center gap-1.5 rounded-lg bg-blue-100 px-2.5 py-1 text-xs font-semibold text-blue-700 dark:bg-blue-950/50 dark:text-blue-400">
-                <Paperclip className="h-3 w-3" />
+                <PaperclipIcon className="h-3 w-3 scale-x-[-1]" />
                 <span>{card.attachments?.length}</span>
               </div>
             )}

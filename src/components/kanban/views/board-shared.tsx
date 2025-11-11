@@ -2,8 +2,8 @@ import { Badge } from '@/components/ui/badge'
 import { Popover } from '@base-ui-components/react/popover'
 import { cn } from '@/lib/utils'
 import type { KanbanCard } from '@/types/common'
-import { Paperclip, ChevronDown } from 'lucide-react'
-import { PriorityLowIcon, PriorityMediumIcon, PriorityHighIcon, CalendarIcon } from '@/components/ui/icons'
+import { ChevronDown } from 'lucide-react'
+import { PaperclipIcon, PriorityLowIcon, PriorityMediumIcon, PriorityHighIcon, CalendarIcon } from '@/components/ui/icons'
 import {
   CARD_DUE_STATUS_STYLES,
   getCardDueMetadata,
@@ -182,7 +182,7 @@ export function CardContent({ card }: { card: KanbanCard }) {
         <div className="flex items-center gap-2 flex-shrink-0">
           {hasAttachments && (
             <div className="rounded-full bg-blue-100 p-1 text-blue-600 dark:bg-blue-900/50 dark:text-blue-300">
-              <Paperclip className="h-3 w-3" />
+              <PaperclipIcon className="h-3 w-3 scale-x-[-1]" />
             </div>
           )}
           <PriorityBadge priority={card.priority} />

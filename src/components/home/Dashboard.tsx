@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { Link } from "react-router-dom";
-import { Settings, Search } from "lucide-react";
+import { Search } from "lucide-react";
+import { SettingsIcon } from "@/components/ui/icons/settings";
 import { useWidgetLayout } from "@/hooks/useWidgetLayout";
 import { useWorkspaceStatus } from "@/hooks/useWorkspaceStatus";
 import { useUIStore } from "@/store/ui-store";
@@ -216,7 +217,7 @@ export function Dashboard() {
 								onClick={handleSettingsOpen}
 								title="Customize dashboard"
 							>
-								<Settings className="h-4 w-4" />
+								<SettingsIcon className="h-4 w-4" />
 							</Button>
 						</div>
 					</div>
@@ -265,7 +266,7 @@ export function Dashboard() {
 								onClick={handleSettingsOpen}
 								title="Customize dashboard"
 							>
-								<Settings className="h-4 w-4" />
+								<SettingsIcon className="h-4 w-4" />
 							</Button>
 						</div>
 					</div>

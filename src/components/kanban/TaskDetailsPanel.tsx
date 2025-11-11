@@ -6,7 +6,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { Plus, X } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { AttachmentIcon2, CalendarIcon, TagIcon, TrashIcon, TriangleArrowDownIcon, TriangleArrowUpIcon } from '@/components/ui/icons'
+import { CalendarIcon, PaperclipIcon, TagIcon, TrashIcon, TriangleArrowDownIcon, TriangleArrowUpIcon } from '@/components/ui/icons'
 import { Checkbox } from '@/components/ui/checkbox'
 import { ImageUpload } from '@/components/ui/image-upload'
 import { Input } from '@/components/ui/input'
@@ -811,7 +811,7 @@ export function TaskDetailsPanel({
                   </Label>
                   {card.attachments && card.attachments.length > 0 ? (
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <AttachmentIcon2 className="h-3.5 w-3.5 scale-x-[-1]" />
+                      <PaperclipIcon className="h-3.5 w-3.5 scale-x-[-1]" />
                       {card.attachments.length}
                     </div>
                   ) : null}
