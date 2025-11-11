@@ -13,10 +13,9 @@ import type { KanbanCard } from '@/types/common'
 import {
   Paperclip,
   Trash2,
-  Calendar,
   Copy,
 } from 'lucide-react'
-import { PriorityLowIcon, PriorityMediumIcon, PriorityHighIcon } from '@/components/ui/icons'
+import { PriorityLowIcon, PriorityMediumIcon, PriorityHighIcon, CalendarIcon } from '@/components/ui/icons'
 import type { ComponentType } from 'react'
 import * as React from 'react'
 import {
@@ -201,7 +200,7 @@ export function KanbanCardItem({
                   CARD_DUE_STATUS_STYLES[dueMetadata.status]
                 )}
               >
-                <Calendar className="h-3 w-3" />
+                <CalendarIcon className="h-3 w-3" />
                 <span>{dueMetadata.display}</span>
               </Badge>
             )}

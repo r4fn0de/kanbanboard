@@ -11,8 +11,8 @@ import {
 import { useTheme } from '@/hooks/use-theme'
 import { cn } from '@/lib/utils'
 import type { KanbanCard, KanbanColumn } from '@/types/common'
-import { Calendar, Plus, Trash2, ArrowRight } from 'lucide-react'
-import { PriorityBadge } from './board-shared'
+import { Plus, Trash2, ArrowRight } from 'lucide-react'
+import { PriorityBadge, CalendarIcon } from './board-shared'
 import {
   CARD_DUE_STATUS_STYLES,
   getCardDueMetadata,
@@ -229,7 +229,7 @@ export function BoardListView({
                                             CARD_DUE_STATUS_STYLES[dueMetadata.status]
                                           )}
                                         >
-                                          <Calendar className="h-3 w-3" />
+                                          <CalendarIcon className="h-3 w-3" />
                                           <span>{dueMetadata.display}</span>
                                         </Badge>
                                       )}
@@ -329,7 +329,7 @@ export function BoardListView({
                                       CARD_DUE_STATUS_STYLES[dueMetadata.status]
                                     )}
                                   >
-                                    <Calendar className="h-3 w-3" />
+                                    <CalendarIcon className="h-3 w-3" />
                                     <span>{dueMetadata.display}</span>
                                   </Badge>
                                 ) : null}
@@ -355,7 +355,7 @@ export function BoardListView({
                   ) : (
                     <div className="flex flex-col items-center justify-center gap-4 px-6 py-16 text-center">
                       <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted/50">
-                        <Calendar className="h-8 w-8 text-muted-foreground" />
+                        <CalendarIcon className="h-8 w-8 text-muted-foreground" />
                       </div>
                       <div className="flex flex-col gap-2">
                         <span className="text-sm font-medium text-muted-foreground">

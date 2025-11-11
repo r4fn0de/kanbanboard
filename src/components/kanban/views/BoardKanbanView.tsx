@@ -33,9 +33,8 @@ import type { KanbanCard, KanbanColumn } from "@/types/common";
 import {
 	Plus,
 	Paperclip,
-	Calendar,
 } from "lucide-react";
-import { PriorityLowIcon, PriorityMediumIcon, PriorityHighIcon } from "@/components/ui/icons";
+import { PriorityLowIcon, PriorityMediumIcon, PriorityHighIcon, CalendarIcon } from "@/components/ui/icons";
 import { Badge } from "@/components/ui/badge";
 import { useMemo, useState, useCallback } from "react";
 import "../../../styles/kanban.css";
@@ -389,7 +388,7 @@ function CardOverlay({ card }: { card: KanbanCard }) {
 							CARD_DUE_STATUS_STYLES[dueMetadata.status],
 						)}
 					>
-						<Calendar className="h-3 w-3" />
+						<CalendarIcon className="h-3 w-3" />
 						<span>{dueMetadata.display}</span>
 					</Badge>
 				)}

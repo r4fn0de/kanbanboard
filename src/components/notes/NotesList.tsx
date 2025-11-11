@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Calendar, Edit3 } from 'lucide-react'
-import { PinIcon, TrashIcon } from '@/components/ui/icons'
+import { PinIcon, TrashIcon, PenIcon, CalendarIcon } from '@/components/ui/icons'
 import { cn } from '@/lib/utils'
 import type { Note } from '@/services/notes'
 import { useNotes, useUpdateNote, useDeleteNote } from '@/services/notes'
@@ -14,7 +13,6 @@ import {
 } from '@/components/ui/context-menu'
 import { Skeleton } from '@/components/ui/skeleton'
 import { NoteContentRenderer } from './NoteContentRenderer'
-import { extractNotePreview } from './utils'
 
 const NOTE_LIST_SKELETON_KEYS = [
   'notes-loading-1',
@@ -178,7 +176,6 @@ function NoteCard({ note, onClick, boardId, expanded, onToggleExpanded }: NoteCa
       }
     )
   }
-  const preview = useMemo(() => extractNotePreview(note.content), [note.content])
   const updatedAt = useMemo(
     () =>
       formatDistanceToNow(new Date(note.updatedAt), {
@@ -208,7 +205,7 @@ function NoteCard({ note, onClick, boardId, expanded, onToggleExpanded }: NoteCa
           <div className="flex items-start justify-between gap-3 mb-2">
             <h3 className="font-semibold line-clamp-1">{note.title}</h3>
             <div className="flex items-center gap-1">
-              <Edit3 className="h-3 w-3 text-muted-foreground" />
+              <PenIcon className="h-3 w-3 text-muted-foreground" />
               {note.pinned && (
                 <PinIcon className="h-3.5 w-3.5 text-primary flex-shrink-0" />
               )}
@@ -222,13 +219,13 @@ function NoteCard({ note, onClick, boardId, expanded, onToggleExpanded }: NoteCa
               className="text-sm"
               maxHeight="120px"
               expanded={expanded}
-              onToggleExpanded={onToggleExpanded}
+              onToggleExpanded={() => onToggleExpanded()}
               id={note.id}
             />
           </div>
           
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <Calendar className="h-3 w-3" />
+            <CalendarIcon className="h-3 w-3" />
             <span>Created {createdAt}</span>
             {note.updatedAt !== note.createdAt && (
               <>

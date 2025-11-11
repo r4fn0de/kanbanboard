@@ -1,10 +1,10 @@
 import { Badge } from '@/components/ui/badge'
 import type { KanbanCard, KanbanColumn } from '@/types/common'
-import { Calendar, Trash2 } from 'lucide-react'
+import { Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useMemo, type CSSProperties } from 'react'
 import { useTheme } from '@/hooks/use-theme'
-import { PriorityBadge } from './board-shared'
+import { PriorityBadge, CalendarIcon } from './board-shared'
 import {
   CARD_DUE_STATUS_STYLES,
   getCardDueMetadata,
@@ -126,7 +126,7 @@ export function BoardTimelineView({
           >
             <div className="flex items-center gap-3 sm:w-64">
               <div className="flex h-9 w-9 items-center justify-center rounded-full border border-border/70 bg-muted/40 text-muted-foreground">
-                <Calendar className="h-4 w-4" />
+                <CalendarIcon className="h-4 w-4" />
               </div>
               <div>
                 <p className="text-sm font-semibold text-foreground">
@@ -229,7 +229,7 @@ export function BoardTimelineView({
                                 CARD_DUE_STATUS_STYLES[dueMetadata.status]
                               )}
                             >
-                              <Calendar className="h-3 w-3" />
+                              <CalendarIcon className="h-3 w-3" />
                               <span>{dueMetadata.display}</span>
                             </Badge>
                           ) : null}
