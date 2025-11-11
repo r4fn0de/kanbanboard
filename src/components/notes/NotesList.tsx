@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
-import { Pin, Calendar, Trash2, Edit3 } from 'lucide-react'
+import { Calendar, Edit3 } from 'lucide-react'
+import { PinIcon, TrashIcon } from '@/components/ui/icons'
 import { cn } from '@/lib/utils'
 import type { Note } from '@/services/notes'
 import { useNotes, useUpdateNote, useDeleteNote } from '@/services/notes'
@@ -97,7 +98,7 @@ const normalizedQuery = searchQuery.trim().toLowerCase()
             {pinnedNotes.length > 0 && (
               <div className="mb-8">
                 <div className="flex items-center gap-2 mb-4 text-sm font-semibold text-muted-foreground">
-                  <Pin className="h-3.5 w-3.5" />
+                  <PinIcon className="h-3.5 w-3.5" />
                   Pinned Notes
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -209,7 +210,7 @@ function NoteCard({ note, onClick, boardId, expanded, onToggleExpanded }: NoteCa
             <div className="flex items-center gap-1">
               <Edit3 className="h-3 w-3 text-muted-foreground" />
               {note.pinned && (
-                <Pin className="h-3.5 w-3.5 text-primary flex-shrink-0" />
+                <PinIcon className="h-3.5 w-3.5 text-primary flex-shrink-0" />
               )}
             </div>
           </div>
@@ -240,12 +241,12 @@ function NoteCard({ note, onClick, boardId, expanded, onToggleExpanded }: NoteCa
       </ContextMenuTrigger>
       <ContextMenuContent className="w-48">
         <ContextMenuItem onClick={handleTogglePin}>
-          <Pin className="mr-2 h-4 w-4" />
+          <PinIcon className="mr-2 h-4 w-4" />
           {note.pinned ? 'Unpin' : 'Pin'}
         </ContextMenuItem>
         <ContextMenuSeparator />
         <ContextMenuItem variant="destructive" onClick={handleDelete}>
-          <Trash2 className="mr-2 h-4 w-4" />
+          <TrashIcon className="mr-2 h-4 w-4" />
           Delete
         </ContextMenuItem>
       </ContextMenuContent>

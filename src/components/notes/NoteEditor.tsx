@@ -5,7 +5,7 @@ import { BlockNoteView } from '@blocknote/shadcn'
 import '@blocknote/shadcn/style.css'
 import type { BlockNoteEditor, PartialBlock } from '@blocknote/core'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft, ChevronRight, Pin, PinOff, Trash2 } from 'lucide-react'
+import { ArrowLeftIcon, PinIcon, UnpinIcon, TrashIcon } from '@/components/ui/icons'
 import { cn } from '@/lib/utils'
 import type { Note } from '@/services/notes'
 import { useUpdateNote, useDeleteNote, useNotes } from '@/services/notes'
@@ -171,7 +171,7 @@ function LinkEditorForm({
             className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-border text-destructive transition-colors hover:bg-destructive/10"
             title="Remove link"
           >
-            <Trash2 className="h-4 w-4" />
+            <TrashIcon className="h-4 w-4" />
           </button>
         </div>
       </div>
@@ -855,7 +855,7 @@ export function NoteEditor({ note, boardId, onBack }: NoteEditorProps) {
           onClick={onBack}
           className="h-8 w-8"
         >
-          <ArrowLeft className="h-4 w-4" />
+          <ArrowLeftIcon className="h-4 w-4" />
         </Button>
 
         <div className="flex items-center gap-2">
@@ -867,9 +867,9 @@ export function NoteEditor({ note, boardId, onBack }: NoteEditorProps) {
             title={currentNote.pinned ? 'Unpin note' : 'Pin note'}
           >
             {currentNote.pinned ? (
-              <PinOff className="h-4 w-4" />
+              <UnpinIcon className="h-4 w-4" />
             ) : (
-              <Pin className="h-4 w-4" />
+              <PinIcon className="h-4 w-4" />
             )}
           </Button>
           <Button
@@ -879,7 +879,7 @@ export function NoteEditor({ note, boardId, onBack }: NoteEditorProps) {
             className="h-8 w-8 text-destructive hover:text-destructive"
             title="Delete note"
           >
-            <Trash2 className="h-4 w-4" />
+            <TrashIcon className="h-4 w-4" />
           </Button>
         </div>
       </div>

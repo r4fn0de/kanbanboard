@@ -22,19 +22,19 @@ const PRIORITY_VARIANTS: Record<
   low: {
     label: 'Low',
     className:
-      'bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-400 dark:border-emerald-800',
+      'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400',
     icon: PriorityLowIcon,
   },
   medium: {
     label: 'Medium',
     className:
-      'bg-amber-100 text-amber-700 border border-amber-200 dark:bg-amber-950/50 dark:text-amber-400 dark:border-amber-800',
+      'bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-400',
     icon: PriorityMediumIcon,
   },
   high: {
     label: 'High',
     className:
-      'bg-rose-100 text-rose-700 border border-rose-200 dark:bg-rose-950/50 dark:text-rose-400 dark:border-rose-800',
+      'bg-rose-100 text-rose-700 dark:bg-rose-950/50 dark:text-rose-400',
     icon: PriorityHighIcon,
   },
 }

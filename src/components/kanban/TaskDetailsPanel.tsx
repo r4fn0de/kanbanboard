@@ -10,7 +10,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Progress } from '@/components/ui/progress'
 import { Textarea } from '@/components/ui/textarea'
-import { ArrowDown, ArrowUp, CalendarDays, Paperclip, Plus, Tag, Trash2, X } from 'lucide-react'
+import { ArrowDown, ArrowUp, CalendarDays, Paperclip, Plus, Tag, X } from 'lucide-react'
+import { TrashIcon } from '@/components/ui/icons'
 import { PrioritySelector } from './views/board-shared'
 import { cn } from '@/lib/utils'
 import {
@@ -780,7 +781,7 @@ export function TaskDetailsPanel({
                           disabled={isSubtaskMutationPending}
                           aria-label="Delete subtask"
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <TrashIcon className="h-4 w-4" />
                         </Button>
                       </div>
                     </div>
