@@ -15,11 +15,8 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb'
-import {
-  CalendarDays,
-  Columns3,
-  Check,
-} from 'lucide-react'
+import { Columns3, Check } from 'lucide-react'
+import { CalendarIcon } from '@/components/ui/icons/calendar-icon'
 import { PriorityLowIcon, PriorityMediumIcon, PriorityHighIcon } from '@/components/ui/icons'
 import type { KanbanCard, KanbanColumn, KanbanPriority } from '@/types/common'
 import { createCardSchema } from '@/schemas/kanban'
@@ -288,7 +285,7 @@ export function AddTaskDialog({
               </Select.Root>
 
               <div className="flex items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors hover:bg-accent/50">
-                <CalendarDays className="h-4 w-4" />
+                <CalendarIcon className="h-4 w-4" />
                 <Label htmlFor={dueDateId} className="sr-only">
                   Due date
                 </Label>
