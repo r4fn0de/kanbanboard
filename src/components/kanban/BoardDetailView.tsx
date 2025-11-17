@@ -12,9 +12,13 @@ import {
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
+	SelectGroup,
+	SelectGroupLabel,
+	SelectSeparator,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tooltip as BaseTooltip } from "@base-ui-components/react/tooltip";
 import {
 	BOARD_VIEW_OPTIONS,
@@ -44,7 +48,7 @@ import {
 	useDeleteCard,
 	useDuplicateCard,
 } from "@/services/kanban";
-import { Plus } from "lucide-react";
+import { Plus, Filter } from "lucide-react";
 import { HorizontalSliderIcon, PriorityIcon, PriorityLowIcon, PriorityMediumIcon, PriorityHighIcon } from "@/components/ui/icons";
 import type { LucideIcon } from "lucide-react";
 import type {
@@ -60,11 +64,11 @@ interface BoardDetailViewProps {
 	onViewModeChange?: (mode: BoardViewMode) => void;
 }
 
-type PriorityFilter = "all" | KanbanPriority;
-type DueFilter = "all" | CardDueStatus | "no_due";
+type PriorityFilterOptionValue = "all" | KanbanPriority;
+type DueFilterOptionValue = "all" | CardDueStatus | "no_due";
 
 interface PriorityFilterOption {
-	value: PriorityFilter;
+	value: PriorityFilterOptionValue;
 	label: string;
 	icon: LucideIcon;
 }
@@ -97,8 +101,22 @@ export function BoardDetailView({
 	const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
 	const [activeDragCard, setActiveDragCard] = useState<KanbanCard | null>(null);
 	const [activeNavTab, setActiveNavTab] = useState("tasks");
-	const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>("all");
-	const [dueFilter, setDueFilter] = useState<DueFilter>("all");
+	const [selectedPriorities, setSelectedPriorities] = useState<KanbanPriority[]>(
+		[],
+	);
+	const [selectedDueStatuses, setSelectedDueStatuses] = useState<
+		Array<CardDueStatus | "no_due">
+	>([]);
+
+	const prioritySelectValue = useMemo<PriorityFilterOptionValue[]>(
+		() => (selectedPriorities.length === 0 ? ["all"] : selectedPriorities),
+		[selectedPriorities],
+	);
+
+	const dueSelectValue = useMemo<DueFilterOptionValue[]>(
+		() => (selectedDueStatuses.length === 0 ? ["all"] : selectedDueStatuses),
+		[selectedDueStatuses],
+	);
 
 	const handleTabChange = useCallback(
 		(tab: string) => {
@@ -201,22 +219,26 @@ export function BoardDetailView({
 			allCards
 				.filter((card) => visibleColumnIds.has(card.columnId))
 				.filter((card) => {
-					if (priorityFilter !== "all" && card.priority !== priorityFilter) {
-						return false;
+					// Priority filter: OR between selected priorities, no filter if none selected
+					if (selectedPriorities.length > 0) {
+						if (!card.priority || !selectedPriorities.includes(card.priority)) {
+							return false;
+						}
 					}
 
-					if (dueFilter === "all") {
+					// Deadline filter: OR between selected due statuses, no filter if none selected
+					if (selectedDueStatuses.length === 0) {
 						return true;
 					}
 
-					if (dueFilter === "no_due") {
-						return !card.dueDate;
-					}
+					const status: CardDueStatus | "no_due" | null = card.dueDate
+						? getCardDueMetadata(card.dueDate)?.status ?? null
+						: "no_due";
 
-					const metadata = getCardDueMetadata(card.dueDate);
-					return metadata?.status === dueFilter;
+					if (!status) return false;
+					return selectedDueStatuses.includes(status);
 				}),
-		[allCards, visibleColumnIds, priorityFilter, dueFilter],
+		[allCards, visibleColumnIds, selectedPriorities, selectedDueStatuses],
 	);
 
 	const visibleColumnsById = useMemo(
@@ -284,6 +306,72 @@ export function BoardDetailView({
 		});
 		return summary;
 	}, [visibleCards]);
+
+	// Counts for filters (based on all cards on the board)
+	const priorityCounts = useMemo(() => {
+		const counts: Record<KanbanPriority, number> = {
+			high: 0,
+			medium: 0,
+			low: 0,
+		};
+
+		allCards.forEach((card) => {
+			if (card.priority && counts[card.priority as KanbanPriority] != null) {
+				counts[card.priority as KanbanPriority] += 1;
+			}
+		});
+
+		const total = counts.high + counts.medium + counts.low;
+		return { counts, total };
+	}, [allCards]);
+
+	const dueCounts = useMemo(
+		() => {
+			const counts = {
+				all: 0,
+				overdue: 0,
+				today: 0,
+				soon: 0,
+				upcoming: 0,
+				no_due: 0,
+			};
+
+			allCards.forEach((card) => {
+				counts.all += 1;
+
+				if (!card.dueDate) {
+					counts.no_due += 1;
+					return;
+				}
+
+				const metadata = getCardDueMetadata(card.dueDate);
+				if (!metadata) return;
+
+				switch (metadata.status) {
+					case "overdue":
+						counts.overdue += 1;
+						break;
+					case "today":
+						counts.today += 1;
+						break;
+					case "soon":
+						counts.soon += 1;
+						break;
+					case "upcoming":
+						counts.upcoming += 1;
+						break;
+					default:
+						break;
+				}
+			});
+
+			return counts;
+		},
+		[allCards],
+	);
+
+	const formatCountLabel = (count: number) =>
+		`${count} ${count === 1 ? "task" : "tasks"}`;
 
 	const selectedCard = useMemo(
 		() => visibleCards.find((card) => card.id === selectedCardId) ?? null,
@@ -646,181 +734,279 @@ export function BoardDetailView({
 	const taskControls = (
 		<div className="flex w-full flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
 			{/* Filtros de Prioridade e Deadline */}
-			<div className="flex w-full flex-wrap items-center gap-2 rounded-lg border border-border/40 bg-background/70 px-2.5 py-1.5 shadow-none sm:w-auto sm:flex-nowrap">
-				<div className="flex flex-1 items-center gap-1.5 sm:flex-initial">
-					<span className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground/70">
-						PRIORITY
-					</span>
-					<Select
-						value={priorityFilter}
-						onValueChange={(value) =>
-							setPriorityFilter(value as PriorityFilter)
-						}
+			<Popover>
+				<PopoverTrigger>
+					<Button
+						variant="outline"
+						size="sm"
+						className="h-9 gap-2 rounded-lg border-border/60 bg-background/80 px-3 text-xs font-medium text-foreground hover:bg-accent hover:text-accent-foreground hover:shadow-sm"
+						type="button"
 					>
-						<SelectTrigger className="h-7 w-full rounded-md border border-border/30 bg-background/70 px-2 text-xs font-medium text-muted-foreground transition-colors duration-150 hover:text-foreground hover:bg-accent/30 sm:w-auto sm:min-w-[104px]">
-							<SelectValue placeholder="All">
-								{(() => {
-									const option = PRIORITY_FILTER_OPTIONS.find(
-										(item) => item.value === priorityFilter,
-									);
-									const FilterIcon = option?.icon ?? PriorityIcon;
-									const isActive = priorityFilter !== "all";
-									return (
-										<span className="flex items-center gap-1.5">
-											<FilterIcon
-												className={`h-3 w-3 ${isActive ? "text-foreground" : "text-muted-foreground/70"}`}
-											/>
-											<span
-												className={`truncate ${isActive ? "text-foreground font-medium" : "text-muted-foreground/90"}`}
-											>
-												{option?.label ?? "All"}
-											</span>
-										</span>
-									);
-								})()}
-							</SelectValue>
-						</SelectTrigger>
-						<SelectContent
-							align="end"
-							sideOffset={4}
-							className="rounded-md border border-border/40 bg-popover/95 shadow-md"
-						>
-							{PRIORITY_FILTER_OPTIONS.map((option) => {
-								const Icon = option.icon;
-								const isSelected = option.value === priorityFilter;
-								return (
+						<Filter className="h-3.5 w-3.5" />
+						<span>Filters</span>
+					</Button>
+				</PopoverTrigger>
+				<PopoverContent
+					align="end"
+					sideOffset={8}
+					className="w-72 rounded-lg border border-border/40 bg-popover/95 p-3 shadow-lg"
+				>
+					<div className="space-y-3">
+						<div className="space-y-1.5">
+							<span className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground/70">
+								Priority
+							</span>
+							<Select
+								type="multiple"
+								value={prioritySelectValue}
+								onValueChange={(value) => {
+									const values = (Array.isArray(value)
+										? value
+										: [value]) as PriorityFilterOptionValue[];
+									const next = values.filter((v) => v !== "all") as KanbanPriority[];
+									setSelectedPriorities(next);
+								}}
+							>
+								<SelectTrigger
+									size="sm"
+									className="h-7 w-full rounded-md border border-border/30 bg-background/70 px-2 text-xs font-medium text-muted-foreground transition-colors duration-150 hover:text-foreground hover:bg-accent/30"
+								>
+									<SelectValue placeholder="All">
+										{(() => {
+											const count = selectedPriorities.length;
+											if (count === 0) {
+												const option = PRIORITY_FILTER_OPTIONS[0]; // "all"
+												const Icon = option.icon;
+												return (
+													<span className="flex items-center gap-1.5">
+														<Icon className="h-3 w-3 text-muted-foreground/70" />
+														<span className="truncate text-muted-foreground/90">
+															{option.label}
+														</span>
+													</span>
+												);
+											}
+
+											if (count === 1) {
+												const value = selectedPriorities[0];
+												const option = PRIORITY_FILTER_OPTIONS.find(
+													(item) => item.value === value,
+												);
+												const Icon = option?.icon ?? PriorityIcon;
+												return (
+													<span className="flex items-center gap-1.5">
+														<Icon className="h-3 w-3 text-foreground" />
+														<span className="truncate text-foreground font-medium">
+															{option?.label ?? "All"}
+														</span>
+													</span>
+												);
+											}
+
+											// Multiple selected
+											return (
+												<span className="flex items-center gap-1.5">
+													<PriorityIcon className="h-3 w-3 text-foreground" />
+													<span className="truncate text-foreground font-medium">
+														{selectedPriorities.length} selected
+													</span>
+												</span>
+											);
+										})()}
+									</SelectValue>
+								</SelectTrigger>
+								<SelectContent
+									sideOffset={4}
+									className="rounded-md border border-border/40 bg-popover/95 shadow-md"
+								>
+									<SelectGroup>
+										<SelectGroupLabel className="px-2 pt-1 pb-1 text-[11px] font-medium text-muted-foreground/80">
+											Filter...
+										</SelectGroupLabel>
+										<SelectSeparator className="mx-2 my-1" />
+										{PRIORITY_FILTER_OPTIONS.map((option) => {
+											const Icon = option.icon;
+											const count =
+												option.value === "all"
+													? priorityCounts.total
+													: priorityCounts.counts[option.value as KanbanPriority] ?? 0;
+											return (
+												<SelectItem
+													key={option.value}
+													value={option.value}
+													className="text-xs transition-colors duration-150 hover:bg-muted cursor-pointer data-[state=checked]:bg-accent data-[state=checked]:text-accent-foreground"
+												>
+													<div className="flex items-center justify-between gap-2">
+														<div className="flex items-center gap-2">
+															<Icon className="h-3 w-3" />
+															<span>{option.label}</span>
+														</div>
+														<span className="text-[11px] text-muted-foreground">
+															{formatCountLabel(count)}
+														</span>
+													</div>
+												</SelectItem>
+											);
+										})}
+									</SelectGroup>
+								</SelectContent>
+							</Select>
+						</div>
+
+						<div className="space-y-1.5">
+							<span className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground/70">
+								Deadline
+							</span>
+							<Select
+								type="multiple"
+								value={dueSelectValue}
+								onValueChange={(value) => {
+									const values = (Array.isArray(value)
+										? value
+										: [value]) as DueFilterOptionValue[];
+									const next = values.filter((v) => v !== "all") as Array<
+										CardDueStatus | "no_due"
+									>;
+									setSelectedDueStatuses(next);
+								}}
+							>
+								<SelectTrigger
+									size="sm"
+									className="h-7 w-full rounded-md border border-border/30 bg-background/70 px-2 text-xs font-medium text-muted-foreground transition-colors duration-150 hover:text-foreground hover:bg-accent/30"
+								>
+									<SelectValue placeholder="All">
+										{(() => {
+											const count = selectedDueStatuses.length;
+											if (count === 0) {
+												return (
+													<span className="truncate text-muted-foreground/90">
+														All
+													</span>
+												);
+											}
+
+											if (count === 1) {
+												const value = selectedDueStatuses[0];
+												const label =
+													value === "overdue"
+														? "Overdue"
+														: value === "today"
+															? "Today"
+															: value === "soon"
+																? "Soon"
+																: value === "upcoming"
+																	? "Upcoming"
+																	: value === "no_due"
+																		? "No date"
+																		: "All";
+												return (
+													<span className="truncate text-foreground font-medium">
+														{label}
+													</span>
+												);
+											}
+
+											// Multiple selected
+											return (
+												<span className="truncate text-foreground font-medium">
+													{selectedDueStatuses.length} selected
+												</span>
+											);
+										})()}
+									</SelectValue>
+								</SelectTrigger>
+								<SelectContent
+									sideOffset={4}
+									className="rounded-md border border-border/40 bg-popover/95 shadow-md"
+								>
 									<SelectItem
-										key={option.value}
-										value={option.value}
-										className="flex items-center gap-2 text-xs transition-colors duration-150 hover:bg-muted cursor-pointer data-[state=checked]:bg-accent data-[state=checked]:text-accent-foreground"
+										value="all"
+										className="text-xs transition-colors duration-150 hover:bg-muted cursor-pointer data-[state=checked]:bg-accent data-[state=checked]:text-accent-foreground"
 									>
-										<Icon className="h-3 w-3" />
-										{option.label}
-										{isSelected && (
-											<div className="ml-auto h-1.5 w-1.5 rounded-full bg-foreground" />
-										)}
+										<div className="flex items-center justify-between gap-2">
+											<div className="flex items-center gap-2">
+												<span>All deadlines</span>
+											</div>
+											<span className="text-[11px] text-muted-foreground">
+												{formatCountLabel(dueCounts.all)}
+											</span>
+										</div>
 									</SelectItem>
-								);
-							})}
-						</SelectContent>
-					</Select>
-				</div>
-
-				<div className="hidden h-5 w-px bg-border/40 sm:mx-1.5 sm:block" />
-
-				<div className="flex flex-1 items-center gap-1.5 sm:flex-initial">
-					<span className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground/70">
-						DEADLINE
-					</span>
-					<Select
-						value={dueFilter}
-						onValueChange={(value) => setDueFilter(value as DueFilter)}
-					>
-						<SelectTrigger className="h-7 w-full rounded-md border border-border/30 bg-background/70 px-2 text-xs font-medium text-muted-foreground transition-colors duration-150 hover:text-foreground hover:bg-accent/30 sm:w-auto sm:min-w-[112px]">
-							<SelectValue placeholder="All">
-								{(() => {
-									const isActive = dueFilter !== "all";
-									return (
-										<span
-											className={`truncate ${isActive ? "text-foreground font-medium" : "text-muted-foreground/90"}`}
-										>
-											{dueFilter === "all"
-												? "All"
-												: dueFilter === "overdue"
-													? "Overdue"
-													: dueFilter === "today"
-														? "Today"
-														: dueFilter === "soon"
-															? "Soon"
-															: dueFilter === "upcoming"
-																? "Upcoming"
-																: dueFilter === "no_due"
-																	? "No date"
-																	: "All"}
-										</span>
-									);
-								})()}
-							</SelectValue>
-						</SelectTrigger>
-						<SelectContent
-							align="end"
-							sideOffset={4}
-							className="rounded-md border border-border/40 bg-popover/95 shadow-md"
-						>
-							<SelectItem
-								value="all"
-								className="text-xs transition-colors duration-150 hover:bg-muted cursor-pointer data-[state=checked]:bg-accent data-[state=checked]:text-accent-foreground"
-							>
-								<div className="flex items-center gap-2">
-									<span>All deadlines</span>
-									{dueFilter === "all" && (
-										<div className="ml-auto h-1.5 w-1.5 rounded-full bg-foreground" />
-									)}
-								</div>
-							</SelectItem>
-							<SelectItem
-								value="overdue"
-								className="text-xs transition-colors duration-150 hover:bg-muted cursor-pointer data-[state=checked]:bg-accent data-[state=checked]:text-accent-foreground"
-							>
-								<div className="flex items-center gap-2">
-									<div className="h-2 w-2 rounded-full bg-destructive" />
-									<span>Overdue</span>
-									{dueFilter === "overdue" && (
-										<div className="ml-auto h-1.5 w-1.5 rounded-full bg-foreground" />
-									)}
-								</div>
-							</SelectItem>
-							<SelectItem
-								value="today"
-								className="text-xs transition-colors duration-150 hover:bg-muted cursor-pointer data-[state=checked]:bg-accent data-[state=checked]:text-accent-foreground"
-							>
-								<div className="flex items-center gap-2">
-									<div className="h-2 w-2 rounded-full bg-orange-500" />
-									<span>Due today</span>
-									{dueFilter === "today" && (
-										<div className="ml-auto h-1.5 w-1.5 rounded-full bg-foreground" />
-									)}
-								</div>
-							</SelectItem>
-							<SelectItem
-								value="soon"
-								className="text-xs transition-colors duration-150 hover:bg-muted cursor-pointer data-[state=checked]:bg-accent data-[state=checked]:text-accent-foreground"
-							>
-								<div className="flex items-center gap-2">
-									<div className="h-2 w-2 rounded-full bg-yellow-500" />
-									<span>Due soon</span>
-									{dueFilter === "soon" && (
-										<div className="ml-auto h-1.5 w-1.5 rounded-full bg-foreground" />
-									)}
-								</div>
-							</SelectItem>
-							<SelectItem
-								value="upcoming"
-								className="text-xs transition-colors duration-150 hover:bg-muted cursor-pointer data-[state=checked]:bg-accent data-[state=checked]:text-accent-foreground"
-							>
-								<div className="flex items-center gap-2">
-									<div className="h-2 w-2 rounded-full bg-blue-500" />
-									<span>Upcoming</span>
-									{dueFilter === "upcoming" && (
-										<div className="ml-auto h-1.5 w-1.5 rounded-full bg-foreground" />
-									)}
-								</div>
-							</SelectItem>
-							<SelectItem
-								value="no_due"
-								className="text-xs transition-colors duration-150 hover:bg-muted cursor-pointer data-[state=checked]:bg-accent data-[state=checked]:text-accent-foreground"
-							>
-								<div className="flex items-center gap-2">
-									<span>No due date</span>
-									{dueFilter === "no_due" && (
-										<div className="ml-auto h-1.5 w-1.5 rounded-full bg-foreground" />
-									)}
-								</div>
-							</SelectItem>
-						</SelectContent>
-					</Select>
-				</div>
-			</div>
+									<SelectItem
+										value="overdue"
+										className="text-xs transition-colors duration-150 hover:bg-muted cursor-pointer data-[state=checked]:bg-accent data-[state=checked]:text-accent-foreground"
+									>
+										<div className="flex items-center justify-between gap-2">
+											<div className="flex items-center gap-2">
+												<div className="h-2 w-2 rounded-full bg-destructive" />
+												<span>Overdue</span>
+											</div>
+											<span className="text-[11px] text-muted-foreground">
+												{formatCountLabel(dueCounts.overdue)}
+											</span>
+										</div>
+									</SelectItem>
+									<SelectItem
+										value="today"
+										className="text-xs transition-colors duration-150 hover:bg-muted cursor-pointer data-[state=checked]:bg-accent data-[state=checked]:text-accent-foreground"
+									>
+										<div className="flex items-center justify-between gap-2">
+											<div className="flex items-center gap-2">
+												<div className="h-2 w-2 rounded-full bg-orange-500" />
+												<span>Due today</span>
+											</div>
+											<span className="text-[11px] text-muted-foreground">
+												{formatCountLabel(dueCounts.today)}
+											</span>
+										</div>
+									</SelectItem>
+									<SelectItem
+										value="soon"
+										className="text-xs transition-colors duration-150 hover:bg-muted cursor-pointer data-[state=checked]:bg-accent data-[state=checked]:text-accent-foreground"
+									>
+										<div className="flex items-center justify-between gap-2">
+											<div className="flex items-center gap-2">
+												<div className="h-2 w-2 rounded-full bg-yellow-500" />
+												<span>Due soon</span>
+											</div>
+											<span className="text-[11px] text-muted-foreground">
+												{formatCountLabel(dueCounts.soon)}
+											</span>
+										</div>
+									</SelectItem>
+									<SelectItem
+										value="upcoming"
+										className="text-xs transition-colors duration-150 hover:bg-muted cursor-pointer data-[state=checked]:bg-accent data-[state=checked]:text-accent-foreground"
+									>
+										<div className="flex items-center justify-between gap-2">
+											<div className="flex items-center gap-2">
+												<div className="h-2 w-2 rounded-full bg-blue-500" />
+												<span>Upcoming</span>
+											</div>
+											<span className="text-[11px] text-muted-foreground">
+												{formatCountLabel(dueCounts.upcoming)}
+											</span>
+										</div>
+									</SelectItem>
+									<SelectItem
+										value="no_due"
+										className="text-xs transition-colors duration-150 hover:bg-muted cursor-pointer data-[state=checked]:bg-accent data-[state=checked]:text-accent-foreground"
+									>
+										<div className="flex items-center justify-between gap-2">
+											<div className="flex items-center gap-2">
+												<span>No due date</span>
+											</div>
+											<span className="text-[11px] text-muted-foreground">
+												{formatCountLabel(dueCounts.no_due)}
+											</span>
+										</div>
+									</SelectItem>
+								</SelectContent>
+							</Select>
+						</div>
+					</div>
+				</PopoverContent>
+			</Popover>
 
 			{/* Toggle de Visualização */}
 			<ToggleGroup

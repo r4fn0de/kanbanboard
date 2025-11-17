@@ -157,7 +157,7 @@ export function CreateProjectDialog({
 							placeholder="e.g. Marketing Launch"
 							autoFocus
 							required
-							className="h-10"
+							className="h-10 border-0 bg-muted/70 text-foreground placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:border-0"
 						/>
 					</div>
 
@@ -249,7 +249,7 @@ export function CreateProjectDialog({
 											value={projectColor}
 											onChange={(event) => setProjectColor(event.target.value)}
 											placeholder="#6366F1"
-											className="h-10 flex-1 font-mono text-sm"
+											className="h-10 flex-1 border-0 bg-muted/70 font-mono text-sm text-foreground placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:border-0"
 										/>
 									</div>
 								</div>
@@ -273,7 +273,7 @@ export function CreateProjectDialog({
 										}
 									}}
 									placeholder="😊"
-									className="h-12 text-center text-3xl"
+									className="h-12 border-0 bg-muted/70 text-center text-3xl text-foreground placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:border-0"
 									maxLength={2}
 								/>
 							</div>
@@ -295,7 +295,7 @@ export function CreateProjectDialog({
 							onChange={(event) => setProjectDescription(event.target.value)}
 							placeholder="What's this project about?"
 							rows={3}
-							className="resize-none"
+							className="resize-none border-0 bg-muted/70 text-foreground placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:border-0"
 						/>
 					</div>
 

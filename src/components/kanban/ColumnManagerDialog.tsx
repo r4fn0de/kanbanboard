@@ -359,7 +359,7 @@ export function ColumnManagerDialog({
 										}}
 										placeholder="Enter column name..."
 										disabled={createColumn.isPending}
-										className="flex-1"
+										className="flex-1 h-10 border-0 bg-muted/70 text-foreground placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:border-0"
 										autoFocus
 									/>
 								</div>
@@ -690,7 +690,7 @@ function ColumnManagerRow({
 							placeholder="Column name"
 							disabled={isUpdating}
 							autoFocus
-							className="flex-1"
+							className="flex-1 h-10 border-0 bg-muted/70 text-foreground placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:border-0"
 							style={{ outline: "none" }}
 						/>
 						<Button

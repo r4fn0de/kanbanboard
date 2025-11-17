@@ -93,7 +93,7 @@ export function NotesView() {
           value={searchQuery}
           onChange={e => setSearchQuery(e.target.value)}
           placeholder="Search notes..."
-          className="pl-9 h-9"
+          className="h-9 pl-9 border-0 bg-muted/70 text-foreground placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:border-0"
         />
       </div>
       <Button onClick={handleCreateNote} size="sm" className="gap-2">

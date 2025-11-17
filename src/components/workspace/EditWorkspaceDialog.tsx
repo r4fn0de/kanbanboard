@@ -98,6 +98,7 @@ export function EditWorkspaceDialog({
 							placeholder="e.g. Product Team"
 							autoFocus
 							required
+							className="h-10 border-0 bg-muted/70 text-foreground placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:border-0"
 						/>
 					</div>
 					<div className="space-y-2">

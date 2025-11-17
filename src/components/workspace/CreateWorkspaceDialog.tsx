@@ -324,7 +324,7 @@ export function CreateWorkspaceDialog({
 									}}
 									placeholder="workspace"
 									autoFocus
-									className="h-9"
+									className="h-10 border-0 bg-muted/70 text-foreground placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:border-0"
 									maxLength={50}
 								/>
 							</div>
