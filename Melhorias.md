@@ -6,7 +6,7 @@ Modulo é um aplicativo desktop offline para gerenciamento de workspace, constru
 
 - **Frontend:** React + TypeScript + Vite
 - **Backend:** Tauri (Rust) + SQLite
-- **Principais funcionalidades:** Kanban boards, Notes (editor rico), Draws (tldraw), Workspaces
+- **Principais funcionalidades:** Kanban boards, Notes (editor rico), Whiteboard (tldraw), Workspaces
 
 ---
 
@@ -36,7 +36,7 @@ Modulo é um aplicativo desktop offline para gerenciamento de workspace, constru
   - Estatísticas por workspace
 
 - **🔗 Relações entre Items**
-  - Links entre cards, notes e draws
+  - Links entre cards, notes e whiteboards
   - Dependências entre tasks
   - Backlinks automáticos
   - Visualização de grafo de relacionamentos
@@ -69,7 +69,7 @@ Modulo é um aplicativo desktop offline para gerenciamento de workspace, constru
 ## 3. Produtividade e UX
 
 - **⌨️ Atalhos de Teclado Expandidos**
-  - Quick actions (criar task, note, draw rapidamente)
+  - Quick actions (criar task, note, whiteboard rapidamente)
   - Navegação por teclado completa
   - Vim mode opcional
   - Customização de atalhos
@@ -133,7 +133,7 @@ Modulo é um aplicativo desktop offline para gerenciamento de workspace, constru
   - Diff viewer
   - Restore de versões anteriores
 
-## 6. Draws/Whiteboard
+## 6. Whiteboard
 
 - **🎨 Features Adicionais**
   - Templates de diagramas

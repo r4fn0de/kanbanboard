@@ -12,20 +12,12 @@ import {
   DialogDescription,
   DialogTitle,
 } from '@/components/ui/dialog'
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarProvider,
-} from '@/components/ui/sidebar'
+import { SidebarProvider } from '@/components/ui/sidebar'
 import { useUIStore } from '@/store/ui-store'
 import { AppearancePane } from './panes/AppearancePane'
 import { WorkspacesPane } from './panes/WorkspacesPane'
 import { StoragePane } from './panes/StoragePane'
+import { PreferencesSidebar, type PreferencePane } from './PreferencesSidebar'
 import { PaintPaletteIcon, FolderIcon, HardDriveIcon } from '@/components/ui/icons'
 
 const navigationItems = [
@@ -45,8 +37,6 @@ const navigationItems = [
     icon: HardDriveIcon,
   },
 ] as const
-
-type PreferencePane = (typeof navigationItems)[number]['id']
 
 const getPaneTitle = (pane: PreferencePane): string => {
   switch (pane) {
@@ -88,61 +78,40 @@ export function PreferencesDialog() {
           Customize your application preferences here.
         </DialogDescription>
 
-        <SidebarProvider className="items-start">
-          <Sidebar collapsible="none" className="hidden md:flex">
-            <SidebarContent>
-              <SidebarGroup>
-                <SidebarGroupContent>
-                  <SidebarMenu>
-                    {navigationItems.map(item => (
-                      <SidebarMenuItem key={item.id}>
-                        <SidebarMenuButton
-                          asChild
-                          isActive={activePane === item.id}
-                        >
-                          <button
-                            onClick={() => setPreferencesActivePane(item.id)}
-                            className="w-full"
-                          >
-                            <item.icon />
-                            <span>{item.name}</span>
-                          </button>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    ))}
-                  </SidebarMenu>
-                </SidebarGroupContent>
-              </SidebarGroup>
-            </SidebarContent>
-          </Sidebar>
+        <SidebarProvider className="items-stretch h-full">
+          <div className="flex h-full">
+            <PreferencesSidebar
+              activePane={activePane}
+              onChange={setPreferencesActivePane}
+            />
+            <main className="flex flex-1 flex-col overflow-hidden">
+              <header className="flex h-16 shrink-0 items-center gap-2">
+                <div className="flex items-center gap-2 px-4">
+                  <Breadcrumb>
+                    <BreadcrumbList>
+                      <BreadcrumbItem className="hidden md:block">
+                        <BreadcrumbLink href="#">Preferences</BreadcrumbLink>
+                      </BreadcrumbItem>
+                      <BreadcrumbSeparator className="hidden md:block" />
+                      <BreadcrumbItem>
+                        <BreadcrumbPage>
+                          {getPaneTitle(activePane)}
+                        </BreadcrumbPage>
+                      </BreadcrumbItem>
+                    </BreadcrumbList>
+                  </Breadcrumb>
+                </div>
+              </header>
 
-          <main className="flex flex-1 flex-col overflow-hidden">
-            <header className="flex h-16 shrink-0 items-center gap-2">
-              <div className="flex items-center gap-2 px-4">
-                <Breadcrumb>
-                  <BreadcrumbList>
-                    <BreadcrumbItem className="hidden md:block">
-                      <BreadcrumbLink href="#">Preferences</BreadcrumbLink>
-                    </BreadcrumbItem>
-                    <BreadcrumbSeparator className="hidden md:block" />
-                    <BreadcrumbItem>
-                      <BreadcrumbPage>
-                        {getPaneTitle(activePane)}
-                      </BreadcrumbPage>
-                    </BreadcrumbItem>
-                  </BreadcrumbList>
-                </Breadcrumb>
+              <div className="flex flex-1 flex-col gap-4 overflow-y-auto p-4 pt-0 max-h-[calc(600px-4rem)]">
+                {activePane === 'appearance' && <AppearancePane />}
+                {activePane === 'workspaces' && (
+                  <WorkspacesPane editingWorkspaceId={editingWorkspaceId} />
+                )}
+                {activePane === 'storage' && <StoragePane />}
               </div>
-            </header>
-
-            <div className="flex flex-1 flex-col gap-4 overflow-y-auto p-4 pt-0 max-h-[calc(600px-4rem)]">
-              {activePane === 'appearance' && <AppearancePane />}
-              {activePane === 'workspaces' && (
-                <WorkspacesPane editingWorkspaceId={editingWorkspaceId} />
-              )}
-              {activePane === 'storage' && <StoragePane />}
-            </div>
-          </main>
+            </main>
+          </div>
         </SidebarProvider>
       </DialogContent>
     </Dialog>

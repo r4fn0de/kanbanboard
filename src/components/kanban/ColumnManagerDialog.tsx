@@ -64,7 +64,6 @@ import {
 	Tooltip,
 	TooltipContent,
 	TooltipProvider,
-	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import type { KanbanColumn } from "@/types/common";
@@ -81,6 +80,8 @@ import { TrashIcon } from "@/components/ui/icons";
 interface ColumnWithMeta extends KanbanColumn {
 	cardCount: number;
 }
+
+type ColumnStatusRole = "backlog" | "todo" | "in_progress" | "done" | "custom";
 
 interface ColumnManagerDialogProps {
 	boardId: string;
@@ -99,6 +100,26 @@ function hexToRgba(hex: string | null | undefined, alpha: number) {
 	const g = parseInt(value.slice(2, 4), 16);
 	const b = parseInt(value.slice(4, 6), 16);
 	return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+function inferColumnStatusRole(
+	column: KanbanColumn,
+	index: number,
+	total: number,
+): ColumnStatusRole {
+	const title = column.title.trim().toLowerCase();
+
+	if (title.includes("backlog")) return "backlog";
+	if (title.includes("to do") || title === "todo") return "todo";
+	if (title.includes("in progress") || title.includes("progress"))
+		return "in_progress";
+	if (title.includes("done") || title.includes("complete")) return "done";
+
+	// Fallback by position: first column as backlog, last as done
+	if (index === 0) return "backlog";
+	if (index === total - 1 && total > 1) return "done";
+
+	return "custom";
 }
 
 export function ColumnManagerDialog({
@@ -137,6 +158,25 @@ export function ColumnManagerDialog({
 				.map((id) => columns.find((column) => column.id === id))
 				.filter((column): column is ColumnWithMeta => Boolean(column)),
 		[columns, order],
+	);
+
+	const columnsWithRoles = useMemo(
+		() => {
+			const total = sortedColumns.length;
+			return sortedColumns.map((column, index) => ({
+				column,
+				role: inferColumnStatusRole(column, index, total),
+			}));
+		},
+		[sortedColumns],
+	);
+
+	const enabledDoneCount = useMemo(
+		() =>
+			columnsWithRoles.filter(
+				(item) => item.role === "done" && item.column.isEnabled,
+			).length,
+		[columnsWithRoles],
 	);
 
 	const handleDragEnd = useCallback(
@@ -260,7 +300,7 @@ export function ColumnManagerDialog({
 							<div className="space-y-3">
 								<div className="flex items-center gap-3">
 									<Popover>
-										<PopoverTrigger asChild>
+										<PopoverTrigger>
 											<button
 												type="button"
 												className="flex items-center justify-center w-10 h-10 rounded-lg border-2 transition-all duration-150 ease-in-out hover:scale-105 hover:brightness-95"
@@ -399,7 +439,7 @@ export function ColumnManagerDialog({
 								strategy={verticalListSortingStrategy}
 							>
 								<div className="space-y-3 py-2">
-									{sortedColumns.map((column) => (
+									{columnsWithRoles.map(({ column, role }) => (
 										<ColumnManagerRow
 											key={column.id}
 											column={column}
@@ -438,6 +478,10 @@ export function ColumnManagerDialog({
 													throw error;
 												}
 											}}
+											isProtectedDone={
+												role === "done" && column.isEnabled && enabledDoneCount <= 1
+											}
+											canDelete={role === "custom"}
 										/>
 									))}
 								</div>
@@ -462,6 +506,8 @@ interface ColumnManagerRowProps {
 	isUpdating: boolean;
 	onUpdate: (changes: Partial<ColumnManagerChanges>) => Promise<void>;
 	onDelete: () => Promise<void>;
+	isProtectedDone: boolean;
+	canDelete: boolean;
 }
 
 function ColumnManagerRow({
@@ -469,6 +515,8 @@ function ColumnManagerRow({
 	isUpdating,
 	onUpdate,
 	onDelete,
+	isProtectedDone,
+	canDelete,
 }: ColumnManagerRowProps) {
 	const [title, setTitle] = useState(column.title);
 	const [color, setColor] = useState<string | null>(column.color ?? null);
@@ -502,7 +550,24 @@ function ColumnManagerRow({
 		isDragging,
 	} = useSortable({ id: column.id });
 
-	const IconComponent = getColumnIconComponent(icon);
+	const normalizedTitle = column.title.trim().toLowerCase();
+	let inferredStatusIcon: string | null = null;
+	if (normalizedTitle.includes("backlog")) {
+		inferredStatusIcon = "BacklogStatus";
+	} else if (normalizedTitle.includes("to do") || normalizedTitle === "todo") {
+		inferredStatusIcon = "TodoStatus";
+	} else if (
+		normalizedTitle.includes("in progress") ||
+		normalizedTitle.includes("progress")
+	) {
+		inferredStatusIcon = "InProgressStatus";
+	} else if (normalizedTitle.includes("done") || normalizedTitle.includes("complete")) {
+		inferredStatusIcon = "DoneStatus";
+	}
+
+	const resolvedIconKey =
+		!icon || icon === DEFAULT_COLUMN_ICON ? inferredStatusIcon ?? icon : icon;
+	const IconComponent = getColumnIconComponent(resolvedIconKey);
 	const accentColor = color ?? DEFAULT_MONOCHROMATIC_COLOR;
 
 	const handleTitleBlur = async () => {
@@ -539,6 +604,11 @@ function ColumnManagerRow({
 	};
 
 	const handleToggle = async (next: boolean) => {
+		if (!next && isProtectedDone) {
+			toast.error("Cannot hide the last done column");
+			return;
+		}
+
 		const previous = isEnabled;
 		setIsEnabled(next);
 		try {
@@ -606,17 +676,20 @@ function ColumnManagerRow({
 
 			<div className="flex items-center gap-4 flex-1">
 				<Popover>
-					<PopoverTrigger asChild>
+					<PopoverTrigger>
 						<button
 							type="button"
 							className="flex items-center justify-center w-10 h-10 rounded-lg border-2 transition-all duration-150 ease-in-out hover:scale-105 hover:brightness-95"
 							style={{
-								backgroundColor: color ?? DEFAULT_MONOCHROMATIC_COLOR,
-								borderColor: color ?? DEFAULT_MONOCHROMATIC_COLOR,
+								backgroundColor: "transparent",
+								borderColor: "transparent",
 							}}
 							disabled={isUpdating}
 						>
-							<IconComponent className="h-5 w-5" style={{ color: "white" }} />
+							<IconComponent
+								className="h-5 w-5"
+								style={{ color: color ?? DEFAULT_MONOCHROMATIC_COLOR }}
+							/>
 						</button>
 					</PopoverTrigger>
 					<PopoverContent className="w-80" align="start">
@@ -745,7 +818,7 @@ function ColumnManagerRow({
 								column.cardCount > 0
 									? (hexToRgba(accentColor, 0.32) ?? undefined)
 									: undefined,
-						}}
+							}}
 					>
 						{column.cardCount} tasks
 					</Badge>
@@ -758,29 +831,29 @@ function ColumnManagerRow({
 						open={showDeleteConfirm}
 						onOpenChange={setShowDeleteConfirm}
 					>
-						<TooltipTrigger asChild>
-							<AlertDialogTrigger asChild>
-								<Button
-									variant={
-										column.cardCount > 0 || isUpdating ? "ghost" : "destructive"
-									}
-									size="sm"
-									disabled={isUpdating || column.cardCount > 0}
+						<AlertDialogTrigger>
+							<Button
+								variant={
+									column.cardCount > 0 || isUpdating ? "ghost" : "destructive"
+								}
+								size="sm"
+								disabled={
+									isUpdating || column.cardCount > 0 || !canDelete
+								}
+								className={cn(
+									"h-8 w-8 p-0",
+									(column.cardCount > 0 || isUpdating) &&
+										"opacity-50 cursor-not-allowed",
+								)}
+							>
+								<TrashIcon
 									className={cn(
-										"h-8 w-8 p-0",
-										column.cardCount > 0 ||
-											(isUpdating && "opacity-50 cursor-not-allowed"),
+										"h-4 w-4",
+										column.cardCount > 0 || isUpdating ? "" : "text-white",
 									)}
-								>
-									<TrashIcon
-										className={cn(
-											"h-4 w-4",
-											column.cardCount > 0 || isUpdating ? "" : "text-white",
-										)}
-									/>
-								</Button>
-							</AlertDialogTrigger>
-						</TooltipTrigger>
+								/>
+							</Button>
+						</AlertDialogTrigger>
 						<AlertDialogContent>
 							<AlertDialogHeader>
 								<AlertDialogTitle>Delete Column</AlertDialogTitle>
@@ -799,7 +872,7 @@ function ColumnManagerRow({
 								<AlertDialogCancel>Cancel</AlertDialogCancel>
 								<AlertDialogAction
 									onClick={handleDelete}
-									disabled={column.cardCount > 0}
+									disabled={column.cardCount > 0 || !canDelete}
 									className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
 								>
 									Delete
@@ -811,7 +884,9 @@ function ColumnManagerRow({
 								? "Please wait..."
 								: column.cardCount > 0
 									? `Cannot delete column with ${column.cardCount} task${column.cardCount === 1 ? "" : "s"}`
-									: "Delete column"}
+									: !canDelete
+										? "System columns cannot be deleted"
+										: "Delete column"}
 						</TooltipContent>
 					</AlertDialog>
 				</Tooltip>

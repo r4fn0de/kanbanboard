@@ -325,7 +325,7 @@ export function WorkspaceSelect({
         </SelectTrigger>
         <SelectContent
           className={cn(
-            'min-w-[220px] max-w-[300px] p-1.5',
+            'min-w-[220px] max-w-[300px] p-1.5 rounded-lg',
             useTransparentStyle &&
               'backdrop-blur-xl bg-popover/90 dark:bg-popover/95 supports-[backdrop-filter]:bg-popover/85 dark:supports-[backdrop-filter]:bg-popover/90 border border-border/60',
             activeId &&

@@ -20,6 +20,10 @@ import {
   TrendingUp,
   Zap,
 } from 'lucide-react'
+import { BacklogStatusIcon } from '@/components/ui/icons/backlog-status-icon'
+import { DoneStatusIcon } from '@/components/ui/icons/done-status-icon'
+import { InProgressStatusIcon } from '@/components/ui/icons/in-progress-status-icon'
+import { TodoStatusIcon } from '@/components/ui/icons/todo-status-icon'
 
 import {
   COLUMN_ICON_VALUES,
@@ -74,6 +78,20 @@ const ICON_LABELS: Record<ColumnIconValue, string> = {
 export function getColumnIconComponent(
   value: ColumnIconValue | string | null | undefined
 ): LucideIcon {
+  // Custom SVG icons for default status columns created on new boards
+  if (value === 'BacklogStatus') {
+    return BacklogStatusIcon as unknown as LucideIcon
+  }
+  if (value === 'TodoStatus') {
+    return TodoStatusIcon as unknown as LucideIcon
+  }
+  if (value === 'InProgressStatus') {
+    return InProgressStatusIcon as unknown as LucideIcon
+  }
+  if (value === 'DoneStatus') {
+    return DoneStatusIcon as unknown as LucideIcon
+  }
+
   if (value && value in ICON_COMPONENTS) {
     return ICON_COMPONENTS[value as ColumnIconValue]
   }

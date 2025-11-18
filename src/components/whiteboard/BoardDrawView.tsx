@@ -72,7 +72,7 @@ export function BoardDrawView() {
         return
       }
 
-      if (tab === 'draws') {
+      if (tab === 'whiteboard') {
         return
       }
 
@@ -131,7 +131,7 @@ export function BoardDrawView() {
         boardEmoji={board.emoji ?? undefined}
         boardColor={board.color ?? undefined}
         workspaceName={workspaces.find(ws => ws.id === board.workspaceId)?.name}
-        activeTab="draws"
+        activeTab="whiteboard"
         onTabChange={handleTabChange}
       />
 

@@ -21,7 +21,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { useCreateBoard } from "@/services/kanban";
+import { useCreateBoard, createColumn } from "@/services/kanban";
 import { toast } from "sonner";
 import {
 	PROJECT_ICON_SECTIONS,
@@ -29,6 +29,10 @@ import {
 	PROJECT_ICON_MAP,
 	DEFAULT_PROJECT_ICON,
 } from "@/components/layout/left-sidebar/constants";
+import {
+	DEFAULT_COLUMN_ICON,
+	DEFAULT_MONOCHROMATIC_COLOR,
+} from "@/constants/kanban-columns";
 
 interface CreateProjectDialogProps {
 	open: boolean;
@@ -98,7 +102,40 @@ export function CreateProjectDialog({
 				color: projectColor,
 			},
 			{
-				onSuccess: () => {
+				onSuccess: async () => {
+					try {
+						const defaultColumns: { title: string; position: number }[] = [
+							{ title: "Backlog", position: 0 },
+							{ title: "To Do", position: 1 },
+							{ title: "In Progress", position: 2 },
+							{ title: "Done", position: 3 },
+						];
+
+						for (const [index, column] of defaultColumns.entries()) {
+							await createColumn({
+								id:
+									globalThis.crypto?.randomUUID?.() ??
+									`${Date.now()}-${index}`,
+								boardId: id,
+								title: column.title,
+								position: column.position,
+								icon: DEFAULT_COLUMN_ICON,
+								color: DEFAULT_MONOCHROMATIC_COLOR,
+							});
+						}
+					} catch (error) {
+						const message =
+							error instanceof Error
+								? error.message
+								: typeof error === "string"
+									? error
+									: JSON.stringify(error);
+						console.error("Failed to create default columns", error);
+						toast.error("Failed to create default columns", {
+							description: message,
+						});
+					}
+
 					toast.success("Project created");
 					handleClose(false);
 				},

@@ -8,7 +8,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { DialogTitle } from '@/components/ui/dialog'
 import { useDeleteWorkspace } from '@/services/workspaces'
 import { toast } from 'sonner'
 
@@ -53,7 +52,7 @@ export function DeleteWorkspaceDialog({
     <AlertDialog open={open} onOpenChange={handleClose}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <DialogTitle>Delete workspace</DialogTitle>
+          <AlertDialogTitle>Delete workspace</AlertDialogTitle>
           <AlertDialogDescription>
             This action cannot be undone. This will permanently delete
             {workspaceName ? ` "${workspaceName}"` : ' this workspace'}.
@@ -79,4 +78,3 @@ export function DeleteWorkspaceDialog({
     </AlertDialog>
   )
 }
-

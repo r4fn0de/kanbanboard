@@ -8,7 +8,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { DialogTitle } from '@/components/ui/dialog'
 import { useDeleteBoard } from '@/services/kanban'
 import { toast } from 'sonner'
 import { useLocation, useNavigate } from 'react-router-dom'
@@ -64,7 +63,7 @@ export function DeleteProjectDialog({
     <AlertDialog open={open} onOpenChange={handleClose}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <DialogTitle>Delete project</DialogTitle>
+          <AlertDialogTitle>Delete project</AlertDialogTitle>
           <AlertDialogDescription>
             This action cannot be undone. This will permanently delete
             {projectTitle ? ` "${projectTitle}"` : ' this project'} and all of
@@ -90,4 +89,3 @@ export function DeleteProjectDialog({
     </AlertDialog>
   )
 }
-

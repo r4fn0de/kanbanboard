@@ -78,7 +78,7 @@ function renderWithRouter(path: string) {
   return render(
     <MemoryRouter initialEntries={[path]}>
       <Routes>
-        <Route path="/projects/:boardId/draws" element={<BoardDrawView />} />
+        <Route path="/projects/:boardId/whiteboard" element={<BoardDrawView />} />
       </Routes>
     </MemoryRouter>
   )
@@ -88,7 +88,7 @@ describe('BoardDrawView', () => {
   it('renders fallback when board does not exist', () => {
     mockedUseBoards.mockReturnValue(createUseBoardsResult([]))
 
-    renderWithRouter('/projects/unknown/draws')
+    renderWithRouter('/projects/unknown/whiteboard')
 
     expect(screen.getByText('Board not found.')).toBeInTheDocument()
   })
@@ -109,7 +109,7 @@ describe('BoardDrawView', () => {
       ])
     )
 
-    renderWithRouter('/projects/board-123/draws')
+    renderWithRouter('/projects/board-123/whiteboard')
 
     expect(screen.getByText('Design Board')).toBeInTheDocument()
     const canvas = screen.getByTestId('tldraw')
@@ -136,7 +136,7 @@ describe('BoardDrawView', () => {
       ])
     )
 
-    const { unmount } = renderWithRouter('/projects/board-456/draws')
+    const { unmount } = renderWithRouter('/projects/board-456/whiteboard')
 
     await waitFor(() => {
       expect(useUIStore.getState().leftSidebarVisible).toBe(false)

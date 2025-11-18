@@ -446,11 +446,23 @@ function DraggableColumn({
 		FALLBACK_COLUMN_COLORS[accentIndex % FALLBACK_COLUMN_COLORS.length] ??
 		FALLBACK_COLUMN_COLORS[0];
 	const baseColor = column.color ?? fallbackColor;
-	const iconBackground =
-		hexToRgba(baseColor, 0.12) ?? "rgba(148, 163, 184, 0.12)";
-	const iconRing = hexToRgba(baseColor, 0.55) ?? "rgba(148, 163, 184, 0.45)";
 	const countColor = baseColor;
-	const ColumnIcon = getColumnIconComponent(column.icon ?? DEFAULT_COLUMN_ICON);
+	const normalizedTitle = column.title.trim().toLowerCase();
+	let inferredStatusIcon: string | null = null;
+	if (normalizedTitle === "backlog") {
+		inferredStatusIcon = "BacklogStatus";
+	} else if (normalizedTitle === "to do" || normalizedTitle === "todo") {
+		inferredStatusIcon = "TodoStatus";
+	} else if (normalizedTitle === "in progress") {
+		inferredStatusIcon = "InProgressStatus";
+	} else if (normalizedTitle === "done") {
+		inferredStatusIcon = "DoneStatus";
+	}
+	const resolvedIconKey =
+		!column.icon || column.icon === DEFAULT_COLUMN_ICON
+			? inferredStatusIcon ?? DEFAULT_COLUMN_ICON
+			: column.icon;
+	const ColumnIcon = getColumnIconComponent(resolvedIconKey);
 
 	return (
 		<div
@@ -468,14 +480,7 @@ function DraggableColumn({
 				{...listeners}
 			>
 				<div className="flex min-w-0 items-center gap-2">
-					<span
-						className="flex h-8 w-8 items-center justify-center rounded-xl border border-border/50"
-						style={{
-							backgroundColor: iconBackground,
-							color: countColor,
-							boxShadow: `0 0 0 1px ${iconRing} inset`,
-						}}
-					>
+					<span className="flex h-8 w-8 items-center justify-center">
 						<ColumnIcon className="h-4 w-4" />
 					</span>
 					<div className="flex flex-col min-w-0">
@@ -545,23 +550,6 @@ function DraggableColumn({
 							)}
 						</SortableContext>
 					</div>
-				</div>
-
-				{/* Fixed Add Task Button */}
-				<div className="p-1 pt-2">
-					<Button
-						variant="ghost"
-						onClick={onAddCard}
-						disabled={isCreatingCard}
-						className="w-full flex items-center justify-center gap-2 rounded-xl border border-dashed border-border/70 bg-transparent py-3 text-sm font-medium text-muted-foreground transition hover:border-transparent hover:bg-primary hover:text-primary-foreground disabled:cursor-not-allowed disabled:opacity-60"
-						style={{
-							color: countColor,
-							backgroundColor: hexToRgba(baseColor, 0.12) ?? undefined,
-						}}
-					>
-						<Plus className="h-4 w-4" />
-						Add Task
-					</Button>
 				</div>
 			</div>
 		</div>

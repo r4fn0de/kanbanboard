@@ -17,9 +17,7 @@ import {
 	SelectSeparator,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Tooltip as BaseTooltip } from "@base-ui-components/react/tooltip";
 import {
 	BOARD_VIEW_OPTIONS,
 	DEFAULT_BOARD_VIEW_MODE,
@@ -48,7 +46,7 @@ import {
 	useDeleteCard,
 	useDuplicateCard,
 } from "@/services/kanban";
-import { Plus, Filter } from "lucide-react";
+import { Plus, Filter, LayoutDashboard } from "lucide-react";
 import { HorizontalSliderIcon, PriorityIcon, PriorityLowIcon, PriorityMediumIcon, PriorityHighIcon } from "@/components/ui/icons";
 import type { LucideIcon } from "lucide-react";
 import type {
@@ -125,8 +123,8 @@ export function BoardDetailView({
 				return;
 			}
 
-			if (tab === "draws") {
-				navigate(`/projects/${board.id}/draws`);
+			if (tab === "whiteboard") {
+				navigate(`/projects/${board.id}/whiteboard`);
 				return;
 			}
 
@@ -1006,44 +1004,55 @@ export function BoardDetailView({
 						</div>
 					</div>
 				</PopoverContent>
-			</Popover>
+		</Popover>
 
-			{/* Toggle de Visualização */}
-			<ToggleGroup
-				type="single"
-				value={resolvedViewMode}
-				onValueChange={(value) => {
-					if (value && onViewModeChange && isBoardViewMode(value)) {
-						onViewModeChange(value);
-					}
-				}}
-				className="flex h-8 items-center gap-1 rounded-md border border-border/40 bg-background/70 px-1.5 shadow-none"
-			>
-				{BOARD_VIEW_OPTIONS.map((option) => (
-					<BaseTooltip.Root key={option.value} delay={0} closeDelay={0}>
-						<BaseTooltip.Trigger
-							render={({ ref, ...triggerProps }) => (
-								<ToggleGroupItem
-									ref={ref}
-									{...triggerProps}
-									value={option.value}
-									aria-label={option.label}
-									className="flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground data-[state=on]:bg-accent data-[state=on]:text-accent-foreground"
-								>
-									<option.icon className="h-4 w-4" />
-								</ToggleGroupItem>
-							)}
-						/>
-						<BaseTooltip.Portal>
-							<BaseTooltip.Positioner sideOffset={6}>
-								<BaseTooltip.Popup className="z-50 w-fit rounded-md bg-popover/95 px-2 py-1 text-xs text-popover-foreground border border-border/60 shadow-lg backdrop-blur-sm">
-									{option.label}
-								</BaseTooltip.Popup>
-							</BaseTooltip.Positioner>
-						</BaseTooltip.Portal>
-					</BaseTooltip.Root>
-				))}
-			</ToggleGroup>
+			{/* Display / View selector */}
+			<Popover>
+				<PopoverTrigger>
+					<Button
+						variant="outline"
+						size="sm"
+						className="h-9 gap-2 rounded-lg border-border/60 bg-background/80 px-3 text-xs font-medium text-foreground hover:bg-accent hover:text-accent-foreground hover:shadow-sm"
+						type="button"
+					>
+						<LayoutDashboard className="h-3.5 w-3.5" />
+						<span>Display</span>
+					</Button>
+				</PopoverTrigger>
+				<PopoverContent
+					align="end"
+					sideOffset={8}
+					className="w-80 rounded-lg border border-border/40 bg-popover/95 p-2 shadow-lg"
+				>
+					<div className="space-y-2">
+						<div className="flex w-full items-stretch rounded-md bg-muted/80 p-0.5">
+							{BOARD_VIEW_OPTIONS.map((option) => {
+								const Icon = option.icon;
+								const isActive = resolvedViewMode === option.value;
+								return (
+									<button
+										key={option.value}
+										type="button"
+										onClick={() => {
+											if (onViewModeChange && isBoardViewMode(option.value)) {
+												onViewModeChange(option.value);
+											}
+										}}
+										className={`flex-1 flex flex-col items-center justify-center gap-1 rounded-md px-2.5 py-1 text-[11px] transition-colors ${
+											isActive
+												? "bg-background text-foreground"
+												: "text-muted-foreground"
+										}`}
+									>
+										<Icon className="h-4 w-4" />
+										<span>{option.label}</span>
+									</button>
+								);
+							})}
+						</div>
+					</div>
+				</PopoverContent>
+			</Popover>
 
 			{/* Botão de Gerenciar Colunas */}
 			<Button

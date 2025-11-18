@@ -323,7 +323,6 @@ export function AddTaskDialog({
                     type="button"
                     variant="ghost"
                     disabled={isCreating}
-                    className="px-4"
                   >
                     Cancel
                   </Button>
@@ -332,7 +331,6 @@ export function AddTaskDialog({
               <Button
                 type="submit"
                 disabled={isCreating || !title.trim() || !column}
-                className="rounded-xl px-6"
               >
                 {isCreating ? 'Creating…' : 'Create Task'}
               </Button>

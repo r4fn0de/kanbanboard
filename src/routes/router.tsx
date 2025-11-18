@@ -4,7 +4,7 @@ import { ProjectsFavorites } from '@/components/projects/ProjectsFavorites'
 import { HomeWelcome } from '@/components/home/HomeWelcome'
 import { ProjectBoardView } from '@/components/projects/ProjectBoardView'
 import { NotesView } from '@/components/notes/NotesView'
-import { BoardDrawView } from '@/components/draws/BoardDrawView'
+import { BoardDrawView } from '@/components/whiteboard/BoardDrawView'
 
 export const appRouter = createHashRouter([
   {
@@ -28,7 +28,7 @@ export const appRouter = createHashRouter([
         element: <NotesView />,
       },
       {
-        path: 'projects/:boardId/draws',
+        path: 'projects/:boardId/whiteboard',
         element: <BoardDrawView />,
       },
     ],

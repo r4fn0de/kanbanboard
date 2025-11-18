@@ -2,16 +2,10 @@ import type { ReactNode } from 'react'
 import { useCallback, useId } from 'react'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { useTheme } from '@/hooks/use-theme'
 import { useSavePreferences } from '@/services/preferences'
+import { cn } from '@/lib/utils'
 
 const SettingsField: React.FC<{
   label: string
@@ -71,25 +65,93 @@ export const AppearancePane: React.FC = () => {
   return (
     <div className="space-y-6">
       <SettingsSection title="Theme">
-        <SettingsField
-          label="Color Theme"
-          description="Choose your preferred color theme"
-        >
-          <Select
-            value={theme}
-            onValueChange={handleThemeChange}
-            disabled={savePreferences.isPending}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select theme" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="light">Light</SelectItem>
-              <SelectItem value="dark">Dark</SelectItem>
-              <SelectItem value="system">System</SelectItem>
-            </SelectContent>
-          </Select>
-        </SettingsField>
+        <div className="space-y-3">
+          <p className="text-sm text-muted-foreground">
+            Choose your preferred color theme
+          </p>
+          <div className="grid grid-cols-3 gap-4">
+            {/* System */}
+            <button
+              type="button"
+              onClick={() => handleThemeChange('system')}
+              disabled={savePreferences.isPending}
+              className={cn(
+                'group flex flex-col items-center gap-2 text-sm',
+                theme === 'system' ? 'text-foreground' : 'text-muted-foreground',
+              )}
+            >
+              <div
+                className={cn(
+                  'w-full max-w-[140px] aspect-[16/9] rounded-xl border bg-muted flex overflow-hidden shadow-sm',
+                  theme === 'system' &&
+                    'border-primary ring-2 ring-primary/60',
+                )}
+              >
+                <div className="w-1/4 bg-slate-900/80" />
+                <div className="flex-1 flex flex-col gap-1.5 p-2">
+                  <div className="h-1.5 rounded-full bg-slate-700/60" />
+                  <div className="h-1.5 rounded-full bg-slate-500/40" />
+                  <div className="h-1.5 rounded-full bg-slate-400/30" />
+                </div>
+              </div>
+              <span className="font-medium">System</span>
+            </button>
+
+            {/* Light */}
+            <button
+              type="button"
+              onClick={() => handleThemeChange('light')}
+              disabled={savePreferences.isPending}
+              className={cn(
+                'group flex flex-col items-center gap-2 text-sm',
+                theme === 'light' ? 'text-foreground' : 'text-muted-foreground',
+              )}
+            >
+              <div
+                className={cn(
+                  'w-full max-w-[140px] aspect-[16/9] rounded-xl border bg-slate-50 flex overflow-hidden shadow-sm',
+                  theme === 'light' &&
+                    'border-primary ring-2 ring-primary/60',
+                )}
+              >
+                <div className="w-1/4 bg-slate-200" />
+                <div className="flex-1 flex flex-col gap-1.5 p-2">
+                  <div className="h-1.5 rounded-full bg-slate-300" />
+                  <div className="h-1.5 rounded-full bg-slate-200" />
+                  <div className="h-1.5 rounded-full bg-slate-100" />
+                </div>
+              </div>
+              <span className="font-medium">Light</span>
+            </button>
+
+            {/* Dark */}
+            <button
+              type="button"
+              onClick={() => handleThemeChange('dark')}
+              disabled={savePreferences.isPending}
+              className={cn(
+                'group flex flex-col items-center gap-2 text-sm',
+                theme === 'dark' ? 'text-foreground' : 'text-muted-foreground',
+              )}
+            >
+              <div
+                className={cn(
+                  'w-full max-w-[140px] aspect-[16/9] rounded-xl border bg-slate-900 flex overflow-hidden shadow-sm',
+                  theme === 'dark' &&
+                    'border-primary ring-2 ring-primary/60',
+                )}
+              >
+                <div className="w-1/4 bg-slate-800" />
+                <div className="flex-1 flex flex-col gap-1.5 p-2">
+                  <div className="h-1.5 rounded-full bg-slate-600" />
+                  <div className="h-1.5 rounded-full bg-slate-700" />
+                  <div className="h-1.5 rounded-full bg-slate-800" />
+                </div>
+              </div>
+              <span className="font-medium">Dark</span>
+            </button>
+          </div>
+        </div>
       </SettingsSection>
 
       <SettingsSection title="Window Effects">

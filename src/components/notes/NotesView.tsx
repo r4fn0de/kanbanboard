@@ -45,8 +45,8 @@ export function NotesView() {
       return
     }
 
-    if (tab === 'draws') {
-      navigate(`/projects/${boardId}/draws`)
+    if (tab === 'whiteboard') {
+      navigate(`/projects/${boardId}/whiteboard`)
       return
     }
 

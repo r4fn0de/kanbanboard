@@ -44,7 +44,7 @@ interface BoardNavbarProps {
 const tabs = [
 	{ id: "tasks", label: "Tasks" },
 	{ id: "notes", label: "Notes" },
-	{ id: "draws", label: "Draws" },
+	{ id: "whiteboard", label: "Whiteboard" },
 ];
 
 // Icon map for project icons
