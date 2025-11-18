@@ -218,29 +218,26 @@ export function TagSelector({
 			<Popover.Root open={popoverOpen} onOpenChange={setPopoverOpen}>
 				<Popover.Trigger
 					render={({ ref, className: triggerClassName, ...triggerProps }) => (
-						<Button
-							asChild
-							variant="ghost"
-							className={cn("w-full justify-between", triggerClassName)}
+						<button
+							ref={ref}
+							type="button"
+							aria-expanded={popoverOpen}
 							disabled={disabled}
+							className={cn(
+								"flex w-full items-center justify-between rounded-lg border border-border/60 bg-background px-3 py-2 text-sm text-foreground shadow-none transition-colors hover:border-border hover:bg-accent/40",
+								triggerClassName,
+							)}
+							{...triggerProps}
 						>
-							<button
-								ref={ref}
-								type="button"
-								aria-expanded={popoverOpen}
-								disabled={disabled}
-								{...triggerProps}
-							>
-								<span className="truncate">
-									{selectedTags.length > 0
-										? `${selectedTags.length} tag${
-												selectedTags.length === 1 ? "" : "s"
-											} selected`
-										: "Select tags"}
-								</span>
-								<ChevronsUpDown className="h-4 w-4 opacity-50" />
-							</button>
-						</Button>
+							<span className="truncate">
+								{selectedTags.length > 0
+									? `${selectedTags.length} tag${
+											selectedTags.length === 1 ? "" : "s"
+										} selected`
+									: "Select tags"}
+							</span>
+							<ChevronsUpDown className="h-4 w-4 opacity-50" />
+						</button>
 					)}
 				/>
 				<Popover.Portal>

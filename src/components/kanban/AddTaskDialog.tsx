@@ -299,7 +299,7 @@ export function AddTaskDialog({
                 />
               </div>
 
-              <div className="min-w-[160px]">
+              <div className="min-w-[200px]">
                 <TagSelector
                   boardId={boardId}
                   selectedTagIds={selectedTagIds}

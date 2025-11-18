@@ -1107,7 +1107,7 @@ export function BoardDetailView({
 				>
 					<div className="space-y-3">
 						{/* Botões de view (Kanban / List / Timeline) */}
-						<div className="flex w-full items-stretch rounded-md bg-muted/80 p-0.5">
+						<div className="flex w-full items-stretch rounded-md bg-muted/80 p-0.5 gap-1">
 							{BOARD_VIEW_OPTIONS.map((option) => {
 								const Icon = option.icon;
 								const isActive = resolvedViewMode === option.value;

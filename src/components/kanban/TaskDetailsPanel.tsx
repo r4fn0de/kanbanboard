@@ -621,7 +621,7 @@ export function TaskDetailsPanel({
                     disabled={
                       updateCard.isPending || updateCardTagsMutation.isPending
                     }
-                    className="[&_button[aria-expanded]]:rounded-lg [&_button[aria-expanded]]:border-0 [&_button[aria-expanded]]:bg-muted/60"
+                    className="space-y-0 [&>div:first-child]:hidden [&_button]:shadow-none [&_button[aria-expanded]]:rounded-lg [&_button[aria-expanded]]:border [&_button[aria-expanded]]:bg-transparent [&_button[aria-expanded]]:px-3 [&_button[aria-expanded]]:py-2 [&_button[aria-expanded]]:hover:bg-accent/50"
                   />
                 </div>
                 <div className="flex items-center justify-between rounded-lg border border-border/60 bg-background px-4 py-3">
@@ -791,6 +791,7 @@ export function TaskDetailsPanel({
                     onChange={event => setNewSubtaskTitle(event.target.value)}
                     placeholder="Add a new subtask"
                     disabled={isSubtaskMutationPending || !card.boardId}
+                    className="h-9 flex-1 border-0 bg-muted/40 text-sm shadow-none focus-visible:border-0 focus-visible:ring-2 focus-visible:ring-foreground/20 focus-visible:ring-offset-0"
                   />
                   <Button
                     type="submit"

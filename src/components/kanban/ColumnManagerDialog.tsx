@@ -272,27 +272,28 @@ export function ColumnManagerDialog({
 		<TooltipProvider>
 			<Dialog open={open} onOpenChange={onOpenChange}>
 				<DialogContent className="max-w-96 sm:max-w-lg lg:max-w-xl">
-					<DialogHeader>
-						<DialogTitle>Manage columns</DialogTitle>
-						<DialogDescription>
-							Customize the appearance and availability of your workflow
-							columns.
-						</DialogDescription>
-					</DialogHeader>
-
-					<div className="flex items-center justify-between gap-3">
-						<div className="text-sm text-muted-foreground">
-							Drag and drop to reorder. Updates save automatically.
+					<DialogHeader className="space-y-3">
+						<div className="flex items-start justify-between gap-3">
+							<div className="space-y-1">
+								<DialogTitle>Manage columns</DialogTitle>
+								<DialogDescription>
+									Customize the appearance and availability of your workflow
+									columns.
+								</DialogDescription>
+							</div>
+							<Button
+								variant="ghost"
+								onClick={() => setIsCreatingNew(!isCreatingNew)}
+								disabled={createColumn.isPending}
+							>
+								<Plus className="h-4 w-4 mr-2" />
+								{isCreatingNew ? "Cancel" : "Add column"}
+							</Button>
 						</div>
-						<Button
-							variant="ghost"
-							onClick={() => setIsCreatingNew(!isCreatingNew)}
-							disabled={createColumn.isPending}
-						>
-							<Plus className="h-4 w-4 mr-2" />
-							{isCreatingNew ? "Cancel" : "Add column"}
-						</Button>
-					</div>
+						<p className="text-sm text-muted-foreground">
+							Drag and drop to reorder. Updates save automatically.
+						</p>
+					</DialogHeader>
 
 					{isCreatingNew && (
 						<div className="space-y-4 p-4 border border-dashed border-border rounded-lg bg-muted/30">

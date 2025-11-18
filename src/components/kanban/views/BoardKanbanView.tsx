@@ -266,7 +266,9 @@ export function BoardKanbanView({
 					dropAnimation={dropAnimation}
 					modifiers={[snapCenterToCursor, restrictToWindowEdges]}
 				>
-					{activeCard ? <CardOverlay card={activeCard} /> : null}
+					{activeCard ? (
+						<CardOverlay card={activeCard} showSubtasksSummary={showSubtasksSummary} />
+					) : null}
 				</DragOverlay>
 			</DndContext>
 
@@ -284,12 +286,21 @@ export function BoardKanbanView({
 	);
 }
 
-function CardOverlay({ card }: { card: KanbanCard }) {
+function CardOverlay({
+	card,
+	showSubtasksSummary = true,
+}: {
+	card: KanbanCard;
+	showSubtasksSummary?: boolean;
+}) {
 	const tagList = card.tags ?? [];
 	const displayTags = tagList.slice(0, 3);
 	const remainingTags = tagList.length - displayTags.length;
 	const dueMetadata = getCardDueMetadata(card.dueDate);
 	const hasAttachments = card.attachments && card.attachments.length > 0;
+	const subtasks = card.subtasks ?? [];
+	const totalSubtasks = subtasks.length;
+	const completedSubtasks = subtasks.filter((subtask) => subtask.isCompleted).length;
 
 	const priorityConfig = {
 		low: {
@@ -334,8 +345,8 @@ function CardOverlay({ card }: { card: KanbanCard }) {
 												backgroundColor: `${tag.color}15`,
 												color: badgeStyle?.color,
 												borderColor: `${tag.color}40`,
-											}
-										: undefined
+										  }
+										  : undefined
 								}
 							>
 								{tag.label}
@@ -366,11 +377,11 @@ function CardOverlay({ card }: { card: KanbanCard }) {
 			</div>
 
 			{/* Footer: Metadata */}
-			<div className="flex items-center gap-2 flex-wrap pt-1 border-t border-border/50">
+			<div className="flex flex-wrap items-center gap-2 pt-1 border-t border-border/50">
 				{/* Priority Badge */}
 				<div
 					className={cn(
-						"inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-medium border",
+						"inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold",
 						priorityConfig.className,
 					)}
 				>
@@ -382,7 +393,7 @@ function CardOverlay({ card }: { card: KanbanCard }) {
 				{dueMetadata && (
 					<Badge
 						className={cn(
-							"inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-medium",
+							"inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold",
 							CARD_DUE_STATUS_STYLES[dueMetadata.status],
 						)}
 					>
@@ -393,9 +404,18 @@ function CardOverlay({ card }: { card: KanbanCard }) {
 
 				{/* Attachments */}
 				{hasAttachments && (
-					<div className="inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700 dark:border-blue-800 dark:bg-blue-950/50 dark:text-blue-400">
+					<div className="inline-flex items-center gap-1.5 rounded-lg bg-blue-100 px-2.5 py-1 text-xs font-semibold text-blue-700 dark:bg-blue-950/50 dark:text-blue-400">
 						<PaperclipIcon className="h-3 w-3 scale-x-[-1]" />
 						<span>{card.attachments?.length}</span>
+					</div>
+				)}
+
+				{/* Subtasks summary */}
+				{showSubtasksSummary && totalSubtasks > 0 && (
+					<div className="inline-flex items-center gap-1.5 rounded-lg bg-muted px-2.5 py-1 text-xs font-semibold text-muted-foreground">
+						<span>
+							{completedSubtasks}/{totalSubtasks} subtasks
+						</span>
 					</div>
 				)}
 			</div>
