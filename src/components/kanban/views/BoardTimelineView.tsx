@@ -166,9 +166,29 @@ export function BoardTimelineView({
                     : 'bg-card hover:bg-muted/60 border-border',
                   'focus-within:ring-2 focus-within:ring-primary/40'
                 )
-                const IconComponent = getColumnIconComponent(
-                  column?.icon ?? DEFAULT_COLUMN_ICON
-                )
+                const normalizedTitle = column?.title
+                  ? column.title.trim().toLowerCase()
+                  : ''
+                let inferredStatusIcon: string | null = null
+                if (normalizedTitle === 'backlog') {
+                  inferredStatusIcon = 'BacklogStatus'
+                } else if (
+                  normalizedTitle === 'to do' ||
+                  normalizedTitle === 'todo'
+                ) {
+                  inferredStatusIcon = 'TodoStatus'
+                } else if (normalizedTitle === 'in progress') {
+                  inferredStatusIcon = 'InProgressStatus'
+                } else if (normalizedTitle === 'done') {
+                  inferredStatusIcon = 'DoneStatus'
+                }
+
+                const resolvedIconKey =
+                  !column?.icon || column.icon === DEFAULT_COLUMN_ICON
+                    ? inferredStatusIcon ?? DEFAULT_COLUMN_ICON
+                    : column.icon
+
+                const IconComponent = getColumnIconComponent(resolvedIconKey)
                 const dueMetadata = getCardDueMetadata(card.dueDate)
                 const tagList = card.tags ?? []
                 const displayTags = tagList.slice(0, 3)
@@ -184,10 +204,8 @@ export function BoardTimelineView({
                             </span>
                             <span className="flex items-center gap-2 text-xs uppercase tracking-wide text-muted-foreground">
                               <span
-                                className="flex h-6 w-6 items-center justify-center rounded-full border transition-colors"
+                                className="flex items-center justify-center"
                                 style={{
-                                  backgroundColor: iconBackground,
-                                  borderColor: iconBorder,
                                   color: baseColor,
                                 }}
                               >

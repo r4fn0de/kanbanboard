@@ -125,9 +125,24 @@ export function BoardListView({
                 ? 'bg-[color:var(--column-button-bg)] hover:bg-[color:var(--column-button-bg-hover)] text-muted-foreground'
                 : 'bg-muted/50 text-muted-foreground hover:bg-primary hover:text-primary-foreground'
             )
-            const IconComponent = getColumnIconComponent(
-              column.icon ?? DEFAULT_COLUMN_ICON
-            )
+            const normalizedTitle = column.title.trim().toLowerCase()
+            let inferredStatusIcon: string | null = null
+            if (normalizedTitle === 'backlog') {
+              inferredStatusIcon = 'BacklogStatus'
+            } else if (normalizedTitle === 'to do' || normalizedTitle === 'todo') {
+              inferredStatusIcon = 'TodoStatus'
+            } else if (normalizedTitle === 'in progress') {
+              inferredStatusIcon = 'InProgressStatus'
+            } else if (normalizedTitle === 'done') {
+              inferredStatusIcon = 'DoneStatus'
+            }
+
+            const resolvedIconKey =
+              !column.icon || column.icon === DEFAULT_COLUMN_ICON
+                ? inferredStatusIcon ?? DEFAULT_COLUMN_ICON
+                : column.icon
+
+            const IconComponent = getColumnIconComponent(resolvedIconKey)
 
             return (
               <div
@@ -144,10 +159,8 @@ export function BoardListView({
                 >
                   <div className="flex items-center gap-4">
                     <div
-                      className="flex h-10 w-10 items-center justify-center rounded-full border-2 transition-all duration-300 group-hover:scale-105"
+                      className="flex h-10 w-10 items-center justify-center transition-all duration-300 group-hover:scale-105"
                       style={{
-                        backgroundColor: iconBackground,
-                        borderColor: headerBorder,
                         color: iconColor,
                       }}
                     >

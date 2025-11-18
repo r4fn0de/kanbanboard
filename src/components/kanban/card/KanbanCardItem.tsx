@@ -30,6 +30,7 @@ interface KanbanCardItemProps {
   onDelete?: (card: KanbanCard) => void
   onDuplicate?: (card: KanbanCard) => void
   maxVisibleTags?: number
+  showSubtasksSummary?: boolean
 }
 
 const PRIORITY_CONFIG: Record<
@@ -67,6 +68,7 @@ export function KanbanCardItem({
   onDelete,
   onDuplicate,
   maxVisibleTags = 3,
+  showSubtasksSummary = true,
 }: KanbanCardItemProps) {
   const [isDeleting, setIsDeleting] = React.useState(false)
   const [isDuplicating, setIsDuplicating] = React.useState(false)
@@ -105,6 +107,10 @@ export function KanbanCardItem({
   const priorityConfig = PRIORITY_CONFIG[card.priority]
   const PriorityIcon = priorityConfig.icon
 
+  const subtasks = card.subtasks ?? []
+  const totalSubtasks = subtasks.length
+  const completedSubtasks = subtasks.filter(subtask => subtask.isCompleted).length
+
   return (
     <ContextMenu>
       <ContextMenuTrigger asChild>
@@ -119,7 +125,7 @@ export function KanbanCardItem({
           aria-expanded={isSelected}
           aria-controls="task-details-panel"
           className={cn(
-            'group/card relative w-full flex flex-col gap-4 rounded-2xl border bg-card p-4 text-left',
+            'group/card relative w-full flex flex-col gap-4 rounded-2xl border border-border/60 bg-background/95 p-4 text-left',
             'transition-all duration-200',
             'hover:border-border',
             'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
@@ -197,6 +203,14 @@ export function KanbanCardItem({
               <div className="inline-flex items-center gap-1.5 rounded-lg bg-blue-100 px-2.5 py-1 text-xs font-semibold text-blue-700 dark:bg-blue-950/50 dark:text-blue-400">
                 <PaperclipIcon className="h-3 w-3 scale-x-[-1]" />
                 <span>{card.attachments?.length}</span>
+              </div>
+            )}
+
+            {showSubtasksSummary && totalSubtasks > 0 && (
+              <div className="inline-flex items-center gap-1.5 rounded-lg bg-muted px-2.5 py-1 text-xs font-semibold text-muted-foreground">
+                <span>
+                  {completedSubtasks}/{totalSubtasks} subtasks
+                </span>
               </div>
             )}
           </div>

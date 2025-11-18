@@ -16,6 +16,7 @@ import {
 	SelectGroupLabel,
 	SelectSeparator,
 } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
@@ -65,6 +66,15 @@ interface BoardDetailViewProps {
 type PriorityFilterOptionValue = "all" | KanbanPriority;
 type DueFilterOptionValue = "all" | CardDueStatus | "no_due";
 
+type DisplayColumnsOption = "status";
+type DisplayRowsOption = "none";
+type DisplayOrderingOption =
+	| "position"
+	| "priority"
+	| "due_date"
+	| "last_updated"
+	| "title";
+
 interface PriorityFilterOption {
 	value: PriorityFilterOptionValue;
 	label: string;
@@ -105,6 +115,13 @@ export function BoardDetailView({
 	const [selectedDueStatuses, setSelectedDueStatuses] = useState<
 		Array<CardDueStatus | "no_due">
 	>([]);
+	const [displayColumns, setDisplayColumns] =
+		useState<DisplayColumnsOption>("status");
+	const [displayRows, setDisplayRows] = useState<DisplayRowsOption>("none");
+	const [displayOrdering, setDisplayOrdering] =
+		useState<DisplayOrderingOption>("position");
+	const [orderDoneByRecency, setOrderDoneByRecency] = useState(false);
+	const [showSubtasksSummary, setShowSubtasksSummary] = useState(true);
 
 	const prioritySelectValue = useMemo<PriorityFilterOptionValue[]>(
 		() => (selectedPriorities.length === 0 ? ["all"] : selectedPriorities),
@@ -259,25 +276,89 @@ export function BoardDetailView({
 			list.push(card);
 		});
 
-		grouped.forEach((list) => {
+		const priorityWeight = (priority: KanbanPriority): number => {
+			switch (priority) {
+				case "high":
+					return 0;
+				case "medium":
+					return 1;
+				case "low":
+					return 2;
+				default:
+					return 3;
+			}
+		};
+
+		const isDoneColumn = (columnId: string): boolean => {
+			const column = columnsById.get(columnId);
+			if (!column) return false;
+			const title = column.title.trim().toLowerCase();
+			return title === "done" || title === "concluído" || title === "concluido";
+		};
+
+		grouped.forEach((list, columnId) => {
 			list.sort((a, b) => {
+				const timeOrZero = (value?: string | null): number =>
+					value ? Date.parse(value) || 0 : 0;
+
+				if (orderDoneByRecency && isDoneColumn(columnId)) {
+					const updatedA = timeOrZero(a.updatedAt);
+					const updatedB = timeOrZero(b.updatedAt);
+					if (updatedA !== updatedB) {
+						return updatedB - updatedA;
+					}
+
+					const createdA = timeOrZero(a.createdAt);
+					const createdB = timeOrZero(b.createdAt);
+					if (createdA !== createdB) {
+						return createdB - createdA;
+					}
+
+					return a.title.localeCompare(b.title);
+				}
+
+				if (displayOrdering === "priority") {
+					const weightA = priorityWeight(a.priority);
+					const weightB = priorityWeight(b.priority);
+					if (weightA !== weightB) {
+						return weightA - weightB;
+					}
+				}
+				else if (displayOrdering === "due_date") {
+					const dueA = a.dueDate ? Date.parse(a.dueDate) || Number.MAX_SAFE_INTEGER : Number.MAX_SAFE_INTEGER;
+					const dueB = b.dueDate ? Date.parse(b.dueDate) || Number.MAX_SAFE_INTEGER : Number.MAX_SAFE_INTEGER;
+					if (dueA !== dueB) {
+						return dueA - dueB;
+					}
+				}
+				else if (displayOrdering === "last_updated") {
+					const updatedA = timeOrZero(a.updatedAt);
+					const updatedB = timeOrZero(b.updatedAt);
+					if (updatedA !== updatedB) {
+						return updatedB - updatedA;
+					}
+				}
+				else if (displayOrdering === "title") {
+					const byTitle = a.title.localeCompare(b.title);
+					if (byTitle !== 0) {
+						return byTitle;
+					}
+				}
+
 				const positionA = a.position ?? Number.MAX_SAFE_INTEGER;
 				const positionB = b.position ?? Number.MAX_SAFE_INTEGER;
-
 				if (positionA !== positionB) {
 					return positionA - positionB;
 				}
 
-				const updatedA = a.updatedAt ? Date.parse(a.updatedAt) : 0;
-				const updatedB = b.updatedAt ? Date.parse(b.updatedAt) : 0;
-
+				const updatedA = timeOrZero(a.updatedAt);
+				const updatedB = timeOrZero(b.updatedAt);
 				if (updatedA !== updatedB) {
 					return updatedA - updatedB;
 				}
 
-				const createdA = a.createdAt ? Date.parse(a.createdAt) : 0;
-				const createdB = b.createdAt ? Date.parse(b.createdAt) : 0;
-
+				const createdA = timeOrZero(a.createdAt);
+				const createdB = timeOrZero(b.createdAt);
 				if (createdA !== createdB) {
 					return createdA - createdB;
 				}
@@ -287,7 +368,7 @@ export function BoardDetailView({
 		});
 
 		return grouped;
-	}, [visibleColumns, visibleCards]);
+	}, [visibleColumns, visibleCards, displayOrdering, orderDoneByRecency, columnsById]);
 
 	const dueSummary = useMemo(() => {
 		const summary = { overdue: 0, today: 0, soon: 0 };
@@ -1024,7 +1105,8 @@ export function BoardDetailView({
 					sideOffset={8}
 					className="w-80 rounded-lg border border-border/40 bg-popover/95 p-2 shadow-lg"
 				>
-					<div className="space-y-2">
+					<div className="space-y-3">
+						{/* Botões de view (Kanban / List / Timeline) */}
 						<div className="flex w-full items-stretch rounded-md bg-muted/80 p-0.5">
 							{BOARD_VIEW_OPTIONS.map((option) => {
 								const Icon = option.icon;
@@ -1040,8 +1122,8 @@ export function BoardDetailView({
 										}}
 										className={`flex-1 flex flex-col items-center justify-center gap-1 rounded-md px-2.5 py-1 text-[11px] transition-colors ${
 											isActive
-												? "bg-background text-foreground"
-												: "text-muted-foreground"
+												? "bg-accent text-accent-foreground shadow-sm"
+												: "text-muted-foreground hover:bg-accent/40 hover:text-accent-foreground"
 										}`}
 									>
 										<Icon className="h-4 w-4" />
@@ -1050,9 +1132,160 @@ export function BoardDetailView({
 								);
 							})}
 						</div>
-					</div>
-				</PopoverContent>
-			</Popover>
+								</div>
+						{/* Controls extras */}
+						<div className="mt-1 space-y-3 border-t border-border/60 pt-3">
+							{/* Columns */}
+							<div className="flex items-center justify-between gap-3">
+								<div className="flex flex-col">
+									<span className="text-xs font-medium text-muted-foreground">
+										Columns
+									</span>
+									<span className="text-[11px] text-muted-foreground/70">
+										Group tasks by status
+									</span>
+								</div>
+								<Select
+									value={displayColumns}
+									onValueChange={(value) =>
+										setDisplayColumns(value as DisplayColumnsOption)
+									}
+								>
+									<SelectTrigger
+										size="sm"
+										className="h-7 w-[140px] rounded-md border border-border/30 bg-background/70 px-2 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-accent/30"
+									>
+										<SelectValue className="text-xs">
+											{displayColumns === "status" ? "Status" : "Status"}
+										</SelectValue>
+									</SelectTrigger>
+									<SelectContent sideOffset={4}>
+										<SelectItem value="status" className="text-xs">
+											Status
+										</SelectItem>
+									</SelectContent>
+								</Select>
+							</div>
+
+							{/* Rows */}
+							<div className="flex items-center justify-between gap-3">
+								<div className="flex flex-col">
+									<span className="text-xs font-medium text-muted-foreground">
+										Rows
+									</span>
+									<span className="text-[11px] text-muted-foreground/70">
+										Additional grouping (coming soon)
+									</span>
+								</div>
+								<Select
+									value={displayRows}
+									onValueChange={(value) =>
+										setDisplayRows(value as DisplayRowsOption)
+									}
+								>
+									<SelectTrigger
+										size="sm"
+										className="h-7 w-[140px] rounded-md border border-border/30 bg-background/70 px-2 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-accent/30"
+									>
+										<SelectValue className="text-xs">
+											{displayRows === "none" ? "No grouping" : "No grouping"}
+										</SelectValue>
+									</SelectTrigger>
+									<SelectContent sideOffset={4}>
+										<SelectItem value="none" className="text-xs">
+											No grouping
+										</SelectItem>
+									</SelectContent>
+								</Select>
+							</div>
+
+							{/* Ordering */}
+							<div className="flex items-center justify-between gap-3">
+								<div className="flex flex-col">
+									<span className="text-xs font-medium text-muted-foreground">
+										Ordering
+									</span>
+									<span className="text-[11px] text-muted-foreground/70">
+										Change how tasks are sorted
+									</span>
+								</div>
+								<Select
+									value={displayOrdering}
+									onValueChange={(value) =>
+										setDisplayOrdering(value as DisplayOrderingOption)
+									}
+								>
+									<SelectTrigger
+										size="sm"
+										className="h-7 w-[140px] rounded-md border border-border/30 bg-background/70 px-2 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-accent/30"
+									>
+										<SelectValue className="text-xs">
+											{displayOrdering === "position"
+												? "Position"
+												: displayOrdering === "priority"
+													? "Priority"
+													: displayOrdering === "due_date"
+														? "Due date"
+														: displayOrdering === "last_updated"
+															? "Last updated"
+															: "Title"}
+										</SelectValue>
+									</SelectTrigger>
+									<SelectContent sideOffset={4}>
+										<SelectItem value="position" className="text-xs">
+											Position
+										</SelectItem>
+										<SelectItem value="priority" className="text-xs">
+											Priority
+										</SelectItem>
+										<SelectItem value="due_date" className="text-xs">
+											Due date
+										</SelectItem>
+										<SelectItem value="last_updated" className="text-xs">
+											Last updated
+										</SelectItem>
+										<SelectItem value="title" className="text-xs">
+											Title
+										</SelectItem>
+									</SelectContent>
+								</Select>
+							</div>
+
+							{/* Toggles */}
+							<div className="flex flex-col gap-2 pt-1">
+								<div className="flex items-center justify-between gap-3">
+									<div className="flex flex-col">
+										<span className="text-xs font-medium text-muted-foreground">
+											Order completed by recency
+										</span>
+										<span className="text-[11px] text-muted-foreground/70">
+											In Done columns, show most recently updated first
+										</span>
+									</div>
+									<Switch
+										checked={orderDoneByRecency}
+										onCheckedChange={setOrderDoneByRecency}
+									/>
+								</div>
+
+								<div className="flex items-center justify-between gap-3">
+									<div className="flex flex-col">
+										<span className="text-xs font-medium text-muted-foreground">
+											Show sub-tasks
+										</span>
+										<span className="text-[11px] text-muted-foreground/70">
+											Display a summary of subtasks on each card
+										</span>
+									</div>
+									<Switch
+										checked={showSubtasksSummary}
+										onCheckedChange={setShowSubtasksSummary}
+									/>
+								</div>
+							</div>
+						</div>
+					</PopoverContent>
+				</Popover>
 
 			{/* Botão de Gerenciar Colunas */}
 			<Button
@@ -1136,6 +1369,7 @@ export function BoardDetailView({
 										boardId={board.id}
 										onDeleteTask={handleDeleteCard}
 										onDuplicateTask={handleDuplicateCard}
+										showSubtasksSummary={showSubtasksSummary}
 										onCreateTask={async (task) => {
 											// Always insert at the end of the column
 											// The frontend displays cards sorted by priority and name,

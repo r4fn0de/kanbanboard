@@ -66,6 +66,7 @@ interface BoardKanbanViewProps {
 	) => Promise<void>;
 	onDeleteTask?: (card: KanbanCard) => void;
 	onDuplicateTask?: (card: KanbanCard) => void;
+	showSubtasksSummary?: boolean;
 }
 
 function hexToRgba(hex: string | null | undefined, alpha: number) {
@@ -128,6 +129,7 @@ export function BoardKanbanView({
 	onCreateTask,
 	onDeleteTask,
 	onDuplicateTask,
+	showSubtasksSummary,
 }: BoardKanbanViewProps) {
 	const [isDialogOpen, setIsDialogOpen] = useState(false);
 	const [selectedColumn, setSelectedColumn] = useState<KanbanColumn | null>(
@@ -253,6 +255,7 @@ export function BoardKanbanView({
 									selectedCardId={selectedCardId}
 									onDeleteCard={onDeleteTask}
 									onDuplicateCard={onDuplicateTask}
+									showSubtasksSummary={showSubtasksSummary}
 								/>
 							);
 						})}
@@ -313,11 +316,7 @@ function CardOverlay({ card }: { card: KanbanCard }) {
 
 	return (
 		<div
-			className="pointer-events-none w-full flex flex-col gap-4 rounded-2xl border-2 border-primary/40 bg-card p-4 shadow-2xl ring-2 ring-primary/20"
-			style={{
-				transform: "rotate(2deg) scale(1.05)",
-				transition: "transform 200ms cubic-bezier(0.18, 0.67, 0.6, 1.22)",
-			}}
+			className="pointer-events-none group/card relative w-full flex flex-col gap-4 rounded-2xl border border-border/60 bg-background/95 p-4 text-left"
 		>
 			{/* Header: Tags */}
 			{tagList.length > 0 && (
@@ -414,6 +413,7 @@ function DraggableColumn({
 	selectedCardId,
 	onDeleteCard,
 	onDuplicateCard,
+	showSubtasksSummary,
 }: {
 	column: KanbanColumn;
 	columnCards: KanbanCard[];
@@ -424,6 +424,7 @@ function DraggableColumn({
 	selectedCardId?: string | null;
 	onDeleteCard?: (card: KanbanCard) => void;
 	onDuplicateCard?: (card: KanbanCard) => void;
+	showSubtasksSummary?: boolean;
 }) {
 	const { attributes, listeners, setNodeRef, transform, isDragging } =
 		useSortable({
@@ -534,6 +535,7 @@ function DraggableColumn({
 											isSelected={selectedCardId === card.id}
 											onDelete={onDeleteCard}
 											onDuplicate={onDuplicateCard}
+											showSubtasksSummary={showSubtasksSummary}
 										/>
 									))}
 									{/* Drop zone at the end of cards */}
