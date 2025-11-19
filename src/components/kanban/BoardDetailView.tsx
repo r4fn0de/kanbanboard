@@ -46,10 +46,12 @@ import {
 	useMoveCard,
 	useDeleteCard,
 	useDuplicateCard,
+	useTags,
+	useUpdateCard,
 } from "@/services/kanban";
 import { Plus, Filter, LayoutDashboard } from "lucide-react";
 import { HorizontalSliderIcon, PriorityIcon, PriorityLowIcon, PriorityMediumIcon, PriorityHighIcon } from "@/components/ui/icons";
-import type { LucideIcon } from "lucide-react";
+import type { ComponentType } from "react";
 import type {
 	DragEndEvent,
 	DragStartEvent,
@@ -67,7 +69,7 @@ type PriorityFilterOptionValue = "all" | KanbanPriority;
 type DueFilterOptionValue = "all" | CardDueStatus | "no_due";
 
 type DisplayColumnsOption = "status";
-type DisplayRowsOption = "none";
+type DisplayRowsOption = "none" | "priority";
 type DisplayOrderingOption =
 	| "position"
 	| "priority"
@@ -75,14 +77,77 @@ type DisplayOrderingOption =
 	| "last_updated"
 	| "title";
 
+type ColumnStatusRole = "backlog" | "todo" | "in_progress" | "done" | "custom";
+
+interface BoardDisplayPreferences {
+	displayColumns: DisplayColumnsOption;
+	displayRows: DisplayRowsOption;
+	displayOrdering: DisplayOrderingOption;
+	orderDoneByRecency: boolean;
+	showSubtasksSummary: boolean;
+	displayTagFilterIds: string[];
+}
+
+function loadBoardDisplayPreferences(
+	boardId: string,
+): Partial<BoardDisplayPreferences> | null {
+	if (typeof window === "undefined") return null;
+	try {
+		const raw = window.localStorage.getItem(
+			`kanban:board:${boardId}:displayPrefs`,
+		);
+		if (!raw) return null;
+		const parsed = JSON.parse(raw) as Partial<BoardDisplayPreferences>;
+		if (!parsed || typeof parsed !== "object") return null;
+		return parsed;
+	} catch {
+		return null;
+	}
+}
+
+function saveBoardDisplayPreferences(
+	boardId: string,
+	prefs: BoardDisplayPreferences,
+): void {
+	if (typeof window === "undefined") return;
+	try {
+		window.localStorage.setItem(
+			`kanban:board:${boardId}:displayPrefs`,
+			JSON.stringify(prefs),
+		);
+	} catch {
+		// ignore storage errors
+	}
+}
+
+function inferColumnStatusRole(
+	column: KanbanColumn,
+	index: number,
+	total: number,
+): ColumnStatusRole {
+	const title = column.title.trim().toLowerCase();
+
+	if (title.includes("backlog")) return "backlog";
+	if (title.includes("to do") || title === "todo") return "todo";
+	if (title.includes("in progress") || title.includes("progress"))
+		return "in_progress";
+	if (title.includes("done") || title.includes("complete")) return "done";
+
+	if (index === 0) return "backlog";
+	if (index === total - 1 && total > 1) return "done";
+
+	return "custom";
+}
+
 interface PriorityFilterOption {
 	value: PriorityFilterOptionValue;
 	label: string;
-	icon: LucideIcon;
+	icon: ComponentType<{ className?: string }>;
 }
 
 const PRIORITY_FILTER_OPTIONS: PriorityFilterOption[] = [
 	{ value: "all", label: "All priorities", icon: PriorityIcon },
+	{ value: "none", label: "No priority", icon: PriorityIcon },
 	{ value: "high", label: "High", icon: PriorityHighIcon },
 	{ value: "medium", label: "Medium", icon: PriorityMediumIcon },
 	{ value: "low", label: "Low", icon: PriorityLowIcon },
@@ -100,7 +165,7 @@ export function BoardDetailView({
 
 	const [cardTitle, setCardTitle] = useState("");
 	const [cardDescription, setCardDescription] = useState("");
-	const [cardPriority, setCardPriority] = useState<KanbanPriority>("medium");
+	const [cardPriority, setCardPriority] = useState<KanbanPriority>("none");
 	const [cardDueDate, setCardDueDate] = useState("");
 	const [cardDialogColumn, setCardDialogColumn] = useState<KanbanColumn | null>(
 		null,
@@ -122,6 +187,53 @@ export function BoardDetailView({
 		useState<DisplayOrderingOption>("position");
 	const [orderDoneByRecency, setOrderDoneByRecency] = useState(false);
 	const [showSubtasksSummary, setShowSubtasksSummary] = useState(true);
+	const [displayTagFilterIds, setDisplayTagFilterIds] = useState<string[]>([]);
+
+	const { data: allTags = [] } = useTags(board.id);
+
+	useEffect(() => {
+		const saved = loadBoardDisplayPreferences(board.id);
+		if (!saved) return;
+
+		if (saved.displayColumns) {
+			setDisplayColumns(saved.displayColumns);
+		}
+		if (saved.displayRows) {
+			setDisplayRows(saved.displayRows);
+		}
+		if (saved.displayOrdering) {
+			setDisplayOrdering(saved.displayOrdering);
+		}
+		if (typeof saved.orderDoneByRecency === "boolean") {
+			setOrderDoneByRecency(saved.orderDoneByRecency);
+		}
+		if (typeof saved.showSubtasksSummary === "boolean") {
+			setShowSubtasksSummary(saved.showSubtasksSummary);
+		}
+		if (Array.isArray(saved.displayTagFilterIds)) {
+			setDisplayTagFilterIds(saved.displayTagFilterIds);
+		}
+	}, [board.id]);
+
+	useEffect(() => {
+		const prefs: BoardDisplayPreferences = {
+			displayColumns,
+			displayRows,
+			displayOrdering,
+			orderDoneByRecency,
+			showSubtasksSummary,
+			displayTagFilterIds,
+		};
+		saveBoardDisplayPreferences(board.id, prefs);
+	}, [
+		board.id,
+		displayColumns,
+		displayRows,
+		displayOrdering,
+		orderDoneByRecency,
+		showSubtasksSummary,
+		displayTagFilterIds,
+	]);
 
 	const prioritySelectValue = useMemo<PriorityFilterOptionValue[]>(
 		() => (selectedPriorities.length === 0 ? ["all"] : selectedPriorities),
@@ -171,6 +283,7 @@ export function BoardDetailView({
 	const createCardMutation = useCreateCard(board.id);
 	const moveCardMutation = useMoveCard(board.id);
 	const deleteCardMutation = useDeleteCard(board.id);
+	const updateCardMutation = useUpdateCard(board.id);
 
 	const parseCardId = useCallback((id: string | number) => {
 		const raw = id.toString();
@@ -217,6 +330,17 @@ export function BoardDetailView({
 		[columns, allCards],
 	);
 
+	const columnsWithRoles = useMemo(
+		() => {
+			const total = columnsWithCounts.length;
+			return columnsWithCounts.map((column, index) => ({
+				column,
+				role: inferColumnStatusRole(column, index, total),
+			}));
+		},
+		[columnsWithCounts],
+	);
+
 	const visibleColumns = useMemo(
 		() => columnsWithCounts.filter((column) => column.isEnabled !== false),
 		[columnsWithCounts],
@@ -235,25 +359,168 @@ export function BoardDetailView({
 				.filter((card) => visibleColumnIds.has(card.columnId))
 				.filter((card) => {
 					// Priority filter: OR between selected priorities, no filter if none selected
-					if (selectedPriorities.length > 0) {
-						if (!card.priority || !selectedPriorities.includes(card.priority)) {
+					if (
+						selectedPriorities.length > 0 &&
+						(!card.priority || !selectedPriorities.includes(card.priority))
+					) {
+						return false;
+					}
+
+					// Deadline filter: OR between selected due statuses, no filter if none selected
+					if (selectedDueStatuses.length > 0) {
+						const status: CardDueStatus | "no_due" | null = card.dueDate
+							? getCardDueMetadata(card.dueDate)?.status ?? null
+							: "no_due";
+
+						if (!status || !selectedDueStatuses.includes(status)) {
 							return false;
 						}
 					}
 
-					// Deadline filter: OR between selected due statuses, no filter if none selected
-					if (selectedDueStatuses.length === 0) {
-						return true;
+					// Tag filter: OR between selected tags, no filter if none selected
+					if (displayTagFilterIds.length > 0) {
+						const cardTagIds = new Set(
+							(card.tags ?? []).map((tag) => tag.id),
+						);
+						const matches = displayTagFilterIds.some((id) =>
+							cardTagIds.has(id),
+						);
+						if (!matches) {
+							return false;
+						}
 					}
 
-					const status: CardDueStatus | "no_due" | null = card.dueDate
-						? getCardDueMetadata(card.dueDate)?.status ?? null
-						: "no_due";
-
-					if (!status) return false;
-					return selectedDueStatuses.includes(status);
+					return true;
 				}),
-		[allCards, visibleColumnIds, selectedPriorities, selectedDueStatuses],
+		[
+			allCards,
+			visibleColumnIds,
+			selectedPriorities,
+			selectedDueStatuses,
+			displayTagFilterIds,
+		],
+	);
+
+	const handleMoveCardToNextColumn = useCallback(
+		async (card: KanbanCard) => {
+			const currentIndex = columnsWithCounts.findIndex(
+				(column) => column.id === card.columnId,
+			);
+			if (currentIndex === -1) return;
+
+			const nextColumn = columnsWithCounts
+				.slice(currentIndex + 1)
+				.find((column) => column.isEnabled !== false);
+			if (!nextColumn) return;
+
+			const targetColumnCards = visibleCards.filter(
+				(c) => c.columnId === nextColumn.id,
+			);
+			const targetIndex = targetColumnCards.length;
+
+			try {
+				await moveCardMutation.mutateAsync({
+					boardId: board.id,
+					cardId: card.id,
+					fromColumnId: card.columnId,
+					toColumnId: nextColumn.id,
+					targetIndex,
+				});
+			} catch (error) {
+				toast.error(
+					`Failed to move card: ${
+												 error instanceof Error ? error.message : "Unknown error"
+											 }
+					`,
+				);
+			}
+		},
+		[board.id, columnsWithCounts, visibleCards, moveCardMutation],
+	);
+
+	const handleMarkCardDone = useCallback(
+		async (card: KanbanCard) => {
+			const doneEntry = columnsWithRoles.find(
+				(entry) => entry.role === "done" && entry.column.isEnabled !== false,
+			);
+			if (!doneEntry) return;
+
+			const doneColumn = doneEntry.column;
+			const fromColumnId = card.columnId;
+			const toColumnId = doneColumn.id;
+
+			const targetColumnCards = visibleCards.filter(
+				(c) => c.columnId === toColumnId,
+			);
+			const targetIndex = targetColumnCards.length;
+
+			try {
+				await moveCardMutation.mutateAsync({
+					boardId: board.id,
+					cardId: card.id,
+					fromColumnId,
+					toColumnId,
+					targetIndex,
+				});
+			} catch (error) {
+				toast.error(
+					`Failed to move card to done: ${
+												 error instanceof Error ? error.message : "Unknown error"
+											 }
+					`,
+				);
+			}
+		},
+		[board.id, columnsWithRoles, visibleCards, moveCardMutation],
+	);
+
+	const handleChangeCardPriority = useCallback(
+		async (card: KanbanCard, priority: KanbanPriority) => {
+			try {
+				await updateCardMutation.mutateAsync({
+					id: card.id,
+					boardId: board.id,
+					priority,
+				});
+			} catch (error) {
+				toast.error(
+					`Failed to update priority: ${
+											 error instanceof Error ? error.message : "Unknown error"
+										 }
+					`,
+				);
+			}
+		},
+		[board.id, updateCardMutation],
+	);
+
+	const handleMoveCardToColumn = useCallback(
+		async (card: KanbanCard, targetColumnId: string) => {
+			if (card.columnId === targetColumnId) return;
+
+			const targetColumnCards = visibleCards.filter(
+				(c) => c.columnId === targetColumnId,
+			);
+			const targetIndex = targetColumnCards.length;
+
+			try {
+				await moveCardMutation.mutateAsync({
+					boardId: board.id,
+					cardId: card.id,
+					fromColumnId: card.columnId,
+					toColumnId: targetColumnId,
+					targetIndex,
+				});
+			} catch (error) {
+				toast.error(
+					`Failed to move card: ${
+											 error instanceof Error ? error.message : "Unknown error"
+										 }
+					`,
+				);
+			}
+		},
+		[board.id, visibleCards, moveCardMutation],
 	);
 
 	const visibleColumnsById = useMemo(
@@ -389,6 +656,7 @@ export function BoardDetailView({
 	// Counts for filters (based on all cards on the board)
 	const priorityCounts = useMemo(() => {
 		const counts: Record<KanbanPriority, number> = {
+			none: 0,
 			high: 0,
 			medium: 0,
 			low: 0,
@@ -400,7 +668,7 @@ export function BoardDetailView({
 			}
 		});
 
-		const total = counts.high + counts.medium + counts.low;
+		const total = counts.high + counts.medium + counts.low + counts.none;
 		return { counts, total };
 	}, [allCards]);
 
@@ -828,7 +1096,7 @@ export function BoardDetailView({
 				<PopoverContent
 					align="end"
 					sideOffset={8}
-					className="w-72 rounded-lg border border-border/40 bg-popover/95 p-3 shadow-lg"
+					className="w-80 rounded-lg border border-border/40 bg-popover/95 p-2 shadow-lg"
 				>
 					<div className="space-y-3">
 						<div className="space-y-1.5">
@@ -836,8 +1104,7 @@ export function BoardDetailView({
 								Priority
 							</span>
 							<Select
-								type="multiple"
-								value={prioritySelectValue}
+								value={prioritySelectValue as any}
 								onValueChange={(value) => {
 									const values = (Array.isArray(value)
 										? value
@@ -850,7 +1117,7 @@ export function BoardDetailView({
 									size="sm"
 									className="h-7 w-full rounded-md border border-border/30 bg-background/70 px-2 text-xs font-medium text-muted-foreground transition-colors duration-150 hover:text-foreground hover:bg-accent/30"
 								>
-									<SelectValue placeholder="All">
+									<SelectValue>
 										{(() => {
 											const count = selectedPriorities.length;
 											if (count === 0) {
@@ -871,12 +1138,22 @@ export function BoardDetailView({
 												const option = PRIORITY_FILTER_OPTIONS.find(
 													(item) => item.value === value,
 												);
-												const Icon = option?.icon ?? PriorityIcon;
+												if (!option) {
+													return (
+														<span className="flex items-center gap-1.5">
+															<PriorityIcon className="h-3 w-3 text-muted-foreground/70" />
+															<span className="truncate text-muted-foreground/90">
+																All
+															</span>
+														</span>
+													);
+												}
+												const Icon = option.icon;
 												return (
 													<span className="flex items-center gap-1.5">
 														<Icon className="h-3 w-3 text-foreground" />
 														<span className="truncate text-foreground font-medium">
-															{option?.label ?? "All"}
+															{option.label}
 														</span>
 													</span>
 												);
@@ -937,8 +1214,7 @@ export function BoardDetailView({
 								Deadline
 							</span>
 							<Select
-								type="multiple"
-								value={dueSelectValue}
+								value={dueSelectValue as any}
 								onValueChange={(value) => {
 									const values = (Array.isArray(value)
 										? value
@@ -1085,7 +1361,7 @@ export function BoardDetailView({
 						</div>
 					</div>
 				</PopoverContent>
-		</Popover>
+			</Popover>
 
 			{/* Display / View selector */}
 			<Popover>
@@ -1132,7 +1408,6 @@ export function BoardDetailView({
 								);
 							})}
 						</div>
-								</div>
 						{/* Controls extras */}
 						<div className="mt-1 space-y-3 border-t border-border/60 pt-3">
 							{/* Columns */}
@@ -1174,7 +1449,7 @@ export function BoardDetailView({
 										Rows
 									</span>
 									<span className="text-[11px] text-muted-foreground/70">
-										Additional grouping (coming soon)
+										Additional grouping
 									</span>
 								</div>
 								<Select
@@ -1188,12 +1463,15 @@ export function BoardDetailView({
 										className="h-7 w-[140px] rounded-md border border-border/30 bg-background/70 px-2 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-accent/30"
 									>
 										<SelectValue className="text-xs">
-											{displayRows === "none" ? "No grouping" : "No grouping"}
+											{displayRows === "none" ? "No grouping" : "Priority"}
 										</SelectValue>
 									</SelectTrigger>
 									<SelectContent sideOffset={4}>
 										<SelectItem value="none" className="text-xs">
 											No grouping
+										</SelectItem>
+										<SelectItem value="priority" className="text-xs">
+											Priority
 										</SelectItem>
 									</SelectContent>
 								</Select>
@@ -1251,6 +1529,60 @@ export function BoardDetailView({
 								</Select>
 							</div>
 
+							{/* Tag filters */}
+							<div className="flex items-start justify-between gap-3">
+								<div className="flex flex-col">
+									<span className="text-xs font-medium text-muted-foreground">
+										Tags
+									</span>
+									<span className="text-[11px] text-muted-foreground/70">
+										Show cards that match selected tags
+									</span>
+								</div>
+								<div className="min-w-[160px] max-w-[200px]">
+									<Select
+										multiple
+										value={displayTagFilterIds}
+										onValueChange={(value) => {
+											const values = Array.isArray(value)
+												? (value as string[])
+												: [String(value)];
+											setDisplayTagFilterIds(values);
+										}}
+									>
+										<SelectTrigger
+											size="sm"
+											className="h-7 w-full rounded-md border border-border/30 bg-background/70 px-2 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-accent/30"
+										>
+											<SelectValue className="text-xs">
+												{displayTagFilterIds.length === 0
+													? "All tags"
+													: `${displayTagFilterIds.length} tag${
+															displayTagFilterIds.length === 1 ? "" : "s"
+														}`}
+											</SelectValue>
+										</SelectTrigger>
+										<SelectContent sideOffset={4}>
+											{allTags.length === 0 ? (
+												<SelectItem value="__no_tags__" disabled className="text-xs">
+													No tags
+												</SelectItem>
+											) : (
+												allTags.map((tag) => (
+													<SelectItem
+														key={tag.id}
+														value={tag.id}
+														className="text-xs"
+													>
+														{tag.label}
+													</SelectItem>
+												))
+											)}
+										</SelectContent>
+									</Select>
+								</div>
+							</div>
+
 							{/* Toggles */}
 							<div className="flex flex-col gap-2 pt-1">
 								<div className="flex items-center justify-between gap-3">
@@ -1284,8 +1616,9 @@ export function BoardDetailView({
 								</div>
 							</div>
 						</div>
-					</PopoverContent>
-				</Popover>
+					</div>
+						</PopoverContent>
+					</Popover>
 
 			{/* Botão de Gerenciar Colunas */}
 			<Button
@@ -1390,6 +1723,11 @@ export function BoardDetailView({
 												tagIds: task.tagIds ?? [],
 											});
 										}}
+										onMoveCardToNextColumn={handleMoveCardToNextColumn}
+										onMarkCardDone={handleMarkCardDone}
+										rowGrouping={displayRows}
+										onChangeCardPriority={handleChangeCardPriority}
+										onMoveCardToColumn={handleMoveCardToColumn}
 									/>
 								) : resolvedViewMode === "list" ? (
 									<BoardListView

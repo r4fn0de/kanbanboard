@@ -1046,13 +1046,16 @@ export async function updateCard(input: UpdateCardInput): Promise<void> {
 
 	const args = {
 		id: payload.id,
-		board_id: payload.boardId,
+		boardId: payload.boardId,
 		...(payload.title !== undefined ? { title: payload.title } : {}),
 		...(payload.description !== undefined
 			? { description: payload.description }
 			: {}),
 		...(payload.priority !== undefined ? { priority: payload.priority } : {}),
-		...(payload.dueDate !== undefined ? { due_date: payload.dueDate } : {}),
+		...(payload.dueDate !== undefined ? { dueDate: payload.dueDate } : {}),
+		...(payload.clearDueDate !== undefined
+			? { clearDueDate: payload.clearDueDate }
+			: {}),
 	};
 
 	console.log("Sending update_card request:", { args });
@@ -1102,8 +1105,9 @@ export function useUpdateCard(boardId: string) {
 				const hasDescription = Object.hasOwn(input, "description");
 				const hasPriority = Object.hasOwn(input, "priority");
 				const hasDueDate = Object.hasOwn(input, "dueDate");
+				const hasClearDueDate = Object.hasOwn(input, "clearDueDate");
 
-				if (hasTitle || hasDescription || hasPriority || hasDueDate) {
+				if (hasTitle || hasDescription || hasPriority || hasDueDate || hasClearDueDate) {
 					const now = new Date().toISOString();
 					const updated = previousCards.map((card) => {
 						if (card.id !== input.id) {
@@ -1127,7 +1131,9 @@ export function useUpdateCard(boardId: string) {
 						if (hasPriority) {
 							nextCard.priority = input.priority ?? card.priority;
 						}
-						if (hasDueDate) {
+						if (hasClearDueDate && input.clearDueDate) {
+							nextCard.dueDate = null;
+						} else if (hasDueDate) {
 							nextCard.dueDate =
 								input.dueDate !== undefined
 									? (input.dueDate ?? null)

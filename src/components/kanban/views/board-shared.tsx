@@ -3,7 +3,7 @@ import { Popover } from '@base-ui-components/react/popover'
 import { cn } from '@/lib/utils'
 import type { KanbanCard } from '@/types/common'
 import { ChevronDown } from 'lucide-react'
-import { PaperclipIcon, PriorityLowIcon, PriorityMediumIcon, PriorityHighIcon, CalendarIcon } from '@/components/ui/icons'
+import { PaperclipIcon, PriorityIcon, PriorityLowIcon, PriorityMediumIcon, PriorityHighIcon, CalendarIcon } from '@/components/ui/icons'
 import {
   CARD_DUE_STATUS_STYLES,
   getCardDueMetadata,
@@ -19,6 +19,12 @@ const PRIORITY_VARIANTS: Record<
     icon: ComponentType<{ className?: string }>
   }
 > = {
+  none: {
+    label: 'No priority',
+    className:
+      'bg-muted text-muted-foreground dark:bg-muted/40 dark:text-muted-foreground',
+    icon: PriorityIcon,
+  },
   low: {
     label: 'Low',
     className:

@@ -523,10 +523,14 @@ async fn reset_application_data(app: AppHandle, pool: State<'_, DbPool>) -> Resu
         "workspaces",
     ] {
         let stmt = format!("DELETE FROM {table}");
-        sqlx::query(&stmt)
-            .execute(&mut *tx)
-            .await
-            .map_err(|e| format!("Failed to reset table {table}: {e}"))?;
+        if let Err(e) = sqlx::query(&stmt).execute(&mut *tx).await {
+            let msg = e.to_string();
+            if msg.contains("no such table") {
+                log::warn!("Skipping reset for missing table {table}: {msg}");
+            } else {
+                return Err(format!("Failed to reset table {table}: {e}"));
+            }
+        }
     }
 
     sqlx::query("PRAGMA foreign_keys = ON")
@@ -585,6 +589,7 @@ async fn open_attachment(app: AppHandle, file_path: String) -> Result<(), String
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct UpdateCardArgs {
     id: String,
     board_id: String,
@@ -596,6 +601,8 @@ struct UpdateCardArgs {
     priority: Option<String>,
     #[serde(default)]
     due_date: Option<Option<String>>,
+    #[serde(default)]
+    clear_due_date: Option<bool>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -711,6 +718,8 @@ async fn update_card(pool: State<'_, DbPool>, args: UpdateCardArgs) -> Result<()
         args.board_id
     );
 
+    log::info!("update_card: raw due_date arg = {:?}", args.due_date);
+
     if args.title.as_ref().is_some_and(|t| t.trim().is_empty()) {
         return Err("O título do cartão não pode ser vazio.".to_string());
     }
@@ -740,9 +749,6 @@ async fn update_card(pool: State<'_, DbPool>, args: UpdateCardArgs) -> Result<()
         return Err("O cartão não pertence ao quadro informado.".to_string());
     }
 
-    let builder = QueryBuilder::<Sqlite>::new(
-        "UPDATE kanban_cards SET updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')",
-    );
     let mut has_changes = false;
 
     // Build the SQL query manually
@@ -783,24 +789,36 @@ async fn update_card(pool: State<'_, DbPool>, args: UpdateCardArgs) -> Result<()
     }
 
     // Handle due date update
-    if let Some(ref due_date) = args.due_date {
-        let normalized = match due_date {
+    if args.clear_due_date.unwrap_or(false) {
+        // Pedido explícito para limpar a data de vencimento
+        sql.push_str(", due_date = NULL");
+        has_changes = true;
+    } else if let Some(ref due_date) = args.due_date {
+        match due_date {
+            // Frontend enviou uma string (possivelmente vazia)
             Some(value) => {
                 let trimmed = value.trim();
                 if trimmed.is_empty() {
-                    None
+                    // String vazia ou só espaços: limpar o campo no banco
+                    sql.push_str(", due_date = NULL");
                 } else {
-                    Some(trimmed.to_string())
+                    let escaped = trimmed.replace('\'', "''");
+                    sql.push_str(&format!(", due_date = '{}'", escaped));
                 }
             }
-            None => None,
-        };
-        let date_str = normalized.unwrap_or_default().replace('\'', "''");
-        sql.push_str(&format!(", due_date = '{}'", date_str));
+            // Frontend enviou null explicitamente: limpar o campo
+            None => {
+                sql.push_str(", due_date = NULL");
+            }
+        }
         has_changes = true;
     }
 
     if !has_changes {
+        log::info!(
+            "update_card: no changes detected for card id {}, skipping UPDATE",
+            args.id
+        );
         return Ok(());
     }
 
@@ -1574,8 +1592,8 @@ fn normalize_board_icon(icon: Option<String>) -> Result<String, String> {
 
 fn validate_priority(priority: &str) -> Result<(), String> {
     match priority {
-        "low" | "medium" | "high" => Ok(()),
-        _ => Err("Prioridade inválida. Utilize 'low', 'medium' ou 'high'.".to_string()),
+        "none" | "low" | "medium" | "high" => Ok(()),
+        _ => Err("Prioridade inválida. Utilize 'none', 'low', 'medium' ou 'high'.".to_string()),
     }
 }
 

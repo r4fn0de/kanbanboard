@@ -67,6 +67,14 @@ interface BoardKanbanViewProps {
 	onDeleteTask?: (card: KanbanCard) => void;
 	onDuplicateTask?: (card: KanbanCard) => void;
 	showSubtasksSummary?: boolean;
+	onMoveCardToNextColumn?: (card: KanbanCard) => void;
+	onMarkCardDone?: (card: KanbanCard) => void;
+	rowGrouping?: "none" | "priority";
+	onChangeCardPriority?: (
+		card: KanbanCard,
+		priority: KanbanCard["priority"],
+	) => void;
+	onMoveCardToColumn?: (card: KanbanCard, targetColumnId: string) => void;
 }
 
 function hexToRgba(hex: string | null | undefined, alpha: number) {
@@ -130,6 +138,11 @@ export function BoardKanbanView({
 	onDeleteTask,
 	onDuplicateTask,
 	showSubtasksSummary,
+  onMoveCardToNextColumn,
+  onMarkCardDone,
+	rowGrouping = "none",
+	onChangeCardPriority,
+	onMoveCardToColumn,
 }: BoardKanbanViewProps) {
 	const [isDialogOpen, setIsDialogOpen] = useState(false);
 	const [selectedColumn, setSelectedColumn] = useState<KanbanColumn | null>(
@@ -238,13 +251,16 @@ export function BoardKanbanView({
 				>
 					<div className="flex h-full items-stretch gap-4 overflow-x-auto pb-4 pt-4 min-h-0 px-6">
 						{columnOrder.map((columnId, index) => {
-							const column = columnsMap.get(columnId);
-							if (!column) {
-								return null;
-							}
-							const columnCards = cardsByColumn.get(column.id) ?? [];
-							return (
-								<DraggableColumn
+						const column = columnsMap.get(columnId);
+						if (!column) {
+							return null;
+						}
+						const columnCards = cardsByColumn.get(column.id) ?? [];
+						const moveColumnOptions = columns.filter(
+							(col) => col.id !== column.id,
+						);
+						return (
+							<DraggableColumn
 									key={column.id}
 									column={column}
 									columnCards={columnCards}
@@ -256,6 +272,12 @@ export function BoardKanbanView({
 									onDeleteCard={onDeleteTask}
 									onDuplicateCard={onDuplicateTask}
 									showSubtasksSummary={showSubtasksSummary}
+									onMoveCardToNextColumn={onMoveCardToNextColumn}
+									onMarkCardDone={onMarkCardDone}
+									rowGrouping={rowGrouping}
+									moveColumnOptions={moveColumnOptions}
+									onChangeCardPriority={onChangeCardPriority}
+									onMoveCardToColumn={onMoveCardToColumn}
 								/>
 							);
 						})}
@@ -434,6 +456,12 @@ function DraggableColumn({
 	onDeleteCard,
 	onDuplicateCard,
 	showSubtasksSummary,
+	onMoveCardToNextColumn,
+	onMarkCardDone,
+	rowGrouping,
+  moveColumnOptions,
+  onChangeCardPriority,
+  onMoveCardToColumn,
 }: {
 	column: KanbanColumn;
 	columnCards: KanbanCard[];
@@ -445,6 +473,15 @@ function DraggableColumn({
 	onDeleteCard?: (card: KanbanCard) => void;
 	onDuplicateCard?: (card: KanbanCard) => void;
 	showSubtasksSummary?: boolean;
+	onMoveCardToNextColumn?: (card: KanbanCard) => void;
+	onMarkCardDone?: (card: KanbanCard) => void;
+	rowGrouping?: "none" | "priority";
+	moveColumnOptions?: KanbanColumn[];
+	onChangeCardPriority?: (
+		card: KanbanCard,
+		priority: KanbanCard["priority"],
+	) => void;
+	onMoveCardToColumn?: (card: KanbanCard, targetColumnId: string) => void;
 }) {
 	const { attributes, listeners, setNodeRef, transform, isDragging } =
 		useSortable({
@@ -484,6 +521,56 @@ function DraggableColumn({
 			? inferredStatusIcon ?? DEFAULT_COLUMN_ICON
 			: column.icon;
 	const ColumnIcon = getColumnIconComponent(resolvedIconKey);
+
+	const priorityGroups = useMemo(
+		() => {
+			if (rowGrouping !== "priority") {
+				return [
+					{
+						key: "all",
+						label: null as string | null,
+						cards: columnCards,
+					},
+				];
+			}
+
+			const order: KanbanCard["priority"][] = [
+				"high",
+				"medium",
+				"low",
+			];
+
+			const groups: { key: string; label: string; cards: KanbanCard[] }[] = [];
+
+			for (const p of order) {
+				const cards = columnCards.filter((card) => card.priority === p);
+				if (!cards.length) continue;
+
+				const label =
+					p === "high"
+						? "High priority"
+						: p === "medium"
+							? "Medium priority"
+							: "Low priority";
+
+				groups.push({ key: p, label, cards });
+			}
+
+			const noPriority = columnCards.filter(
+				(card) => !card.priority || !order.includes(card.priority),
+			);
+			if (noPriority.length) {
+				groups.push({
+					key: "none",
+					label: "No priority",
+					cards: noPriority,
+				});
+			}
+
+			return groups;
+		},
+		[columnCards, rowGrouping],
+	);
 
 	return (
 		<div
@@ -547,16 +634,75 @@ function DraggableColumn({
 						>
 							{columnCards.length > 0 ? (
 								<>
-									{columnCards.map((card) => (
-										<KanbanCardItem
-											key={card.id}
-											card={card}
-											onSelect={onCardSelect}
-											isSelected={selectedCardId === card.id}
-											onDelete={onDeleteCard}
-											onDuplicate={onDuplicateCard}
-											showSubtasksSummary={showSubtasksSummary}
-										/>
+									{priorityGroups.map((group) => (
+										<div key={group.key} className={rowGrouping === "priority" ? "space-y-1.5" : ""}>
+											{rowGrouping === "priority" && group.label && (
+												<div className="flex items-center justify-between px-1 text-[11px] text-muted-foreground/80">
+													<span className="font-medium">{group.label}</span>
+													<span className="text-[10px]">{group.cards.length}</span>
+												</div>
+											)}
+											<div className="flex flex-col gap-2">
+												{group.cards.map((card) => (
+													<KanbanCardItem
+														key={card.id}
+														card={card}
+														onSelect={onCardSelect}
+														isSelected={selectedCardId === card.id}
+														onDelete={onDeleteCard}
+														onDuplicate={onDuplicateCard}
+														showSubtasksSummary={showSubtasksSummary}
+														onQuickMoveToNext={
+															onMoveCardToNextColumn
+																? () => onMoveCardToNextColumn(card)
+																: undefined
+														}
+														onQuickMarkDone={
+															onMarkCardDone ? () => onMarkCardDone(card) : undefined
+														}
+														onChangePriority={
+															onChangeCardPriority
+																? (priority) => onChangeCardPriority(card, priority)
+																: undefined
+														}
+														moveColumnOptions={
+															moveColumnOptions?.map((col) => {
+																const normalizedTitle = col.title.trim().toLowerCase();
+																let inferredStatusIcon: string | null = null;
+
+																if (normalizedTitle === "backlog") {
+																	inferredStatusIcon = "BacklogStatus";
+																} else if (normalizedTitle === "to do" || normalizedTitle === "todo") {
+																	inferredStatusIcon = "TodoStatus";
+																} else if (normalizedTitle === "in progress") {
+																	inferredStatusIcon = "InProgressStatus";
+																} else if (normalizedTitle === "done") {
+																	inferredStatusIcon = "DoneStatus";
+																}
+
+																const resolvedKey =
+																	!col.icon || col.icon === DEFAULT_COLUMN_ICON
+																			? inferredStatusIcon ?? DEFAULT_COLUMN_ICON
+																			: col.icon;
+
+																const StatusIcon = getColumnIconComponent(resolvedKey);
+
+																return {
+																	id: col.id,
+																	title: col.title,
+																	icon: StatusIcon,
+																};
+															})
+														}
+														onMoveToColumn={
+															onMoveCardToColumn
+																? (columnId) => onMoveCardToColumn(card, columnId)
+																: undefined
+														}
+													/>
+												))}
+											</div>
+										</div>
 									))}
 									{/* Drop zone at the end of cards */}
 									<ColumnEndDropZone

@@ -7,7 +7,7 @@ const optionalNullableStringSchema = z
   .union([z.string().trim(), z.null()])
   .optional()
 const nonNegativeIntSchema = z.number().int().min(0)
-const prioritySchema = z.enum(['low', 'medium', 'high'])
+const prioritySchema = z.enum(['none', 'low', 'medium', 'high'])
 
 export const createBoardSchema = z.object({
   id: entityIdSchema,
@@ -148,13 +148,15 @@ export const updateCardSchema = z
     description: optionalNullableStringSchema,
     priority: prioritySchema.optional(),
     dueDate: optionalNullableStringSchema,
+    clearDueDate: z.boolean().optional(),
   })
   .refine(
     payload =>
       'title' in payload ||
       'description' in payload ||
       'priority' in payload ||
-      'dueDate' in payload,
+      'dueDate' in payload ||
+      'clearDueDate' in payload,
     {
       message: 'At least one field must be provided',
       path: ['title'],

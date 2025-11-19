@@ -39,7 +39,7 @@ export interface KanbanColumn {
   archivedAt?: string | null
 }
 
-export type KanbanPriority = 'low' | 'medium' | 'high'
+export type KanbanPriority = 'none' | 'low' | 'medium' | 'high'
 
 export interface KanbanCard {
   id: EntityId
@@ -156,7 +156,7 @@ CREATE TABLE IF NOT EXISTS kanban_cards (
   title TEXT NOT NULL,
   description TEXT,
   position INTEGER NOT NULL,
-  priority TEXT NOT NULL DEFAULT 'medium' CHECK (priority IN ('low','medium','high')),
+  priority TEXT NOT NULL DEFAULT 'none' CHECK (priority IN ('none','low','medium','high')),
   due_date TEXT,
   attachments TEXT,
   created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
