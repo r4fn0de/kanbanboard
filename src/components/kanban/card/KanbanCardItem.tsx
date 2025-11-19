@@ -170,6 +170,47 @@ export function KanbanCardItem({
     )
   }, [boardTags, tagQuery])
 
+  const [activeTagId, setActiveTagId] = React.useState<string | null>(null)
+  const [activeDuePreset, setActiveDuePreset] = React.useState<
+    'tomorrow' | 'endOfWeek' | 'inOneWeek' | 'clear' | null
+  >(null)
+
+  const normalizedDueQuery = dueQuery.trim().toLowerCase()
+
+  React.useEffect(() => {
+    const q = tagQuery.trim().toLowerCase()
+    if (!q || filteredTags.length === 0) {
+      setActiveTagId(null)
+      return
+    }
+
+    const startsWithMatch = filteredTags.find(tag =>
+      tag.label.toLowerCase().startsWith(q)
+    )
+
+    const bestMatch = startsWithMatch ?? filteredTags[0]
+    setActiveTagId(bestMatch ? bestMatch.id : null)
+  }, [filteredTags, tagQuery])
+
+  React.useEffect(() => {
+    const q = dueQuery.trim().toLowerCase()
+    if (!q) {
+      // Default highlight when nothing is typed
+      setActiveDuePreset('tomorrow')
+      return
+    }
+
+    const presets: { key: 'tomorrow' | 'endOfWeek' | 'inOneWeek' | 'clear'; label: string }[] = [
+      { key: 'tomorrow', label: 'Tomorrow' },
+      { key: 'endOfWeek', label: 'End of this week' },
+      { key: 'inOneWeek', label: 'In one week' },
+      { key: 'clear', label: 'Clear due date' },
+    ]
+
+    const match = presets.find(p => p.label.toLowerCase().startsWith(q))
+    setActiveDuePreset(match ? match.key : null)
+  }, [dueQuery])
+
   const handleToggleTag = React.useCallback(
     (tagId: string) => {
       if (!card.boardId) return
@@ -338,6 +379,28 @@ export function KanbanCardItem({
     return null
   }, [])
 
+  const parsedDueFromQuery = React.useMemo(() => {
+    const raw = dueQuery.trim()
+    if (!raw) return null
+
+    const parsed = parseDueDateInput(raw)
+    if (!parsed) return null
+
+    const [yearStr, monthStr, dayStr] = parsed.split('-')
+    const year = Number(yearStr)
+    const month = Number(monthStr)
+    const day = Number(dayStr)
+
+    if (Number.isNaN(year) || Number.isNaN(month) || Number.isNaN(day)) {
+      return null
+    }
+
+    // Use local date components to avoid timezone shifting when formatting
+    const d = new Date(year, month - 1, day)
+
+    return d
+  }, [dueQuery, parseDueDateInput])
+
   const applyDueDate = React.useCallback(
     (date: Date | null | undefined) => {
       if (!card.boardId) return
@@ -361,6 +424,44 @@ export function KanbanCardItem({
       })
     },
     [card.boardId, card.id, updateCard]
+  )
+
+  const handleApplyDuePreset = React.useCallback(
+    (preset: 'tomorrow' | 'endOfWeek' | 'inOneWeek' | 'clear') => {
+      if (!card.boardId) return
+
+      if (preset === 'clear') {
+        applyDueDate(null)
+        return
+      }
+
+      if (preset === 'tomorrow') {
+        const base = new Date()
+        const d = new Date(base.getFullYear(), base.getMonth(), base.getDate() + 1)
+        applyDueDate(d)
+        return
+      }
+
+      if (preset === 'endOfWeek') {
+        const now = new Date()
+        const day = now.getDay() || 7
+        const daysUntilEndOfWeek = 7 - day
+        const d = new Date(
+          now.getFullYear(),
+          now.getMonth(),
+          now.getDate() + daysUntilEndOfWeek
+        )
+        applyDueDate(d)
+        return
+      }
+
+      if (preset === 'inOneWeek') {
+        const base = new Date()
+        const d = new Date(base.getFullYear(), base.getMonth(), base.getDate() + 7)
+        applyDueDate(d)
+      }
+    },
+    [applyDueDate, card.boardId]
   )
 
   const subtasks = card.subtasks ?? []
@@ -557,6 +658,38 @@ export function KanbanCardItem({
                 onChange={event => setTagQuery(event.target.value)}
                 placeholder="Search or create tag..."
                 className="w-full rounded-md px-1.5 py-0.5 text-[11px] outline-none"
+                onKeyDown={event => {
+                  // Keep focus on the input and implement custom typeahead
+                  event.stopPropagation()
+
+                  if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+                    event.preventDefault()
+                    if (filteredTags.length === 0) return
+
+                    const currentIndex = activeTagId
+                      ? filteredTags.findIndex(tag => tag.id === activeTagId)
+                      : -1
+
+                    let nextIndex = currentIndex
+                    if (event.key === 'ArrowDown') {
+                      nextIndex = currentIndex + 1
+                      if (nextIndex >= filteredTags.length) nextIndex = 0
+                    } else if (event.key === 'ArrowUp') {
+                      nextIndex = currentIndex - 1
+                      if (nextIndex < 0) nextIndex = filteredTags.length - 1
+                    }
+
+                    const nextTag = filteredTags[nextIndex]
+                    if (nextTag) {
+                      setActiveTagId(nextTag.id)
+                    }
+                  }
+
+                  if (event.key === 'Enter' && activeTagId) {
+                    event.preventDefault()
+                    handleToggleTag(activeTagId)
+                  }
+                }}
               />
             </div>
             <ContextMenuSeparator />
@@ -608,11 +741,15 @@ export function KanbanCardItem({
               filteredTags.map(tag => {
                 const selected = cardTagIds.includes(tag.id)
                 const badgeStyle = getTagBadgeStyle(tag, isDarkMode)
+                const isActive = activeTagId === tag.id
 
                 return (
                   <ContextMenuItem
                     key={tag.id}
-                    className="flex items-center gap-2"
+                    className={cn(
+                      'flex items-center gap-2',
+                      isActive && 'bg-muted text-foreground'
+                    )}
                     onSelect={() => handleToggleTag(tag.id)}
                   >
                     <span
@@ -652,6 +789,8 @@ export function KanbanCardItem({
                 placeholder="Try: tomorrow, 24h, next week"
                 className="w-full rounded-md px-1.5 py-0.5 text-[11px] outline-none"
                 onKeyDown={event => {
+                  // Keep typing focus on the input while still handling Enter/Escape
+                  event.stopPropagation()
                   if (event.key === 'Enter') {
                     event.preventDefault()
                     const trimmed = dueQuery.trim()
@@ -668,52 +807,227 @@ export function KanbanCardItem({
                         setDueQuery('')
                       }
                     }
+                    if (!parsed && activeDuePreset) {
+                      handleApplyDuePreset(activeDuePreset)
+                      setDueQuery('')
+                    }
                   }
                   if (event.key === 'Escape') {
                     setDueQuery('')
+                  }
+                  // Only allow preset navigation via arrows when there's no filter text
+                  if (
+                    !normalizedDueQuery &&
+                    (event.key === 'ArrowDown' || event.key === 'ArrowUp')
+                  ) {
+                    event.preventDefault()
+                    const order: Array<'tomorrow' | 'endOfWeek' | 'inOneWeek' | 'clear'> = [
+                      'tomorrow',
+                      'endOfWeek',
+                      'inOneWeek',
+                      'clear',
+                    ]
+                    const currentIndex = activeDuePreset
+                      ? order.findIndex(key => key === activeDuePreset)
+                      : 0
+                    let nextIndex = currentIndex
+                    if (event.key === 'ArrowDown') {
+                      nextIndex = (currentIndex + 1) % order.length
+                    } else if (event.key === 'ArrowUp') {
+                      nextIndex = (currentIndex - 1 + order.length) % order.length
+                    }
+                    const nextKey = order[nextIndex] ?? 'tomorrow'
+                    setActiveDuePreset(nextKey)
                   }
                 }}
               />
             </div>
             <ContextMenuSeparator />
-            <ContextMenuItem
-              className="flex items-center gap-2"
-              onSelect={() => {
-                const base = new Date()
-                const d = new Date(base.getFullYear(), base.getMonth(), base.getDate() + 1)
-                applyDueDate(d)
-              }}
-            >
-              <span className="text-xs">Tomorrow</span>
-            </ContextMenuItem>
-            <ContextMenuItem
-              className="flex items-center gap-2"
-              onSelect={() => {
-                const now = new Date()
-                const day = now.getDay() || 7
-                const daysUntilEndOfWeek = 7 - day
-                const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() + daysUntilEndOfWeek)
-                applyDueDate(d)
-              }}
-            >
-              <span className="text-xs">End of this week</span>
-            </ContextMenuItem>
-            <ContextMenuItem
-              className="flex items-center gap-2"
-              onSelect={() => {
-                const base = new Date()
-                const d = new Date(base.getFullYear(), base.getMonth(), base.getDate() + 7)
-                applyDueDate(d)
-              }}
-            >
-              <span className="text-xs">In one week</span>
-            </ContextMenuItem>
-            <ContextMenuItem
-              className="flex items-center gap-2"
-              onSelect={() => applyDueDate(null)}
-            >
-              <span className="text-xs text-muted-foreground">Clear due date</span>
-            </ContextMenuItem>
+            {parsedDueFromQuery && (
+              <ContextMenuItem
+                className="flex items-center gap-2"
+                onSelect={() => {
+                  applyDueDate(parsedDueFromQuery)
+                  setDueQuery('')
+                }}
+              >
+                <div className="flex w-full items-center justify-between">
+                  <span className="text-xs">Set "{dueQuery.trim()}"</span>
+                  <span className="text-[11px] text-muted-foreground">
+                    {(() => {
+                      const d = parsedDueFromQuery
+                      const day = d.getDate()
+                      const weekday = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][
+                        d.getDay()
+                      ]
+                      const month = [
+                        'Jan',
+                        'Feb',
+                        'Mar',
+                        'Apr',
+                        'May',
+                        'Jun',
+                        'Jul',
+                        'Aug',
+                        'Sep',
+                        'Oct',
+                        'Nov',
+                        'Dec',
+                      ][d.getMonth()]
+                      return `${day}, ${weekday} ${month}`
+                    })()}
+                  </span>
+                </div>
+              </ContextMenuItem>
+            )}
+            {(!normalizedDueQuery || 'tomorrow'.startsWith(normalizedDueQuery)) && (
+              <ContextMenuItem
+                className={cn(
+                  'flex items-center gap-2',
+                  activeDuePreset === 'tomorrow' && 'bg-muted text-foreground'
+                )}
+                onSelect={() => {
+                  handleApplyDuePreset('tomorrow')
+                }}
+              >
+                <div className="flex w-full items-center justify-between">
+                  <span className="text-xs">Tomorrow</span>
+                  <span className="text-[11px] text-muted-foreground">
+                    {(() => {
+                      const base = new Date()
+                      const d = new Date(
+                        base.getFullYear(),
+                        base.getMonth(),
+                        base.getDate() + 1
+                      )
+                      const day = d.getDate()
+                      const weekday = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][
+                        d.getDay()
+                      ]
+                      const month = [
+                        'Jan',
+                        'Feb',
+                        'Mar',
+                        'Apr',
+                        'May',
+                        'Jun',
+                        'Jul',
+                        'Aug',
+                        'Sep',
+                        'Oct',
+                        'Nov',
+                        'Dec',
+                      ][d.getMonth()]
+                      return `${day}, ${weekday} ${month}`
+                    })()}
+                  </span>
+                </div>
+              </ContextMenuItem>
+            )}
+            {(!normalizedDueQuery || 'end of this week'.startsWith(normalizedDueQuery)) && (
+              <ContextMenuItem
+                className={cn(
+                  'flex items-center gap-2',
+                  activeDuePreset === 'endOfWeek' && 'bg-muted text-foreground'
+                )}
+                onSelect={() => {
+                  handleApplyDuePreset('endOfWeek')
+                }}
+              >
+                <div className="flex w-full items-center justify-between">
+                  <span className="text-xs">End of this week</span>
+                  <span className="text-[11px] text-muted-foreground">
+                    {(() => {
+                      const now = new Date()
+                      const dayOfWeek = now.getDay() || 7
+                      const daysUntilEndOfWeek = 7 - dayOfWeek
+                      const d = new Date(
+                        now.getFullYear(),
+                        now.getMonth(),
+                        now.getDate() + daysUntilEndOfWeek
+                      )
+                      const day = d.getDate()
+                      const weekday = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][
+                        d.getDay()
+                      ]
+                      const month = [
+                        'Jan',
+                        'Feb',
+                        'Mar',
+                        'Apr',
+                        'May',
+                        'Jun',
+                        'Jul',
+                        'Aug',
+                        'Sep',
+                        'Oct',
+                        'Nov',
+                        'Dec',
+                      ][d.getMonth()]
+                      return `${day}, ${weekday} ${month}`
+                    })()}
+                  </span>
+                </div>
+              </ContextMenuItem>
+            )}
+            {(!normalizedDueQuery || 'in one week'.startsWith(normalizedDueQuery)) && (
+              <ContextMenuItem
+                className={cn(
+                  'flex items-center gap-2',
+                  activeDuePreset === 'inOneWeek' && 'bg-muted text-foreground'
+                )}
+                onSelect={() => {
+                  handleApplyDuePreset('inOneWeek')
+                }}
+              >
+                <div className="flex w-full items-center justify-between">
+                  <span className="text-xs">In one week</span>
+                  <span className="text-[11px] text-muted-foreground">
+                    {(() => {
+                      const base = new Date()
+                      const d = new Date(
+                        base.getFullYear(),
+                        base.getMonth(),
+                        base.getDate() + 7
+                      )
+                      const day = d.getDate()
+                      const weekday = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][
+                        d.getDay()
+                      ]
+                      const month = [
+                        'Jan',
+                        'Feb',
+                        'Mar',
+                        'Apr',
+                        'May',
+                        'Jun',
+                        'Jul',
+                        'Aug',
+                        'Sep',
+                        'Oct',
+                        'Nov',
+                        'Dec',
+                      ][d.getMonth()]
+                      return `${day}, ${weekday} ${month}`
+                    })()}
+                  </span>
+                </div>
+              </ContextMenuItem>
+            )}
+            {(!normalizedDueQuery || 'clear due date'.startsWith(normalizedDueQuery)) && (
+              <ContextMenuItem
+                className={cn(
+                  'flex items-center gap-2',
+                  activeDuePreset === 'clear' && 'bg-muted text-foreground'
+                )}
+                onSelect={() => handleApplyDuePreset('clear')}
+              >
+                <div className="flex w-full items-center justify-between">
+                  <span className="text-xs text-muted-foreground">Clear due date</span>
+                  <span className="text-[11px] text-muted-foreground">No date</span>
+                </div>
+              </ContextMenuItem>
+            )}
           </ContextMenuSubContent>
         </ContextMenuSub>
 
