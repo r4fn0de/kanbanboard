@@ -101,7 +101,7 @@ export function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) {
       case 'note':
         return <StickyNote className="h-4 w-4" />
       default:
-        return <Search className="h-4 w-4" />
+        return <SearchIcon className="h-4 w-4" />
     }
   }
 

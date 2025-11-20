@@ -5,7 +5,7 @@ import { BlockNoteView } from '@blocknote/shadcn'
 import '@blocknote/shadcn/style.css'
 import type { BlockNoteEditor, PartialBlock } from '@blocknote/core'
 import { Button } from '@/components/ui/button'
-import { ArrowLeftIcon, PinIcon, UnpinIcon, TrashIcon } from '@/components/ui/icons'
+import { ArrowLeftIcon, PinIcon, UnpinIcon, TrashIcon, ChevronRightIcon } from '@/components/ui/icons'
 import { cn } from '@/lib/utils'
 import type { Note } from '@/services/notes'
 import { useUpdateNote, useDeleteNote, useNotes } from '@/services/notes'
@@ -375,7 +375,7 @@ function CustomBlockTypeButton({ editor }: { editor: BlockNoteEditor }) {
                   <span className="flex-1 truncate font-medium text-foreground transition-colors group-hover:text-primary">
                     {option.label}
                   </span>
-                  <ChevronRight className="h-4 w-4 text-muted-foreground/60 transition-colors group-hover:text-primary" />
+                  <ChevronRightIcon className="h-4 w-4 text-muted-foreground/60 transition-colors group-hover:text-primary" />
                 </button>
               ))}
             </div>
