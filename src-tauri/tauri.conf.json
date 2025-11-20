@@ -73,7 +73,7 @@
         "https://github.com/r4fn0de/kanbanboard/releases/latest/download/latest.json"
       ],
       "dialog": true,
-      "pubkey": "YOUR_UPDATER_PUBLIC_KEY_HERE"
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDNFQzBCQjA5NUY3NzEyQTYKUldTbUVuZGZDYnZBUG5Kcnp4T1hCRUNuRmEveCt1VFVaNkQ5WHJCQ2t5akZCM0lKMDhGYnJUVnYK"
     }
   }
 }

@@ -1,34 +1,34 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
-import { Link } from "react-router-dom";
+import { useState, useEffect, useCallback } from "react";
 import { SettingsIcon } from "@/components/ui/icons/settings";
 import { SearchIcon } from "@/components/ui/icons";
-import { useWidgetLayout } from "@/hooks/useWidgetLayout";
 import { useWorkspaceStatus } from "@/hooks/useWorkspaceStatus";
 import { useUIStore } from "@/store/ui-store";
+import { useWorkspaceStore } from "@/store/workspace-store";
 import { usePerformanceMonitor } from "@/hooks/usePerformanceMonitor";
-import { ErrorBoundary } from "@/components/error/ErrorBoundary";
 import { OverviewSection } from "./sections/OverviewSection";
 import { QuickActionsSection } from "./sections/QuickActionsSection";
 import { FavoritesSection } from "./sections/FavoritesSection";
 import { ActivitySection } from "./sections/ActivitySection";
-import { DeadlinesSection } from "./sections/DeadlinesSection";
 import { WidgetContainer } from "./WidgetContainer";
 import { Button } from "@/components/ui/button";
 import { SettingsDialog } from "./SettingsDialog";
 import { GlobalSearch } from "@/components/search/GlobalSearch";
 import { EmptyOnboarding, NewUserOnboarding } from "@/components/onboarding";
+import { CreateProjectDialog } from "@/components/kanban/CreateProjectDialog";
 
 export function Dashboard() {
 	usePerformanceMonitor("Dashboard");
 
-	const { widgets } = useWidgetLayout();
 	const { data: workspaceStatus, isLoading: statusLoading } =
 		useWorkspaceStatus();
 	const [settingsOpen, setSettingsOpen] = useState(false);
+	const [createProjectOpen, setCreateProjectOpen] = useState(false);
 	const [showNewUserTips, setShowNewUserTips] = useState(true);
 	const { commandPaletteOpen, setCommandPaletteOpen } = useUIStore();
+	const selectedWorkspaceId = useWorkspaceStore(
+		(state) => state.selectedWorkspaceId,
+	);
 
-	// Check if this is a new user (has boards but no activity)
 	const isNewUser = workspaceStatus?.isNewUser ?? false;
 	const isEmpty = workspaceStatus?.isEmpty ?? false;
 
@@ -48,104 +48,10 @@ export function Dashboard() {
 	const handleCreateBoard = useCallback(() => {
 		// TODO: Open create board dialog
 		console.log("Create board");
+		setCreateProjectOpen(true);
 	}, []);
 
-	// Memoize renderWidget function
-	const renderWidget = useCallback(
-		(widget: any) => {
-			const actionButtons = {
-				favorites: (
-					<Button variant="ghost" size="sm" asChild>
-						<Link to="/projects/favorites">View All</Link>
-					</Button>
-				),
-				activity: (
-					<Button variant="ghost" size="sm">
-						<Link to="/activity">View All</Link>
-					</Button>
-				),
-				deadlines: (
-					<Button variant="ghost" size="sm">
-						<Link to="/deadlines">View All</Link>
-					</Button>
-				),
-			};
-
-			const commonProps = {
-				key: widget.id,
-				title: widget.title,
-				actionButton:
-					actionButtons[widget.type as keyof typeof actionButtons] || null,
-			};
-
-			switch (widget.type) {
-				case "overview":
-					return (
-						<WidgetContainer {...commonProps}>
-							<div>
-								<ErrorBoundary>
-									<OverviewSection />
-								</ErrorBoundary>
-							</div>
-						</WidgetContainer>
-					);
-
-				case "quick-actions":
-					return (
-						<WidgetContainer {...commonProps}>
-							<div>
-								<ErrorBoundary>
-									<QuickActionsSection />
-								</ErrorBoundary>
-							</div>
-						</WidgetContainer>
-					);
-
-				case "favorites":
-					return (
-						<WidgetContainer {...commonProps}>
-							<div>
-								<ErrorBoundary>
-									<FavoritesSection />
-								</ErrorBoundary>
-							</div>
-						</WidgetContainer>
-					);
-
-				case "activity":
-					return (
-						<WidgetContainer {...commonProps}>
-							<div>
-								<ErrorBoundary>
-									<ActivitySection />
-								</ErrorBoundary>
-							</div>
-						</WidgetContainer>
-					);
-
-				case "deadlines":
-					return (
-						<WidgetContainer {...commonProps}>
-							<div>
-								<ErrorBoundary>
-									<DeadlinesSection />
-								</ErrorBoundary>
-							</div>
-						</WidgetContainer>
-					);
-
-				default:
-					return null;
-			}
-		},
-		[],
-	);
-
-	// Memoize visible widgets
-	const visibleWidgets = useMemo(
-		() => widgets.filter((w) => w.visible),
-		[widgets],
-	);
+	// Layout of sections is now fixed and minimal; widget layout is not dynamic here.
 
 	// Keyboard shortcut for search
 	useEffect(() => {
@@ -202,6 +108,9 @@ export function Dashboard() {
 							</p>
 						</div>
 						<div className="flex items-center gap-2">
+							<Button onClick={handleCreateBoard} className="gap-2">
+								New project
+							</Button>
 							<Button
 								variant="ghost"
 								onClick={handleSearchOpen}
@@ -211,20 +120,12 @@ export function Dashboard() {
 								<SearchIcon className="h-4 w-4" />
 								<span className="hidden sm:inline text-sm">Search</span>
 							</Button>
-							<Button
-								variant="ghost"
-								size="icon"
-								onClick={handleSettingsOpen}
-								title="Customize dashboard"
-							>
-								<SettingsIcon className="h-4 w-4" />
-							</Button>
 						</div>
 					</div>
-
+					
 					<EmptyOnboarding onCreateBoard={handleCreateBoard} />
 				</div>
-
+			
 				<SettingsDialog
 					open={settingsOpen}
 					onOpenChange={handleSettingsClose}
@@ -240,13 +141,16 @@ export function Dashboard() {
 					<div className="flex items-center justify-between">
 						<div>
 							<h1 className="text-2xl font-semibold tracking-tight text-foreground">
-								Welcome to Modulo
+								Dashboard
 							</h1>
 							<p className="text-sm text-muted-foreground">
-								Organize your work, keep projects on track, and stay focused
+								Organize your projects and keep track of what matters.
 							</p>
 						</div>
 						<div className="flex items-center gap-2">
+							<Button onClick={handleCreateBoard} className="gap-2">
+								New project
+							</Button>
 							<Button
 								variant="ghost"
 								onClick={handleSearchOpen}
@@ -255,10 +159,6 @@ export function Dashboard() {
 							>
 								<SearchIcon className="h-4 w-4" />
 								<span className="hidden sm:inline text-sm">Search</span>
-								<span className="text-xs text-muted-foreground ml-2 hidden sm:inline-flex items-center gap-1">
-									<kbd className="px-1 py-0.5 rounded bg-muted text-xs">⌘</kbd>
-									<kbd className="px-1 py-0.5 rounded bg-muted text-xs">K</kbd>
-								</span>
 							</Button>
 							<Button
 								variant="ghost"
@@ -271,7 +171,7 @@ export function Dashboard() {
 						</div>
 					</div>
 				</div>
-
+			
 				{/* New User Onboarding Tips */}
 				{isNewUser && showNewUserTips && (
 					<NewUserOnboarding
@@ -279,17 +179,45 @@ export function Dashboard() {
 						onOpenSearch={handleSearchOpen}
 					/>
 				)}
-
-				<div className="space-y-8">
-					{visibleWidgets.map((widget) => renderWidget(widget))}
+			
+				<div className="space-y-6">
+					<WidgetContainer title="Overview">
+						<OverviewSection />
+					</WidgetContainer>
+					<WidgetContainer title="Quick actions">
+						<QuickActionsSection
+							onCreateProject={handleCreateBoard}
+							onOpenSearch={handleSearchOpen}
+						/>
+					</WidgetContainer>
+					<div className="grid gap-6 lg:grid-cols-3">
+						<WidgetContainer
+							title="Favorite projects"
+							className="lg:col-span-1"
+						>
+							<FavoritesSection />
+						</WidgetContainer>
+						<WidgetContainer
+							title="Recent activity"
+							className="lg:col-span-2"
+						>
+							<ActivitySection />
+						</WidgetContainer>
+					</div>
 				</div>
 			</div>
-
+		
 			<SettingsDialog open={settingsOpen} onOpenChange={handleSettingsClose} />
-
+		
 			<GlobalSearch
 				open={commandPaletteOpen}
 				onOpenChange={setCommandPaletteOpen}
+			/>
+		
+			<CreateProjectDialog
+				open={createProjectOpen}
+				onOpenChange={setCreateProjectOpen}
+				workspaceId={selectedWorkspaceId}
 			/>
 		</>
 	);

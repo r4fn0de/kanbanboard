@@ -1,7 +1,15 @@
 import { Plus, FileText, Search } from 'lucide-react'
 import { QuickActionCard } from '../cards/QuickActionCard'
 
-export function QuickActionsSection() {
+interface QuickActionsSectionProps {
+  onCreateProject?: () => void
+  onOpenSearch?: () => void
+}
+
+export function QuickActionsSection({
+  onCreateProject,
+  onOpenSearch,
+}: QuickActionsSectionProps) {
   const actions = [
     {
       icon: Plus,
@@ -12,6 +20,7 @@ export function QuickActionsSection() {
       onClick: () => {
         // TODO: Open create board dialog
         console.log('Create board')
+        onCreateProject?.()
       },
     },
     {
@@ -34,6 +43,7 @@ export function QuickActionsSection() {
       onClick: () => {
         // TODO: Open command palette
         console.log('Open search')
+        onOpenSearch?.()
       },
     },
   ]
