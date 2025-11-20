@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { PinIcon, TrashIcon, PenIcon, CalendarIcon } from '@/components/ui/icons'
+import { PinIcon, TrashIcon, CalendarIcon } from '@/components/ui/icons'
 import { cn } from '@/lib/utils'
 import type { Note } from '@/services/notes'
 import { useNotes, useUpdateNote, useDeleteNote } from '@/services/notes'
@@ -205,7 +205,6 @@ function NoteCard({ note, onClick, boardId, expanded, onToggleExpanded }: NoteCa
           <div className="flex items-start justify-between gap-3 mb-2">
             <h3 className="font-semibold line-clamp-1">{note.title}</h3>
             <div className="flex items-center gap-1">
-              <PenIcon className="h-3 w-3 text-muted-foreground" />
               {note.pinned && (
                 <PinIcon className="h-3.5 w-3.5 text-primary flex-shrink-0" />
               )}

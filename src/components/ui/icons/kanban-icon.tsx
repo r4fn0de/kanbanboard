@@ -13,10 +13,10 @@ export function KanbanIcon({ className }: KanbanIconProps) {
       className={cn('h-4 w-4', className)}
     >
       <title>Kanban</title>
-      <path d="M10 3a1 1 0 0 1 0 2H4a1 1 0 1 1 0 -2z" strokeWidth="1"></path>
-      <path d="M20 3a1 1 0 0 1 0 2h-6a1 1 0 0 1 0 -2z" strokeWidth="1"></path>
-      <path d="M8 7a3 3 0 0 1 3 3v8a3 3 0 0 1 -3 3H6a3 3 0 0 1 -3 -3v-8a3 3 0 0 1 3 -3z" strokeWidth="1"></path>
-      <path d="M18 7a3 3 0 0 1 3 3v2a3 3 0 0 1 -3 3h-2a3 3 0 0 1 -3 -3v-2a3 3 0 0 1 3 -3z" strokeWidth="1"></path>
+      <rect x="13" y="11" width="8" height="10" rx="1" ry="1" />
+      <rect x="3" y="15" width="8" height="6" rx="1" ry="1" />
+      <rect x="13" y="3" width="8" height="6" rx="1" ry="1" />
+      <rect x="3" y="3" width="8" height="10" rx="1" ry="1" />
     </svg>
   )
 }

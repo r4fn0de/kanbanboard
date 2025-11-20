@@ -49,8 +49,8 @@ import {
 	useTags,
 	useUpdateCard,
 } from "@/services/kanban";
-import { Plus, Filter, LayoutDashboard } from "lucide-react";
-import { HorizontalSliderIcon, PriorityIcon, PriorityLowIcon, PriorityMediumIcon, PriorityHighIcon } from "@/components/ui/icons";
+import { Plus } from "lucide-react";
+import { HorizontalSliderIcon, PriorityIcon, PriorityLowIcon, PriorityMediumIcon, PriorityHighIcon, FilterIcon, DashboardAltIcon } from "@/components/ui/icons";
 import type { ComponentType } from "react";
 import type {
 	DragEndEvent,
@@ -1089,7 +1089,7 @@ export function BoardDetailView({
 						className="h-9 gap-2 rounded-lg border-border/60 bg-background/80 px-3 text-xs font-medium text-foreground hover:bg-accent hover:text-accent-foreground hover:shadow-sm"
 						type="button"
 					>
-						<Filter className="h-3.5 w-3.5" />
+						<FilterIcon className="h-3.5 w-3.5" />
 						<span>Filters</span>
 					</Button>
 				</PopoverTrigger>
@@ -1372,7 +1372,7 @@ export function BoardDetailView({
 						className="h-9 gap-2 rounded-lg border-border/60 bg-background/80 px-3 text-xs font-medium text-foreground hover:bg-accent hover:text-accent-foreground hover:shadow-sm"
 						type="button"
 					>
-						<LayoutDashboard className="h-3.5 w-3.5" />
+						<DashboardAltIcon className="h-3.5 w-3.5" />
 						<span>Display</span>
 					</Button>
 				</PopoverTrigger>

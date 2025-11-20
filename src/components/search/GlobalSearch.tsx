@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { Search, FileText, Folder, StickyNote, Command } from 'lucide-react'
+import { FileText, Folder, StickyNote, Command } from 'lucide-react'
+import { SearchIcon } from '@/components/ui/icons'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useGlobalSearch, type SearchResult } from '@/hooks/useGlobalSearch'
 import { cn } from '@/lib/utils'
@@ -157,7 +158,7 @@ export function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) {
             <div className="bg-background border rounded-lg shadow-2xl overflow-hidden">
               {/* Search Input */}
               <div className="flex items-center gap-3 px-4 py-3 border-b">
-                <Search className="h-5 w-5 text-muted-foreground" />
+                <SearchIcon className="h-5 w-5 text-muted-foreground" />
                 <input
                   ref={inputRef}
                   type="text"
@@ -180,7 +181,7 @@ export function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) {
                   </div>
                 ) : query.trim().length === 0 ? (
                   <div className="px-4 py-8 text-center text-sm text-muted-foreground">
-                    <Search className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                    <SearchIcon className="h-8 w-8 mx-auto mb-2 opacity-50" />
                     <p>Start typing to search...</p>
                     <p className="mt-1 text-xs">
                       Search across boards, tasks, and notes

@@ -15,9 +15,9 @@ import { Calendar } from '@/components/ui/calendar'
 import { useTheme } from '@/hooks/use-theme'
 import { cn } from '@/lib/utils'
 import type { KanbanCard } from '@/types/common'
-import { Trash2, Copy, Eye, Circle, Check, Tag, Plus, Bell } from 'lucide-react'
+import { Circle, Check, Plus } from 'lucide-react'
 import { notifications } from '@/lib/notifications'
-import { PaperclipIcon, PriorityIcon, PriorityLowIcon, PriorityMediumIcon, PriorityHighIcon, CalendarIcon } from '@/components/ui/icons'
+import { PaperclipIcon, PriorityIcon, PriorityLowIcon, PriorityMediumIcon, PriorityHighIcon, CalendarIcon, CalendarPlusIcon, CopyIcon, TrashIcon, BellIcon, EyeIcon, TagIcon } from '@/components/ui/icons'
 import { useTags, useUpdateCardTags, useCreateTag, useUpdateCard } from '@/services/kanban'
 import type { ComponentType } from 'react'
 import * as React from 'react'
@@ -674,7 +674,7 @@ export function KanbanCardItem({
             onSelect?.(card)
           }}
         >
-          <Eye className="h-4 w-4" />
+          <EyeIcon className="h-4 w-4" />
           Open details
         </ContextMenuItem>
 
@@ -743,7 +743,7 @@ export function KanbanCardItem({
 
         <ContextMenuSub>
           <ContextMenuSubTrigger className="flex items-center gap-2">
-            <Tag className="h-4 w-4" />
+            <TagIcon className="h-4 w-4" />
             Tags
           </ContextMenuSubTrigger>
           <ContextMenuSubContent className="w-72">
@@ -879,7 +879,7 @@ export function KanbanCardItem({
           }}
         >
           <ContextMenuSubTrigger className="flex items-center gap-2">
-            <CalendarIcon className="h-4 w-4" />
+            <CalendarPlusIcon className="h-4 w-4" />
             {card.dueDate ? 'Change due date' : 'Set due date'}
           </ContextMenuSubTrigger>
           <ContextMenuSubContent className="w-72">
@@ -1181,7 +1181,7 @@ export function KanbanCardItem({
           }}
         >
           <ContextMenuSubTrigger className="flex items-center gap-2">
-            <Bell className="h-4 w-4" />
+            <BellIcon className="h-4 w-4" />
             {card.remindAt ? 'Change reminder' : 'Remind me'}
           </ContextMenuSubTrigger>
           <ContextMenuSubContent className="w-72">
@@ -1468,7 +1468,7 @@ export function KanbanCardItem({
             }
           }}
         >
-          <Copy className="h-4 w-4" />
+          <CopyIcon className="h-4 w-4" />
           {isDuplicating ? 'Duplicating...' : 'Duplicate task'}
         </ContextMenuItem>
         <ContextMenuItem
@@ -1485,7 +1485,7 @@ export function KanbanCardItem({
             }
           }}
         >
-          <Trash2 className="h-4 w-4" />
+          <TrashIcon className="h-4 w-4" />
           {isDeleting ? 'Deleting...' : 'Delete task'}
         </ContextMenuItem>
       </ContextMenuContent>

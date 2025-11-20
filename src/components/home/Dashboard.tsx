@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { Link } from "react-router-dom";
-import { Search } from "lucide-react";
 import { SettingsIcon } from "@/components/ui/icons/settings";
+import { SearchIcon } from "@/components/ui/icons";
 import { useWidgetLayout } from "@/hooks/useWidgetLayout";
 import { useWorkspaceStatus } from "@/hooks/useWorkspaceStatus";
 import { useUIStore } from "@/store/ui-store";
@@ -208,7 +208,7 @@ export function Dashboard() {
 								className="gap-2"
 								title="Search (Cmd+K)"
 							>
-								<Search className="h-4 w-4" />
+								<SearchIcon className="h-4 w-4" />
 								<span className="hidden sm:inline text-sm">Search</span>
 							</Button>
 							<Button
@@ -253,7 +253,7 @@ export function Dashboard() {
 								className="gap-2"
 								title="Search (Cmd+K)"
 							>
-								<Search className="h-4 w-4" />
+								<SearchIcon className="h-4 w-4" />
 								<span className="hidden sm:inline text-sm">Search</span>
 								<span className="text-xs text-muted-foreground ml-2 hidden sm:inline-flex items-center gap-1">
 									<kbd className="px-1 py-0.5 rounded bg-muted text-xs">⌘</kbd>

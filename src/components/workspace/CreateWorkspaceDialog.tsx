@@ -7,6 +7,7 @@ import {
 	useId,
 } from "react";
 import { X, Upload, Palette } from "lucide-react";
+import { PaintPaletteIcon } from "@/components/ui/icons";	
 import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import { readFile } from "@tauri-apps/plugin-fs";
 import { invoke } from "@tauri-apps/api/core";
@@ -333,7 +334,7 @@ export function CreateWorkspaceDialog({
 							{!workspaceIconPreview && (
 								<div className="space-y-3">
 									<Label className="text-sm font-medium flex items-center gap-2">
-										<Palette className="h-4 w-4" />
+										<PaintPaletteIcon className="h-4 w-4" />
 										Color
 									</Label>
 									<div className="flex flex-wrap gap-2">

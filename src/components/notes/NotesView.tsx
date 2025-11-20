@@ -5,7 +5,8 @@ import { NoteEditor } from './NoteEditor'
 import { BoardNavbar } from '@/components/kanban/BoardNavbar'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Plus, Search } from 'lucide-react'
+import { Plus } from 'lucide-react'
+import { SearchIcon } from '@/components/ui/icons'
 import { useBoards } from '@/services/kanban'
 import { useWorkspaces } from '@/services/workspaces'
 import { useCreateNote } from '@/services/notes'
@@ -88,7 +89,7 @@ export function NotesView() {
   const notesControls = !selectedNote ? (
     <>
       <div className="relative flex-1 max-w-md">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <SearchIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
           value={searchQuery}
           onChange={e => setSearchQuery(e.target.value)}
