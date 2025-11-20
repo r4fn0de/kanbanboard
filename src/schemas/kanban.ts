@@ -135,6 +135,7 @@ export const createCardSchema = z.object({
   position: nonNegativeIntSchema,
   priority: prioritySchema,
   dueDate: optionalNullableStringSchema,
+  remindAt: optionalNullableStringSchema,
   tagIds: z.array(entityIdSchema).optional(),
 })
 
@@ -149,6 +150,8 @@ export const updateCardSchema = z
     priority: prioritySchema.optional(),
     dueDate: optionalNullableStringSchema,
     clearDueDate: z.boolean().optional(),
+    remindAt: optionalNullableStringSchema,
+    clearRemindAt: z.boolean().optional(),
   })
   .refine(
     payload =>
@@ -156,7 +159,9 @@ export const updateCardSchema = z
       'description' in payload ||
       'priority' in payload ||
       'dueDate' in payload ||
-      'clearDueDate' in payload,
+      'clearDueDate' in payload ||
+      'remindAt' in payload ||
+      'clearRemindAt' in payload,
     {
       message: 'At least one field must be provided',
       path: ['title'],

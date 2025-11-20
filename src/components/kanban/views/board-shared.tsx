@@ -3,47 +3,13 @@ import { Popover } from '@base-ui-components/react/popover'
 import { cn } from '@/lib/utils'
 import type { KanbanCard } from '@/types/common'
 import { ChevronDown } from 'lucide-react'
-import { PaperclipIcon, PriorityIcon, PriorityLowIcon, PriorityMediumIcon, PriorityHighIcon, CalendarIcon } from '@/components/ui/icons'
+import { PaperclipIcon, CalendarIcon } from '@/components/ui/icons'
 import {
   CARD_DUE_STATUS_STYLES,
   getCardDueMetadata,
 } from './card-date'
-import type { ComponentType } from 'react'
 import { getTagBadgeStyle } from '../tags/utils'
-
-const PRIORITY_VARIANTS: Record<
-  KanbanCard['priority'],
-  {
-    label: string
-    className: string
-    icon: ComponentType<{ className?: string }>
-  }
-> = {
-  none: {
-    label: 'No priority',
-    className:
-      'bg-muted text-muted-foreground dark:bg-muted/40 dark:text-muted-foreground',
-    icon: PriorityIcon,
-  },
-  low: {
-    label: 'Low',
-    className:
-      'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400',
-    icon: PriorityLowIcon,
-  },
-  medium: {
-    label: 'Medium',
-    className:
-      'bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-400',
-    icon: PriorityMediumIcon,
-  },
-  high: {
-    label: 'High',
-    className:
-      'bg-rose-100 text-rose-700 dark:bg-rose-950/50 dark:text-rose-400',
-    icon: PriorityHighIcon,
-  },
-}
+import { PRIORITY_VARIANTS } from './priority-variants'
 
 export { CalendarIcon }
 export function PriorityBadge({

@@ -1622,12 +1622,13 @@ export function BoardDetailView({
 
 			{/* Botão de Gerenciar Colunas */}
 			<Button
-				variant="ghost"
-				className="h-9 rounded-lg bg-background/80 backdrop-blur-sm px-3.5 text-xs font-medium transition-all duration-200 hover:bg-accent hover:text-accent-foreground hover:shadow-sm"
+				variant="outline"
+				size="sm"
+				className="h-9 gap-2 rounded-lg border-border/60 bg-background/80 px-3 text-xs font-medium text-foreground hover:bg-accent hover:text-accent-foreground hover:shadow-sm"
 				onClick={() => setIsColumnManagerOpen(true)}
 			>
-				<HorizontalSliderIcon className="mr-1.5 h-3.5 w-3.5" />
-				Manage
+				<HorizontalSliderIcon className="h-3.5 w-3.5" />
+				<span>Manage</span>
 			</Button>
 		</div>
 	);

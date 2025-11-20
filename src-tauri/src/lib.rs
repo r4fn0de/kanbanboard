@@ -14,6 +14,8 @@ use std::path::{Path, PathBuf};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tauri::menu::{MenuBuilder, MenuItemBuilder, PredefinedMenuItem, SubmenuBuilder};
 use tauri::{AppHandle, Emitter, Manager, State};
+use chrono::{DateTime, Utc};
+use tokio::time as tokio_time;
 use tauri_plugin_opener::OpenerExt;
 use uuid::Uuid;
 use sha2::{Digest, Sha256};
@@ -603,6 +605,10 @@ struct UpdateCardArgs {
     due_date: Option<Option<String>>,
     #[serde(default)]
     clear_due_date: Option<bool>,
+    #[serde(default)]
+    remind_at: Option<Option<String>>,
+    #[serde(default)]
+    clear_remind_at: Option<bool>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -711,7 +717,7 @@ struct UpdateWorkspaceArgs {
 }
 
 #[tauri::command]
-async fn update_card(pool: State<'_, DbPool>, args: UpdateCardArgs) -> Result<(), String> {
+async fn update_card(app: AppHandle, pool: State<'_, DbPool>, args: UpdateCardArgs) -> Result<(), String> {
     log::info!(
         "Attempting to update card with id: {}, board_id: {}",
         args.id,
@@ -750,6 +756,7 @@ async fn update_card(pool: State<'_, DbPool>, args: UpdateCardArgs) -> Result<()
     }
 
     let mut has_changes = false;
+    let mut new_remind_at: Option<String> = None;
 
     // Build the SQL query manually
     let mut sql =
@@ -814,6 +821,29 @@ async fn update_card(pool: State<'_, DbPool>, args: UpdateCardArgs) -> Result<()
         has_changes = true;
     }
 
+    // Handle reminder update
+    if args.clear_remind_at.unwrap_or(false) {
+        sql.push_str(", remind_at = NULL");
+        has_changes = true;
+    } else if let Some(ref remind_at) = args.remind_at {
+        match remind_at {
+            Some(value) => {
+                let trimmed = value.trim();
+                if trimmed.is_empty() {
+                    sql.push_str(", remind_at = NULL");
+                } else {
+                    let escaped = trimmed.replace('\'', "''");
+                    sql.push_str(&format!(", remind_at = '{}'", escaped));
+                    new_remind_at = Some(trimmed.to_string());
+                }
+            }
+            None => {
+                sql.push_str(", remind_at = NULL");
+            }
+        }
+        has_changes = true;
+    }
+
     if !has_changes {
         log::info!(
             "update_card: no changes detected for card id {}, skipping UPDATE",
@@ -832,6 +862,12 @@ async fn update_card(pool: State<'_, DbPool>, args: UpdateCardArgs) -> Result<()
         format!("Falha ao atualizar cartão: {e}")
     })?;
 
+    // Schedule reminder notification if a new remind_at was set
+    if let Some(when) = new_remind_at.clone() {
+        let app_handle = app.clone();
+        schedule_card_reminder(app_handle, when, args.id.clone());
+    }
+
     log::info!("Update affected {} rows", result.rows_affected());
 
     tx.commit().await.map_err(|e| {
@@ -841,6 +877,47 @@ async fn update_card(pool: State<'_, DbPool>, args: UpdateCardArgs) -> Result<()
 
     log::info!("Card update completed successfully");
     Ok(())
+}
+
+fn schedule_card_reminder(app: AppHandle, when_iso: String, card_id: String) {
+    log::info!("Scheduling reminder for card {} at {}", card_id, when_iso);
+
+    tauri::async_runtime::spawn(async move {
+        let parsed = match DateTime::parse_from_rfc3339(&when_iso) {
+            Ok(dt) => dt.with_timezone(&Utc),
+            Err(e) => {
+                log::warn!(
+                    "Failed to parse remind_at '{}' for card {}: {}",
+                    when_iso, card_id, e
+                );
+                return;
+            }
+        };
+
+        let now = Utc::now();
+        let delay_ms = (parsed - now).num_milliseconds();
+
+        if delay_ms <= 0 {
+            log::info!(
+                "Reminder time already passed or is now for card {}, firing immediately",
+                card_id
+            );
+        } else {
+            let delay = delay_ms as u64;
+            log::info!("Waiting {} ms before firing reminder for card {}", delay, card_id);
+            tokio_time::sleep(Duration::from_millis(delay)).await;
+        }
+
+        if let Err(e) = send_native_notification(
+            app,
+            "Task reminder".to_string(),
+            Some(format!("You asked to be reminded about card {}", card_id)),
+        )
+        .await
+        {
+            log::error!("Failed to send scheduled reminder notification for card {}: {}", card_id, e);
+        }
+    });
 }
 
 #[tauri::command]
@@ -1061,6 +1138,7 @@ async fn initialize_schema(pool: &DbPool) -> Result<(), String> {
     ensure_board_icon_column(pool).await?;
     ensure_board_emoji_color_columns(pool).await?;
     ensure_card_attachments_column(pool).await?;
+    ensure_card_remind_at_column(pool).await?;
     ensure_column_customization_columns(pool).await?;
     ensure_notes_board_id_column(pool).await?;
     ensure_board_favorite_column(pool).await?;
@@ -1149,6 +1227,30 @@ async fn ensure_card_attachments_column(pool: &DbPool) -> Result<(), String> {
         println!("Attachments column added successfully");
     } else {
         println!("Attachments column already exists in kanban_cards table");
+    }
+
+    Ok(())
+}
+
+async fn ensure_card_remind_at_column(pool: &DbPool) -> Result<(), String> {
+    let column_exists = sqlx::query_scalar::<_, Option<i64>>(
+        "SELECT 1 FROM pragma_table_info('kanban_cards') WHERE name = 'remind_at' LIMIT 1",
+    )
+    .fetch_optional(pool)
+    .await
+    .map_err(|e| format!("Failed to inspect kanban_cards schema: {e}"))?
+    .flatten()
+    .is_some();
+
+    if !column_exists {
+        println!("Adding remind_at column to kanban_cards table");
+        sqlx::query("ALTER TABLE kanban_cards ADD COLUMN remind_at TEXT")
+            .execute(pool)
+            .await
+            .map_err(|e| format!("Failed to add remind_at column to kanban_cards: {e}"))?;
+        println!("remind_at column added successfully");
+    } else {
+        println!("remind_at column already exists in kanban_cards table");
     }
 
     Ok(())
@@ -1424,6 +1526,7 @@ fn map_card_row(row: SqliteRow) -> Result<Value, sqlx::Error> {
     let position: i64 = row.try_get("position")?;
     let priority: String = row.try_get("priority")?;
     let due_date: Option<String> = row.try_get("due_date")?;
+    let remind_at: Option<String> = row.try_get("remind_at")?;
     let created_at: String = row.try_get("created_at")?;
     let updated_at: String = row.try_get("updated_at")?;
     let archived_at: Option<String> = row.try_get("archived_at")?;
@@ -1486,6 +1589,7 @@ fn map_card_row(row: SqliteRow) -> Result<Value, sqlx::Error> {
         "position": position,
         "priority": priority,
         "dueDate": due_date,
+        "remindAt": remind_at,
         "attachments": attachments,
         "createdAt": created_at,
         "updatedAt": updated_at,
@@ -2523,6 +2627,7 @@ async fn load_cards(pool: State<'_, DbPool>, board_id: String) -> Result<Vec<Val
             c.position,
             c.priority,
             c.due_date,
+            c.remind_at,
             c.attachments AS legacy_attachments,
             (
                 SELECT json_group_array(

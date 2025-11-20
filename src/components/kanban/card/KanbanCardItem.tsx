@@ -11,10 +11,12 @@ import {
   ContextMenuSubContent,
   ContextMenuSubTrigger,
 } from '@/components/ui/context-menu'
+import { Calendar } from '@/components/ui/calendar'
 import { useTheme } from '@/hooks/use-theme'
 import { cn } from '@/lib/utils'
 import type { KanbanCard } from '@/types/common'
-import { Trash2, Copy, Eye, Circle, Check, Tag, Plus } from 'lucide-react'
+import { Trash2, Copy, Eye, Circle, Check, Tag, Plus, Bell } from 'lucide-react'
+import { notifications } from '@/lib/notifications'
 import { PaperclipIcon, PriorityIcon, PriorityLowIcon, PriorityMediumIcon, PriorityHighIcon, CalendarIcon } from '@/components/ui/icons'
 import { useTags, useUpdateCardTags, useCreateTag, useUpdateCard } from '@/services/kanban'
 import type { ComponentType } from 'react'
@@ -109,6 +111,15 @@ export function KanbanCardItem({
   const [isDuplicating, setIsDuplicating] = React.useState(false)
   const [tagQuery, setTagQuery] = React.useState('')
   const [dueQuery, setDueQuery] = React.useState('')
+  const [remindQuery, setRemindQuery] = React.useState('')
+  const [isCustomCalendarOpen, setIsCustomCalendarOpen] = React.useState(false)
+  const [customDueDate, setCustomDueDate] = React.useState<Date | undefined>(
+    card.dueDate ? new Date(card.dueDate) : undefined
+  )
+  const [isCustomRemindCalendarOpen, setIsCustomRemindCalendarOpen] = React.useState(false)
+  const [customRemindDate, setCustomRemindDate] = React.useState<Date | undefined>(
+    card.remindAt ? new Date(card.remindAt) : undefined
+  )
   const { theme } = useTheme()
   const isDarkMode =
     theme === 'dark' ||
@@ -145,6 +156,7 @@ export function KanbanCardItem({
   const displayTags = tagList.slice(0, maxVisibleTags)
   const remainingTags = tagList.length - displayTags.length
   const dueMetadata = getCardDueMetadata(card.dueDate)
+  const remindDate = card.remindAt ? new Date(card.remindAt) : null
   const hasAttachments = card.attachments && card.attachments.length > 0
   const priorityConfig = PRIORITY_CONFIG[card.priority]
   const PriorityIcon = priorityConfig.icon
@@ -176,6 +188,57 @@ export function KanbanCardItem({
   >(null)
 
   const normalizedDueQuery = dueQuery.trim().toLowerCase()
+
+  const formatRemindDisplay = React.useCallback((date: Date): string => {
+    const now = new Date()
+
+    const sameDay =
+      date.getFullYear() === now.getFullYear() &&
+      date.getMonth() === now.getMonth() &&
+      date.getDate() === now.getDate()
+
+    const tomorrow = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate() + 1
+    )
+
+    const isTomorrow =
+      date.getFullYear() === tomorrow.getFullYear() &&
+      date.getMonth() === tomorrow.getMonth() &&
+      date.getDate() === tomorrow.getDate()
+
+    const hours = date.getHours()
+    const minutes = date.getMinutes()
+    const ampm = hours >= 12 ? 'PM' : 'AM'
+    const hour12 = hours % 12 || 12
+    const minuteStr = minutes.toString().padStart(2, '0')
+    const timeStr = `${hour12}:${minuteStr} ${ampm}`
+
+    if (sameDay) return `Today · ${timeStr}`
+    if (isTomorrow) return `Tomorrow · ${timeStr}`
+
+    const weekday = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][
+      date.getDay()
+    ]
+    const month = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ][date.getMonth()]
+    const day = date.getDate()
+
+    return `${weekday}, ${day} ${month} · ${timeStr}`
+  }, [])
 
   React.useEffect(() => {
     const q = tagQuery.trim().toLowerCase()
@@ -464,12 +527,44 @@ export function KanbanCardItem({
     [applyDueDate, card.boardId]
   )
 
+  const applyRemindAt = React.useCallback(
+    (date: Date | null | undefined) => {
+      if (!card.boardId) return
+
+      if (!date) {
+        updateCard.mutate({
+          id: card.id,
+          boardId: card.boardId,
+          clearRemindAt: true,
+        })
+        return
+      }
+
+      const iso = date.toISOString()
+
+      // Fire a toast to confirm reminder was set
+      const formatted = formatRemindDisplay(date)
+      void notifications.success(
+        'Reminder set',
+        `You will receive a reminder on ${formatted}`
+      )
+
+      updateCard.mutate({
+        id: card.id,
+        boardId: card.boardId,
+        remindAt: iso,
+      })
+    },
+    [card.boardId, card.id, updateCard, formatRemindDisplay]
+  )
+
   const subtasks = card.subtasks ?? []
   const totalSubtasks = subtasks.length
   const completedSubtasks = subtasks.filter(subtask => subtask.isCompleted).length
 
   return (
-    <ContextMenu>
+    <>
+      <ContextMenu>
       <ContextMenuTrigger asChild>
         <button
           type="button"
@@ -776,10 +871,16 @@ export function KanbanCardItem({
           </ContextMenuSubContent>
         </ContextMenuSub>
 
-        <ContextMenuSub>
+        <ContextMenuSub
+          onOpenChange={open => {
+            if (!open) {
+              setIsCustomCalendarOpen(false)
+            }
+          }}
+        >
           <ContextMenuSubTrigger className="flex items-center gap-2">
             <CalendarIcon className="h-4 w-4" />
-            Set due date
+            {card.dueDate ? 'Change due date' : 'Set due date'}
           </ContextMenuSubTrigger>
           <ContextMenuSubContent className="w-72">
             <div className="px-1.5 py-1">
@@ -1014,8 +1115,45 @@ export function KanbanCardItem({
                 </div>
               </ContextMenuItem>
             )}
+            {(!normalizedDueQuery || 'custom date'.startsWith(normalizedDueQuery)) && (
+              <>
+                <ContextMenuItem
+                  className="flex items-center gap-2"
+                  onSelect={event => {
+                    event.preventDefault()
+                    setCustomDueDate(
+                      card.dueDate ? new Date(card.dueDate) : undefined
+                    )
+                    setIsCustomCalendarOpen(prev => !prev)
+                  }}
+                >
+                  <div className="flex w-full items-center justify-between">
+                    <span className="text-xs">Custom date…</span>
+                    <span className="text-[11px] text-muted-foreground">
+                      Open calendar
+                    </span>
+                  </div>
+                </ContextMenuItem>
+                {isCustomCalendarOpen && (
+                  <div className="px-1.5 pb-2 pt-1 flex justify-center">
+                    <Calendar
+                      className="scale-90 origin-top bg-transparent p-0"
+                      mode="single"
+                      selected={customDueDate}
+                      onSelect={date => {
+                        if (!date) return
+                        setCustomDueDate(date)
+                        applyDueDate(date)
+                        setDueQuery('')
+                      }}
+                    />
+                  </div>
+                )}
+              </>
+            )}
             {(!normalizedDueQuery || 'clear due date'.startsWith(normalizedDueQuery)) && (
               <ContextMenuItem
+                variant={card.dueDate ? 'destructive' : 'default'}
                 className={cn(
                   'flex items-center gap-2',
                   activeDuePreset === 'clear' && 'bg-muted text-foreground'
@@ -1023,10 +1161,269 @@ export function KanbanCardItem({
                 onSelect={() => handleApplyDuePreset('clear')}
               >
                 <div className="flex w-full items-center justify-between">
-                  <span className="text-xs text-muted-foreground">Clear due date</span>
-                  <span className="text-[11px] text-muted-foreground">No date</span>
+                  <span className="text-xs text-muted-foreground">
+                    {card.dueDate ? 'Remove due date' : 'Clear due date'}
+                  </span>
+                  <span className="text-[11px] text-muted-foreground">
+                    {card.dueDate && dueMetadata ? dueMetadata.display : 'No date'}
+                  </span>
                 </div>
               </ContextMenuItem>
+            )}
+          </ContextMenuSubContent>
+        </ContextMenuSub>
+
+        <ContextMenuSub
+          onOpenChange={open => {
+            if (!open) {
+              setIsCustomRemindCalendarOpen(false)
+            }
+          }}
+        >
+          <ContextMenuSubTrigger className="flex items-center gap-2">
+            <Bell className="h-4 w-4" />
+            {card.remindAt ? 'Change reminder' : 'Remind me'}
+          </ContextMenuSubTrigger>
+          <ContextMenuSubContent className="w-72">
+            <div className="px-1.5 py-1">
+              <input
+                value={remindQuery}
+                onChange={event => setRemindQuery(event.target.value)}
+                placeholder="Try: 4 pm, in 2 hours"
+                className="w-full rounded-md px-1.5 py-0.5 text-[11px] outline-none"
+                onKeyDown={event => {
+                  event.stopPropagation()
+                  if (event.key === 'Enter') {
+                    event.preventDefault()
+                    const trimmed = remindQuery.trim()
+                    if (!trimmed) {
+                      applyRemindAt(null)
+                      setRemindQuery('')
+                      return
+                    }
+                    const parsed = (() => {
+                      const raw = trimmed.toLowerCase()
+                      const now = new Date()
+
+                      const hoursMatch = raw.match(/^in\s+(\d+)\s+(h|hr|hour|hours)$/)
+                      if (hoursMatch) {
+                        const amount = Number(hoursMatch[1])
+                        if (!Number.isNaN(amount) && amount > 0) {
+                          return new Date(now.getTime() + amount * 60 * 60 * 1000)
+                        }
+                      }
+
+                      const daysMatch = raw.match(/^in\s+(\d+)\s+(d|day|days)$/)
+                      if (daysMatch) {
+                        const amount = Number(daysMatch[1])
+                        if (!Number.isNaN(amount) && amount > 0) {
+                          const d = new Date(
+                            now.getFullYear(),
+                            now.getMonth(),
+                            now.getDate() + amount,
+                            9,
+                            0,
+                            0,
+                            0
+                          )
+                          return d
+                        }
+                      }
+
+                      const timeMatch = raw.match(
+                        /^(\d{1,2})(?::(\d{2}))?\s*(am|pm)?$/
+                      )
+                      if (timeMatch) {
+                        let hour = Number(timeMatch[1])
+                        const minute = timeMatch[2]
+                          ? Number(timeMatch[2])
+                          : 0
+                        const ampm = timeMatch[3]
+
+                        if (!Number.isNaN(hour) && !Number.isNaN(minute)) {
+                          if (ampm === 'pm' && hour < 12) {
+                            hour += 12
+                          }
+                          if (ampm === 'am' && hour === 12) {
+                            hour = 0
+                          }
+                          if (hour >= 0 && hour < 24 && minute >= 0 && minute < 60) {
+                            const d = new Date(
+                              now.getFullYear(),
+                              now.getMonth(),
+                              now.getDate(),
+                              hour,
+                              minute,
+                              0,
+                              0
+                            )
+                            if (d <= now) {
+                              d.setDate(d.getDate() + 1)
+                            }
+                            return d
+                          }
+                        }
+                      }
+
+                      const parsedDate = new Date(trimmed)
+                      if (!Number.isNaN(parsedDate.getTime())) {
+                        return parsedDate
+                      }
+
+                      return null
+                    })()
+
+                    if (parsed) {
+                      applyRemindAt(parsed)
+                      setRemindQuery('')
+                    }
+                  }
+                  if (event.key === 'Escape') {
+                    setRemindQuery('')
+                  }
+                }}
+              />
+            </div>
+            <ContextMenuSeparator />
+
+            <ContextMenuItem
+              className="flex items-center gap-2"
+              onSelect={() => {
+                const now = new Date()
+                const d = new Date(now.getTime() + 60 * 60 * 1000)
+                applyRemindAt(d)
+                setRemindQuery('')
+              }}
+            >
+              <div className="flex w-full items-center justify-between">
+                <span className="text-xs">An hour from now</span>
+              </div>
+            </ContextMenuItem>
+
+            <ContextMenuItem
+              className="flex items-center gap-2"
+              onSelect={() => {
+                const now = new Date()
+                const d = new Date(
+                  now.getFullYear(),
+                  now.getMonth(),
+                  now.getDate() + 1,
+                  9,
+                  0,
+                  0,
+                  0
+                )
+                applyRemindAt(d)
+                setRemindQuery('')
+              }}
+            >
+              <div className="flex w-full items-center justify-between">
+                <span className="text-xs">Tomorrow (9:00)</span>
+              </div>
+            </ContextMenuItem>
+
+            <ContextMenuItem
+              className="flex items-center gap-2"
+              onSelect={() => {
+                const now = new Date()
+                const d = new Date(
+                  now.getFullYear(),
+                  now.getMonth(),
+                  now.getDate() + 7,
+                  9,
+                  0,
+                  0,
+                  0
+                )
+                applyRemindAt(d)
+                setRemindQuery('')
+              }}
+            >
+              <div className="flex w-full items-center justify-between">
+                <span className="text-xs">Next week (9:00)</span>
+              </div>
+            </ContextMenuItem>
+
+            <ContextMenuItem
+              className="flex items-center gap-2"
+              onSelect={() => {
+                const now = new Date()
+                const d = new Date(
+                  now.getFullYear(),
+                  now.getMonth() + 1,
+                  now.getDate(),
+                  9,
+                  0,
+                  0,
+                  0
+                )
+                applyRemindAt(d)
+                setRemindQuery('')
+              }}
+            >
+              <div className="flex w-full items-center justify-between">
+                <span className="text-xs">A month from now (9:00)</span>
+              </div>
+            </ContextMenuItem>
+
+            <ContextMenuItem
+              className="flex items-center gap-2"
+              onSelect={event => {
+                event.preventDefault()
+                setCustomRemindDate(remindDate ?? new Date())
+                setIsCustomRemindCalendarOpen(prev => !prev)
+              }}
+            >
+              <div className="flex w-full items-center justify-between">
+                <span className="text-xs">Custom…</span>
+                <span className="text-[11px] text-muted-foreground">
+                  Open calendar
+                </span>
+              </div>
+            </ContextMenuItem>
+            {isCustomRemindCalendarOpen && (
+              <div className="px-1.5 pb-2 pt-1 flex justify-center">
+                <Calendar
+                  className="scale-90 origin-top bg-transparent p-0"
+                  mode="single"
+                  selected={customRemindDate}
+                  onSelect={date => {
+                    if (!date) return
+                    setCustomRemindDate(date)
+                    const withTime = new Date(
+                      date.getFullYear(),
+                      date.getMonth(),
+                      date.getDate(),
+                      9,
+                      0,
+                      0,
+                      0
+                    )
+                    applyRemindAt(withTime)
+                    setRemindQuery('')
+                  }}
+                />
+              </div>
+            )}
+
+            {card.remindAt && (
+              <>
+                <ContextMenuSeparator />
+                <ContextMenuItem
+                  variant="destructive"
+                  className="flex items-center gap-2"
+                  onSelect={() => {
+                    applyRemindAt(null)
+                    setRemindQuery('')
+                  }}
+                >
+                  <div className="flex w-full items-center justify-between">
+                    <span className="text-xs text-muted-foreground">
+                      Remove reminder
+                    </span>
+                  </div>
+                </ContextMenuItem>
+              </>
             )}
           </ContextMenuSubContent>
         </ContextMenuSub>
@@ -1093,5 +1490,6 @@ export function KanbanCardItem({
         </ContextMenuItem>
       </ContextMenuContent>
     </ContextMenu>
+    </>
   )
 }

@@ -33,7 +33,7 @@ import type { KanbanCard, KanbanColumn } from "@/types/common";
 import {
 	Plus,
 } from "lucide-react";
-import { PaperclipIcon, PriorityLowIcon, PriorityMediumIcon, PriorityHighIcon, CalendarIcon } from "@/components/ui/icons";
+import { PaperclipIcon, CalendarIcon } from "@/components/ui/icons";
 import { Badge } from "@/components/ui/badge";
 import { useMemo, useState, useCallback } from "react";
 import "../../../styles/kanban.css";
@@ -46,6 +46,7 @@ import {
 	DEFAULT_COLUMN_ICON,
 	FALLBACK_COLUMN_COLORS,
 } from "@/constants/kanban-columns";
+import { PRIORITY_VARIANTS } from "./priority-variants";
 
 interface BoardKanbanViewProps {
 	columns: KanbanColumn[];
@@ -324,27 +325,7 @@ function CardOverlay({
 	const totalSubtasks = subtasks.length;
 	const completedSubtasks = subtasks.filter((subtask) => subtask.isCompleted).length;
 
-	const priorityConfig = {
-		low: {
-			label: "Low",
-			className:
-				"bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400",
-			icon: PriorityLowIcon,
-		},
-		medium: {
-			label: "Medium",
-			className:
-				"bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-400",
-			icon: PriorityMediumIcon,
-		},
-		high: {
-			label: "High",
-			className:
-				"bg-rose-100 text-rose-700 dark:bg-rose-950/50 dark:text-rose-400",
-			icon: PriorityHighIcon,
-		},
-	}[card.priority];
-
+	const priorityConfig = PRIORITY_VARIANTS[card.priority] ?? PRIORITY_VARIANTS.none;
 	const PriorityIcon = priorityConfig.icon;
 
 	return (

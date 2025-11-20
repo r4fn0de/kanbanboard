@@ -732,6 +732,7 @@ export async function createCard(input: CreateCardInput): Promise<void> {
 		...payload,
 		description: payload.description ?? null,
 		dueDate: payload.dueDate ?? null,
+		remindAt: payload.remindAt ?? null,
 		tagIds: payload.tagIds ?? [],
 	});
 }
@@ -1056,6 +1057,10 @@ export async function updateCard(input: UpdateCardInput): Promise<void> {
 		...(payload.clearDueDate !== undefined
 			? { clearDueDate: payload.clearDueDate }
 			: {}),
+		...(payload.remindAt !== undefined ? { remindAt: payload.remindAt } : {}),
+		...(payload.clearRemindAt !== undefined
+			? { clearRemindAt: payload.clearRemindAt }
+			: {}),
 	};
 
 	console.log("Sending update_card request:", { args });
@@ -1106,8 +1111,10 @@ export function useUpdateCard(boardId: string) {
 				const hasPriority = Object.hasOwn(input, "priority");
 				const hasDueDate = Object.hasOwn(input, "dueDate");
 				const hasClearDueDate = Object.hasOwn(input, "clearDueDate");
+				const hasRemindAt = Object.hasOwn(input, "remindAt");
+				const hasClearRemindAt = Object.hasOwn(input, "clearRemindAt");
 
-				if (hasTitle || hasDescription || hasPriority || hasDueDate || hasClearDueDate) {
+				if (hasTitle || hasDescription || hasPriority || hasDueDate || hasClearDueDate || hasRemindAt || hasClearRemindAt) {
 					const now = new Date().toISOString();
 					const updated = previousCards.map((card) => {
 						if (card.id !== input.id) {
@@ -1138,6 +1145,14 @@ export function useUpdateCard(boardId: string) {
 								input.dueDate !== undefined
 									? (input.dueDate ?? null)
 									: (card.dueDate ?? null);
+						}
+						if (hasClearRemindAt && input.clearRemindAt) {
+							nextCard.remindAt = null;
+						} else if (hasRemindAt) {
+							nextCard.remindAt =
+								input.remindAt !== undefined
+									? (input.remindAt ?? null)
+									: (card.remindAt ?? null);
 						}
 
 						nextCard.subtasks = card.subtasks;
