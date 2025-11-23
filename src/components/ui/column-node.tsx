@@ -27,7 +27,7 @@ import {
 } from 'platejs/react'
 
 import { Button } from '@/components/ui/button'
-import { Popover, PopoverAnchor, PopoverContent } from '@/components/ui/popover'
+import { Popover, PopoverContent } from '@/components/ui/popover'
 import { Separator } from '@/components/ui/separator'
 import {
   Tooltip,
@@ -166,10 +166,9 @@ function ColumnFloatingToolbar({ children }: React.PropsWithChildren) {
 
   return (
     <Popover open={open} modal={false}>
-      <PopoverAnchor>{children}</PopoverAnchor>
+      <div className="w-full">{children}</div>
       <PopoverContent
         className="w-auto p-1"
-        onOpenAutoFocus={e => e.preventDefault()}
         align="center"
         side="top"
         sideOffset={10}

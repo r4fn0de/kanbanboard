@@ -21,18 +21,20 @@ import {
 
 export function EmojiInputElement(props: PlateElementProps) {
   const { children, editor, element } = props
-  const data = usePluginOption(EmojiPlugin, 'data')!
+  const rawData = usePluginOption(EmojiPlugin, 'data')
+  const emojiIndex = React.useMemo(
+    () => (rawData ? EmojiInlineIndexSearch.getInstance(rawData) : null),
+    [rawData]
+  )
   const [value, setValue] = React.useState('')
   const debouncedValue = useDebounce(value, 100)
   const isPending = value !== debouncedValue
 
   const filteredEmojis = React.useMemo(() => {
-    if (debouncedValue.trim().length === 0) return []
+    if (!emojiIndex || debouncedValue.trim().length === 0) return []
 
-    return EmojiInlineIndexSearch.getInstance(data)
-      .search(debouncedValue.replace(/:$/, ''))
-      .get()
-  }, [data, debouncedValue])
+    return emojiIndex.search(debouncedValue.replace(/:$/, '')).get()
+  }, [emojiIndex, debouncedValue])
 
   return (
     <PlateElement as="span" {...props}>
@@ -56,7 +58,7 @@ export function EmojiInputElement(props: PlateElementProps) {
                 value={emoji.name}
                 onClick={() => insertEmoji(editor, emoji)}
               >
-                {emoji.skins[0].native} {emoji.name}
+                {emoji.skins?.[0]?.native ?? ''} {emoji.name}
               </InlineComboboxItem>
             ))}
           </InlineComboboxGroup>

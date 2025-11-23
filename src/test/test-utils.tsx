@@ -31,8 +31,10 @@ const customRender = (
   options?: Omit<RenderOptions, 'wrapper'>
 ) => render(ui, { wrapper: AllTheProviders, ...options })
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const customRenderHook = (hookFn: any, options?: any) => renderHookRTL(hookFn, { wrapper: AllTheProviders, ...options })
+const customRenderHook = <Result, Props>(
+  hookFn: (initialProps: Props) => Result,
+  options?: RenderHookOptions<Props>
+) => renderHookRTL<Result, Props>(hookFn, { wrapper: AllTheProviders, ...options })
 
 export * from '@testing-library/react'
 export { customRender as render, customRenderHook as renderHook }

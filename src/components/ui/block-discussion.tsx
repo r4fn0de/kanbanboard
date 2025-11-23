@@ -21,17 +21,11 @@ import {
   type TElement,
   type TSuggestionText,
   PathApi,
-  TextApi,
 } from 'platejs'
 import { useEditorPlugin, useEditorRef, usePluginOption } from 'platejs/react'
 
 import { Button } from '@/components/ui/button'
-import {
-  Popover,
-  PopoverAnchor,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { commentPlugin } from '@/components/editor/plugins/comment-kit'
 import {
   type TDiscussion,
@@ -71,15 +65,19 @@ export const BlockDiscussion: RenderNodeWrapper<AnyPluginConfig> = props => {
     return
   }
 
-  return props => (
+  const BlockDiscussionWrapper = (wrapperProps: PlateElementProps) => (
     <BlockCommentContent
       blockPath={blockPath}
       commentNodes={commentNodes}
       draftCommentNode={draftCommentNode}
       suggestionNodes={suggestionNodes}
-      {...props}
+      {...wrapperProps}
     />
   )
+
+  BlockDiscussionWrapper.displayName = 'BlockDiscussionWrapper'
+
+  return BlockDiscussionWrapper
 }
 
 const BlockCommentContent = ({
@@ -135,44 +133,6 @@ const BlockCommentContent = ({
     selected ||
     (isCommenting && !!draftCommentNode && commentingCurrent)
 
-  const anchorElement = React.useMemo(() => {
-    let activeNode: NodeEntry | undefined
-
-    if (activeSuggestion) {
-      activeNode = suggestionNodes.find(
-        ([node]) =>
-          TextApi.isText(node) &&
-          editor.getApi(SuggestionPlugin).suggestion.nodeId(node) ===
-            activeSuggestion.suggestionId
-      )
-    }
-
-    if (activeCommentId) {
-      if (activeCommentId === getDraftCommentKey()) {
-        activeNode = draftCommentNode
-      } else {
-        activeNode = commentNodes.find(
-          ([node]) =>
-            editor.getApi(commentPlugin).comment.nodeId(node) ===
-            activeCommentId
-        )
-      }
-    }
-
-    if (!activeNode) return null
-
-    return editor.api.toDOMNode(activeNode[0])!
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    open,
-    activeSuggestion,
-    activeCommentId,
-    editor.api,
-    suggestionNodes,
-    draftCommentNode,
-    commentNodes,
-  ])
-
   if (suggestionsCount + resolvedDiscussions.length === 0 && !draftCommentNode)
     return <div className="w-full">{children}</div>
 
@@ -192,18 +152,8 @@ const BlockCommentContent = ({
         }}
       >
         <div className="w-full">{children}</div>
-        {anchorElement && (
-          <PopoverAnchor
-            asChild
-            className="w-full"
-            virtualRef={{ current: anchorElement }}
-          />
-        )}
-
         <PopoverContent
           className="max-h-[min(50dvh,calc(-24px+var(--radix-popper-available-height)))] w-[380px] max-w-[calc(100vw-24px)] min-w-[130px] overflow-y-auto p-0 data-[state=closed]:opacity-0"
-          onCloseAutoFocus={e => e.preventDefault()}
-          onOpenAutoFocus={e => e.preventDefault()}
           align="center"
           side="bottom"
         >
@@ -250,7 +200,7 @@ const BlockCommentContent = ({
 
         {totalCount > 0 && (
           <div className="relative left-0 size-0 select-none">
-            <PopoverTrigger asChild>
+            <PopoverTrigger>
               <Button
                 variant="ghost"
                 className="mt-1 ml-1 flex h-6 gap-1 !px-1.5 py-0 text-muted-foreground/80 hover:text-muted-foreground/80 data-[active=true]:bg-muted"
@@ -278,6 +228,8 @@ const BlockCommentContent = ({
     </div>
   )
 }
+
+BlockCommentContent.displayName = 'BlockCommentContent'
 
 function BlockComment({
   discussion,

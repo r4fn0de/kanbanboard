@@ -1,7 +1,5 @@
-import { Link } from 'react-router-dom'
 import { useRecentActivity } from '@/hooks/useRecentActivity'
 import { ActivityItem } from '../cards/ActivityItem'
-import { Button } from '@/components/ui/button'
 
 export function ActivitySection() {
   const { data: activities, isLoading, error } = useRecentActivity(5)

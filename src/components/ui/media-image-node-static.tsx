@@ -1,4 +1,4 @@
-import * as React from 'react'
+import type { ImgHTMLAttributes } from 'react'
 
 import type {
   SlateElementProps,
@@ -15,6 +15,10 @@ export function ImageElementStatic(
   props: SlateElementProps<TImageElement & TCaptionProps & TResizableProps>
 ) {
   const { align = 'center', caption, url, width } = props.element
+	const firstCaptionNode = caption?.[0]
+	const alt = (
+		props.attributes as ImgHTMLAttributes<HTMLImageElement> | undefined
+	)?.alt
 
   return (
     <SlateElement {...props} className="py-2.5">
@@ -28,12 +32,12 @@ export function ImageElementStatic(
               'w-full max-w-full cursor-default object-cover px-0',
               'rounded-sm'
             )}
-            alt={(props.attributes as any).alt}
+            alt={alt}
             src={url}
           />
-          {caption && (
+				{firstCaptionNode && (
             <figcaption className="mx-auto mt-2 h-[24px] max-w-full">
-              {NodeApi.string(caption[0])}
+						{NodeApi.string(firstCaptionNode)}
             </figcaption>
           )}
         </div>

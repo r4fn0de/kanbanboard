@@ -19,7 +19,6 @@ import {
 	useTableElement,
 	useTableMergeState,
 } from "@platejs/table/react";
-import { PopoverAnchor } from "@radix-ui/react-popover";
 import { cva } from "class-variance-authority";
 import {
 	ArrowDown,
@@ -169,13 +168,8 @@ function TableFloatingToolbar({
 			open={isFocusedLast && (canMerge || canSplit || collapsedInside)}
 			modal={false}
 		>
-			<PopoverAnchor asChild>{children}</PopoverAnchor>
-			<PopoverContent
-				asChild
-				onOpenAutoFocus={(e) => e.preventDefault()}
-				contentEditable={false}
-				{...props}
-			>
+			{children}
+			<PopoverContent contentEditable={false} {...props}>
 				<Toolbar
 					className="scrollbar-hide flex w-auto max-w-[80vw] flex-row overflow-x-auto rounded-md border bg-popover p-1 shadow-md print:hidden"
 					contentEditable={false}

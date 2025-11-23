@@ -39,12 +39,12 @@ export function LeftSideBar({
   const [deleteProjectTitle, setDeleteProjectTitle] = useState('')
   const [createWorkspaceOpen, setCreateWorkspaceOpen] = useState(false)
   const [editWorkspaceOpen, setEditWorkspaceOpen] = useState(false)
-  const [editWorkspaceId, setEditWorkspaceId] = useState<string | null>(null)
-  const [editWorkspaceName, setEditWorkspaceName] = useState('')
-  const [editWorkspaceColor, setEditWorkspaceColor] = useState('#6366F1')
+  const [editWorkspaceId, _setEditWorkspaceId] = useState<string | null>(null)
+  const [editWorkspaceName, _setEditWorkspaceName] = useState('')
+  const [editWorkspaceColor, _setEditWorkspaceColor] = useState('#6366F1')
   const [deleteWorkspaceOpen, setDeleteWorkspaceOpen] = useState(false)
-  const [deleteWorkspaceId, setDeleteWorkspaceId] = useState<string | null>(null)
-  const [deleteWorkspaceName, setDeleteWorkspaceName] = useState('')
+  const [deleteWorkspaceId, _setDeleteWorkspaceId] = useState<string | null>(null)
+  const [deleteWorkspaceName, _setDeleteWorkspaceName] = useState('')
 
   const { leftSidebarVisible, toggleLeftSidebar, leftSidebarLocked } =
     useUIStore()
@@ -133,13 +133,6 @@ export function LeftSideBar({
     selectedWorkspaceId,
   ])
 
-  const currentWorkspace = useMemo(() => {
-    if (!selectedWorkspaceId) return null
-    return (
-      workspaces.find(workspace => workspace.id === selectedWorkspaceId) ?? null
-    )
-  }, [selectedWorkspaceId, workspaces])
-
   const handleOpenSettings = (board: KanbanBoard) => {
     setSettingsProjectBoard(board)
     setSettingsProjectOpen(true)
@@ -149,23 +142,6 @@ export function LeftSideBar({
     setDeleteProjectId(board.id)
     setDeleteProjectTitle(board.title)
     setDeleteProjectOpen(true)
-  }
-
-  const handleOpenEditWorkspace = () => {
-    if (currentWorkspace) {
-      setEditWorkspaceId(currentWorkspace.id)
-      setEditWorkspaceName(currentWorkspace.name)
-      setEditWorkspaceColor(currentWorkspace.color ?? '#6366F1')
-      setEditWorkspaceOpen(true)
-    }
-  }
-
-  const handleOpenDeleteWorkspace = () => {
-    if (currentWorkspace) {
-      setDeleteWorkspaceId(currentWorkspace.id)
-      setDeleteWorkspaceName(currentWorkspace.name)
-      setDeleteWorkspaceOpen(true)
-    }
   }
 
   return (

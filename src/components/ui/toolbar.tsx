@@ -265,8 +265,10 @@ function withTooltip<T extends React.ElementType>(Component: T) {
         setMounted(true)
       }, [])
 
+      const Comp = Component as React.ComponentType<any>
+
       const component = (
-        <Component
+        <Comp
           {...(props as React.ComponentProps<T>)}
           ref={forwardedRef as React.Ref<React.ElementRef<T>>}
         />

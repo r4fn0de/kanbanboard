@@ -44,11 +44,15 @@ export function useUploadFile({
         },
       })
 
-      setUploadedFile(res[0])
+      const uploaded = res[0]
 
-      onUploadComplete?.(res[0])
+      if (uploaded) {
+        setUploadedFile(uploaded)
+        onUploadComplete?.(uploaded)
+        return uploaded
+      }
 
-      return uploadedFile
+      return undefined
     } catch (error) {
       const errorMessage = getErrorMessage(error)
 

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { FileText, Folder, StickyNote, Command } from 'lucide-react'
 import { SearchIcon } from '@/components/ui/icons'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useGlobalSearch, type SearchResult } from '@/hooks/useGlobalSearch'
+import { useGlobalSearch } from '@/hooks/useGlobalSearch'
 import { cn } from '@/lib/utils'
 
 interface GlobalSearchProps {
@@ -90,7 +90,7 @@ export function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) {
 
     document.addEventListener('keydown', onKeyDown)
     return () => document.removeEventListener('keydown', onKeyDown)
-  }, [open, results.length, handleSelect, handleClose, onOpenChange])
+  }, [open, results, handleSelect, handleClose, onOpenChange])
 
   const getIcon = (type: string) => {
     switch (type) {
@@ -189,12 +189,11 @@ export function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) {
                   </div>
                 ) : results.length === 0 ? (
                   <div className="px-4 py-8 text-center text-sm text-muted-foreground">
-                    <p>No results found for "{query}"</p>
+                    <p>No results found for {query}</p>
                   </div>
                 ) : (
                   <div className="space-y-1">
-                    {console.log('Rendering results:', results) ||
-                    results.map((result, index) => (
+                    {results.map((result, index) => (
                       <motion.button
                         key={`${result.item_type}-${result.id}`}
                         initial={{ opacity: 0, y: 4 }}

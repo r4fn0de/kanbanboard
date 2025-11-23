@@ -1,5 +1,4 @@
 import type { ChatMessage, ToolName } from '@/components/editor/use-chat'
-import type { NextRequest } from 'next/server'
 
 import { google } from '@ai-sdk/google'
 import { replacePlaceholders } from '@platejs/ai'
@@ -12,14 +11,22 @@ import {
   streamObject,
   streamText,
 } from 'ai'
-import { NextResponse } from 'next/server'
 import { type SlateEditor, createSlateEditor, nanoid, RangeApi } from 'platejs'
 import { z } from 'zod'
 
 import { BaseEditorKit } from '@/components/editor/editor-base-kit'
 import { markdownJoinerTransform } from '@/lib/markdown-joiner-transform'
 
-export async function POST(req: NextRequest) {
+const jsonResponse = (data: unknown, init?: { status?: number }) => {
+  return new Response(JSON.stringify(data), {
+    status: init?.status,
+    headers: {
+      'content-type': 'application/json',
+    },
+  })
+}
+
+export async function POST(req: Request) {
   const { apiKey: key, ctx, messages: messagesRaw } = await req.json()
 
   const { children, selection, toolName: toolNameParam } = ctx
@@ -33,10 +40,7 @@ export async function POST(req: NextRequest) {
   const apiKey = key || process.env.OPENAI_API_KEY
 
   if (!apiKey) {
-    return NextResponse.json(
-      { error: 'Missing OpenAI API key.' },
-      { status: 401 }
-    )
+    return jsonResponse({ error: 'Missing OpenAI API key.' }, { status: 401 })
   }
 
   const isSelecting = editor.api.isExpanded()
@@ -44,11 +48,13 @@ export async function POST(req: NextRequest) {
   try {
     const stream = createUIMessageStream<ChatMessage>({
       execute: async ({ writer }) => {
-        const lastIndex = messagesRaw.findIndex(
-          (message: any) => message.role === 'user'
-        )
+        const messages = [...(messagesRaw as ChatMessage[])]
 
-        const messages = [...messagesRaw]
+        const lastIndex = messages.findIndex(message => message.role === 'user')
+
+        if (lastIndex === -1) {
+          throw new Error('No user message found in request')
+        }
 
         messages[lastIndex] = replaceMessagePlaceholders(
           editor,
@@ -117,7 +123,12 @@ export async function POST(req: NextRequest) {
         }
 
         if (toolName === 'comment') {
-          const lastUserMessage = messagesRaw[lastIndex] as ChatMessage
+          const lastUserMessage = messages[lastIndex]
+
+          if (!lastUserMessage) {
+            throw new Error('No user message found in request')
+          }
+
           const prompt = lastUserMessage.parts.find(
             p => p.type === 'text'
           )?.text
@@ -175,10 +186,7 @@ export async function POST(req: NextRequest) {
 
     return createUIMessageStreamResponse({ stream })
   } catch {
-    return NextResponse.json(
-      { error: 'Failed to process AI request' },
-      { status: 500 }
-    )
+    return jsonResponse({ error: 'Failed to process AI request' }, { status: 500 })
   }
 }
 
@@ -339,7 +347,12 @@ const replaceMessagePlaceholders = (
 
   const template = promptTemplate({ isSelecting })
 
-  const parts = message.parts.map(part => {
+  const originalParts = (message.parts ?? []) as {
+    type?: string
+    text?: string
+  }[]
+
+  const parts = originalParts.map(part => {
     if (part.type !== 'text' || !part.text) return part
 
     let text = replacePlaceholders(editor, template, {
@@ -381,12 +394,14 @@ const removeEscapeSelection = (editor: SlateEditor, text: string) => {
     .replace(`\\${SELECTION_END}`, SELECTION_END)
 
   // If the selection is on a void element, inserting the placeholder will fail, and the string must be replaced manually.
-  if (!newText.includes(SELECTION_END)) {
-    const [_, end] = RangeApi.edges(editor.selection!)
+  if (!newText.includes(SELECTION_END) && editor.selection) {
+    const [, end] = RangeApi.edges(editor.selection)
 
     const node = editor.api.block({ at: end.path })
 
-    if (!node) return newText
+    if (!node) {
+      return newText
+    }
 
     if (editor.api.isVoid(node[0])) {
       const voidString = serializeMd(editor, { value: [node[0]] })

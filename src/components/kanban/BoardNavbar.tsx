@@ -190,7 +190,9 @@ export function BoardNavbar({
 										{dueSummaryData.overdue +
 											dueSummaryData.today +
 											dueSummaryData.soon ===
-											0 && <Badge variant="ghost">No upcoming deadlines</Badge>}
+											0 && (
+												<Badge variant="secondary">No upcoming deadlines</Badge>
+											)}
 									</div>
 								) : null}
 								{taskControls}

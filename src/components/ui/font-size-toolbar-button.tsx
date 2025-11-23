@@ -94,8 +94,8 @@ export function FontSizeToolbarButton() {
         <Minus />
       </ToolbarButton>
 
-      <Popover open={isFocused} modal={false}>
-        <PopoverTrigger asChild>
+      <Popover open={isFocused}>
+        <PopoverTrigger>
           <input
             className={cn(
               'h-full w-10 shrink-0 bg-transparent px-1 text-center text-sm hover:bg-muted'
@@ -122,7 +122,6 @@ export function FontSizeToolbarButton() {
         </PopoverTrigger>
         <PopoverContent
           className="w-10 px-px py-1"
-          onOpenAutoFocus={e => e.preventDefault()}
         >
           {FONT_SIZES.map(size => (
             <button

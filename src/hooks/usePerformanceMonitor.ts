@@ -37,7 +37,6 @@ export function useRenderTracker(componentName: string) {
   useEffect(() => {
     renderCount.current++
     const now = performance.now()
-    const duration = now - lastRender.current
     lastRender.current = now
 
     if (process.env.NODE_ENV === 'development') {

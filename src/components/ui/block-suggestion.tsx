@@ -158,7 +158,7 @@ export function BlockSuggestionCard({
           <div className="flex flex-col gap-2">
             {suggestion.type === 'remove' && (
               <React.Fragment>
-                {suggestionText2Array(suggestion.text!).map((text, index) => (
+                {suggestionText2Array(suggestion.text ?? '').map((text, index) => (
                   <div key={index} className="flex items-center gap-2">
                     <span className="text-sm text-muted-foreground">
                       Delete:
@@ -174,7 +174,7 @@ export function BlockSuggestionCard({
 
             {suggestion.type === 'insert' && (
               <React.Fragment>
-                {suggestionText2Array(suggestion.newText!).map(
+                {suggestionText2Array(suggestion.newText ?? '').map(
                   (text, index) => (
                     <div key={index} className="flex items-center gap-2">
                       <span className="text-sm text-muted-foreground">
@@ -192,7 +192,7 @@ export function BlockSuggestionCard({
 
             {suggestion.type === 'replace' && (
               <div className="flex flex-col gap-2">
-                {suggestionText2Array(suggestion.newText!).map(
+                {suggestionText2Array(suggestion.newText ?? '').map(
                   (text, index) => (
                     <React.Fragment key={index}>
                       <div
@@ -206,7 +206,7 @@ export function BlockSuggestionCard({
                   )
                 )}
 
-                {suggestionText2Array(suggestion.text!).map((text, index) => (
+                {suggestionText2Array(suggestion.text ?? '').map((text, index) => (
                   <React.Fragment key={index}>
                     <div key={index} className="flex items-start gap-2">
                       <span className="text-sm text-muted-foreground">
@@ -366,8 +366,8 @@ export const useResolveSuggestion = (
 
       let newText = ''
       let text = ''
-      let properties: any = {}
-      let newProperties: any = {}
+      let properties: Record<string, unknown> = {}
+      let newProperties: Record<string, unknown> = {}
 
       // overlapping suggestion
       entries.forEach(([node]) => {
@@ -412,21 +412,26 @@ export const useResolveSuggestion = (
             : undefined
 
           if (lineBreakData?.id !== keyId2SuggestionId(id)) return
+          const mapFn = TYPE_TEXT_MAP[node.type]
+          const typeText = mapFn ? mapFn(node) : ''
           if (lineBreakData.type === 'insert') {
             newText += lineBreakData.isLineBreak
               ? BLOCK_SUGGESTION
-              : BLOCK_SUGGESTION + TYPE_TEXT_MAP[node.type](node)
+              : BLOCK_SUGGESTION + typeText
           } else if (lineBreakData.type === 'remove') {
             text += lineBreakData.isLineBreak
               ? BLOCK_SUGGESTION
-              : BLOCK_SUGGESTION + TYPE_TEXT_MAP[node.type](node)
+              : BLOCK_SUGGESTION + typeText
           }
         }
       })
 
       if (entries.length === 0) return
 
-      const nodeData = api.suggestion.suggestionData(entries[0][0])
+      const [firstEntry] = entries
+      if (!firstEntry) return
+      const [firstNode] = firstEntry
+      const nodeData = api.suggestion.suggestionData(firstNode)
 
       if (!nodeData) return
 

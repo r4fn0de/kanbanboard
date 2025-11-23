@@ -93,20 +93,19 @@ const TAG_COLOR_MENU: { value: string | null; label: string }[] = [
   { value: '#64748b', label: 'Slate' },
 ]
 
-export function KanbanCardItem({
-  card,
-  onSelect,
-  isSelected,
-  onDelete,
-  onDuplicate,
-  maxVisibleTags = 3,
-  showSubtasksSummary = true,
-  onQuickMoveToNext,
-  onQuickMarkDone,
-  onChangePriority,
-  moveColumnOptions,
-  onMoveToColumn,
-}: KanbanCardItemProps) {
+export function KanbanCardItem(props: KanbanCardItemProps) {
+  const {
+    card,
+    onSelect,
+    isSelected,
+    onDelete,
+    onDuplicate,
+    maxVisibleTags = 3,
+    showSubtasksSummary = true,
+    onChangePriority,
+    moveColumnOptions,
+    onMoveToColumn,
+  } = props
   const [isDeleting, setIsDeleting] = React.useState(false)
   const [isDuplicating, setIsDuplicating] = React.useState(false)
   const [tagQuery, setTagQuery] = React.useState('')
@@ -794,7 +793,7 @@ export function KanbanCardItem({
                   <ContextMenuSubTrigger className="flex items-center gap-2">
                     <Plus className="h-4 w-4" />
                     <span className="truncate text-xs">
-                      Create tag <span className="text-muted-foreground">"{trimmedTagQuery}"</span>
+                      Create tag <span className="text-muted-foreground">{trimmedTagQuery}</span>
                     </span>
                   </ContextMenuSubTrigger>
                   <ContextMenuSubContent className="w-56">
@@ -922,7 +921,7 @@ export function KanbanCardItem({
                     (event.key === 'ArrowDown' || event.key === 'ArrowUp')
                   ) {
                     event.preventDefault()
-                    const order: Array<'tomorrow' | 'endOfWeek' | 'inOneWeek' | 'clear'> = [
+                    const order: ('tomorrow' | 'endOfWeek' | 'inOneWeek' | 'clear')[] = [
                       'tomorrow',
                       'endOfWeek',
                       'inOneWeek',
@@ -953,7 +952,7 @@ export function KanbanCardItem({
                 }}
               >
                 <div className="flex w-full items-center justify-between">
-                  <span className="text-xs">Set "{dueQuery.trim()}"</span>
+                  <span className="text-xs">Set {dueQuery.trim()}</span>
                   <span className="text-[11px] text-muted-foreground">
                     {(() => {
                       const d = parsedDueFromQuery

@@ -48,6 +48,7 @@ export function NewUserOnboarding({ onDismiss, onOpenSearch }: NewUserOnboarding
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.1 + index * 0.05 }}
                 className="flex gap-3 p-3 rounded-md bg-background/50"
+                onClick={index === 0 ? () => onOpenSearch?.() : undefined}
               >
                 <tip.icon className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
                 <div>

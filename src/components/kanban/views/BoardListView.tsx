@@ -103,7 +103,6 @@ export function BoardListView({
             const baseColor = column.color ?? fallbackColor
             const headerBorder = hexToRgba(baseColor, 0.35) ?? undefined
             const headerBackground = hexToRgba(baseColor, 0.08)
-            const iconBackground = hexToRgba(baseColor, 0.12) ?? undefined
             const iconColor = baseColor
             const buttonBackground = hexToRgba(baseColor, 0.08)
             const buttonHoverBackground = hexToRgba(baseColor, 0.16)

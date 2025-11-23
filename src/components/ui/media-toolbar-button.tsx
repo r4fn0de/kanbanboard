@@ -14,6 +14,7 @@ import { isUrl, KEYS } from 'platejs'
 import { useEditorRef } from 'platejs/react'
 import { toast } from 'sonner'
 import { useFilePicker } from 'use-file-picker'
+import { PlaceholderPlugin } from '@platejs/media/react'
 
 import {
   AlertDialog,
@@ -33,15 +34,7 @@ import {
   ToolbarSplitButtonSecondary,
 } from './toolbar'
 
-const MEDIA_CONFIG: Record<
-  string,
-  {
-    accept: string[]
-    icon: React.ReactNode
-    title: string
-    tooltip: string
-  }
-> = {
+const MEDIA_CONFIG = {
   [KEYS.audio]: {
     accept: ['audio/*'],
     icon: <AudioLinesIcon className="size-4" />,
@@ -66,10 +59,24 @@ const MEDIA_CONFIG: Record<
     title: 'Insert Video',
     tooltip: 'Video',
   },
+} satisfies Record<
+  string,
+  {
+    accept: string[]
+    icon: React.ReactNode
+    title: string
+    tooltip: string
+  }
+>
+
+function filesToFileList(files: File[]): FileList {
+	const dataTransfer = new DataTransfer()
+	files.forEach(file => dataTransfer.items.add(file))
+	return dataTransfer.files
 }
 
 interface MediaToolbarButtonProps {
-  nodeType: string
+  nodeType: keyof typeof MEDIA_CONFIG
   open?: boolean
   onOpenChange?: (open: boolean) => void
   defaultOpen?: boolean
@@ -89,8 +96,13 @@ export function MediaToolbarButton({
   const { openFilePicker } = useFilePicker({
     accept: currentConfig.accept,
     multiple: true,
-    onFilesSelected: ({ plainFiles: updatedFiles }) => {
-      editor.getTransforms(PlaceholderPlugin).insert.media(updatedFiles)
+    onFilesSelected: (data: { plainFiles?: File[] }) => {
+      const updatedFiles = data.plainFiles ?? []
+      if (!updatedFiles.length) return
+
+		  editor
+				.getTransforms(PlaceholderPlugin)
+				.insert.media(filesToFileList(updatedFiles))
     },
   })
 
@@ -174,7 +186,7 @@ function MediaUrlDialogContent({
   nodeType,
   setOpen,
 }: {
-  currentConfig: (typeof MEDIA_CONFIG)[string]
+  currentConfig: (typeof MEDIA_CONFIG)[keyof typeof MEDIA_CONFIG]
   nodeType: string
   setOpen: (value: boolean) => void
 }) {

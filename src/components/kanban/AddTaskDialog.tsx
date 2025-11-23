@@ -17,7 +17,6 @@ import {
 } from '@/components/ui/breadcrumb'
 import { Columns3, Check } from 'lucide-react'
 import {
-  PaperclipIcon,
   PriorityIcon,
   PriorityLowIcon,
   PriorityMediumIcon,

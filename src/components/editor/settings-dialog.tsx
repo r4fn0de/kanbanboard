@@ -72,14 +72,13 @@ import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import { readFile } from "@tauri-apps/plugin-fs";
 import { invoke } from "@tauri-apps/api/core";
 import { ImageCropper } from "@/components/ui/image-cropper";
-import { WorkspaceIcon } from "@/components/ui/workspace-icon";
 
 interface Model {
 	label: string;
 	value: string;
 }
 
-export const models: Model[] = [
+const models: Model[] = [
 	{ label: "gpt-4o-mini", value: "gpt-4o-mini" },
 	{ label: "gpt-4o", value: "gpt-4o" },
 	{ label: "gpt-4-turbo", value: "gpt-4-turbo" },
@@ -121,10 +120,6 @@ export function SettingsDialog() {
 
 	// Workspace management state
 	const [activeTab, setActiveTab] = React.useState<"ai" | "workspaces">("ai");
-
-	React.useEffect(() => {
-		console.log("SettingsDialog mounted, activeTab:", activeTab);
-	}, [activeTab]);
 	const [editingWorkspace, setEditingWorkspace] = React.useState<string | null>(
 		null,
 	);
@@ -153,11 +148,30 @@ export function SettingsDialog() {
 	const { mutateAsync: removeWorkspaceIcon } = useRemoveWorkspaceIconMutation();
 	const { selectedWorkspaceId, setSelectedWorkspaceId } = useWorkspaceStore();
 
+	interface AIChatOptionsShape {
+		chatOptions?: {
+			body?: {
+				apiKey?: string;
+				model?: string;
+			};
+		};
+	}
+
+	interface CopilotOptionsShape {
+		completeOptions?: {
+			body?: {
+				apiKey?: string;
+				model?: string;
+			};
+		};
+	}
+
 	const handleSubmit = (e: React.FormEvent) => {
 		e.preventDefault();
 
 		// Update AI chat options
-		const chatOptions = editor.getOptions(aiChatPlugin).chatOptions ?? {};
+		const chatOptions =
+			(editor.getOptions(aiChatPlugin) as AIChatOptionsShape).chatOptions ?? {};
 
 		editor.setOption(aiChatPlugin, "chatOptions", {
 			...chatOptions,
@@ -172,7 +186,7 @@ export function SettingsDialog() {
 
 		// Update AI complete options
 		const completeOptions =
-			editor.getOptions(CopilotPlugin).completeOptions ?? {};
+			(editor.getOptions(CopilotPlugin) as CopilotOptionsShape).completeOptions ?? {};
 		editor.setOption(CopilotPlugin, "completeOptions", {
 			...completeOptions,
 			body: {
@@ -235,6 +249,8 @@ export function SettingsDialog() {
 	const confirmDeleteWorkspace = async () => {
 		if (!deleteState.workspace) return;
 
+		const workspace = deleteState.workspace;
+
 		try {
 			if (
 				deleteState.action === "move-to-other" &&
@@ -242,7 +258,7 @@ export function SettingsDialog() {
 			) {
 				// Move all boards to target workspace
 				const workspaceBoards = boards.filter(
-					(b) => b.workspaceId === deleteState.workspace!.id,
+					(b) => b.workspaceId === workspace.id,
 				);
 
 				for (const board of workspaceBoards) {
@@ -254,12 +270,12 @@ export function SettingsDialog() {
 			}
 
 			// Delete the workspace
-			await deleteWorkspace(deleteState.workspace.id);
+			await deleteWorkspace(workspace.id);
 
 			// Update selected workspace if needed
-			if (selectedWorkspaceId === deleteState.workspace.id) {
+			if (selectedWorkspaceId === workspace.id) {
 				const remainingWorkspaces = workspaces.filter(
-					(w) => w.id !== deleteState.workspace!.id,
+					(w) => w.id !== workspace.id,
 				);
 				setSelectedWorkspaceId(remainingWorkspaces[0]?.id ?? null);
 			}
@@ -500,7 +516,7 @@ export function SettingsDialog() {
 										Model
 									</label>
 									<Popover open={openModel} onOpenChange={setOpenModel}>
-										<PopoverTrigger id="select-model" asChild>
+										<PopoverTrigger id="select-model">
 											<Button
 												size="lg"
 												variant="ghost"
@@ -770,20 +786,20 @@ export function SettingsDialog() {
 							{deleteState.workspace && (
 								<>
 									{boards.filter(
-										(b) => b.workspaceId === deleteState.workspace!.id,
+										(b) => b.workspaceId === deleteState.workspace?.id,
 									).length === 0 ? (
 										<>
 											Are you sure you want to delete the workspace{" "}
-											<strong>{deleteState.workspace.name}</strong>? This action
+											<strong>{deleteState.workspace?.name}</strong>? This action
 											cannot be undone.
 										</>
 									) : (
 										<>
 											The workspace{" "}
-											<strong>{deleteState.workspace.name}</strong> contains{" "}
+											<strong>{deleteState.workspace?.name}</strong> contains{" "}
 											{
 												boards.filter(
-													(b) => b.workspaceId === deleteState.workspace!.id,
+													(b) => b.workspaceId === deleteState.workspace?.id,
 												).length
 											}{" "}
 											project(s). What would you like to do?
@@ -795,7 +811,7 @@ export function SettingsDialog() {
 					</AlertDialogHeader>
 
 					{deleteState.workspace &&
-						boards.filter((b) => b.workspaceId === deleteState.workspace!.id)
+						boards.filter((b) => b.workspaceId === deleteState.workspace?.id)
 							.length > 0 && (
 							<div className="space-y-3">
 								<div className="space-y-2">

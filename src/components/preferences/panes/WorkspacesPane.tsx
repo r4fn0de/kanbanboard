@@ -236,7 +236,8 @@ export function WorkspacesPane({
 	};
 
 	const confirmDeleteWorkspace = async () => {
-		if (!deleteState.workspace) return;
+		const workspace = deleteState.workspace;
+		if (!workspace) return;
 
 		try {
 			if (
@@ -245,7 +246,7 @@ export function WorkspacesPane({
 			) {
 				// Move all boards to target workspace
 				const workspaceBoards = boards.filter(
-					(b) => b.workspaceId === deleteState.workspace!.id,
+					(b) => b.workspaceId === workspace.id,
 				);
 
 				for (const board of workspaceBoards) {
@@ -257,13 +258,11 @@ export function WorkspacesPane({
 			}
 
 			// Delete the workspace
-			await deleteWorkspace(deleteState.workspace.id);
+			await deleteWorkspace(workspace.id);
 
 			// Update selected workspace if needed
-			if (selectedWorkspaceId === deleteState.workspace.id) {
-				const remainingWorkspaces = workspaces.filter(
-					(w) => w.id !== deleteState.workspace!.id,
-				);
+			if (selectedWorkspaceId === workspace.id) {
+				const remainingWorkspaces = workspaces.filter((w) => w.id !== workspace.id);
 				setSelectedWorkspaceId(remainingWorkspaces[0]?.id ?? null);
 			}
 
@@ -332,7 +331,8 @@ export function WorkspacesPane({
 			};
 			const mimeType = mimeTypes[extension ?? ""] ?? "image/png";
 
-			const blob = new Blob([fileBytes], { type: mimeType });
+			const buffer = fileBytes.buffer as ArrayBuffer;
+			const blob = new Blob([buffer], { type: mimeType });
 			const dataUrl = URL.createObjectURL(blob);
 
 			setOriginalImageSrc(dataUrl);
@@ -765,20 +765,20 @@ export function WorkspacesPane({
 							{deleteState.workspace && (
 								<>
 									{boards.filter(
-										(b) => b.workspaceId === deleteState.workspace!.id,
+										(b) => b.workspaceId === deleteState.workspace?.id,
 									).length === 0 ? (
 										<>
 											Are you sure you want to delete the workspace{" "}
-											<strong>{deleteState.workspace.name}</strong>? This action
+											<strong>{deleteState.workspace?.name}</strong>? This action
 											cannot be undone.
 										</>
 									) : (
 										<>
 											The workspace{" "}
-											<strong>{deleteState.workspace.name}</strong> contains{" "}
+											<strong>{deleteState.workspace?.name}</strong> contains{" "}
 											{
 												boards.filter(
-													(b) => b.workspaceId === deleteState.workspace!.id,
+													(b) => b.workspaceId === deleteState.workspace?.id,
 												).length
 											}{" "}
 											project(s). What would you like to do?
@@ -900,11 +900,12 @@ export function WorkspacesPane({
 												}
 											>
 												<SelectTrigger className="w-full">
-													<SelectValue placeholder="Select a workspace...">
-														{deleteState.targetWorkspaceId &&
-															workspaces.find(
-																(w) => w.id === deleteState.targetWorkspaceId,
-															)?.name}
+													<SelectValue>
+														{deleteState.targetWorkspaceId
+															? workspaces.find(
+																	(w) => w.id === deleteState.targetWorkspaceId,
+																)?.name ?? "Select a workspace..."
+															: "Select a workspace..."}
 													</SelectValue>
 												</SelectTrigger>
 												<SelectContent>

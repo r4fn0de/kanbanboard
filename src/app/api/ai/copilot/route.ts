@@ -1,24 +1,32 @@
-import type { NextRequest } from 'next/server'
-
 import { createOpenAI } from '@ai-sdk/openai'
 import { generateText } from 'ai'
-import { NextResponse } from 'next/server'
 
-export async function POST(req: NextRequest) {
+const jsonResponse = (data: unknown, init?: { status?: number }) => {
+  return new Response(JSON.stringify(data), {
+    status: init?.status,
+    headers: {
+      'content-type': 'application/json',
+    },
+  })
+}
+
+export async function POST(req: Request) {
   const {
     apiKey: key,
     model = 'gpt-4o-mini',
     prompt,
     system,
-  } = await req.json()
+  } = (await req.json()) as {
+    apiKey?: string
+    model?: string
+    prompt: string
+    system?: string
+  }
 
   const apiKey = key || process.env.OPENAI_API_KEY
 
   if (!apiKey) {
-    return NextResponse.json(
-      { error: 'Missing OpenAI API key.' },
-      { status: 401 }
-    )
+    return jsonResponse({ error: 'Missing OpenAI API key.' }, { status: 401 })
   }
 
   const openai = createOpenAI({ apiKey })
@@ -33,15 +41,12 @@ export async function POST(req: NextRequest) {
       temperature: 0.7,
     })
 
-    return NextResponse.json(result)
+    return jsonResponse(result)
   } catch (error) {
     if (error instanceof Error && error.name === 'AbortError') {
-      return NextResponse.json(null, { status: 408 })
+      return jsonResponse(null, { status: 408 })
     }
 
-    return NextResponse.json(
-      { error: 'Failed to process AI request' },
-      { status: 500 }
-    )
+    return jsonResponse({ error: 'Failed to process AI request' }, { status: 500 })
   }
 }

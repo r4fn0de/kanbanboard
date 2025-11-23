@@ -1,5 +1,3 @@
-import * as React from 'react'
-
 import type {
   SlateElementProps,
   TCaptionElement,
@@ -26,7 +24,9 @@ export function VideoElementStatic(
             src={url}
             controls
           />
-          {caption && <figcaption>{NodeApi.string(caption[0])}</figcaption>}
+          {caption?.[0] && (
+            <figcaption>{NodeApi.string(caption[0])}</figcaption>
+          )}
         </figure>
       </div>
       {props.children}

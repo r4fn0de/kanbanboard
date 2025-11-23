@@ -67,12 +67,18 @@ export const BlockDraggable: RenderNodeWrapper = props => {
 
   if (!enabled) return
 
-  return props => <Draggable {...props} />
+  const BlockDraggableWrapper = (wrapperProps: PlateElementProps) => (
+    <Draggable {...wrapperProps} />
+  )
+
+  BlockDraggableWrapper.displayName = 'BlockDraggableWrapper'
+
+  return BlockDraggableWrapper
 }
 
 function Draggable(props: PlateElementProps) {
   const { children, editor, element, path } = props
-  const blockSelectionApi = editor.getApi(BlockSelectionPlugin).blockSelection
+  const blockSelectionApi = editor.getApi(BlockSelectionPlugin)?.blockSelection
 
   const { isAboutToDrag, isDragging, nodeRef, previewRef, handleRef } =
     useDraggable({
@@ -80,9 +86,7 @@ function Draggable(props: PlateElementProps) {
       onDropHandler: (_, { dragItem }) => {
         const id = (dragItem as { id: string[] | string }).id
 
-        if (blockSelectionApi) {
-          blockSelectionApi.add(id)
-        }
+        blockSelectionApi?.add(id)
         resetPreview()
       },
     })
@@ -166,14 +170,14 @@ function Draggable(props: PlateElementProps) {
       )}
 
       <div
-        ref={previewRef}
+        ref={previewRef as React.RefObject<HTMLDivElement>}
         className={cn('absolute -left-0 hidden w-full')}
         style={{ top: `${-previewTop}px` }}
         contentEditable={false}
       />
 
       <div
-        ref={nodeRef}
+        ref={nodeRef as React.RefObject<HTMLDivElement>}
         className="slate-blockWrapper flow-root"
         onContextMenu={event =>
           editor
@@ -260,7 +264,9 @@ const DragHandle = React.memo(function DragHandle({
 
             // If current block is not in selection, use it as the starting point
             if (!selectionNodes.some(([node]) => node.id === element.id)) {
-              selectionNodes = [[element, editor.api.findPath(element)!]]
+              const elementPath = editor.api.findPath(element)
+              if (!elementPath) return
+              selectionNodes = [[element, elementPath]]
             }
 
             // Process selection nodes to include list children
@@ -298,7 +304,9 @@ const DragHandle = React.memo(function DragHandle({
 
             // If current block is not in selection, use it as the starting point
             if (!selectedBlocks.some(([node]) => node.id === element.id)) {
-              selectedBlocks = [[element, editor.api.findPath(element)!]]
+              const elementPath = editor.api.findPath(element)
+              if (!elementPath) return
+              selectedBlocks = [[element, elementPath]]
             }
 
             // Process selection to include list children
@@ -383,8 +391,9 @@ const createDragPreviewElements = (
   }
 
   const resolveElement = (node: TElement, index: number) => {
-    const domNode = editor.api.toDOMNode(node)!
-    const newDomNode = domNode.cloneNode(true) as HTMLElement
+    const domNode = editor.api.toDOMNode(node)
+		if (!domNode) return
+		const newDomNode = domNode.cloneNode(true) as HTMLElement
 
     // Apply visual compensation for horizontal scroll
     const applyScrollCompensation = (
@@ -429,11 +438,18 @@ const createDragPreviewElements = (
     const lastDomNode = blocks[index - 1]
 
     if (lastDomNode) {
-      const lastDomNodeRect = editor.api
-        .toDOMNode(lastDomNode)!
-        .parentElement!.getBoundingClientRect()
+      const lastDomElement = editor.api.toDOMNode(lastDomNode)
+      const lastParent = lastDomElement?.parentElement
+      const currentParent = domNode.parentElement
 
-      const domNodeRect = domNode.parentElement!.getBoundingClientRect()
+      if (!lastDomElement || !lastParent || !currentParent) {
+        elements.push(wrapper)
+        return
+      }
+
+      const lastDomNodeRect = lastParent.getBoundingClientRect()
+
+      const domNodeRect = currentParent.getBoundingClientRect()
 
       const distance = domNodeRect.top - lastDomNodeRect.bottom
 
@@ -464,11 +480,19 @@ const calculatePreviewTop = (
     element: TElement
   }
 ): number => {
-  const child = editor.api.toDOMNode(element)!
-  const editable = editor.api.toDOMNode(editor)!
   const firstSelectedChild = blocks[0]
 
-  const firstDomNode = editor.api.toDOMNode(firstSelectedChild)!
+  if (!firstSelectedChild) {
+    return 0
+  }
+
+  const child = editor.api.toDOMNode(element)
+  const editable = editor.api.toDOMNode(editor)
+  const firstDomNode = editor.api.toDOMNode(firstSelectedChild)
+
+	if (!child || !editable || !firstDomNode) {
+		return 0
+	}
   // Get editor's top padding
   const editorPaddingTop = Number(
     window.getComputedStyle(editable).paddingTop.replace('px', '')
@@ -503,9 +527,9 @@ const calculatePreviewTop = (
 }
 
 const calcDragButtonTop = (editor: PlateEditor, element: TElement): number => {
-  const child = editor.api.toDOMNode(element)!
-
-  const currentMarginTopString = window.getComputedStyle(child).marginTop
+	const child = editor.api.toDOMNode(element)
+	if (!child) return 0
+	const currentMarginTopString = window.getComputedStyle(child).marginTop
   const currentMarginTop = Number(currentMarginTopString.replace('px', ''))
 
   return currentMarginTop

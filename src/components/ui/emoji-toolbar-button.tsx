@@ -180,7 +180,7 @@ const EmojiButton = React.memo(function EmojiButton({
       onClick={() => onSelect(emoji)}
       onMouseEnter={() => onMouseOver(emoji)}
       onMouseLeave={() => onMouseOver()}
-      aria-label={emoji.skins[0].native}
+      aria-label={emoji.skins?.[0]?.native ?? ''}
       data-index={index}
       tabIndex={-1}
       type="button"
@@ -197,7 +197,7 @@ const EmojiButton = React.memo(function EmojiButton({
         }}
         data-emoji-set="native"
       >
-        {emoji.skins[0].native}
+        {emoji.skins?.[0]?.native}
       </span>
     </button>
   )
@@ -254,7 +254,7 @@ function EmojiPickerContent({
   const getRowWidth = settings.perLine.value * settings.buttonSize.value
 
   const isCategoryVisible = React.useCallback(
-    (categoryId: any) => {
+    (categoryId: EmojiCategoryList) => {
       return visibleCategories.has(categoryId)
         ? visibleCategories.get(categoryId)
         : false
@@ -273,7 +273,7 @@ function EmojiPickerContent({
         return (
           <div
             key={categoryId}
-            ref={section.root}
+            ref={section.root as React.RefObject<HTMLDivElement>}
             style={{ width: getRowWidth }}
             data-id={categoryId}
           >
@@ -340,7 +340,7 @@ function EmojiPickerContent({
 
   return (
     <div
-      ref={refs.current.contentRoot}
+      ref={refs.current.contentRoot as React.RefObject<HTMLDivElement>}
       className={cn(
         'h-full min-h-[50%] overflow-x-hidden overflow-y-auto px-2',
         '[&::-webkit-scrollbar]:w-4',
@@ -350,7 +350,10 @@ function EmojiPickerContent({
       )}
       data-id="scroll"
     >
-      <div ref={refs.current.content} className="h-full">
+      <div
+        ref={refs.current.content as React.RefObject<HTMLDivElement>}
+        className="h-full"
+      >
         {isSearching ? SearchList() : EmojiList()}
       </div>
     </div>
@@ -421,7 +424,7 @@ function EmojiPreview({ emoji }: Pick<UseEmojiPickerType, 'emoji'>) {
   return (
     <div className="flex h-14 max-h-14 min-h-14 items-center border-t border-muted p-2">
       <div className="flex items-center justify-center text-2xl">
-        {emoji?.skins[0].native}
+        {emoji?.skins?.[0]?.native}
       </div>
       <div className="overflow-hidden pl-2">
         <div className="truncate text-sm font-semibold">{emoji?.name}</div>

@@ -72,7 +72,7 @@ export function DateElement(props: PlateElementProps<TDateElement>) {
       }}
     >
       <Popover>
-        <PopoverTrigger asChild>{trigger}</PopoverTrigger>
+        <PopoverTrigger>{trigger}</PopoverTrigger>
         <PopoverContent className="w-auto p-0">
           <Calendar
             selected={new Date(element.date as string)}

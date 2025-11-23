@@ -1,7 +1,5 @@
-import { Link } from 'react-router-dom'
 import { useFavoriteBoards } from '@/hooks/useFavoriteBoards'
 import { ProjectCard } from '../cards/ProjectCard'
-import { Button } from '@/components/ui/button'
 
 export function FavoritesSection() {
   const { data: favorites, isLoading, error } = useFavoriteBoards()

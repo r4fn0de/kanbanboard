@@ -146,7 +146,7 @@ export function MediaPreviewDialog() {
 }
 
 function ScaleInput(props: React.ComponentProps<'input'>) {
-  const { props: scaleInputProps, ref } = useScaleInput()
+  const { props: scaleInputProps } = useScaleInput()
 
-  return <input {...scaleInputProps} {...props} ref={ref} />
+  return <input {...scaleInputProps} {...props} />
 }

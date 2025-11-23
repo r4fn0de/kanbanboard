@@ -53,7 +53,7 @@ export function EquationElement(props: PlateElementProps<TEquationElement>) {
   return (
     <PlateElement className="my-1" {...props}>
       <Popover open={open} onOpenChange={setOpen} modal={false}>
-        <PopoverTrigger asChild>
+        <PopoverTrigger>
           <div
             className={cn(
               'group flex cursor-pointer items-center justify-center rounded-sm select-none hover:bg-primary/10 data-[selected=true]:bg-primary/10',
@@ -128,7 +128,7 @@ export function InlineEquationElement(
       )}
     >
       <Popover open={open} onOpenChange={setOpen} modal={false}>
-        <PopoverTrigger asChild>
+        <PopoverTrigger>
           <div
             className={cn(
               'after:absolute after:inset-0 after:-top-0.5 after:-left-1 after:z-1 after:h-[calc(100%)+4px] after:w-[calc(100%+8px)] after:rounded-sm after:content-[""]',
@@ -212,9 +212,6 @@ const EquationPopoverContent = ({
   return (
     <PopoverContent
       className="flex gap-2"
-      onEscapeKeyDown={e => {
-        e.preventDefault()
-      }}
       contentEditable={false}
     >
       <EquationInput

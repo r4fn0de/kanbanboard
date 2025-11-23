@@ -64,19 +64,25 @@ export const PlaceholderElement = withHOC(
 
     const isImage = element.mediaType === KEYS.img
 
-    const imageRef = React.useRef<HTMLImageElement>(null)
+    const imageRef = React.useRef<HTMLImageElement>(null!)
 
     const { openFilePicker } = useFilePicker({
-      accept: currentContent.accept,
+      accept: currentContent?.accept ?? ['*'],
       multiple: true,
-      onFilesSelected: ({ plainFiles: updatedFiles }) => {
+      onFilesSelected: (data: { plainFiles?: File[] }) => {
+        const updatedFiles = data.plainFiles ?? []
+        if (!updatedFiles.length) return
+
         const firstFile = updatedFiles[0]
+        if (!firstFile) return
         const restFiles = updatedFiles.slice(1)
 
         replaceCurrentPlaceholder(firstFile)
 
         if (restFiles.length > 0) {
-          editor.getTransforms(PlaceholderPlugin).insert.media(restFiles)
+          editor
+            .getTransforms(PlaceholderPlugin)
+            .insert.media(filesToFileList(restFiles))
         }
       },
     })
@@ -91,6 +97,7 @@ export const PlaceholderElement = withHOC(
 
     React.useEffect(() => {
       if (!uploadedFile) return
+      if (!element.mediaType) return
 
       const path = editor.api.findPath(element)
 
@@ -104,7 +111,7 @@ export const PlaceholderElement = withHOC(
           isUpload: true,
           name: element.mediaType === KEYS.file ? uploadedFile.name : '',
           placeholderId: element.id as string,
-          type: element.mediaType!,
+          type: element.mediaType,
           url: uploadedFile.url,
         }
 
@@ -138,7 +145,7 @@ export const PlaceholderElement = withHOC(
 
     return (
       <PlateElement className="my-1" {...props}>
-        {(!loading || !isImage) && (
+        {currentContent && (!loading || !isImage) && (
           <div
             className={cn(
               'flex cursor-pointer items-center rounded-sm bg-muted p-3 pr-9 select-none hover:bg-primary/10'
@@ -190,7 +197,7 @@ export function ImageProgress({
 }: {
   file: File
   className?: string
-  imageRef?: React.RefObject<HTMLImageElement | null>
+  imageRef?: React.RefObject<HTMLImageElement>
   progress?: number
 }) {
   const [objectUrl, setObjectUrl] = React.useState<string | null>(null)
@@ -226,6 +233,12 @@ export function ImageProgress({
       )}
     </div>
   )
+}
+
+function filesToFileList(files: File[]): FileList {
+	const dataTransfer = new DataTransfer()
+	files.forEach(file => dataTransfer.items.add(file))
+	return dataTransfer.files
 }
 
 function formatBytes(

@@ -146,8 +146,6 @@ export function BoardTimelineView({
                 const baseColor =
                   columnBaseColors.get(card.columnId) ??
                   FALLBACK_COLUMN_COLORS[0]
-                const iconBackground = hexToRgba(baseColor, 0.16) ?? undefined
-                const iconBorder = hexToRgba(baseColor, 0.3) ?? undefined
                 const cardBackground = hexToRgba(baseColor, 0.08)
                 const cardHoverBackground = hexToRgba(baseColor, 0.16)
                 const cardBorder = hexToRgba(baseColor, 0.28)

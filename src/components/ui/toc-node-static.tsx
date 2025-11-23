@@ -1,5 +1,3 @@
-import * as React from 'react'
-
 import type { SlateEditor, SlateElementProps, TElement } from 'platejs'
 
 import { type Heading, BaseTocPlugin, isHeading } from '@platejs/toc'
@@ -81,7 +79,7 @@ const getHeadingList = (editor?: SlateEditor) => {
   Array.from(values, ([node, path]) => {
     const { type } = node
     const title = NodeApi.string(node)
-    const depth = headingDepth[type]
+    const depth = headingDepth[type] ?? 1
     const id = node.id as string
 
     if (title) {

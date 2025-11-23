@@ -6,7 +6,7 @@ import {
 	type FormEvent,
 	useId,
 } from "react";
-import { X, Upload, Palette } from "lucide-react";
+import { X, Upload } from "lucide-react";
 import { PaintPaletteIcon } from "@/components/ui/icons";	
 import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import { readFile } from "@tauri-apps/plugin-fs";
@@ -229,12 +229,11 @@ export function CreateWorkspaceDialog({
 				<DialogPortal>
 					<DialogBackdrop />
 					<DialogPopup
-						ref={dialogRef}
 						className="sm:max-w-[440px] p-0 gap-0 overflow-hidden"
 						showCloseButton={false}
 					>
 						{/* Header */}
-						<div className="relative px-6 pt-6 pb-4">
+						<div ref={dialogRef} className="relative px-6 pt-6 pb-4">
 							<button
 								onClick={() => handleDialogChange(false)}
 								className="absolute right-6 top-6 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none"

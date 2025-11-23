@@ -90,11 +90,17 @@ function CodeBlockCombobox() {
     [searchValue]
   )
 
+  React.useEffect(() => {
+    if (!open) {
+      setSearchValue('')
+    }
+  }, [open])
+
   if (readOnly) return null
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
+      <PopoverTrigger>
         <Button
           size="sm"
           variant="ghost"
@@ -106,10 +112,7 @@ function CodeBlockCombobox() {
             'Plain Text'}
         </Button>
       </PopoverTrigger>
-      <PopoverContent
-        className="w-[200px] p-0"
-        onCloseAutoFocus={() => setSearchValue('')}
-      >
+      <PopoverContent className="w-[200px] p-0">
         <Command shouldFilter={false}>
           <CommandInput
             className="h-9"

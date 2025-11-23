@@ -24,20 +24,6 @@ import {
   useStorageStats,
 } from '@/services/storage'
 
-const SettingsField: React.FC<{
-  label: string
-  children: ReactNode
-  description?: ReactNode
-}> = ({ label, children, description }) => (
-  <div className="space-y-2">
-    <Label className="text-sm font-medium text-foreground">{label}</Label>
-    {children}
-    {description && (
-      <div className="text-sm text-muted-foreground">{description}</div>
-    )}
-  </div>
-)
-
 const SettingsSection: React.FC<{
   title: string
   children: ReactNode

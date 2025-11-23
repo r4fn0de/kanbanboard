@@ -23,7 +23,7 @@ import {
 } from 'platejs/react'
 
 import { Button, buttonVariants } from '@/components/ui/button'
-import { Popover, PopoverAnchor, PopoverContent } from '@/components/ui/popover'
+import { Popover, PopoverContent } from '@/components/ui/popover'
 import { Separator } from '@/components/ui/separator'
 
 import { CaptionButton } from './caption'
@@ -68,12 +68,9 @@ export function MediaToolbar({
 
   return (
     <Popover open={open} modal={false}>
-      <PopoverAnchor>{children}</PopoverAnchor>
+      {children}
 
-      <PopoverContent
-        className="w-auto p-1"
-        onOpenAutoFocus={e => e.preventDefault()}
-      >
+      <PopoverContent className="w-auto p-1">
         {isEditing ? (
           <div className="flex w-[330px] flex-col">
             <div className="flex items-center">

@@ -8,7 +8,7 @@ import { AIChatPlugin, aiCommentToRange } from '@platejs/ai/react'
 import { getCommentKey, getTransientCommentKey } from '@platejs/comment'
 import { deserializeMd } from '@platejs/markdown'
 import { BlockSelectionPlugin } from '@platejs/selection/react'
-import { type UIMessage, DefaultChatTransport } from 'ai'
+import { DefaultChatTransport, type UIMessage } from 'ai'
 import { type TNode, KEYS, nanoid, NodeApi, TextApi } from 'platejs'
 import { type PlateEditor, useEditorRef, usePluginOption } from 'platejs/react'
 
@@ -24,14 +24,9 @@ export interface TComment {
   content: string
 }
 
-export interface MessageDataPart {
-  toolName: ToolName
-  comment?: TComment
-}
+export type ChatMessage = UIMessage
 
 export type Chat = UseChatHelpers<ChatMessage>
-
-export type ChatMessage = UIMessage<{}, MessageDataPart>
 
 export const useChat = () => {
   const editor = useEditorRef()
@@ -58,16 +53,28 @@ export const useChat = () => {
           let sample: 'comment' | 'markdown' | 'mdx' | null = null
 
           try {
-            const content = JSON.parse(init?.body as string)
-              .messages.at(-1)
-              .parts.find((p: any) => p.type === 'text')?.text
+            const rawBody = typeof init?.body === 'string' ? init.body : undefined
 
-            if (content.includes('Generate a markdown sample')) {
-              sample = 'markdown'
-            } else if (content.includes('Generate a mdx sample')) {
-              sample = 'mdx'
-            } else if (content.includes('comment')) {
-              sample = 'comment'
+            if (rawBody) {
+              const parsed = JSON.parse(rawBody) as {
+                messages?: {
+                  parts?: { type?: string; text?: string }[]
+                }[]
+              }
+
+              const lastMessage = parsed.messages?.at(-1)
+              const content =
+                lastMessage?.parts?.find(part => part.type === 'text')?.text ?? ''
+
+              if (content.includes('Generate a markdown sample')) {
+                sample = 'markdown'
+              } else if (content.includes('Generate a mdx sample')) {
+                sample = 'mdx'
+              } else if (content.includes('comment')) {
+                sample = 'comment'
+              }
+            } else {
+              sample = null
             }
           } catch {
             sample = null
@@ -98,11 +105,11 @@ export const useChat = () => {
     }),
     onData(data) {
       if (data.type === 'data-toolName') {
-        editor.setOption(AIChatPlugin, 'toolName', data.data)
+        editor.setOption(AIChatPlugin, 'toolName', data.data as ToolName)
       }
 
       if (data.type === 'data-comment' && data.data) {
-        const aiComment = data.data
+        const aiComment = data.data as TComment
         const range = aiCommentToRange(editor, aiComment)
 
         if (!range) return console.warn('No range found for AI comment')
@@ -160,7 +167,7 @@ export const useChat = () => {
     ...options,
   })
 
-  const chat = {
+  const chat: Chat & { _abortFakeStream: () => void } = {
     ...baseChat,
     _abortFakeStream,
   }
@@ -276,6 +283,10 @@ const fakeStreamText = ({
 
         for (let i = 0; i < blocks.length; i++) {
           const block = blocks[i]
+
+          if (!block) {
+            continue
+          }
 
           // Stream the block content
           for (const chunk of block) {

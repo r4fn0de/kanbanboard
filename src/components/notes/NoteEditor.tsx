@@ -258,7 +258,7 @@ const COLOR_PRESETS = {
 
 function ToolbarButtonWithTooltip({ children, tooltip }: { children: React.ReactNode; tooltip: string }) {
   return (
-    <Tooltip.Root delay={0} closeDelay={0}>
+    <Tooltip.Root>
       <Tooltip.Trigger data-baseui-tooltip-trigger>
         {children}
       </Tooltip.Trigger>

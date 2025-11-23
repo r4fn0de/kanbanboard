@@ -1,9 +1,6 @@
 'use client'
 
-import * as React from 'react'
-
 import {
-  ArrowUpToLineIcon,
   BaselineIcon,
   BoldIcon,
   Code2Icon,
@@ -64,9 +61,7 @@ export function FixedToolbarButtons() {
           </ToolbarGroup>
 
           <ToolbarGroup>
-            <ExportToolbarButton>
-              <ArrowUpToLineIcon />
-            </ExportToolbarButton>
+            <ExportToolbarButton />
 
             <ImportToolbarButton />
           </ToolbarGroup>

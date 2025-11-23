@@ -1,6 +1,5 @@
 'use client'
 
-import * as React from 'react'
 import LiteYouTubeEmbed from 'react-lite-youtube-embed'
 import { Tweet } from 'react-tweet'
 
@@ -60,10 +59,10 @@ export const MediaEmbedElement = withHOC(
                 options={{ direction: 'left' }}
               />
 
-              {isVideo ? (
-                isYoutube ? (
+              {isVideo && (
+                isYoutube && embed?.id ? (
                   <LiteYouTubeEmbed
-                    id={embed!.id!}
+                    id={embed.id}
                     title="youtube"
                     wrapperClass={cn(
                       'rounded-sm',
@@ -83,7 +82,7 @@ export const MediaEmbedElement = withHOC(
                       '[&.lyt-activated_>_.lty-playbtn]:pointer-events-none [&.lyt-activated_>_.lty-playbtn]:opacity-0!'
                     )}
                   />
-                ) : (
+                ) : embed?.url ? (
                   <div
                     className={cn(
                       provider === 'vimeo' && 'pb-[75%]',
@@ -99,14 +98,14 @@ export const MediaEmbedElement = withHOC(
                         focused && selected && 'ring-2 ring-ring ring-offset-2'
                       )}
                       title="embed"
-                      src={embed!.url}
+                      src={embed.url}
                       allowFullScreen
                     />
                   </div>
-                )
-              ) : null}
+                ) : null
+              )}
 
-              {isTweet && (
+              {isTweet && embed?.id && (
                 <div
                   className={cn(
                     '[&_.react-tweet-theme]:my-0',
@@ -115,7 +114,7 @@ export const MediaEmbedElement = withHOC(
                       '[&_.react-tweet-theme]:ring-2 [&_.react-tweet-theme]:ring-ring [&_.react-tweet-theme]:ring-offset-2'
                   )}
                 >
-                  <Tweet id={embed!.id!} />
+                  <Tweet id={embed.id} />
                 </div>
               )}
 

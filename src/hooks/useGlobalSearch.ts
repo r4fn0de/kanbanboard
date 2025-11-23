@@ -11,6 +11,7 @@ export interface SearchResult {
   board_id: string
   board_name: string
   description?: string
+  url?: string
 }
 
 export function useGlobalSearch() {

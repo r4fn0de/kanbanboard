@@ -18,25 +18,6 @@ import { AppearancePane } from './panes/AppearancePane'
 import { WorkspacesPane } from './panes/WorkspacesPane'
 import { StoragePane } from './panes/StoragePane'
 import { PreferencesSidebar, type PreferencePane } from './PreferencesSidebar'
-import { PaintPaletteIcon, FolderIcon, HardDriveIcon } from '@/components/ui/icons'
-
-const navigationItems = [
-  {
-    id: 'appearance' as const,
-    name: 'Appearance',
-    icon: PaintPaletteIcon,
-  },
-  {
-    id: 'workspaces' as const,
-    name: 'Workspaces',
-    icon: FolderIcon,
-  },
-  {
-    id: 'storage' as const,
-    name: 'Storage',
-    icon: HardDriveIcon,
-  },
-] as const
 
 const getPaneTitle = (pane: PreferencePane): string => {
   switch (pane) {

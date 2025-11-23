@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect } from "react";
 import Cropper from "react-easy-crop";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,13 +11,6 @@ import {
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
 import { ZoomIn, ZoomOut, RotateCw, Check, X } from "lucide-react";
-
-interface Area {
-	x: number;
-	y: number;
-	width: number;
-	height: number;
-}
 
 interface CroppedAreaPixels {
 	x: number;
@@ -111,7 +104,7 @@ export function ImageCropper({
 	const [imageError, setImageError] = useState<string | null>(null);
 
 	const onCropAreaChange = useCallback(
-		(croppedArea: Area, croppedAreaPixels: CroppedAreaPixels) => {
+		(croppedAreaPixels: CroppedAreaPixels) => {
 			setCroppedAreaPixels(croppedAreaPixels);
 		},
 		[],
@@ -120,12 +113,6 @@ export function ImageCropper({
 	const onMediaLoaded = useCallback(() => {
 		setImageLoaded(true);
 		setImageError(null);
-	}, []);
-
-	const onLoadError = useCallback((error: unknown) => {
-		console.error("Failed to load image:", error);
-		setImageError("Failed to load image");
-		setImageLoaded(false);
 	}, []);
 
 	const handleCropConfirm = useCallback(async () => {
@@ -247,7 +234,6 @@ export function ImageCropper({
 							onCropComplete={onCropAreaChange}
 							onZoomChange={setZoom}
 							onMediaLoaded={onMediaLoaded}
-							onLoadError={onLoadError}
 							cropShape="round"
 							showGrid={false}
 							objectFit="contain"

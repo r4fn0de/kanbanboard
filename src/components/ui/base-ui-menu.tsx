@@ -31,7 +31,7 @@ export function MenuTrigger({
     return (
       <BaseMenu.Trigger
         className={cn('cursor-pointer', className)}
-        render={children}
+        render={children as React.ReactElement<Record<string, unknown>>}
         {...props}
       />
     )
@@ -149,7 +149,7 @@ export function MenuItem({
 /**
  * Menu Separator
  */
-export interface MenuSeparatorProps extends BaseMenu.Separator.Props {}
+export type MenuSeparatorProps = BaseMenu.Separator.Props
 
 export function MenuSeparator({ className, ...props }: MenuSeparatorProps) {
   return (

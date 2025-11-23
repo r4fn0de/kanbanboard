@@ -8,7 +8,7 @@ import type {
 } from '@radix-ui/react-dropdown-menu'
 
 import { useComposedRef } from '@udecode/cn'
-import debounce from 'lodash/debounce.js'
+import debounce from 'lodash/debounce'
 import { EraserIcon, PlusIcon } from 'lucide-react'
 import { useEditorRef, useEditorSelector } from 'platejs/react'
 
@@ -292,7 +292,7 @@ function ColorInput({
       })}
       <input
         {...props}
-        ref={useComposedRef(props.ref, inputRef)}
+        ref={useComposedRef(inputRef)}
         className={cn('size-0 overflow-hidden border-0 p-0', className)}
         value={value}
         type="color"

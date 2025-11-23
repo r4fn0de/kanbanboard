@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@/test/test-utils'
-import { useGlobalSearch } from '@/hooks/useGlobalSearch'
+import { useGlobalSearch, type SearchResult } from '@/hooks/useGlobalSearch'
 import * as tauriModule from '@tauri-apps/api/core'
 
 // Mock the Tauri API
@@ -18,7 +18,7 @@ describe('useGlobalSearch', () => {
     vi.clearAllMocks()
   })
 
-  const mockResults = [
+  const mockResults: [SearchResult] = [
     {
       id: '1',
       title: 'Test Board',
@@ -87,8 +87,10 @@ describe('useGlobalSearch', () => {
     // Wait for debounced search
     await new Promise(resolve => setTimeout(resolve, 300))
 
+    const firstResult = mockResults[0]
+
     act(() => {
-      result.current.handleSelect(mockResults[0])
+      result.current.handleSelect(firstResult)
     })
 
     expect(mockLocation.href).toBe('/board/board-1')

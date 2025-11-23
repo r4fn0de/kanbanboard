@@ -1,12 +1,14 @@
+import type { HTMLAttributes, ReactNode } from 'react'
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent } from '@/test/test-utils'
 import { EmptyOnboarding } from '@/components/onboarding/EmptyOnboarding'
-import { Button } from '@/components/ui/button'
 
 // Mock framer-motion
 vi.mock('framer-motion', () => ({
   motion: {
-    div: ({ children, ...props }: any) => <div {...props}>{children}</div>,
+    div: ({ children, ...props }: HTMLAttributes<HTMLDivElement> & { children?: ReactNode }) => (
+      <div {...props}>{children}</div>
+    ),
   },
 }))
 

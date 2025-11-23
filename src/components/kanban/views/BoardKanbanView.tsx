@@ -27,7 +27,6 @@ import {
 	verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { KanbanCard, KanbanColumn } from "@/types/common";
 import {
@@ -76,18 +75,6 @@ interface BoardKanbanViewProps {
 		priority: KanbanCard["priority"],
 	) => void;
 	onMoveCardToColumn?: (card: KanbanCard, targetColumnId: string) => void;
-}
-
-function hexToRgba(hex: string | null | undefined, alpha: number) {
-	if (!hex || !/^#([0-9a-fA-F]{6})$/.test(hex)) {
-		return null;
-	}
-
-	const value = hex.slice(1);
-	const r = parseInt(value.slice(0, 2), 16);
-	const g = parseInt(value.slice(2, 4), 16);
-	const b = parseInt(value.slice(4, 6), 16);
-	return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
 // Colisão composta: pointer → rectIntersection → cards/ends com closestCenter → colunas com closestCorners

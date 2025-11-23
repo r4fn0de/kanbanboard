@@ -61,6 +61,9 @@ export function useWidgetLayout() {
 
       const newWidgets = [...prev]
       const [movedWidget] = newWidgets.splice(oldIndex, 1)
+
+      if (!movedWidget) return prev
+
       newWidgets.splice(newIndex, 0, movedWidget)
 
       // Update order numbers

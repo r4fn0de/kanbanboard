@@ -52,7 +52,7 @@ import {
   CommandItem,
   CommandList,
 } from '@/components/ui/command'
-import { Popover, PopoverAnchor, PopoverContent } from '@/components/ui/popover'
+import { Popover, PopoverContent } from '@/components/ui/popover'
 import { cn } from '@/lib/utils'
 import { commentPlugin } from '@/components/editor/plugins/comment-kit'
 
@@ -85,8 +85,11 @@ export function AIMenu() {
   React.useEffect(() => {
     if (streaming) {
       const anchor = api.aiChat.node({ anchor: true })
+      if (!anchor) return
+
       setTimeout(() => {
-        const anchorDom = editor.api.toDOMNode(anchor![0])!
+        const anchorDom = editor.api.toDOMNode(anchor[0])
+        if (!anchorDom) return
         setAnchorElement(anchorDom)
       }, 0)
     }
@@ -109,7 +112,11 @@ export function AIMenu() {
   useEditorChat({
     chat,
     onOpenBlockSelection: (blocks: NodeEntry[]) => {
-      show(editor.api.toDOMNode(blocks.at(-1)![0])!)
+      const last = blocks.at(-1)
+      if (!last) return
+      const dom = editor.api.toDOMNode(last[0])
+      if (!dom) return
+      show(dom)
     },
     onOpenChange: open => {
       if (!open) {
@@ -118,7 +125,9 @@ export function AIMenu() {
       }
     },
     onOpenCursor: () => {
-      const [ancestor] = editor.api.block({ highest: true })!
+      const result = editor.api.block({ highest: true })
+      if (!result) return
+      const [ancestor] = result
 
       if (!editor.api.isAt({ end: true }) && !editor.api.isEmpty(ancestor)) {
         editor
@@ -126,10 +135,16 @@ export function AIMenu() {
           .blockSelection.set(ancestor.id as string)
       }
 
-      show(editor.api.toDOMNode(ancestor)!)
+      const dom = editor.api.toDOMNode(ancestor)
+      if (!dom) return
+      show(dom)
     },
     onOpenSelection: () => {
-      show(editor.api.toDOMNode(editor.api.blocks().at(-1)![0])!)
+      const lastBlock = editor.api.blocks().at(-1)
+      if (!lastBlock) return
+      const dom = editor.api.toDOMNode(lastBlock[0])
+      if (!dom) return
+      show(dom)
     },
   })
 
@@ -137,7 +152,8 @@ export function AIMenu() {
     api.aiChat.stop()
 
     // remove when you implement the route /api/ai/command
-    ;(chat as any)._abortFakeStream()
+    const chatWithAbort = chat as ChatWithAbortFakeStream
+    chatWithAbort._abortFakeStream?.()
   })
 
   const isLoading = status === 'streaming' || status === 'submitted'
@@ -160,7 +176,10 @@ export function AIMenu() {
       if (!anchorNode) return
 
       const block = editor.api.block({ at: anchorNode[1] })
-      setAnchorElement(editor.api.toDOMNode(block![0]!)!)
+      if (!block) return
+      const dom = editor.api.toDOMNode(block[0])
+      if (!dom) return
+      setAnchorElement(dom)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoading])
@@ -172,18 +191,15 @@ export function AIMenu() {
   if (toolName === 'edit' && mode === 'chat' && isLoading) return null
 
   return (
-    <Popover open={open} onOpenChange={setOpen} modal={false}>
-      <PopoverAnchor virtualRef={{ current: anchorElement! }} />
-
+    <Popover
+      open={open}
+      onOpenChange={setOpen}
+      modal={false}
+    >
       <PopoverContent
         className="border-none bg-transparent p-0 shadow-none"
         style={{
           width: anchorElement?.offsetWidth,
-        }}
-        onEscapeKeyDown={e => {
-          e.preventDefault()
-
-          api.aiChat.hide()
         }}
         align="center"
         side="bottom"
@@ -249,6 +265,10 @@ type EditorChatState =
   | 'cursorSuggestion'
   | 'selectionCommand'
   | 'selectionSuggestion'
+
+interface ChatWithAbortFakeStream {
+  _abortFakeStream?: () => void
+}
 
 const AICommentIcon = () => (
   <svg
@@ -329,8 +349,9 @@ Start writing a new paragraph AFTER <Document> ONLY ONE SENTENCE`
     label: 'Discard',
     shortcut: 'Escape',
     value: 'discard',
-    onSelect: ({ editor, input }) => {
-      editor.getTransforms(AIPlugin).ai.undo()
+    onSelect: ({ editor }) => {
+      const transforms = editor.getTransforms(AIPlugin)
+      transforms?.ai?.undo?.call(transforms.ai)
       editor.getApi(AIChatPlugin).aiChat.hide()
     },
   },
@@ -474,7 +495,7 @@ Start writing a new paragraph AFTER <Document> ONLY ONE SENTENCE`
     icon: <CornerUpLeft />,
     label: 'Try again',
     value: 'tryAgain',
-    onSelect: ({ editor, input }) => {
+    onSelect: ({ editor }) => {
       void editor.getApi(AIChatPlugin).aiChat.reload()
     },
   },
@@ -560,7 +581,7 @@ export const AIMenuItems = ({
 }) => {
   const editor = useEditorRef()
   const { messages } = usePluginOption(AIChatPlugin, 'chat')
-  const aiEditor = usePluginOption(AIChatPlugin, 'aiEditor')!
+  const aiEditor = usePluginOption(AIChatPlugin, 'aiEditor')
   const isSelecting = useIsSelecting()
 
   const menuState = React.useMemo(() => {
@@ -572,16 +593,21 @@ export const AIMenuItems = ({
   }, [isSelecting, messages])
 
   const menuGroups = React.useMemo(() => {
-    const items = menuStateItems[menuState]
+    const items = menuStateItems[menuState] ?? []
 
     return items
   }, [menuState])
 
   React.useEffect(() => {
-    if (menuGroups.length > 0 && menuGroups[0].items.length > 0) {
-      setValue(menuGroups[0].items[0].value)
+    const firstGroup = menuGroups[0]
+    const firstItem = firstGroup?.items[0]
+
+    if (firstItem) {
+      setValue(firstItem.value)
     }
   }, [menuGroups, setValue])
+
+  if (!aiEditor) return null
 
   return (
     <>
@@ -643,7 +669,8 @@ export function AILoadingBar() {
     api.aiChat.stop()
 
     // remove when you implement the route /api/ai/command
-    ;(chat as any)._abortFakeStream()
+    const chatWithAbort = chat as ChatWithAbortFakeStream
+    chatWithAbort._abortFakeStream?.()
   })
 
   if (

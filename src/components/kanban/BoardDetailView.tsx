@@ -65,7 +65,7 @@ interface BoardDetailViewProps {
 	onViewModeChange?: (mode: BoardViewMode) => void;
 }
 
-type PriorityFilterOptionValue = "all" | KanbanPriority;
+type PriorityFilterOptionValue = KanbanPriority | "all";
 type DueFilterOptionValue = "all" | CardDueStatus | "no_due";
 
 type DisplayColumnsOption = "status";
@@ -178,7 +178,7 @@ export function BoardDetailView({
 		[],
 	);
 	const [selectedDueStatuses, setSelectedDueStatuses] = useState<
-		Array<CardDueStatus | "no_due">
+		(CardDueStatus | "no_due")[]
 	>([]);
 	const [displayColumns, setDisplayColumns] =
 		useState<DisplayColumnsOption>("status");
@@ -1104,7 +1104,7 @@ export function BoardDetailView({
 								Priority
 							</span>
 							<Select
-								value={prioritySelectValue as any}
+								value={prioritySelectValue as string[]}
 								onValueChange={(value) => {
 									const values = (Array.isArray(value)
 										? value
@@ -1121,13 +1121,11 @@ export function BoardDetailView({
 										{(() => {
 											const count = selectedPriorities.length;
 											if (count === 0) {
-												const option = PRIORITY_FILTER_OPTIONS[0]; // "all"
-												const Icon = option.icon;
 												return (
 													<span className="flex items-center gap-1.5">
-														<Icon className="h-3 w-3 text-muted-foreground/70" />
+														<PriorityIcon className="h-3 w-3 text-muted-foreground/70" />
 														<span className="truncate text-muted-foreground/90">
-															{option.label}
+															All
 														</span>
 													</span>
 												);
@@ -1214,14 +1212,14 @@ export function BoardDetailView({
 								Deadline
 							</span>
 							<Select
-								value={dueSelectValue as any}
+								value={dueSelectValue}
 								onValueChange={(value) => {
 									const values = (Array.isArray(value)
 										? value
 										: [value]) as DueFilterOptionValue[];
-									const next = values.filter((v) => v !== "all") as Array<
-										CardDueStatus | "no_due"
-									>;
+									const next = values.filter(
+										(v): v is CardDueStatus | "no_due" => v !== "all",
+									);
 									setSelectedDueStatuses(next);
 								}}
 							>
@@ -1229,7 +1227,7 @@ export function BoardDetailView({
 									size="sm"
 									className="h-7 w-full rounded-md border border-border/30 bg-background/70 px-2 text-xs font-medium text-muted-foreground transition-colors duration-150 hover:text-foreground hover:bg-accent/30"
 								>
-									<SelectValue placeholder="All">
+									<SelectValue>
 										{(() => {
 											const count = selectedDueStatuses.length;
 											if (count === 0) {

@@ -269,7 +269,11 @@ export function WorkspaceSelect({
     >
       <Select
         value={value ?? undefined}
-        onValueChange={onChange}
+        onValueChange={nextValue => {
+          if (nextValue) {
+            onChange(nextValue)
+          }
+        }}
         open={selectOpen}
         onOpenChange={setSelectOpen}
       >
@@ -319,7 +323,7 @@ export function WorkspaceSelect({
                 </span>
               </motion.div>
             ) : (
-              <SelectValue placeholder="Select workspace" />
+              <SelectValue>Select workspace</SelectValue>
             )}
           </AnimatePresence>
         </SelectTrigger>

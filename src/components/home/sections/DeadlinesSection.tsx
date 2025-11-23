@@ -1,8 +1,6 @@
 import { formatDistanceToNow } from 'date-fns'
-import { Link } from 'react-router-dom'
 import { AlertCircle } from 'lucide-react'
 import { useUpcomingDeadlines } from '@/hooks/useUpcomingDeadlines'
-import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
 export function DeadlinesSection() {

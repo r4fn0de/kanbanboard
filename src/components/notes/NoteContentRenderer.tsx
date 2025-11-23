@@ -2,16 +2,18 @@ import { useEffect, useMemo, useState } from 'react'
 import { BlockNoteView } from '@blocknote/shadcn'
 import { ChevronDown, ChevronUp } from 'lucide-react'
 import '@blocknote/shadcn/style.css'
-import type {
-  BlockNoteEditor,
-  PartialBlock,
-  DefaultBlockSchema,
-  DefaultInlineContentSchema,
-  DefaultStyleSchema,
-} from '@blocknote/core'
+import type { BlockNoteEditor } from '@blocknote/core'
 import { useCreateBlockNote } from '@blocknote/react'
 import { useTheme } from '@/hooks/use-theme'
 import { cn } from '@/lib/utils'
+
+interface SerializedContentItem {
+  text?: string
+}
+
+interface SerializedBlock {
+  content?: SerializedContentItem | SerializedContentItem[]
+}
 
 interface NoteContentRendererProps {
   content: string
@@ -85,14 +87,25 @@ useEffect(() => {
         const parsed = JSON.parse(content)
         if (Array.isArray(parsed)) {
           // Count total characters in all blocks
-          const totalChars = parsed.reduce((total: number, block: any) => {
-            if (block.content) {
-              if (Array.isArray(block.content)) {
-                return total + block.content.reduce((blockTotal: number, item: any) =>
-                  blockTotal + (item.text?.length || 0), 0)
-              }
-              return total + (block.content.text?.length || 0)
+          const blocks = parsed as SerializedBlock[]
+          const totalChars = blocks.reduce((total: number, block: SerializedBlock) => {
+            const blockContent = block.content
+
+            if (Array.isArray(blockContent)) {
+              return (
+                total +
+                blockContent.reduce(
+                  (blockTotal: number, item: SerializedContentItem) =>
+                    blockTotal + (item.text?.length ?? 0),
+                  0
+                )
+              )
             }
+
+            if (blockContent) {
+              return total + (blockContent.text?.length ?? 0)
+            }
+
             return total
           }, 0)
           
@@ -100,7 +113,7 @@ useEffect(() => {
           setNeedsTruncation(totalChars > 300)
         }
       }
-    } catch (error) {
+    } catch {
       // If parsing fails, use string length as fallback
       setNeedsTruncation(content.length > 300)
     }
@@ -124,13 +137,14 @@ if (!content || content.trim() === '') {
 
   const toggleId = id ? `expand-toggle-${id}` : undefined
 
-return (
+  return (
     <div className={cn('note-content-renderer', className)}>
       <div
         className={cn(
           'note-content-wrapper relative overflow-hidden transition-all duration-300 ease-in-out',
           expanded ? '' : 'max-h-[120px]'
         )}
+        style={!expanded ? { maxHeight } : undefined}
       >
         <BlockNoteView
           editor={editor}
