@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { PinIcon, TrashIcon, CalendarIcon } from '@/components/ui/icons'
 import { cn } from '@/lib/utils'
 import type { Note } from '@/services/notes'
@@ -12,8 +12,6 @@ import {
   ContextMenuTrigger,
 } from '@/components/ui/context-menu'
 import { Skeleton } from '@/components/ui/skeleton'
-import { NoteContentRenderer } from './NoteContentRenderer'
-
 const NOTE_LIST_SKELETON_KEYS = [
   'notes-loading-1',
   'notes-loading-2',
@@ -33,21 +31,7 @@ export function NotesList({
   searchQuery,
 }: NotesListProps) {
   const { data: notes = [], isLoading } = useNotes(boardId)
-  const [expandedNotes, setExpandedNotes] = useState<Set<string>>(new Set())
-
-const normalizedQuery = searchQuery.trim().toLowerCase()
-
-  const toggleNoteExpanded = (noteId: string) => {
-    setExpandedNotes(prev => {
-      const newSet = new Set(prev)
-      if (newSet.has(noteId)) {
-        newSet.delete(noteId)
-      } else {
-        newSet.add(noteId)
-      }
-      return newSet
-    })
-  }
+  const normalizedQuery = searchQuery.trim().toLowerCase()
 
   const processedNotes = useMemo(() => {
     const matchesQuery = normalizedQuery
@@ -106,8 +90,6 @@ const normalizedQuery = searchQuery.trim().toLowerCase()
                       note={note}
                       onClick={() => onSelectNote(note)}
                       boardId={boardId}
-                      expanded={expandedNotes.has(note.id)}
-                      onToggleExpanded={() => toggleNoteExpanded(note.id)}
                     />
                   ))}
                 </div>
@@ -129,8 +111,6 @@ const normalizedQuery = searchQuery.trim().toLowerCase()
                       note={note}
                       onClick={() => onSelectNote(note)}
                       boardId={boardId}
-                      expanded={expandedNotes.has(note.id)}
-                      onToggleExpanded={() => toggleNoteExpanded(note.id)}
                     />
                   ))}
                 </div>
@@ -147,11 +127,9 @@ interface NoteCardProps {
   note: Note
   onClick: () => void
   boardId: string
-  expanded: boolean
-  onToggleExpanded: () => void
 }
 
-function NoteCard({ note, onClick, boardId, expanded, onToggleExpanded }: NoteCardProps) {
+function NoteCard({ note, onClick, boardId }: NoteCardProps) {
   const updateNote = useUpdateNote(boardId)
   const deleteNote = useDeleteNote(boardId)
 
@@ -212,16 +190,6 @@ function NoteCard({ note, onClick, boardId, expanded, onToggleExpanded }: NoteCa
           </div>
           
 {/* Rich content preview */}
-          <div className="mb-3">
-            <NoteContentRenderer
-              content={note.content}
-              className="text-sm"
-              maxHeight="120px"
-              expanded={expanded}
-              onToggleExpanded={() => onToggleExpanded()}
-              id={note.id}
-            />
-          </div>
           
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <CalendarIcon className="h-3 w-3" />
