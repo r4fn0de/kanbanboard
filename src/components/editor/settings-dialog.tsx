@@ -22,6 +22,7 @@ import {
 import { useEditorRef } from "platejs/react";
 
 import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import {
 	Command,
 	CommandEmpty,
@@ -109,7 +110,7 @@ interface DeleteWorkspaceState {
 export function SettingsDialog() {
 	const editor = useEditorRef();
 
-	const [tempModel, setTempModel] = React.useState<Model>(models[0]);
+	const [tempModel, setTempModel] = React.useState<Model>(models[0]!);
 	const [tempKeys, setTempKeys] = React.useState<Record<string, string>>({
 		openai: "",
 		uploadthing: "",
@@ -175,6 +176,7 @@ export function SettingsDialog() {
 
 		editor.setOption(aiChatPlugin, "chatOptions", {
 			...chatOptions,
+			api: "/api/ai/command",
 			body: {
 				...chatOptions.body,
 				apiKey: tempKeys.openai,
@@ -391,26 +393,22 @@ export function SettingsDialog() {
 				>
 					<span className="inline-flex bg-background px-2">{label}</span>
 				</label>
-				<Button
-					asChild
-					size="icon"
-					variant="ghost"
-					className="absolute top-0 right-[28px] h-full"
+				<a
+					className={cn(
+						buttonVariants({ size: "icon", variant: "ghost" }),
+						"absolute top-0 right-[28px] h-full",
+					)}
+					href={
+						service === "openai"
+							? "https://platform.openai.com/api-keys"
+							: "https://uploadthing.com/dashboard"
+					}
+					rel="noopener noreferrer"
+					target="_blank"
 				>
-					<a
-						className="flex items-center"
-						href={
-							service === "openai"
-								? "https://platform.openai.com/api-keys"
-								: "https://uploadthing.com/dashboard"
-						}
-						rel="noopener noreferrer"
-						target="_blank"
-					>
-						<ExternalLinkIcon className="size-4" />
-						<span className="sr-only">Get {label}</span>
-					</a>
-				</Button>
+					<ExternalLinkIcon className="size-4" />
+					<span className="sr-only">Get {label}</span>
+				</a>
 			</div>
 
 			<Input
@@ -445,19 +443,21 @@ export function SettingsDialog() {
 
 	return (
 		<Dialog open={open} onOpenChange={setOpen}>
-			<DialogTrigger asChild>
-				<Button
-					size="icon"
-					variant="default"
-					className={cn(
-						"group fixed right-4 bottom-4 z-50 size-10 overflow-hidden",
-						"rounded-full shadow-md hover:shadow-lg",
-					)}
-					// data-block-hide
-				>
-					<Settings className="size-4" />
-				</Button>
-			</DialogTrigger>
+			<DialogTrigger
+				render={
+					<Button
+						size="icon"
+						variant="default"
+						className={cn(
+							"group fixed right-4 bottom-4 z-50 size-10 overflow-hidden",
+							"rounded-full shadow-md hover:shadow-lg",
+						)}
+						// data-block-hide
+					>
+						<Settings className="size-4" />
+					</Button>
+				}
+			/>
 			<DialogContent>
 				<DialogHeader>
 					<DialogTitle className="text-xl">Settings</DialogTitle>

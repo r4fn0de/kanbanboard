@@ -58,7 +58,7 @@ export async function POST(req: Request) {
 
         messages[lastIndex] = replaceMessagePlaceholders(
           editor,
-          messages[lastIndex],
+          messages[lastIndex]!,
           {
             isSelecting,
           }
@@ -364,7 +364,7 @@ const replaceMessagePlaceholders = (
     return { ...part, text } as typeof part
   })
 
-  return { ...message, parts }
+  return { ...message, parts: parts as any }
 }
 
 const SELECTION_START = '<Selection>'
