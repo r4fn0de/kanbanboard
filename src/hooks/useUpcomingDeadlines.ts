@@ -11,7 +11,7 @@ export interface TaskWithDeadline {
   days_until: number
 }
 
-export function useUpcomingDeadlines(daysAhead: number = 7) {
+export function useUpcomingDeadlines(daysAhead = 7) {
   return useQuery({
     queryKey: ['home', 'upcoming-deadlines', daysAhead],
     queryFn: async () => {

@@ -2,7 +2,7 @@ import type { ComponentType } from 'react'
 import { PriorityIcon, PriorityLowIcon, PriorityMediumIcon, PriorityHighIcon } from '@/components/ui/icons'
 import type { KanbanCard } from '@/types/common'
 
-export type PriorityVariant = {
+export interface PriorityVariant {
   label: string
   className: string
   icon: ComponentType<{ className?: string }>

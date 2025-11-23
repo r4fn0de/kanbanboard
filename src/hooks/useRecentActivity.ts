@@ -12,7 +12,7 @@ export interface Activity {
   entity_type: string
 }
 
-export function useRecentActivity(limit: number = 10) {
+export function useRecentActivity(limit = 10) {
   return useQuery({
     queryKey: ['home', 'recent-activity', limit],
     queryFn: async () => {
