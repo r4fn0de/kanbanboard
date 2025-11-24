@@ -25,6 +25,8 @@ interface ProjectListProps {
   onOpenSettings: (board: KanbanBoard) => void
   onOpenDelete: (board: KanbanBoard) => void
   onCreateProject: () => void
+  openMenuBoardId?: string | null
+  onOpenMenuBoardChange?: (boardId: string | null) => void
 }
 
 function ProjectListItem({
@@ -33,12 +35,16 @@ function ProjectListItem({
   useTransparentStyle,
   onOpenSettings,
   onOpenDelete,
+  isMenuOpen,
+  onMenuOpenChange,
 }: {
   board: KanbanBoard
   index: number
   useTransparentStyle: boolean
   onOpenSettings: (board: KanbanBoard) => void
   onOpenDelete: (board: KanbanBoard) => void
+  isMenuOpen: boolean
+  onMenuOpenChange: (open: boolean) => void
 }) {
   const IconComponent = PROJECT_ICON_MAP[board.icon ?? ''] ?? Folder
   const hasEmoji = board.emoji && board.emoji.trim().length > 0
@@ -82,7 +88,7 @@ function ProjectListItem({
         )}
         <span className="truncate font-medium">{board.title}</span>
       </NavLink>
-      <DropdownMenu>
+      <DropdownMenu open={isMenuOpen} onOpenChange={onMenuOpenChange}>
         <DropdownMenuTrigger asChild>
           <motion.button
             type="button"
@@ -137,6 +143,8 @@ export const ProjectList = memo(function ProjectList({
   onOpenSettings,
   onOpenDelete,
   onCreateProject,
+  openMenuBoardId,
+  onOpenMenuBoardChange,
 }: ProjectListProps) {
   const isLoading = isLoadingBoards || isLoadingWorkspaces
   const isError = isBoardsError || isWorkspacesError
@@ -244,6 +252,10 @@ export const ProjectList = memo(function ProjectList({
                   useTransparentStyle={useTransparentStyle}
                   onOpenSettings={onOpenSettings}
                   onOpenDelete={onOpenDelete}
+                  isMenuOpen={openMenuBoardId === board.id}
+                  onMenuOpenChange={open =>
+                    onOpenMenuBoardChange?.(open ? board.id : null)
+                  }
                 />
               ))
             ) : (

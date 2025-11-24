@@ -50,6 +50,10 @@ export function MainWindow() {
       ? sidebarLayoutPreference[2]
       : (sidebarLayoutPreference[1] ?? 30)
   const [isHoveringEdge, setIsHoveringEdge] = useState(false)
+  const [isFloatingWorkspaceSelectOpen, setIsFloatingWorkspaceSelectOpen] =
+    useState(false)
+  const [isFloatingProjectMenuOpen, setIsFloatingProjectMenuOpen] =
+    useState(false)
 
   // Set up global event listeners (keyboard shortcuts, etc.)
   useMainWindowEventListeners()
@@ -93,20 +97,31 @@ export function MainWindow() {
 
           {/* Floating sidebar on hover */}
           <AnimatePresence>
-            {isHoveringEdge && (
+            {(isHoveringEdge ||
+              isFloatingWorkspaceSelectOpen ||
+              isFloatingProjectMenuOpen) && (
               <motion.div
                 initial={{ x: -256, opacity: 0 }}
                 animate={{ x: 0, opacity: 1 }}
                 exit={{ x: -256, opacity: 0 }}
                 transition={{ duration: 0.2, ease: 'easeOut' }}
                 onMouseEnter={() => setIsHoveringEdge(true)}
-                onMouseLeave={() => setIsHoveringEdge(false)}
+                onMouseLeave={() => {
+                  if (!isFloatingWorkspaceSelectOpen && !isFloatingProjectMenuOpen) {
+                    setIsHoveringEdge(false)
+                  }
+                }}
                 className={cn(
                   'absolute left-0 top-0 bottom-0 w-64 shadow-2xl rounded-r-[12px] overflow-hidden bg-background'
                 )}
                 style={{ zIndex: 10001 }}
               >
-                <LeftSideBar className="h-full bg-background" forceSolidStyle />
+                <LeftSideBar
+                  className="h-full bg-background"
+                  forceSolidStyle
+                  onWorkspaceSelectOpenChange={setIsFloatingWorkspaceSelectOpen}
+                  onProjectMenuOpenChange={setIsFloatingProjectMenuOpen}
+                />
               </motion.div>
             )}
           </AnimatePresence>

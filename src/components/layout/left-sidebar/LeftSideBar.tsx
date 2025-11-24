@@ -22,12 +22,16 @@ interface LeftSideBarProps {
   children?: React.ReactNode
   className?: string
   forceSolidStyle?: boolean
+  onWorkspaceSelectOpenChange?: (open: boolean) => void
+  onProjectMenuOpenChange?: (open: boolean) => void
 }
 
 export function LeftSideBar({
   children,
   className,
   forceSolidStyle = false,
+  onWorkspaceSelectOpenChange,
+  onProjectMenuOpenChange,
 }: LeftSideBarProps) {
   const { transparencyEnabled } = useTheme()
   const [createProjectOpen, setCreateProjectOpen] = useState(false)
@@ -47,6 +51,8 @@ export function LeftSideBar({
     null
   )
   const [deleteWorkspaceName, _setDeleteWorkspaceName] = useState('')
+  const [openProjectMenuBoardId, setOpenProjectMenuBoardId] =
+    useState<string | null>(null)
 
   const { leftSidebarVisible, toggleLeftSidebar, leftSidebarLocked } =
     useUIStore()
@@ -104,6 +110,18 @@ export function LeftSideBar({
   ])
 
   const useTransparentStyle = transparencyEnabled && !forceSolidStyle
+
+  // Close any open project dropdown menus when the main left sidebar is hidden
+  useEffect(() => {
+    if (!leftSidebarVisible) {
+      setOpenProjectMenuBoardId(null)
+    }
+  }, [leftSidebarVisible])
+
+  // Notify parent when any project menu is open (used by floating sidebar)
+  useEffect(() => {
+    onProjectMenuOpenChange?.(openProjectMenuBoardId !== null)
+  }, [openProjectMenuBoardId, onProjectMenuOpenChange])
 
   const sidebarClasses = cn(
     'flex h-full flex-col rounded-l-[12px]',
@@ -179,6 +197,7 @@ export function LeftSideBar({
           isError={isWorkspacesError}
           onRetry={() => void refetchWorkspaces()}
           onCreateWorkspaceDialogOpen={createWorkspaceOpen}
+          onOpenChange={onWorkspaceSelectOpenChange}
         />
       </div>
 
@@ -193,6 +212,8 @@ export function LeftSideBar({
         onOpenSettings={handleOpenSettings}
         onOpenDelete={handleOpenDelete}
         onCreateProject={() => setCreateProjectOpen(true)}
+        openMenuBoardId={openProjectMenuBoardId}
+        onOpenMenuBoardChange={setOpenProjectMenuBoardId}
       />
 
       {children}

@@ -46,6 +46,7 @@ interface WorkspaceSelectProps {
   isError?: boolean
   onRetry?: () => void
   onCreateWorkspaceDialogOpen?: boolean
+  onOpenChange?: (open: boolean) => void
 }
 
 interface SortableWorkspaceItemProps {
@@ -119,10 +120,19 @@ export function WorkspaceSelect({
   isError = false,
   onRetry,
   onCreateWorkspaceDialogOpen = false,
+  onOpenChange,
 }: WorkspaceSelectProps) {
   const [orderedWorkspaces, setOrderedWorkspaces] = useState<Workspace[]>([])
   const [activeId, setActiveId] = useState<string | null>(null)
   const [selectOpen, setSelectOpen] = useState(false)
+
+  const handleSelectOpenChange = useCallback(
+    (open: boolean) => {
+      setSelectOpen(open)
+      onOpenChange?.(open)
+    },
+    [onOpenChange]
+  )
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -275,7 +285,7 @@ export function WorkspaceSelect({
           }
         }}
         open={selectOpen}
-        onOpenChange={setSelectOpen}
+        onOpenChange={handleSelectOpenChange}
       >
         <SelectTrigger
           className={cn(
@@ -375,7 +385,7 @@ export function WorkspaceSelect({
               e.preventDefault()
               e.stopPropagation()
               // Close the select dropdown first
-              setSelectOpen(false)
+              handleSelectOpenChange(false)
               // Small delay to ensure dropdown closes before dialog opens
               setTimeout(() => {
                 onRequestCreateWorkspace()
