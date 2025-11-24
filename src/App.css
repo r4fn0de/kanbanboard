@@ -521,8 +521,6 @@
     width: 100%;
     height: 100vh;
       background-color: color-mix(in srgb, var(--background) 30%, transparent);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
   }
 
   svg {
