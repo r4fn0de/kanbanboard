@@ -1,13 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
-import { SettingsIcon } from '@/components/ui/icons/settings'
 import { SearchIcon } from '@/components/ui/icons'
 import { useWorkspaceStatus } from '@/hooks/useWorkspaceStatus'
 import { useUIStore } from '@/store/ui-store'
 import { useWorkspaceStore } from '@/store/workspace-store'
 import { usePerformanceMonitor } from '@/hooks/usePerformanceMonitor'
-import { OverviewSection } from './sections/OverviewSection'
-import { QuickActionsSection } from './sections/QuickActionsSection'
-import { FavoritesSection } from './sections/FavoritesSection'
 import { ActivitySection } from './sections/ActivitySection'
 import { WidgetContainer } from './WidgetContainer'
 import { Button } from '@/components/ui/button'
@@ -32,7 +28,6 @@ export function Dashboard() {
   const isNewUser = workspaceStatus?.isNewUser ?? false
   const isEmpty = workspaceStatus?.isEmpty ?? false
 
-  const handleSettingsOpen = useCallback(() => setSettingsOpen(true), [])
   const handleSettingsClose = useCallback(
     (open: boolean) => setSettingsOpen(open),
     []
@@ -141,10 +136,10 @@ export function Dashboard() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-                Dashboard
+                Activity
               </h1>
               <p className="text-sm text-muted-foreground">
-                Organize your projects and keep track of what matters.
+                See the latest changes across your projects.
               </p>
             </div>
             <div className="flex items-center gap-2">
@@ -160,14 +155,6 @@ export function Dashboard() {
                 <SearchIcon className="h-4 w-4" />
                 <span className="hidden sm:inline text-sm">Search</span>
               </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handleSettingsOpen}
-                title="Customize dashboard"
-              >
-                <SettingsIcon className="h-4 w-4" />
-              </Button>
             </div>
           </div>
         </div>
@@ -181,26 +168,9 @@ export function Dashboard() {
         )}
 
         <div className="space-y-6">
-          <WidgetContainer title="Overview">
-            <OverviewSection />
+          <WidgetContainer title="Recent activity">
+            <ActivitySection />
           </WidgetContainer>
-          <WidgetContainer title="Quick actions">
-            <QuickActionsSection
-              onCreateProject={handleCreateBoard}
-              onOpenSearch={handleSearchOpen}
-            />
-          </WidgetContainer>
-          <div className="grid gap-6 lg:grid-cols-3">
-            <WidgetContainer
-              title="Favorite projects"
-              className="lg:col-span-1"
-            >
-              <FavoritesSection />
-            </WidgetContainer>
-            <WidgetContainer title="Recent activity" className="lg:col-span-2">
-              <ActivitySection />
-            </WidgetContainer>
-          </div>
         </div>
       </div>
 

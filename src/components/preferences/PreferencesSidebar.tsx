@@ -36,8 +36,8 @@ export function PreferencesSidebar({
               className={cn(
                 'flex items-center gap-2 w-full rounded-xl px-3 py-2 text-sm font-medium transition-colors',
                 active
-                  ? 'bg-slate-800 text-slate-50 dark:bg-slate-100 dark:text-slate-900'
-                  : 'text-muted-foreground hover:bg-slate-200/80 dark:hover:bg-slate-800/80'
+                  ? 'bg-accent text-accent-foreground shadow-sm'
+                  : 'text-muted-foreground hover:bg-accent/70 hover:text-accent-foreground'
               )}
             >
               <Icon className="h-4 w-4" />
