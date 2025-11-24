@@ -64,7 +64,7 @@ export const PlaceholderElement = withHOC(
 
     const isImage = element.mediaType === KEYS.img
 
-    const imageRef = React.useRef<HTMLImageElement>(null!)
+    const imageRef = React.useRef<HTMLImageElement | null>(null)
 
     const { openFilePicker } = useFilePicker({
       accept: currentContent?.accept ?? ['*'],
@@ -236,9 +236,9 @@ export function ImageProgress({
 }
 
 function filesToFileList(files: File[]): FileList {
-	const dataTransfer = new DataTransfer()
-	files.forEach(file => dataTransfer.items.add(file))
-	return dataTransfer.files
+  const dataTransfer = new DataTransfer()
+  files.forEach(file => dataTransfer.items.add(file))
+  return dataTransfer.files
 }
 
 function formatBytes(

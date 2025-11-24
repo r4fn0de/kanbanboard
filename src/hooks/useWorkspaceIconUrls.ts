@@ -2,7 +2,9 @@ import { useState, useEffect, useRef } from 'react'
 import { invoke } from '@tauri-apps/api/core'
 import type { Workspace } from '@/types/common'
 
-export function useWorkspaceIconUrls(workspaces: Workspace[]): Map<string, string> {
+export function useWorkspaceIconUrls(
+  workspaces: Workspace[]
+): Map<string, string> {
   const [workspaceIconUrls, setWorkspaceIconUrls] = useState<
     Map<string, string>
   >(new Map())
@@ -11,7 +13,7 @@ export function useWorkspaceIconUrls(workspaces: Workspace[]): Map<string, strin
   useEffect(() => {
     const loadIcons = async () => {
       const newUrls = new Map(workspaceIconUrls)
-      
+
       for (const workspace of workspaces) {
         const iconPath = workspace.iconPath
         if (iconPath && !loadedRef.current.has(iconPath)) {
@@ -44,4 +46,3 @@ export function useWorkspaceIconUrls(workspaces: Workspace[]): Map<string, strin
 
   return workspaceIconUrls
 }
-

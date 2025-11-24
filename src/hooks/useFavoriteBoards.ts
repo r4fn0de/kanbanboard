@@ -17,24 +17,11 @@ export interface FavoriteBoard {
 export function useFavoriteBoards() {
   return useQuery({
     queryKey: ['home', 'favorite-boards'],
-    queryFn: async () => {
-      const boards = await invoke<any[]>('get_favorite_boards')
+    queryFn: async (): Promise<FavoriteBoard[]> => {
+      const boards = await invoke<FavoriteBoard[]>('get_favorite_boards')
 
-      // Convert any[] to FavoriteBoard[]
-      return boards.map((board: any) => {
-        return {
-          id: board.id,
-          title: board.title,
-          icon: board.icon,
-          emoji: board.emoji,
-          color: board.color,
-          isFavorite: board.isFavorite,
-          createdAt: board.createdAt,
-          updatedAt: board.updatedAt,
-          totalCards: board.totalCards,
-          activeCards: board.activeCards,
-        } as FavoriteBoard
-      })
+      // Ensure we return plain FavoriteBoard objects
+      return boards.map(board => ({ ...board }))
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
   })

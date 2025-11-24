@@ -22,9 +22,11 @@ export function HeadingElementStatic({
   variant = 'h1',
   ...props
 }: SlateElementProps & VariantProps<typeof headingVariants>) {
+  const asTag: keyof HTMLElementTagNameMap = variant ?? 'h1'
+
   return (
     <SlateElement
-      as={variant!}
+      as={asTag}
       className={headingVariants({ variant })}
       {...props}
     >

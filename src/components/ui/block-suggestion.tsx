@@ -158,17 +158,19 @@ export function BlockSuggestionCard({
           <div className="flex flex-col gap-2">
             {suggestion.type === 'remove' && (
               <React.Fragment>
-                {suggestionText2Array(suggestion.text ?? '').map((text, index) => (
-                  <div key={index} className="flex items-center gap-2">
-                    <span className="text-sm text-muted-foreground">
-                      Delete:
-                    </span>
+                {suggestionText2Array(suggestion.text ?? '').map(
+                  (text, index) => (
+                    <div key={index} className="flex items-center gap-2">
+                      <span className="text-sm text-muted-foreground">
+                        Delete:
+                      </span>
 
-                    <span key={index} className="text-sm">
-                      {text}
-                    </span>
-                  </div>
-                ))}
+                      <span key={index} className="text-sm">
+                        {text}
+                      </span>
+                    </div>
+                  )
+                )}
               </React.Fragment>
             )}
 
@@ -206,16 +208,18 @@ export function BlockSuggestionCard({
                   )
                 )}
 
-                {suggestionText2Array(suggestion.text ?? '').map((text, index) => (
-                  <React.Fragment key={index}>
-                    <div key={index} className="flex items-start gap-2">
-                      <span className="text-sm text-muted-foreground">
-                        {index === 0 ? 'Replace:' : 'Delete:'}
-                      </span>
-                      <span className="text-sm">{text || 'line breaks'}</span>
-                    </div>
-                  </React.Fragment>
-                ))}
+                {suggestionText2Array(suggestion.text ?? '').map(
+                  (text, index) => (
+                    <React.Fragment key={index}>
+                      <div key={index} className="flex items-start gap-2">
+                        <span className="text-sm text-muted-foreground">
+                          {index === 0 ? 'Replace:' : 'Delete:'}
+                        </span>
+                        <span className="text-sm">{text || 'line breaks'}</span>
+                      </div>
+                    </React.Fragment>
+                  )
+                )}
               </div>
             )}
 

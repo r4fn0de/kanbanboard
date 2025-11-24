@@ -58,13 +58,10 @@ export const updateTagSchema = z
     label: optionalStringSchema,
     color: optionalNullableStringSchema,
   })
-  .refine(
-    payload => 'label' in payload || 'color' in payload,
-    {
-      message: 'At least one field (label or color) must be provided',
-      path: ['label'],
-    }
-  )
+  .refine(payload => 'label' in payload || 'color' in payload, {
+    message: 'At least one field (label or color) must be provided',
+    path: ['label'],
+  })
 
 export type UpdateTagInput = z.infer<typeof updateTagSchema>
 

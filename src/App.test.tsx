@@ -11,9 +11,9 @@ vi.mock('@tauri-apps/api/core', () => ({
 describe('App', () => {
   it('renders main window layout', () => {
     render(<HomeWelcome />)
-    expect(
-      screen.getByRole('heading', { name: /welcome to kanbanboard/i })
-    ).toBeInTheDocument()
+    // Initially shows loading skeleton for the dashboard
+    const skeletons = document.querySelectorAll('.animate-pulse')
+    expect(skeletons.length).toBeGreaterThan(0)
   })
 
   it('renders title bar with traffic light buttons', () => {

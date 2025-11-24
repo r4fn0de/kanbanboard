@@ -37,7 +37,7 @@ export function ActivitySection() {
         </div>
       ) : (
         <div className="divide-y">
-          {activities?.map((activity) => (
+          {activities?.map(activity => (
             <ActivityItem key={activity.id} activity={activity} />
           ))}
         </div>

@@ -332,8 +332,7 @@ export function WorkspaceSelect({
             'min-w-[220px] max-w-[300px] p-1.5 rounded-lg',
             useTransparentStyle &&
               'backdrop-blur-xl bg-popover/90 dark:bg-popover/95 supports-[backdrop-filter]:bg-popover/85 dark:supports-[backdrop-filter]:bg-popover/90 border border-border/60',
-            activeId &&
-              '[&>*:not([data-dnd-kit-sortable])]:pointer-events-none'
+            activeId && '[&>*:not([data-dnd-kit-sortable])]:pointer-events-none'
           )}
         >
           <SortableContext
@@ -414,4 +413,3 @@ export function WorkspaceSelect({
     </DndContext>
   )
 }
-

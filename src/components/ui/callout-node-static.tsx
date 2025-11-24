@@ -29,9 +29,7 @@ export function CalloutElementStatic({
               '"Apple Color Emoji", "Segoe UI Emoji", NotoColorEmoji, "Noto Color Emoji", "Segoe UI Symbol", "Android Emoji", EmojiSymbols',
           }}
         >
-          <span data-plate-prevent-deserialization>
-            {icon}
-          </span>
+          <span data-plate-prevent-deserialization>{icon}</span>
         </div>
         <div className="w-full">{children}</div>
       </div>

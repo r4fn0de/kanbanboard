@@ -35,9 +35,7 @@ export function NotesList({
 
   const processedNotes = useMemo(() => {
     const matchesQuery = normalizedQuery
-      ? notes.filter(note =>
-          note.title.toLowerCase().includes(normalizedQuery)
-        )
+      ? notes.filter(note => note.title.toLowerCase().includes(normalizedQuery))
       : notes
 
     return [...matchesQuery].sort((a, b) => {
@@ -188,9 +186,9 @@ function NoteCard({ note, onClick, boardId }: NoteCardProps) {
               )}
             </div>
           </div>
-          
-{/* Rich content preview */}
-          
+
+          {/* Rich content preview */}
+
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <CalendarIcon className="h-3 w-3" />
             <span>Created {createdAt}</span>

@@ -34,11 +34,7 @@ export function UnpinIcon({ className }: UnpinIconProps) {
           clipRule="evenodd"
           d="M8.51337 8.58791L8.34556 11.0474C8.33546 11.1954 8.26009 11.3314 8.13986 11.4184C8.01962 11.5054 7.86694 11.5345 7.72312 11.4978C4.92546 10.7841 2.72243 8.59129 2.0152 5.789C1.97894 5.64531 2.00828 5.49293 2.09532 5.37299C2.18236 5.25305 2.31811 5.17789 2.46597 5.1678L4.92546 5L8.51337 8.58791Z"
         />
-        <path
-          d="M3 2L12 11"
-          stroke="currentColor"
-          strokeLinecap="round"
-        />
+        <path d="M3 2L12 11" stroke="currentColor" strokeLinecap="round" />
       </g>
     </svg>
   )

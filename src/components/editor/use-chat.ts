@@ -53,7 +53,8 @@ export const useChat = () => {
           let sample: 'comment' | 'markdown' | 'mdx' | null = null
 
           try {
-            const rawBody = typeof init?.body === 'string' ? init.body : undefined
+            const rawBody =
+              typeof init?.body === 'string' ? init.body : undefined
 
             if (rawBody) {
               const parsed = JSON.parse(rawBody) as {
@@ -64,7 +65,8 @@ export const useChat = () => {
 
               const lastMessage = parsed.messages?.at(-1)
               const content =
-                lastMessage?.parts?.find(part => part.type === 'text')?.text ?? ''
+                lastMessage?.parts?.find(part => part.type === 'text')?.text ??
+                ''
 
               if (content.includes('Generate a markdown sample')) {
                 sample = 'markdown'
@@ -173,6 +175,7 @@ export const useChat = () => {
   }
 
   React.useEffect(() => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     editor.setOption(AIChatPlugin, 'chat', chat as any)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chat.status, chat.messages, chat.error])

@@ -46,7 +46,8 @@ export function useClearAttachments() {
       queryClient.invalidateQueries({ queryKey: storageQueryKeys.stats() })
     },
     onError: error => {
-      const description = error instanceof Error ? error.message : 'Unknown error'
+      const description =
+        error instanceof Error ? error.message : 'Unknown error'
       toast.error('Failed to clear attachments', { description })
     },
   })
@@ -66,7 +67,8 @@ export function useResetApplicationData() {
       queryClient.invalidateQueries({ queryKey: storageQueryKeys.stats() })
     },
     onError: error => {
-      const description = error instanceof Error ? error.message : 'Unknown error'
+      const description =
+        error instanceof Error ? error.message : 'Unknown error'
       toast.error('Failed to reset data', { description })
     },
   })

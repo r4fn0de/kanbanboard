@@ -11,12 +11,14 @@ export function EmptyOnboarding({ onCreateBoard }: EmptyOnboardingProps) {
     {
       icon: FolderKanban,
       title: 'Organize Projects',
-      description: 'Create boards to track your work and keep everything organized',
+      description:
+        'Create boards to track your work and keep everything organized',
     },
     {
       icon: Zap,
       title: 'Boost Productivity',
-      description: 'Use drag-and-drop to manage tasks and deadlines efficiently',
+      description:
+        'Use drag-and-drop to manage tasks and deadlines efficiently',
     },
     {
       icon: Lightbulb,
@@ -53,7 +55,8 @@ export function EmptyOnboarding({ onCreateBoard }: EmptyOnboardingProps) {
               Welcome to Modulo! 🎉
             </h2>
             <p className="mt-2 text-lg text-muted-foreground">
-              Your productivity journey starts here. Let's create your first project!
+              Your productivity journey starts here. Let&apos;s create your
+              first project!
             </p>
           </motion.div>
         </div>
@@ -75,7 +78,9 @@ export function EmptyOnboarding({ onCreateBoard }: EmptyOnboardingProps) {
             >
               <feature.icon className="w-8 h-8 text-primary mx-auto" />
               <h3 className="font-semibold text-sm">{feature.title}</h3>
-              <p className="text-xs text-muted-foreground">{feature.description}</p>
+              <p className="text-xs text-muted-foreground">
+                {feature.description}
+              </p>
             </motion.div>
           ))}
         </motion.div>

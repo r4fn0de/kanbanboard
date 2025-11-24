@@ -3,27 +3,27 @@
   /* Permite rolagem vertical */
   overflow-y: auto;
   overflow-x: hidden;
-  
+
   /* Esconde a barra de rolagem no Chrome, Safari e Edge */
   .kanban-column-cards::-webkit-scrollbar {
-  width: 0.25rem;
-  background: transparent;
-}
+    width: 0.25rem;
+    background: transparent;
+  }
 
-.kanban-column-cards::-webkit-scrollbar-thumb {
-  background: transparent;
-}
-  
+  .kanban-column-cards::-webkit-scrollbar-thumb {
+    background: transparent;
+  }
+
   /* Esconde a barra de rolagem no Firefox */
   scrollbar-width: thin;
   scrollbar-color: transparent transparent;
-  
+
   /* Suporte para IE e Edge antigos */
   -ms-overflow-style: none;
-  
+
   /* Melhora a performance de renderização */
   -webkit-overflow-scrolling: touch;
-  
+
   /* Garante que o conteúdo não seja cortado */
   padding-right: 0.25rem;
   margin-right: -0.25rem;

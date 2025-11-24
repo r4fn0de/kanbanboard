@@ -38,7 +38,7 @@ export function DeadlinesSection() {
           ))}
         </div>
       ) : (
-        deadlines?.map((task) => (
+        deadlines?.map(task => (
           <div
             key={task.id}
             className={cn(
@@ -46,8 +46,8 @@ export function DeadlinesSection() {
               task.is_overdue
                 ? 'bg-red-50 dark:bg-red-950/20'
                 : task.days_until <= 1
-                ? 'bg-yellow-50 dark:bg-yellow-950/20'
-                : 'hover:bg-muted/50'
+                  ? 'bg-yellow-50 dark:bg-yellow-950/20'
+                  : 'hover:bg-muted/50'
             )}
           >
             <div
@@ -56,8 +56,8 @@ export function DeadlinesSection() {
                 task.is_overdue
                   ? 'bg-red-100 dark:bg-red-900'
                   : task.days_until <= 1
-                  ? 'bg-yellow-100 dark:bg-yellow-900'
-                  : 'bg-blue-100 dark:bg-blue-900'
+                    ? 'bg-yellow-100 dark:bg-yellow-900'
+                    : 'bg-blue-100 dark:bg-blue-900'
               )}
             >
               <AlertCircle
@@ -66,16 +66,14 @@ export function DeadlinesSection() {
                   task.is_overdue
                     ? 'text-red-600 dark:text-red-400'
                     : task.days_until <= 1
-                    ? 'text-yellow-600 dark:text-yellow-400'
-                    : 'text-blue-600 dark:text-blue-400'
+                      ? 'text-yellow-600 dark:text-yellow-400'
+                      : 'text-blue-600 dark:text-blue-400'
                 )}
               />
             </div>
             <div className="flex-1 min-w-0">
               <p className="font-medium text-sm">{task.title}</p>
-              <p className="text-xs text-muted-foreground">
-                {task.board_name}
-              </p>
+              <p className="text-xs text-muted-foreground">{task.board_name}</p>
               <p className="text-xs mt-1">
                 {task.is_overdue ? (
                   <span className="text-red-600 dark:text-red-400 font-medium">
@@ -90,8 +88,8 @@ export function DeadlinesSection() {
                     {task.days_until === 0
                       ? 'today'
                       : task.days_until === 1
-                      ? 'tomorrow'
-                      : `in ${task.days_until} days`}
+                        ? 'tomorrow'
+                        : `in ${task.days_until} days`}
                   </span>
                 )}
               </p>

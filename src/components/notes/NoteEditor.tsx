@@ -5,7 +5,13 @@ import { BlockNoteView } from '@blocknote/shadcn'
 import '@blocknote/shadcn/style.css'
 import type { BlockNoteEditor, PartialBlock } from '@blocknote/core'
 import { Button } from '@/components/ui/button'
-import { ArrowLeftIcon, PinIcon, UnpinIcon, TrashIcon, ChevronRightIcon } from '@/components/ui/icons'
+import {
+  ArrowLeftIcon,
+  PinIcon,
+  UnpinIcon,
+  TrashIcon,
+  ChevronRightIcon,
+} from '@/components/ui/icons'
 import { cn } from '@/lib/utils'
 import type { Note } from '@/services/notes'
 import { useUpdateNote, useDeleteNote, useNotes } from '@/services/notes'
@@ -32,11 +38,12 @@ import {
 import { Popover } from '@base-ui-components/react/popover'
 import { Tooltip } from '@base-ui-components/react/tooltip'
 
-
 const LINK_FEATURE_ENABLED = false
 
-
-function useLinkEditorState(editor: BlockNoteEditor, onRequestClose?: () => void) {
+function useLinkEditorState(
+  editor: BlockNoteEditor,
+  onRequestClose?: () => void
+) {
   const editorRef = useRef(editor)
   const [url, setUrl] = useState('')
   const [hasExistingLink, setHasExistingLink] = useState(false)
@@ -98,7 +105,6 @@ function useLinkEditorState(editor: BlockNoteEditor, onRequestClose?: () => void
   }
 }
 
-
 function LinkEditorForm({
   editor,
   onRequestClose,
@@ -108,8 +114,11 @@ function LinkEditorForm({
   onRequestClose?: () => void
   openForCreateOnNoLink?: boolean
 }) {
-  const { url, setUrl, hasExistingLink, applyLink, removeLink, refresh } = useLinkEditorState(editor, onRequestClose)
-  const [isEditing, setIsEditing] = useState(() => !hasExistingLink && openForCreateOnNoLink)
+  const { url, setUrl, hasExistingLink, applyLink, removeLink, refresh } =
+    useLinkEditorState(editor, onRequestClose)
+  const [isEditing, setIsEditing] = useState(
+    () => !hasExistingLink && openForCreateOnNoLink
+  )
 
   const [copied, setCopied] = useState(false)
 
@@ -136,7 +145,10 @@ function LinkEditorForm({
   if (!isEditing && hasExistingLink && url) {
     const handleCopy = () => {
       if (navigator?.clipboard?.writeText) {
-        navigator.clipboard.writeText(url).then(() => setCopied(true)).catch(() => setCopied(false))
+        navigator.clipboard
+          .writeText(url)
+          .then(() => setCopied(true))
+          .catch(() => setCopied(false))
       }
     }
 
@@ -146,7 +158,9 @@ function LinkEditorForm({
           <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-accent text-accent-foreground">
             🌐
           </span>
-          <span className="truncate text-foreground" title={url}>{url || 'No link'}</span>
+          <span className="truncate text-foreground" title={url}>
+            {url || 'No link'}
+          </span>
         </div>
         <div className="ml-auto flex items-center gap-1">
           <button
@@ -212,8 +226,10 @@ function LinkEditorForm({
   )
 }
 
-
-const CustomLinkToolbar: React.FC<{ editor: BlockNoteEditor; onRequestClose?: () => void }> = LINK_FEATURE_ENABLED
+const CustomLinkToolbar: React.FC<{
+  editor: BlockNoteEditor
+  onRequestClose?: () => void
+}> = LINK_FEATURE_ENABLED
   ? ({ editor, onRequestClose }) => {
       const Components = useComponentsContext()
       const LinkToolbarRoot = Components?.LinkToolbar?.Root
@@ -224,12 +240,15 @@ const CustomLinkToolbar: React.FC<{ editor: BlockNoteEditor; onRequestClose?: ()
 
       return (
         <LinkToolbarRoot className="bg-transparent border-none shadow-none p-0">
-          <LinkEditorForm editor={editor} onRequestClose={onRequestClose} openForCreateOnNoLink={false} />
+          <LinkEditorForm
+            editor={editor}
+            onRequestClose={onRequestClose}
+            openForCreateOnNoLink={false}
+          />
         </LinkToolbarRoot>
       )
     }
   : () => null
-
 
 const BLOCK_TYPE_OPTIONS = [
   { label: 'Paragraph', type: 'paragraph', icon: 'P' },
@@ -239,9 +258,27 @@ const BLOCK_TYPE_OPTIONS = [
   { label: 'Heading 4', type: 'heading', level: 4, icon: 'H4' },
   { label: 'Heading 5', type: 'heading', level: 5, icon: 'H5' },
   { label: 'Heading 6', type: 'heading', level: 6, icon: 'H6' },
-  { label: 'Toggle Heading 1', type: 'heading', level: 1, toggle: true, icon: 'TH1' },
-  { label: 'Toggle Heading 2', type: 'heading', level: 2, toggle: true, icon: 'TH2' },
-  { label: 'Toggle Heading 3', type: 'heading', level: 3, toggle: true, icon: 'TH3' },
+  {
+    label: 'Toggle Heading 1',
+    type: 'heading',
+    level: 1,
+    toggle: true,
+    icon: 'TH1',
+  },
+  {
+    label: 'Toggle Heading 2',
+    type: 'heading',
+    level: 2,
+    toggle: true,
+    icon: 'TH2',
+  },
+  {
+    label: 'Toggle Heading 3',
+    type: 'heading',
+    level: 3,
+    toggle: true,
+    icon: 'TH3',
+  },
   { label: 'Quote', type: 'quote', icon: '"' },
   { label: 'Toggle List', type: 'toggleListItem', icon: '▶' },
   { label: 'Bullet List', type: 'bulletListItem', icon: '•' },
@@ -249,22 +286,27 @@ const BLOCK_TYPE_OPTIONS = [
   { label: 'Check List', type: 'checkListItem', icon: '☐' },
 ]
 
-
 const COLOR_PRESETS = {
   basic: ['black', 'gray', 'brown'],
   colors: ['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink'],
 }
 
-
-function ToolbarButtonWithTooltip({ children, tooltip }: { children: React.ReactNode; tooltip: string }) {
+function ToolbarButtonWithTooltip({
+  children,
+  tooltip,
+}: {
+  children: React.ReactNode
+  tooltip: string
+}) {
   return (
     <Tooltip.Root>
-      <Tooltip.Trigger data-baseui-tooltip-trigger>
-        {children}
-      </Tooltip.Trigger>
+      <Tooltip.Trigger data-baseui-tooltip-trigger>{children}</Tooltip.Trigger>
       <Tooltip.Portal>
         <Tooltip.Positioner side="top" align="center">
-          <Tooltip.Popup className="bg-popover text-popover-foreground border border-border rounded-md px-2 py-1 text-sm shadow-md" data-baseui-tooltip-popup>
+          <Tooltip.Popup
+            className="bg-popover text-popover-foreground border border-border rounded-md px-2 py-1 text-sm shadow-md"
+            data-baseui-tooltip-popup
+          >
             {tooltip}
           </Tooltip.Popup>
         </Tooltip.Positioner>
@@ -272,7 +314,6 @@ function ToolbarButtonWithTooltip({ children, tooltip }: { children: React.React
     </Tooltip.Root>
   )
 }
-
 
 function CustomBlockTypeButton({ editor }: { editor: BlockNoteEditor }) {
   const Components = useComponentsContext()
@@ -289,56 +330,56 @@ function CustomBlockTypeButton({ editor }: { editor: BlockNoteEditor }) {
     }
   }, [editor])
 
-  const handleBlockTypeSelect = (option: typeof BLOCK_TYPE_OPTIONS[0]) => {
-    console.log('Selecting block type:', option);
+  const handleBlockTypeSelect = (option: (typeof BLOCK_TYPE_OPTIONS)[0]) => {
+    console.log('Selecting block type:', option)
 
-    const currentBlock = editor.getTextCursorPosition().block;
+    const currentBlock = editor.getTextCursorPosition().block
 
     switch (option.type) {
       case 'heading':
         editor.updateBlock(currentBlock, {
           type: 'heading',
-          props: { level: option.level }
-        });
-        break;
+          props: { level: option.level },
+        })
+        break
       case 'quote':
         editor.updateBlock(currentBlock, {
-          type: 'quote'
-        });
-        break;
+          type: 'quote',
+        })
+        break
       case 'bulletListItem':
         editor.updateBlock(currentBlock, {
-          type: 'bulletListItem'
-        });
-        break;
+          type: 'bulletListItem',
+        })
+        break
       case 'numberedListItem':
         editor.updateBlock(currentBlock, {
-          type: 'numberedListItem'
-        });
-        break;
+          type: 'numberedListItem',
+        })
+        break
       case 'toggleListItem':
         editor.updateBlock(currentBlock, {
-          type: 'toggleListItem'
-        });
-        break;
+          type: 'toggleListItem',
+        })
+        break
       default:
         editor.updateBlock(currentBlock, {
-          type: 'paragraph'
-        });
+          type: 'paragraph',
+        })
     }
 
-    setIsOpen(false);
+    setIsOpen(false)
   }
 
   const getCurrentBlockType = () => {
     try {
-      const block = editor.getTextCursorPosition().block;
+      const block = editor.getTextCursorPosition().block
       if (block.type === 'heading') {
-        return `H${block.props?.level || 1}`;
+        return `H${block.props?.level || 1}`
       }
-      return block.type.charAt(0).toUpperCase() + block.type.slice(1);
+      return block.type.charAt(0).toUpperCase() + block.type.slice(1)
     } catch {
-      return 'P';
+      return 'P'
     }
   }
 
@@ -349,17 +390,19 @@ function CustomBlockTypeButton({ editor }: { editor: BlockNoteEditor }) {
   return (
     <Popover.Root open={isOpen} onOpenChange={setIsOpen}>
       <Popover.Trigger>
-        <Components.FormattingToolbar.Button
-          mainTooltip="Block Type"
-        >
-          <span className="text-xs font-mono tracking-wide">{getCurrentBlockType()}</span>
+        <Components.FormattingToolbar.Button mainTooltip="Block Type">
+          <span className="text-xs font-mono tracking-wide">
+            {getCurrentBlockType()}
+          </span>
         </Components.FormattingToolbar.Button>
       </Popover.Trigger>
       <Popover.Portal>
         <Popover.Positioner side="bottom" align="start">
           <Popover.Popup className="bg-popover border border-border rounded-xl shadow-xl py-3 min-w-[220px] max-h-[320px] overflow-y-auto">
             <div className="px-3 pb-2">
-              <p className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground/70">Select block style</p>
+              <p className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground/70">
+                Select block style
+              </p>
             </div>
             <div className="space-y-0.5">
               {BLOCK_TYPE_OPTIONS.map((option, index) => (
@@ -386,43 +429,42 @@ function CustomBlockTypeButton({ editor }: { editor: BlockNoteEditor }) {
   )
 }
 
+const CustomLinkButton: React.FC<{ editor: BlockNoteEditor }> =
+  LINK_FEATURE_ENABLED
+    ? ({ editor }) => {
+        const Components = useComponentsContext()
+        const [isOpen, setIsOpen] = useState(false)
 
-const CustomLinkButton: React.FC<{ editor: BlockNoteEditor }> = LINK_FEATURE_ENABLED
-  ? ({ editor }) => {
-      const Components = useComponentsContext()
-      const [isOpen, setIsOpen] = useState(false)
+        if (!Components?.FormattingToolbar?.Button) {
+          return null
+        }
 
-      if (!Components?.FormattingToolbar?.Button) {
-        return null
+        return (
+          <Popover.Root open={isOpen} onOpenChange={setIsOpen}>
+            <Popover.Trigger>
+              <Components.FormattingToolbar.Button
+                onClick={() => setIsOpen(true)}
+                mainTooltip="Insert Link"
+                isSelected={Boolean(editor.getSelectedLinkUrl?.())}
+              >
+                <span className="text-sm font-medium">Link</span>
+              </Components.FormattingToolbar.Button>
+            </Popover.Trigger>
+            <Popover.Portal>
+              <Popover.Positioner side="top" align="center">
+                <Popover.Popup className="bg-transparent border-none shadow-none p-0">
+                  <LinkEditorForm
+                    editor={editor}
+                    onRequestClose={() => setIsOpen(false)}
+                    openForCreateOnNoLink
+                  />
+                </Popover.Popup>
+              </Popover.Positioner>
+            </Popover.Portal>
+          </Popover.Root>
+        )
       }
-
-      return (
-        <Popover.Root open={isOpen} onOpenChange={setIsOpen}>
-          <Popover.Trigger>
-            <Components.FormattingToolbar.Button
-              onClick={() => setIsOpen(true)}
-              mainTooltip="Insert Link"
-              isSelected={Boolean(editor.getSelectedLinkUrl?.())}
-            >
-              <span className="text-sm font-medium">Link</span>
-            </Components.FormattingToolbar.Button>
-          </Popover.Trigger>
-          <Popover.Portal>
-            <Popover.Positioner side="top" align="center">
-              <Popover.Popup className="bg-transparent border-none shadow-none p-0">
-                <LinkEditorForm
-                  editor={editor}
-                  onRequestClose={() => setIsOpen(false)}
-                  openForCreateOnNoLink
-                />
-              </Popover.Popup>
-            </Popover.Positioner>
-          </Popover.Portal>
-        </Popover.Root>
-      )
-    }
-  : () => null
-
+    : () => null
 
 function CustomColorButton({ editor }: { editor: BlockNoteEditor }) {
   const Components = useComponentsContext()
@@ -440,13 +482,13 @@ function CustomColorButton({ editor }: { editor: BlockNoteEditor }) {
   }, [editor])
 
   const handleTextColorSelect = (color: string) => {
-    editor.toggleStyles({ textColor: color });
-    setIsOpen(false);
+    editor.toggleStyles({ textColor: color })
+    setIsOpen(false)
   }
 
   const handleBackgroundColorSelect = (color: string) => {
-    editor.toggleStyles({ backgroundColor: color });
-    setIsOpen(false);
+    editor.toggleStyles({ backgroundColor: color })
+    setIsOpen(false)
   }
 
   const currentTextColor = editor.getActiveStyles().textColor
@@ -483,41 +525,47 @@ function CustomColorButton({ editor }: { editor: BlockNoteEditor }) {
               <div>
                 <div className="text-xs text-muted-foreground mb-2">Text</div>
                 <div className="grid grid-cols-5 gap-1">
-                  {[...COLOR_PRESETS.basic, ...COLOR_PRESETS.colors].map((color: string) => (
-                    <button
-                      key={`text-${color}`}
-                      onClick={() => handleTextColorSelect(color)}
-                      className={cn(
-                        "w-6 h-6 rounded border-2 hover:scale-110 transition-transform",
-                        currentTextColor === color
-                          ? "border-primary ring-1 ring-primary/20"
-                          : "border-transparent hover:border-border"
-                      )}
-                      style={{ backgroundColor: color }}
-                      title={`Text: ${color}`}
-                    />
-                  ))}
+                  {[...COLOR_PRESETS.basic, ...COLOR_PRESETS.colors].map(
+                    (color: string) => (
+                      <button
+                        key={`text-${color}`}
+                        onClick={() => handleTextColorSelect(color)}
+                        className={cn(
+                          'w-6 h-6 rounded border-2 hover:scale-110 transition-transform',
+                          currentTextColor === color
+                            ? 'border-primary ring-1 ring-primary/20'
+                            : 'border-transparent hover:border-border'
+                        )}
+                        style={{ backgroundColor: color }}
+                        title={`Text: ${color}`}
+                      />
+                    )
+                  )}
                 </div>
               </div>
 
               {/* Background Colors */}
               <div>
-                <div className="text-xs text-muted-foreground mb-2">Background</div>
+                <div className="text-xs text-muted-foreground mb-2">
+                  Background
+                </div>
                 <div className="grid grid-cols-5 gap-1">
-                  {[...COLOR_PRESETS.basic, ...COLOR_PRESETS.colors].map((color: string) => (
-                    <button
-                      key={`bg-${color}`}
-                      onClick={() => handleBackgroundColorSelect(color)}
-                      className={cn(
-                        "w-6 h-6 rounded border-2 hover:scale-110 transition-transform",
-                        currentBackgroundColor === color
-                          ? "border-primary ring-1 ring-primary/20"
-                          : "border-transparent hover:border-border"
-                      )}
-                      style={{ backgroundColor: color }}
-                      title={`Background: ${color}`}
-                    />
-                  ))}
+                  {[...COLOR_PRESETS.basic, ...COLOR_PRESETS.colors].map(
+                    (color: string) => (
+                      <button
+                        key={`bg-${color}`}
+                        onClick={() => handleBackgroundColorSelect(color)}
+                        className={cn(
+                          'w-6 h-6 rounded border-2 hover:scale-110 transition-transform',
+                          currentBackgroundColor === color
+                            ? 'border-primary ring-1 ring-primary/20'
+                            : 'border-transparent hover:border-border'
+                        )}
+                        style={{ backgroundColor: color }}
+                        title={`Background: ${color}`}
+                      />
+                    )
+                  )}
                 </div>
               </div>
 
@@ -541,19 +589,16 @@ function CustomColorButton({ editor }: { editor: BlockNoteEditor }) {
   )
 }
 
-
 interface NoteEditorProps {
   note: Note
   boardId: string
   onBack: () => void
 }
 
-
 interface TextContentItem {
   type: 'text'
   text: string
 }
-
 
 function isTextContentItem(item: unknown): item is TextContentItem {
   return (
@@ -565,7 +610,6 @@ function isTextContentItem(item: unknown): item is TextContentItem {
     typeof (item as { text: unknown }).text === 'string'
   )
 }
-
 
 function extractTextFromContent(content: unknown): string {
   if (typeof content === 'string') {
@@ -580,7 +624,6 @@ function extractTextFromContent(content: unknown): string {
 
   return ''
 }
-
 
 function getTitleFromBlocks(blocks: PartialBlock[]): string {
   if (!blocks || blocks.length === 0) {
@@ -607,7 +650,6 @@ function getTitleFromBlocks(blocks: PartialBlock[]): string {
 
   return 'Untitled'
 }
-
 
 export function NoteEditor({ note, boardId, onBack }: NoteEditorProps) {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
@@ -835,20 +877,29 @@ export function NoteEditor({ note, boardId, onBack }: NoteEditorProps) {
     )
   }, [note.id, deleteNote, onBack])
 
-  const horizontalPaddingStyle = useMemo(() => ({
-    paddingLeft: '6rem',
-    paddingRight: '6rem',
-  }), [])
+  const horizontalPaddingStyle = useMemo(
+    () => ({
+      paddingLeft: '6rem',
+      paddingRight: '6rem',
+    }),
+    []
+  )
 
-  const contentContainerStyle = useMemo(() => ({
-    maxWidth: '720px',
-    margin: '0 auto',
-  }), [])
+  const contentContainerStyle = useMemo(
+    () => ({
+      maxWidth: '720px',
+      margin: '0 auto',
+    }),
+    []
+  )
 
   return (
     <div className="flex h-full flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between py-4" style={horizontalPaddingStyle}>
+      <div
+        className="flex items-center justify-between py-4"
+        style={horizontalPaddingStyle}
+      >
         <Button
           variant="ghost"
           size="icon"
@@ -912,29 +963,56 @@ export function NoteEditor({ note, boardId, onBack }: NoteEditorProps) {
               <FormattingToolbarController
                 formattingToolbar={() => (
                   <FormattingToolbar>
-                    <CustomBlockTypeButton key="customBlockTypeButton" editor={editor} />
+                    <CustomBlockTypeButton
+                      key="customBlockTypeButton"
+                      editor={editor}
+                    />
                     <ToolbarButtonWithTooltip tooltip="Bold (Ctrl+B)">
-                      <BasicTextStyleButton basicTextStyle="bold" key="boldStyleButton" />
+                      <BasicTextStyleButton
+                        basicTextStyle="bold"
+                        key="boldStyleButton"
+                      />
                     </ToolbarButtonWithTooltip>
                     <ToolbarButtonWithTooltip tooltip="Italic (Ctrl+I)">
-                      <BasicTextStyleButton basicTextStyle="italic" key="italicStyleButton" />
+                      <BasicTextStyleButton
+                        basicTextStyle="italic"
+                        key="italicStyleButton"
+                      />
                     </ToolbarButtonWithTooltip>
                     <ToolbarButtonWithTooltip tooltip="Underline (Ctrl+U)">
-                      <BasicTextStyleButton basicTextStyle="underline" key="underlineStyleButton" />
+                      <BasicTextStyleButton
+                        basicTextStyle="underline"
+                        key="underlineStyleButton"
+                      />
                     </ToolbarButtonWithTooltip>
                     <ToolbarButtonWithTooltip tooltip="Strikethrough">
-                      <BasicTextStyleButton basicTextStyle="strike" key="strikeStyleButton" />
+                      <BasicTextStyleButton
+                        basicTextStyle="strike"
+                        key="strikeStyleButton"
+                      />
                     </ToolbarButtonWithTooltip>
-                    <CustomColorButton key="customColorButton" editor={editor} />
+                    <CustomColorButton
+                      key="customColorButton"
+                      editor={editor}
+                    />
                     <CustomLinkButton key="customLinkButton" editor={editor} />
                     <ToolbarButtonWithTooltip tooltip="Align Left">
-                      <TextAlignButton textAlignment="left" key="textAlignLeftButton" />
+                      <TextAlignButton
+                        textAlignment="left"
+                        key="textAlignLeftButton"
+                      />
                     </ToolbarButtonWithTooltip>
                     <ToolbarButtonWithTooltip tooltip="Align Center">
-                      <TextAlignButton textAlignment="center" key="textAlignCenterButton" />
+                      <TextAlignButton
+                        textAlignment="center"
+                        key="textAlignCenterButton"
+                      />
                     </ToolbarButtonWithTooltip>
                     <ToolbarButtonWithTooltip tooltip="Align Right">
-                      <TextAlignButton textAlignment="right" key="textAlignRightButton" />
+                      <TextAlignButton
+                        textAlignment="right"
+                        key="textAlignRightButton"
+                      />
                     </ToolbarButtonWithTooltip>
                   </FormattingToolbar>
                 )}

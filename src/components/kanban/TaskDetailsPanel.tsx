@@ -6,7 +6,14 @@ import { useQueryClient } from '@tanstack/react-query'
 import { Plus, X } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { CalendarIcon, PaperclipIcon, TagIcon, TrashIcon, TriangleArrowDownIcon, TriangleArrowUpIcon } from '@/components/ui/icons'
+import {
+  CalendarIcon,
+  PaperclipIcon,
+  TagIcon,
+  TrashIcon,
+  TriangleArrowDownIcon,
+  TriangleArrowUpIcon,
+} from '@/components/ui/icons'
 import { Checkbox } from '@/components/ui/checkbox'
 import { ImageUpload } from '@/components/ui/image-upload'
 import { Input } from '@/components/ui/input'
@@ -16,10 +23,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { getColumnIconComponent } from '@/components/kanban/column-icon-options'
 import { TagSelector } from '@/components/kanban/tags/TagSelector'
 import { PrioritySelector } from './views/board-shared'
-import {
-  CARD_DUE_STATUS_STYLES,
-  getCardDueMetadata,
-} from './views/card-date'
+import { CARD_DUE_STATUS_STYLES, getCardDueMetadata } from './views/card-date'
 import {
   kanbanQueryKeys,
   useCreateSubtask,
@@ -92,8 +96,10 @@ export function TaskDetailsPanel({
   }, [card, isEditingTitle, isEditingDescription, previousCardId])
 
   const totalSubtasks = card?.subtasks.length ?? 0
-  const completedSubtasks = card?.subtasks.filter(subtask => subtask.isCompleted).length ?? 0
-  const subtaskProgress = totalSubtasks > 0 ? (completedSubtasks / totalSubtasks) * 100 : 0
+  const completedSubtasks =
+    card?.subtasks.filter(subtask => subtask.isCompleted).length ?? 0
+  const subtaskProgress =
+    totalSubtasks > 0 ? (completedSubtasks / totalSubtasks) * 100 : 0
   const isSubtaskMutationPending =
     createSubtaskMutation.isPending ||
     updateSubtaskMutation.isPending ||
@@ -306,7 +312,9 @@ export function TaskDetailsPanel({
         {
           onError: (error: unknown) => {
             toast.error(
-              error instanceof Error ? error.message : 'Failed to update subtask'
+              error instanceof Error
+                ? error.message
+                : 'Failed to update subtask'
             )
           },
         }
@@ -336,7 +344,9 @@ export function TaskDetailsPanel({
       return
     }
 
-    const original = card.subtasks.find(subtask => subtask.id === editingSubtaskId)
+    const original = card.subtasks.find(
+      subtask => subtask.id === editingSubtaskId
+    )
     if (!original) {
       handleCancelEditingSubtask()
       return
@@ -360,7 +370,13 @@ export function TaskDetailsPanel({
         error instanceof Error ? error.message : 'Failed to update subtask'
       )
     }
-  }, [card, editingSubtaskId, handleCancelEditingSubtask, subtaskDraft, updateSubtaskMutation])
+  }, [
+    card,
+    editingSubtaskId,
+    handleCancelEditingSubtask,
+    subtaskDraft,
+    updateSubtaskMutation,
+  ])
 
   const handleSubtaskInputKeyDown = useCallback(
     (event: React.KeyboardEvent<HTMLInputElement>) => {
@@ -405,7 +421,9 @@ export function TaskDetailsPanel({
         return
       }
 
-      const currentIndex = card.subtasks.findIndex(item => item.id === subtask.id)
+      const currentIndex = card.subtasks.findIndex(
+        item => item.id === subtask.id
+      )
       if (currentIndex === -1) {
         return
       }
@@ -425,7 +443,9 @@ export function TaskDetailsPanel({
         {
           onError: (error: unknown) => {
             toast.error(
-              error instanceof Error ? error.message : 'Failed to reorder subtask'
+              error instanceof Error
+                ? error.message
+                : 'Failed to reorder subtask'
             )
           },
         }
@@ -704,7 +724,9 @@ export function TaskDetailsPanel({
                     >
                       <Checkbox
                         checked={subtask.isCompleted}
-                        onCheckedChange={value => handleToggleSubtask(subtask, value)}
+                        onCheckedChange={value =>
+                          handleToggleSubtask(subtask, value)
+                        }
                         disabled={isSubtaskMutationPending}
                         aria-label={`Mark ${subtask.title} as complete`}
                       />
@@ -719,7 +741,9 @@ export function TaskDetailsPanel({
                           >
                             <Input
                               value={subtaskDraft}
-                              onChange={event => setSubtaskDraft(event.target.value)}
+                              onChange={event =>
+                                setSubtaskDraft(event.target.value)
+                              }
                               onBlur={() => void handleSubmitSubtaskTitle()}
                               onKeyDown={handleSubtaskInputKeyDown}
                               autoFocus
@@ -735,7 +759,8 @@ export function TaskDetailsPanel({
                             <span
                               className={cn(
                                 'text-sm font-medium text-foreground transition-colors group-hover:text-foreground',
-                                subtask.isCompleted && 'text-muted-foreground line-through'
+                                subtask.isCompleted &&
+                                  'text-muted-foreground line-through'
                               )}
                             >
                               {subtask.title}
@@ -763,7 +788,8 @@ export function TaskDetailsPanel({
                           className="h-8 w-8 rounded-lg border border-transparent text-muted-foreground transition-colors hover:border-border/40 hover:bg-background/80 hover:text-foreground"
                           onClick={() => handleMoveSubtask(subtask, 1)}
                           disabled={
-                            index === card.subtasks.length - 1 || isSubtaskMutationPending
+                            index === card.subtasks.length - 1 ||
+                            isSubtaskMutationPending
                           }
                           aria-label="Move subtask down"
                         >
@@ -785,7 +811,10 @@ export function TaskDetailsPanel({
                   ))}
                 </div>
 
-                <form onSubmit={handleCreateSubtask} className="flex items-center gap-3">
+                <form
+                  onSubmit={handleCreateSubtask}
+                  className="flex items-center gap-3"
+                >
                   <Input
                     value={newSubtaskTitle}
                     onChange={event => setNewSubtaskTitle(event.target.value)}
@@ -797,7 +826,9 @@ export function TaskDetailsPanel({
                     type="submit"
                     size="icon"
                     className="h-9 w-9"
-                    disabled={isSubtaskMutationPending || !newSubtaskTitle.trim()}
+                    disabled={
+                      isSubtaskMutationPending || !newSubtaskTitle.trim()
+                    }
                     aria-label="Add subtask"
                   >
                     <Plus className="h-4 w-4" />

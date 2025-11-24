@@ -25,6 +25,7 @@ Transformar a home screen atual (que mostra apenas cards estáticos de features)
 Em vez de apenas cards estáticos de features, transformar a home em um **dashboard produtivo**:
 
 #### **Seção "At a Glance" (Visão Geral)**
+
 Exibir métricas chave do workspace:
 
 - **Total de projetos ativos** (com gráfico simples ou ícone)
@@ -33,6 +34,7 @@ Exibir métricas chave do workspace:
 - **Projetos favoritos** (quick access com ícones personalizados)
 
 **Exemplo visual:**
+
 ```
 ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐
 │  📊 12      │  │  📝 8       │  │  ✅ 5       │  │  ⭐ 3       │
@@ -42,6 +44,7 @@ Exibir métricas chave do workspace:
 ```
 
 #### **Seção "Recent Activity"**
+
 Timeline de atividades recentes no workspace:
 
 - Últimas 5-10 tarefas criadas/modificadas/completadas
@@ -51,6 +54,7 @@ Timeline de atividades recentes no workspace:
 - Filtros opcionais (hoje, esta semana, este mês)
 
 **Exemplo:**
+
 ```
 📝 Recent Activity
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -65,6 +69,7 @@ Timeline de atividades recentes no workspace:
 ```
 
 #### **Seção "Quick Actions"**
+
 Botões maiores e mais visuais para ações frequentes:
 
 - ➕ **New Board** → Abre dialog de criar projeto
@@ -75,6 +80,7 @@ Botões maiores e mais visuais para ações frequentes:
 - 📁 **Browse Projects** → Navega para /projects/all
 
 **Design sugerido:**
+
 - Cards grandes e clicáveis
 - Ícones lucide-react
 - Hover effects com animação
@@ -87,34 +93,40 @@ Botões maiores e mais visuais para ações frequentes:
 Sistema modular onde usuário escolhe o que ver:
 
 #### **Calendar Widget**
+
 - Mini calendário do mês atual
 - Próximas deadlines destacadas
 - Due dates das tarefas
 - Click para ver detalhes
 
 #### **Notes Widget**
+
 - Últimas 3-5 notas criadas
 - Preview do conteúdo (truncado)
 - Link para abrir nota completa
 - Busca rápida de notas
 
 #### **Draws Widget**
+
 - Thumbnails dos últimos desenhos tldraw
 - Preview on hover
 - Link direto para editar
 
 #### **Stats Widget**
+
 - Gráficos de produtividade
 - Tarefas completadas: semanal/mensal
 - Comparação com período anterior
 - Streak counter (dias consecutivos trabalhando)
 
 #### **Upcoming Deadlines Widget**
+
 - Lista de tarefas com deadline próximo
 - Ordenado por urgência
 - Color coding (vermelho = vencido, amarelo = próximo)
 
 **Implementação:**
+
 - Usar drag-and-drop para reordenar widgets
 - Salvar preferências no SQLite
 - Toggle visibility de cada widget
@@ -127,6 +139,7 @@ Sistema modular onde usuário escolhe o que ver:
 Search bar grande e acessível no topo da home:
 
 **Features:**
+
 - Placeholder: "Search tasks, boards, notes..."
 - Atalho visual: Badge com `Cmd+K` / `Ctrl+K`
 - Busca em tempo real (debounced)
@@ -139,6 +152,7 @@ Search bar grande e acessível no topo da home:
 - Highlight de texto matched
 
 **Design:**
+
 ```
 ┌────────────────────────────────────────────────────────┐
 │  🔍  Search tasks, boards, notes...          [⌘K]     │
@@ -152,6 +166,7 @@ Search bar grande e acessível no topo da home:
 Experiência adaptada ao estado do workspace:
 
 #### **Usuário Novo (sem projetos)**
+
 - Welcome message personalizada
 - Wizard de criação de primeiro board
 - Tutorial interativo (opcional)
@@ -163,11 +178,13 @@ Experiência adaptada ao estado do workspace:
   - 🏠 Home Organization
 
 #### **Usuário com Projetos**
+
 - Dashboard completo com dados reais
 - Sugestão de funcionalidades não utilizadas
 - Tips & tricks contextuais
 
 #### **Transição suave:**
+
 ```typescript
 const isEmpty = projects.length === 0 && tasks.length === 0
 
@@ -301,24 +318,28 @@ src/components/home/
 ### Hooks Personalizados
 
 #### `useHomeData.ts` - Hook agregador
+
 ```typescript
 export function useHomeData() {
   const { data: stats, isLoading: statsLoading } = useTaskStats()
   const { data: activity, isLoading: activityLoading } = useRecentActivity()
   const { data: favorites, isLoading: favoritesLoading } = useFavoriteBoards()
-  const { data: deadlines, isLoading: deadlinesLoading } = useUpcomingDeadlines()
+  const { data: deadlines, isLoading: deadlinesLoading } =
+    useUpcomingDeadlines()
 
   return {
     stats,
     activity,
     favorites,
     deadlines,
-    isLoading: statsLoading || activityLoading || favoritesLoading || deadlinesLoading
+    isLoading:
+      statsLoading || activityLoading || favoritesLoading || deadlinesLoading,
   }
 }
 ```
 
 #### `useTaskStats.ts` - Estatísticas de tarefas
+
 ```typescript
 export interface TaskStats {
   totalProjects: number
@@ -337,12 +358,13 @@ export function useTaskStats() {
       // Invoke Tauri commands para buscar stats do SQLite
       const stats = await invoke<TaskStats>('get_task_statistics')
       return stats
-    }
+    },
   })
 }
 ```
 
 #### `useRecentActivity.ts` - Atividades recentes
+
 ```typescript
 export interface Activity {
   id: string
@@ -359,14 +381,17 @@ export function useRecentActivity(limit = 10) {
   return useQuery({
     queryKey: ['home', 'activity', limit],
     queryFn: async () => {
-      const activities = await invoke<Activity[]>('get_recent_activity', { limit })
+      const activities = await invoke<Activity[]>('get_recent_activity', {
+        limit,
+      })
       return activities
-    }
+    },
   })
 }
 ```
 
 #### `useFavoriteBoards.ts` - Projetos favoritos
+
 ```typescript
 export function useFavoriteBoards() {
   return useQuery({
@@ -375,20 +400,21 @@ export function useFavoriteBoards() {
       const boards = await invoke<Board[]>('get_favorite_boards')
       // Adicionar progresso para cada board
       const boardsWithProgress = await Promise.all(
-        boards.map(async (board) => {
-          const stats = await invoke<BoardStats>('get_board_stats', { 
-            boardId: board.id 
+        boards.map(async board => {
+          const stats = await invoke<BoardStats>('get_board_stats', {
+            boardId: board.id,
           })
           return { ...board, ...stats }
         })
       )
       return boardsWithProgress
-    }
+    },
   })
 }
 ```
 
 #### `useUpcomingDeadlines.ts` - Deadlines próximas
+
 ```typescript
 export interface TaskWithDeadline {
   id: string
@@ -404,8 +430,8 @@ export function useUpcomingDeadlines(days = 7) {
   return useQuery({
     queryKey: ['home', 'deadlines', days],
     queryFn: async () => {
-      const tasks = await invoke<TaskWithDeadline[]>('get_upcoming_deadlines', { 
-        daysAhead: days 
+      const tasks = await invoke<TaskWithDeadline[]>('get_upcoming_deadlines', {
+        daysAhead: days,
       })
       return tasks.sort((a, b) => {
         // Overdue primeiro, depois por data
@@ -413,7 +439,7 @@ export function useUpcomingDeadlines(days = 7) {
         if (!a.isOverdue && b.isOverdue) return 1
         return new Date(a.deadline).getTime() - new Date(b.deadline).getTime()
       })
-    }
+    },
   })
 }
 ```
@@ -421,6 +447,7 @@ export function useUpcomingDeadlines(days = 7) {
 ### Componentes Principais
 
 #### `OverviewSection.tsx`
+
 ```typescript
 export function OverviewSection() {
   const { stats, isLoading } = useTaskStats()
@@ -462,6 +489,7 @@ export function OverviewSection() {
 ```
 
 #### `QuickActionsSection.tsx`
+
 ```typescript
 export function QuickActionsSection() {
   const navigate = useNavigate()
@@ -505,6 +533,7 @@ export function QuickActionsSection() {
 ```
 
 #### `StatsCard.tsx`
+
 ```typescript
 interface StatsCardProps {
   icon: LucideIcon
@@ -514,12 +543,12 @@ interface StatsCardProps {
   variant?: 'default' | 'primary' | 'success' | 'danger'
 }
 
-export function StatsCard({ 
-  icon: Icon, 
-  label, 
-  value, 
+export function StatsCard({
+  icon: Icon,
+  label,
+  value,
   total,
-  variant = 'default' 
+  variant = 'default'
 }: StatsCardProps) {
   const percentage = total ? (value / total) * 100 : null
 
@@ -559,12 +588,12 @@ async fn get_task_statistics(
     state: State<'_, AppState>
 ) -> Result<TaskStats, String> {
     let conn = state.db.lock().await;
-    
+
     // Query SQLite para stats
     let stats = sqlx::query_as!(
         TaskStats,
         r#"
-        SELECT 
+        SELECT
             COUNT(DISTINCT b.id) as total_projects,
             COUNT(DISTINCT CASE WHEN b.archived = 0 THEN b.id END) as active_projects,
             COUNT(CASE WHEN date(t.due_date) = date('now') THEN 1 END) as tasks_today,
@@ -579,7 +608,7 @@ async fn get_task_statistics(
     .fetch_one(&*conn)
     .await
     .map_err(|e| e.to_string())?;
-    
+
     Ok(stats)
 }
 
@@ -620,7 +649,7 @@ const variantClasses = {
   primary: 'text-blue-500',
   success: 'text-green-500',
   danger: 'text-red-500',
-  warning: 'text-yellow-500'
+  warning: 'text-yellow-500',
 }
 ```
 
@@ -633,20 +662,20 @@ const containerVariants = {
   show: {
     opacity: 1,
     transition: {
-      staggerChildren: 0.1
-    }
-  }
+      staggerChildren: 0.1,
+    },
+  },
 }
 
 const itemVariants = {
   hidden: { opacity: 0, y: 20 },
-  show: { opacity: 1, y: 0 }
+  show: { opacity: 1, y: 0 },
 }
 
 // Hover effects
 const hoverScale = {
   scale: 1.02,
-  transition: { duration: 0.2 }
+  transition: { duration: 0.2 },
 }
 ```
 
@@ -680,24 +709,28 @@ const trackHomeInteraction = (action: string, metadata?: object) => {
 ## 🚀 Fases de Implementação
 
 ### Phase 1: Foundation (MVP)
+
 - [ ] Overview section com stats básicos
 - [ ] Quick actions section
 - [ ] Onboarding condicional (empty vs. populated)
 - [ ] Layout responsivo básico
 
 ### Phase 2: Core Features
+
 - [ ] Favorite projects section com progress
 - [ ] Recent activity feed
 - [ ] Upcoming deadlines section
 - [ ] Global search integration
 
 ### Phase 3: Enhancement
+
 - [ ] Widgets personalizáveis
 - [ ] Drag & drop para reordenar seções
 - [ ] Animações e micro-interactions
 - [ ] Dark mode refinement
 
 ### Phase 4: Polish
+
 - [ ] Loading states e skeletons
 - [ ] Error boundaries
 - [ ] Performance optimization
@@ -708,16 +741,19 @@ const trackHomeInteraction = (action: string, metadata?: object) => {
 ## 🧪 Testing Strategy
 
 ### Unit Tests
+
 - Test hooks individuais
 - Test componentes isolados
 - Test cálculos de stats
 
 ### Integration Tests
+
 - Test fluxo completo de criação
 - Test navegação entre seções
 - Test sincronização de dados
 
 ### E2E Tests
+
 - Test jornada do usuário novo
 - Test jornada do usuário existente
 - Test performance com muitos dados
@@ -769,12 +805,14 @@ Como medir sucesso do redesign:
 ## 📚 Referências e Inspiração
 
 ### Design Systems
+
 - Linear (clean dashboard)
 - Notion (personalization)
 - Asana (overview cards)
 - Height (keyboard-first)
 
 ### Patterns
+
 - Dashboard patterns: https://dashboarddesignpatterns.github.io/
 - Card patterns: https://ui-patterns.com/patterns/cards
 - Empty states: https://emptystat.es/

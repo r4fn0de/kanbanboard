@@ -43,7 +43,9 @@ export function LeftSideBar({
   const [editWorkspaceName, _setEditWorkspaceName] = useState('')
   const [editWorkspaceColor, _setEditWorkspaceColor] = useState('#6366F1')
   const [deleteWorkspaceOpen, setDeleteWorkspaceOpen] = useState(false)
-  const [deleteWorkspaceId, _setDeleteWorkspaceId] = useState<string | null>(null)
+  const [deleteWorkspaceId, _setDeleteWorkspaceId] = useState<string | null>(
+    null
+  )
   const [deleteWorkspaceName, _setDeleteWorkspaceName] = useState('')
 
   const { leftSidebarVisible, toggleLeftSidebar, leftSidebarLocked } =
@@ -241,4 +243,3 @@ export function LeftSideBar({
 }
 
 export default LeftSideBar
-

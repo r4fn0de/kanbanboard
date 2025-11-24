@@ -392,8 +392,8 @@ const createDragPreviewElements = (
 
   const resolveElement = (node: TElement, index: number) => {
     const domNode = editor.api.toDOMNode(node)
-		if (!domNode) return
-		const newDomNode = domNode.cloneNode(true) as HTMLElement
+    if (!domNode) return
+    const newDomNode = domNode.cloneNode(true) as HTMLElement
 
     // Apply visual compensation for horizontal scroll
     const applyScrollCompensation = (
@@ -490,9 +490,9 @@ const calculatePreviewTop = (
   const editable = editor.api.toDOMNode(editor)
   const firstDomNode = editor.api.toDOMNode(firstSelectedChild)
 
-	if (!child || !editable || !firstDomNode) {
-		return 0
-	}
+  if (!child || !editable || !firstDomNode) {
+    return 0
+  }
   // Get editor's top padding
   const editorPaddingTop = Number(
     window.getComputedStyle(editable).paddingTop.replace('px', '')
@@ -527,9 +527,9 @@ const calculatePreviewTop = (
 }
 
 const calcDragButtonTop = (editor: PlateEditor, element: TElement): number => {
-	const child = editor.api.toDOMNode(element)
-	if (!child) return 0
-	const currentMarginTopString = window.getComputedStyle(child).marginTop
+  const child = editor.api.toDOMNode(element)
+  if (!child) return 0
+  const currentMarginTopString = window.getComputedStyle(child).marginTop
   const currentMarginTop = Number(currentMarginTopString.replace('px', ''))
 
   return currentMarginTop

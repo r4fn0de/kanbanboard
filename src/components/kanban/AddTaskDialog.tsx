@@ -22,7 +22,7 @@ import {
   PriorityMediumIcon,
   PriorityHighIcon,
   CalendarIcon,
-} from "@/components/ui/icons";
+} from '@/components/ui/icons'
 import type { KanbanCard, KanbanColumn, KanbanPriority } from '@/types/common'
 import { createCardSchema } from '@/schemas/kanban'
 
@@ -40,10 +40,10 @@ interface AddTaskDialogProps {
 }
 
 const priorityItems = [
-  { value: "none", label: "No priority" },
-  { value: "low", label: "Low" },
-  { value: "medium", label: "Medium" },
-  { value: "high", label: "High" },
+  { value: 'none', label: 'No priority' },
+  { value: 'low', label: 'Low' },
+  { value: 'medium', label: 'Medium' },
+  { value: 'high', label: 'High' },
 ] as const
 
 export function AddTaskDialog({
@@ -54,8 +54,8 @@ export function AddTaskDialog({
   onCreateTask,
 }: AddTaskDialogProps) {
   const [title, setTitle] = useState('')
-  const [description, setDescription] = useState("")
-  const [priority, setPriority] = useState<KanbanPriority>("none")
+  const [description, setDescription] = useState('')
+  const [priority, setPriority] = useState<KanbanPriority>('none')
   const [dueDate, setDueDate] = useState('')
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([])
   const [isCreating, setIsCreating] = useState(false)
@@ -68,8 +68,8 @@ export function AddTaskDialog({
 
   const resetForm = useCallback(() => {
     setTitle('')
-    setDescription("")
-    setPriority("none")
+    setDescription('')
+    setPriority('none')
     setDueDate('')
     setSelectedTagIds([])
     setFormError(null)
@@ -161,18 +161,20 @@ export function AddTaskDialog({
 
   const getPriorityIcon = (value: KanbanPriority) => {
     switch (value) {
-      case "none":
-        return (
-          <PriorityIcon className="h-3 w-3 text-muted-foreground" />
-        );
-      case "low":
+      case 'none':
+        return <PriorityIcon className="h-3 w-3 text-muted-foreground" />
+      case 'low':
         return (
           <PriorityLowIcon className="h-3 w-3 text-emerald-700 dark:text-emerald-300" />
-        );
-      case "high":
-        return <PriorityHighIcon className="h-3 w-3 text-rose-700 dark:text-rose-300" />;
+        )
+      case 'high':
+        return (
+          <PriorityHighIcon className="h-3 w-3 text-rose-700 dark:text-rose-300" />
+        )
       default:
-        return <PriorityMediumIcon className="h-3 w-3 text-amber-700 dark:text-amber-300" />;
+        return (
+          <PriorityMediumIcon className="h-3 w-3 text-amber-700 dark:text-amber-300" />
+        )
     }
   }
 
@@ -329,11 +331,7 @@ export function AddTaskDialog({
             <div className="flex items-center justify-between border-t px-0 pt-4">
               <Dialog.Close
                 render={
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    disabled={isCreating}
-                  >
+                  <Button type="button" variant="ghost" disabled={isCreating}>
                     Cancel
                   </Button>
                 }

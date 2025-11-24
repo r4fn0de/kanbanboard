@@ -120,9 +120,7 @@ export function FontSizeToolbarButton() {
             type="text"
           />
         </PopoverTrigger>
-        <PopoverContent
-          className="w-10 px-px py-1"
-        >
+        <PopoverContent className="w-10 px-px py-1">
           {FONT_SIZES.map(size => (
             <button
               key={size}

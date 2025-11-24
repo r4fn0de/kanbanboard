@@ -47,6 +47,9 @@ export async function POST(req: Request) {
       return jsonResponse(null, { status: 408 })
     }
 
-    return jsonResponse({ error: 'Failed to process AI request' }, { status: 500 })
+    return jsonResponse(
+      { error: 'Failed to process AI request' },
+      { status: 500 }
+    )
   }
 }

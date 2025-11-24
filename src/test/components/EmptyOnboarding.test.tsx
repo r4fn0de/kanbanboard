@@ -6,7 +6,10 @@ import { EmptyOnboarding } from '@/components/onboarding/EmptyOnboarding'
 // Mock framer-motion
 vi.mock('framer-motion', () => ({
   motion: {
-    div: ({ children, ...props }: HTMLAttributes<HTMLDivElement> & { children?: ReactNode }) => (
+    div: ({
+      children,
+      ...props
+    }: HTMLAttributes<HTMLDivElement> & { children?: ReactNode }) => (
       <div {...props}>{children}</div>
     ),
   },
@@ -18,7 +21,9 @@ describe('EmptyOnboarding', () => {
 
     expect(screen.getByText('Welcome to Modulo! 🎉')).toBeInTheDocument()
     expect(
-      screen.getByText('Your productivity journey starts here. Let\'s create your first project!')
+      screen.getByText(
+        "Your productivity journey starts here. Let's create your first project!"
+      )
     ).toBeInTheDocument()
   })
 
@@ -29,10 +34,14 @@ describe('EmptyOnboarding', () => {
     expect(screen.getByText('Boost Productivity')).toBeInTheDocument()
     expect(screen.getByText('Stay Focused')).toBeInTheDocument()
     expect(
-      screen.getByText('Create boards to track your work and keep everything organized')
+      screen.getByText(
+        'Create boards to track your work and keep everything organized'
+      )
     ).toBeInTheDocument()
     expect(
-      screen.getByText('Use drag-and-drop to manage tasks and deadlines efficiently')
+      screen.getByText(
+        'Use drag-and-drop to manage tasks and deadlines efficiently'
+      )
     ).toBeInTheDocument()
     expect(
       screen.getByText('Quick actions and smart widgets keep you on track')
@@ -43,7 +52,9 @@ describe('EmptyOnboarding', () => {
     const handleCreateBoard = vi.fn()
     render(<EmptyOnboarding onCreateBoard={handleCreateBoard} />)
 
-    const button = screen.getByRole('button', { name: /create your first project/i })
+    const button = screen.getByRole('button', {
+      name: /create your first project/i,
+    })
     fireEvent.click(button)
 
     expect(handleCreateBoard).toHaveBeenCalledTimes(1)
@@ -52,7 +63,9 @@ describe('EmptyOnboarding', () => {
   it('should render call-to-action button', () => {
     render(<EmptyOnboarding />)
 
-    const button = screen.getByRole('button', { name: /create your first project/i })
+    const button = screen.getByRole('button', {
+      name: /create your first project/i,
+    })
     expect(button).toBeInTheDocument()
     expect(button.tagName).toBe('BUTTON')
   })
@@ -60,7 +73,9 @@ describe('EmptyOnboarding', () => {
   it('should render help text', () => {
     render(<EmptyOnboarding />)
 
-    expect(screen.getByText('It takes less than a minute to get started')).toBeInTheDocument()
+    expect(
+      screen.getByText('It takes less than a minute to get started')
+    ).toBeInTheDocument()
   })
 
   it('should have proper structure', () => {

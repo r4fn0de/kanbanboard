@@ -520,7 +520,7 @@
     overflow: hidden;
     width: 100%;
     height: 100vh;
-      background-color: color-mix(in srgb, var(--background) 30%, transparent);
+    background-color: color-mix(in srgb, var(--background) 30%, transparent);
   }
 
   svg {

@@ -45,4 +45,3 @@ export const WorkspaceBadge = memo(function WorkspaceBadge({
     />
   )
 })
-

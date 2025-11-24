@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor } from '@/test/test-utils'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 
 import { BoardDrawView } from '../BoardDrawView'
@@ -78,7 +78,10 @@ function renderWithRouter(path: string) {
   return render(
     <MemoryRouter initialEntries={[path]}>
       <Routes>
-        <Route path="/projects/:boardId/whiteboard" element={<BoardDrawView />} />
+        <Route
+          path="/projects/:boardId/whiteboard"
+          element={<BoardDrawView />}
+        />
       </Routes>
     </MemoryRouter>
   )

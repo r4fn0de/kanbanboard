@@ -13,10 +13,7 @@ import { cn } from '@/lib/utils'
 import type { KanbanCard, KanbanColumn } from '@/types/common'
 import { Plus, Trash2, ArrowRight } from 'lucide-react'
 import { PriorityBadge, CalendarIcon } from './board-shared'
-import {
-  CARD_DUE_STATUS_STYLES,
-  getCardDueMetadata,
-} from './card-date'
+import { CARD_DUE_STATUS_STYLES, getCardDueMetadata } from './card-date'
 import { AddTaskDialog } from '../AddTaskDialog'
 import { getTagBadgeStyle } from '../tags/utils'
 import { getColumnIconComponent } from '@/components/kanban/column-icon-options'
@@ -128,7 +125,10 @@ export function BoardListView({
             let inferredStatusIcon: string | null = null
             if (normalizedTitle === 'backlog') {
               inferredStatusIcon = 'BacklogStatus'
-            } else if (normalizedTitle === 'to do' || normalizedTitle === 'todo') {
+            } else if (
+              normalizedTitle === 'to do' ||
+              normalizedTitle === 'todo'
+            ) {
               inferredStatusIcon = 'TodoStatus'
             } else if (normalizedTitle === 'in progress') {
               inferredStatusIcon = 'InProgressStatus'
@@ -138,7 +138,7 @@ export function BoardListView({
 
             const resolvedIconKey =
               !column.icon || column.icon === DEFAULT_COLUMN_ICON
-                ? inferredStatusIcon ?? DEFAULT_COLUMN_ICON
+                ? (inferredStatusIcon ?? DEFAULT_COLUMN_ICON)
                 : column.icon
 
             const IconComponent = getColumnIconComponent(resolvedIconKey)
@@ -206,7 +206,8 @@ export function BoardListView({
                     columnCards.map((card, rowIndex) => {
                       const dueMetadata = getCardDueMetadata(card.dueDate)
                       const displayTags = card.tags.slice(0, 3)
-                      const remainingTags = card.tags.length - displayTags.length
+                      const remainingTags =
+                        card.tags.length - displayTags.length
                       const isSelected = selectedCardId === card.id
 
                       return (
@@ -220,7 +221,8 @@ export function BoardListView({
                               aria-controls="task-details-panel"
                               className={cn(
                                 'group/row grid w-full grid-cols-1 gap-4 px-6 py-4 text-left text-sm text-foreground transition-all duration-300 hover:bg-muted/50 md:grid-cols-[minmax(0,2.2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] md:items-center md:gap-4',
-                                isSelected && 'bg-primary/5 border-l-4 border-l-primary',
+                                isSelected &&
+                                  'bg-primary/5 border-l-4 border-l-primary',
                                 rowIndex % 2 === 1 && 'bg-muted/20',
                                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2'
                               )}
@@ -238,7 +240,9 @@ export function BoardListView({
                                         <Badge
                                           className={cn(
                                             'inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-medium',
-                                            CARD_DUE_STATUS_STYLES[dueMetadata.status]
+                                            CARD_DUE_STATUS_STYLES[
+                                              dueMetadata.status
+                                            ]
                                           )}
                                         >
                                           <CalendarIcon className="h-3 w-3" />

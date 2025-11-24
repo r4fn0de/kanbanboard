@@ -47,7 +47,7 @@ export function DialogPortal({ children, ...props }: DialogPortalProps) {
 /**
  * Dialog Backdrop/Overlay
  */
-export interface DialogBackdropProps extends BaseDialog.Backdrop.Props {}
+export type DialogBackdropProps = BaseDialog.Backdrop.Props
 
 export function DialogBackdrop({ className, ...props }: DialogBackdropProps) {
   return (

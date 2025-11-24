@@ -1,5 +1,10 @@
 import type { ComponentType } from 'react'
-import { PriorityIcon, PriorityLowIcon, PriorityMediumIcon, PriorityHighIcon } from '@/components/ui/icons'
+import {
+  PriorityIcon,
+  PriorityLowIcon,
+  PriorityMediumIcon,
+  PriorityHighIcon,
+} from '@/components/ui/icons'
 import type { KanbanCard } from '@/types/common'
 
 export interface PriorityVariant {
@@ -8,7 +13,10 @@ export interface PriorityVariant {
   icon: ComponentType<{ className?: string }>
 }
 
-export const PRIORITY_VARIANTS: Record<KanbanCard['priority'], PriorityVariant> = {
+export const PRIORITY_VARIANTS: Record<
+  KanbanCard['priority'],
+  PriorityVariant
+> = {
   none: {
     label: 'No priority',
     className:

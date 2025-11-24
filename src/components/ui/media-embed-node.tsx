@@ -59,8 +59,8 @@ export const MediaEmbedElement = withHOC(
                 options={{ direction: 'left' }}
               />
 
-              {isVideo && (
-                isYoutube && embed?.id ? (
+              {isVideo &&
+                (isYoutube && embed?.id ? (
                   <LiteYouTubeEmbed
                     id={embed.id}
                     title="youtube"
@@ -102,8 +102,7 @@ export const MediaEmbedElement = withHOC(
                       allowFullScreen
                     />
                   </div>
-                ) : null
-              )}
+                ) : null)}
 
               {isTweet && embed?.id && (
                 <div

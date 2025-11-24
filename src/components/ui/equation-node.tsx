@@ -210,10 +210,7 @@ const EquationPopoverContent = ({
   }
 
   return (
-    <PopoverContent
-      className="flex gap-2"
-      contentEditable={false}
-    >
+    <PopoverContent className="flex gap-2" contentEditable={false}>
       <EquationInput
         className={cn('max-h-[50vh] grow resize-none p-2 text-sm', className)}
         state={{ isInline, open, onClose }}

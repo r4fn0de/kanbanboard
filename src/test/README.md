@@ -163,16 +163,19 @@ Alvos de cobertura:
 ## Testes Implementados
 
 ### ✅ Hooks
+
 - [x] useWorkspaceStatus
 - [x] useTaskStats
 - [x] useGlobalSearch
 
 ### ✅ Componentes
+
 - [x] EmptyOnboarding
 - [x] NewUserOnboarding
 - [x] Dashboard (com onboarding condicional)
 
 ### ✅ E2E
+
 - [x] Fluxo de workspace vazio
 - [x] Fluxo de novo usuário
 - [x] Fluxo de workspace ativo
@@ -235,9 +238,12 @@ Aumente o timeout ou use `waitFor`:
 
 ```typescript
 it('should timeout', async () => {
-  await waitFor(() => {
-    expect(screen.getByText('Loaded')).toBeInTheDocument()
-  }, { timeout: 5000 })
+  await waitFor(
+    () => {
+      expect(screen.getByText('Loaded')).toBeInTheDocument()
+    },
+    { timeout: 5000 }
+  )
 }, 10000) // 10s timeout
 ```
 

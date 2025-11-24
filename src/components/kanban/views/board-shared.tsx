@@ -4,10 +4,7 @@ import { cn } from '@/lib/utils'
 import type { KanbanCard } from '@/types/common'
 import { ChevronDown } from 'lucide-react'
 import { PaperclipIcon, CalendarIcon } from '@/components/ui/icons'
-import {
-  CARD_DUE_STATUS_STYLES,
-  getCardDueMetadata,
-} from './card-date'
+import { CARD_DUE_STATUS_STYLES, getCardDueMetadata } from './card-date'
 import { getTagBadgeStyle } from '../tags/utils'
 import { PRIORITY_VARIANTS } from './priority-variants'
 

@@ -38,7 +38,8 @@ export function NoteContentRenderer({
   const [needsTruncation, setNeedsTruncation] = useState(false)
 
   // Use controlled state if provided, otherwise use internal state
-  const expanded = controlledExpanded !== undefined ? controlledExpanded : internalExpanded
+  const expanded =
+    controlledExpanded !== undefined ? controlledExpanded : internalExpanded
   const setExpanded = (value: boolean) => {
     if (controlledExpanded !== undefined) {
       onToggleExpanded?.(value)
@@ -62,10 +63,10 @@ export function NoteContentRenderer({
   // Create editor only once
   const createdEditor = useCreateBlockNote()
 
-useEffect(() => {
+  useEffect(() => {
     if (createdEditor) {
       setEditor(createdEditor)
-      
+
       // Load content
       if (content) {
         try {
@@ -88,27 +89,30 @@ useEffect(() => {
         if (Array.isArray(parsed)) {
           // Count total characters in all blocks
           const blocks = parsed as SerializedBlock[]
-          const totalChars = blocks.reduce((total: number, block: SerializedBlock) => {
-            const blockContent = block.content
+          const totalChars = blocks.reduce(
+            (total: number, block: SerializedBlock) => {
+              const blockContent = block.content
 
-            if (Array.isArray(blockContent)) {
-              return (
-                total +
-                blockContent.reduce(
-                  (blockTotal: number, item: SerializedContentItem) =>
-                    blockTotal + (item.text?.length ?? 0),
-                  0
+              if (Array.isArray(blockContent)) {
+                return (
+                  total +
+                  blockContent.reduce(
+                    (blockTotal: number, item: SerializedContentItem) =>
+                      blockTotal + (item.text?.length ?? 0),
+                    0
+                  )
                 )
-              )
-            }
+              }
 
-            if (blockContent) {
-              return total + (blockContent.text?.length ?? 0)
-            }
+              if (blockContent) {
+                return total + (blockContent.text?.length ?? 0)
+              }
 
-            return total
-          }, 0)
-          
+              return total
+            },
+            0
+          )
+
           // Truncate if content is longer than ~300 characters
           setNeedsTruncation(totalChars > 300)
         }
@@ -119,7 +123,7 @@ useEffect(() => {
     }
   }, [content])
 
-if (!content || content.trim() === '') {
+  if (!content || content.trim() === '') {
     return (
       <div className={cn('text-sm text-muted-foreground italic', className)}>
         No content
@@ -154,13 +158,13 @@ if (!content || content.trim() === '') {
           formattingToolbar={false}
           linkToolbar={false}
         />
-        
+
         {/* Gradient overlay when collapsed */}
         {!expanded && needsTruncation && (
           <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-background to-transparent pointer-events-none" />
         )}
       </div>
-      
+
       {/* Show toggle button only if content needs truncation */}
       {needsTruncation && (
         <div className="mt-2 flex justify-center">

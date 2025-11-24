@@ -1,30 +1,30 @@
-import { Select as SelectPrimitive } from "@base-ui-components/react/select"
+import { Select as SelectPrimitive } from '@base-ui-components/react/select'
 import {
   ChevronDownIcon,
   ChevronsUpDownIcon,
   ChevronUpIcon,
-} from "lucide-react"
+} from 'lucide-react'
 
-import { cn } from "@/lib/utils"
+import { cn } from '@/lib/utils'
 
 const Select = SelectPrimitive.Root
 
 function SelectTrigger({
   className,
-  size = "default",
+  size = 'default',
   children,
   ...props
 }: SelectPrimitive.Trigger.Props & {
-  size?: "sm" | "default" | "lg"
+  size?: 'sm' | 'default' | 'lg'
 }) {
   return (
     <SelectPrimitive.Trigger
       data-slot="select-trigger"
       className={cn(
         "relative inline-flex w-full min-w-36 items-center justify-between gap-2 rounded-lg border border-input bg-background bg-clip-padding px-[calc(--spacing(3)-1px)] py-[calc(--spacing(1.5)-1px)] text-base/5 shadow-xs ring-ring/24 transition-shadow outline-none select-none before:pointer-events-none before:absolute before:inset-0 before:rounded-[calc(var(--radius-lg)-1px)] not-data-disabled:not-focus-visible:not-aria-invalid:not-data-pressed:before:shadow-[0_1px_--theme(--color-black/4%)] focus-visible:border-ring focus-visible:ring-[3px] in-data-[slot=field]:not-data-filled:text-muted-foreground aria-invalid:border-destructive/36 focus-visible:aria-invalid:border-destructive/64 focus-visible:aria-invalid:ring-destructive/16 data-disabled:pointer-events-none data-disabled:opacity-64 sm:text-sm dark:bg-input/32 dark:not-in-data-[slot=group]:bg-clip-border dark:not-data-disabled:not-focus-visible:not-aria-invalid:not-data-pressed:before:shadow-[0_-1px_--theme(--color-white/8%)] dark:aria-invalid:ring-destructive/24 pointer-coarse:after:absolute pointer-coarse:after:size-full pointer-coarse:after:min-h-11 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg]:opacity-72 [&_svg:not([class*='size-'])]:size-4 [&:is([data-disabled],:focus-visible,[aria-invalid],[data-pressed])]:shadow-none",
-        size === "sm" &&
-          "gap-1.5 px-[calc(--spacing(2.5)-1px)] py-[calc(--spacing(1)-1px)]",
-        size === "lg" && "py-[calc(--spacing(2)-1px)]",
+        size === 'sm' &&
+          'gap-1.5 px-[calc(--spacing(2.5)-1px)] py-[calc(--spacing(1)-1px)]',
+        size === 'lg' && 'py-[calc(--spacing(2)-1px)]',
         className
       )}
       {...props}
@@ -41,7 +41,7 @@ function SelectValue({ className, ...props }: SelectPrimitive.Value.Props) {
   return (
     <SelectPrimitive.Value
       data-slot="select-value"
-      className={cn("flex-1 truncate", className)}
+      className={cn('flex-1 truncate', className)}
       {...props}
     />
   )
@@ -54,8 +54,8 @@ function SelectPopup({
   alignItemWithTrigger = true,
   ...props
 }: SelectPrimitive.Popup.Props & {
-  sideOffset?: SelectPrimitive.Positioner.Props["sideOffset"]
-  alignItemWithTrigger?: SelectPrimitive.Positioner.Props["alignItemWithTrigger"]
+  sideOffset?: SelectPrimitive.Positioner.Props['sideOffset']
+  alignItemWithTrigger?: SelectPrimitive.Positioner.Props['alignItemWithTrigger']
 }) {
   return (
     <SelectPrimitive.Portal>
@@ -80,7 +80,7 @@ function SelectPopup({
             <SelectPrimitive.List
               data-slot="select-list"
               className={cn(
-                "max-h-(--available-height) min-w-(--anchor-width) overflow-y-auto p-1",
+                'max-h-(--available-height) min-w-(--anchor-width) overflow-y-auto p-1',
                 className
               )}
             >
@@ -141,7 +141,7 @@ function SelectSeparator({
 }: SelectPrimitive.Separator.Props) {
   return (
     <SelectPrimitive.Separator
-      className={cn("mx-2 my-1 h-px bg-border", className)}
+      className={cn('mx-2 my-1 h-px bg-border', className)}
       data-slot="select-separator"
       {...props}
     />

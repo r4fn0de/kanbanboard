@@ -32,7 +32,13 @@ export function ExportToolbarButton(props: ExportToolbarButtonProps) {
     const style = document.createElement('style')
     document.head.append(style)
 
-    const canvas = await html2canvas(editor.api.toDOMNode(editor)!, {
+    const editorElement = editor.api.toDOMNode(editor)
+
+    if (!editorElement) {
+      throw new Error('Editor DOM node not found')
+    }
+
+    const canvas = await html2canvas(editorElement, {
       onclone: (document: Document) => {
         const editorElement = document.querySelector('[contenteditable="true"]')
         if (editorElement) {

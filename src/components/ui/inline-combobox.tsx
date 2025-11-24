@@ -52,10 +52,12 @@ const defaultFilter: FilterFn = (
   search
 ) => {
   const uniqueTerms = new Set(
-    [value, ...keywords, group, label].filter(Boolean)
+    [value, ...keywords, group, label].filter((term): term is string =>
+      Boolean(term)
+    )
   )
 
-  return Array.from(uniqueTerms).some(keyword => filterWords(keyword!, search))
+  return Array.from(uniqueTerms).some(keyword => filterWords(keyword, search))
 }
 
 interface InlineComboboxProps {
@@ -208,7 +210,14 @@ const InlineComboboxInput = React.forwardRef<
     trigger,
   } = React.useContext(InlineComboboxContext)
 
-  const store = useComboboxContext()!
+  const store = useComboboxContext()
+
+  if (!store) {
+    throw new Error(
+      'InlineComboboxInput must be used within a ComboboxProvider'
+    )
+  }
+
   const value = store.useState('value')
 
   const ref = useComposedRef(propRef, contextRef)
@@ -302,7 +311,11 @@ const InlineComboboxItem = ({
 
   const { filter, removeInput } = React.useContext(InlineComboboxContext)
 
-  const store = useComboboxContext()!
+  const store = useComboboxContext()
+
+  if (!store) {
+    throw new Error('InlineComboboxItem must be used within a ComboboxProvider')
+  }
 
   // Optimization: Do not subscribe to value if filter is false
   const search = filter && store.useState('value')
@@ -332,7 +345,14 @@ const InlineComboboxEmpty = ({
   className,
 }: React.HTMLAttributes<HTMLDivElement>) => {
   const { setHasEmpty } = React.useContext(InlineComboboxContext)
-  const store = useComboboxContext()!
+  const store = useComboboxContext()
+
+  if (!store) {
+    throw new Error(
+      'InlineComboboxEmpty must be used within a ComboboxProvider'
+    )
+  }
+
   const items = store.useState('items')
 
   React.useEffect(() => {

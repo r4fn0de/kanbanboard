@@ -24,7 +24,9 @@ export function ActivityItem({ activity, onClick }: ActivityItemProps) {
 
   const getRelativeTime = () => {
     try {
-      return formatDistanceToNow(new Date(activity.timestamp), { addSuffix: true })
+      return formatDistanceToNow(new Date(activity.timestamp), {
+        addSuffix: true,
+      })
     } catch {
       return 'recently'
     }
@@ -48,7 +50,9 @@ export function ActivityItem({ activity, onClick }: ActivityItemProps) {
             {getActivityMessage()} in {activity.board_name}
           </span>
         </p>
-        <p className="text-xs text-muted-foreground mt-0.5">{getRelativeTime()}</p>
+        <p className="text-xs text-muted-foreground mt-0.5">
+          {getRelativeTime()}
+        </p>
       </div>
     </div>
   )

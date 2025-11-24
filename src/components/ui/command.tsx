@@ -27,7 +27,10 @@ function Command({
   )
 }
 
-type CommandDialogProps = Omit<React.ComponentProps<typeof Dialog>, 'children'> & {
+type CommandDialogProps = Omit<
+  React.ComponentProps<typeof Dialog>,
+  'children'
+> & {
   title?: string
   description?: string
   className?: string

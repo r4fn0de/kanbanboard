@@ -7,7 +7,10 @@ interface NewUserOnboardingProps {
   onOpenSearch?: () => void
 }
 
-export function NewUserOnboarding({ onDismiss, onOpenSearch }: NewUserOnboardingProps) {
+export function NewUserOnboarding({
+  onDismiss,
+  onOpenSearch,
+}: NewUserOnboardingProps) {
   const tips = [
     {
       icon: Search,
@@ -53,7 +56,9 @@ export function NewUserOnboarding({ onDismiss, onOpenSearch }: NewUserOnboarding
                 <tip.icon className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
                 <div>
                   <p className="text-sm font-medium">{tip.title}</p>
-                  <p className="text-xs text-muted-foreground">{tip.description}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {tip.description}
+                  </p>
                 </div>
               </motion.div>
             ))}

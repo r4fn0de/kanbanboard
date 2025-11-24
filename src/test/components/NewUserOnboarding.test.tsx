@@ -13,7 +13,9 @@ describe('NewUserOnboarding', () => {
   it('should render welcome message', () => {
     render(<NewUserOnboarding />)
 
-    expect(screen.getByText('Welcome! Here are some quick tips')).toBeInTheDocument()
+    expect(
+      screen.getByText('Welcome! Here are some quick tips')
+    ).toBeInTheDocument()
     expect(screen.getByText('Quick Search')).toBeInTheDocument()
     expect(screen.getByText('Drag & Drop')).toBeInTheDocument()
     expect(screen.getByText('Stay Organized')).toBeInTheDocument()
@@ -25,9 +27,13 @@ describe('NewUserOnboarding', () => {
     expect(
       screen.getByText('Press Cmd+K (Ctrl+K) to quickly find anything')
     ).toBeInTheDocument()
-    expect(screen.getByText('Reorder widgets and cards by dragging them')).toBeInTheDocument()
     expect(
-      screen.getByText('Use labels, priorities, and deadlines for better tracking')
+      screen.getByText('Reorder widgets and cards by dragging them')
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        'Use labels, priorities, and deadlines for better tracking'
+      )
     ).toBeInTheDocument()
   })
 
@@ -56,7 +62,9 @@ describe('NewUserOnboarding', () => {
     render(<NewUserOnboarding />)
 
     // Sparkles icon should be present
-    expect(screen.getByText('Welcome! Here are some quick tips')).toBeInTheDocument()
+    expect(
+      screen.getByText('Welcome! Here are some quick tips')
+    ).toBeInTheDocument()
   })
 
   it('should have gradient background', () => {

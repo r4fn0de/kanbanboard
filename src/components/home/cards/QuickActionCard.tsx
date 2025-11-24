@@ -39,7 +39,8 @@ export function QuickActionCard({
           'hover:border-primary/50',
           disabled && 'opacity-50 cursor-not-allowed',
           variant === 'primary' && 'border-primary/20 hover:border-primary/50',
-          variant === 'secondary' && 'border-secondary/20 hover:border-secondary/50'
+          variant === 'secondary' &&
+            'border-secondary/20 hover:border-secondary/50'
         )}
       >
         <div className="flex w-full items-center justify-between">

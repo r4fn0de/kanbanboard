@@ -1,9 +1,9 @@
 declare module 'lodash/debounce' {
-  const debounce: <T extends (...args: any[]) => any>(
-    func: T,
+  const debounce: <A extends unknown[], R>(
+    func: (...args: A) => R,
     wait?: number,
     options?: { leading?: boolean; maxWait?: number; trailing?: boolean }
-  ) => T
+  ) => (...args: A) => R
 
   export default debounce
 }

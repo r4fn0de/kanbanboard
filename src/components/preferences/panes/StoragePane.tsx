@@ -95,7 +95,8 @@ export function StoragePane() {
         label: 'Preferences',
         value: stats.preferencesBytes,
         path: stats.preferencesPath,
-        description: 'Local preferences file storing appearance and navigation settings.',
+        description:
+          'Local preferences file storing appearance and navigation settings.',
       },
     ]
   }, [stats])
@@ -185,7 +186,10 @@ export function StoragePane() {
                         </div>
                       </div>
                     </div>
-                    <Progress value={percent} aria-label={`${item.label} usage`} />
+                    <Progress
+                      value={percent}
+                      aria-label={`${item.label} usage`}
+                    />
                     <div className="text-xs text-muted-foreground">
                       {percent}% of total storage
                     </div>
@@ -248,8 +252,8 @@ export function StoragePane() {
             This action is irreversible.
           </p>
           <p className="text-xs text-muted-foreground">
-            Modulo will restart after completion. Make sure everything is
-            backed up.
+            Modulo will restart after completion. Make sure everything is backed
+            up.
           </p>
           <Button
             variant="destructive"
@@ -283,7 +287,9 @@ export function StoragePane() {
               }}
               disabled={clearAttachmentsMutation.isPending}
             >
-              {clearAttachmentsMutation.isPending ? 'Clearing…' : 'Delete attachments'}
+              {clearAttachmentsMutation.isPending
+                ? 'Clearing…'
+                : 'Delete attachments'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -295,7 +301,8 @@ export function StoragePane() {
             <AlertDialogTitle>Reset all local data?</AlertDialogTitle>
             <AlertDialogDescription>
               This wipes the database, attachments, preferences, and workspace
-              icons. Modulo will reload with a fresh setup. This cannot be undone.
+              icons. Modulo will reload with a fresh setup. This cannot be
+              undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

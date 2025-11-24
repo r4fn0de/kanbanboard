@@ -191,11 +191,7 @@ export function AIMenu() {
   if (toolName === 'edit' && mode === 'chat' && isLoading) return null
 
   return (
-    <Popover
-      open={open}
-      onOpenChange={setOpen}
-      modal={false}
-    >
+    <Popover open={open} onOpenChange={setOpen} modal={false}>
       <PopoverContent
         className="border-none bg-transparent p-0 shadow-none"
         style={{

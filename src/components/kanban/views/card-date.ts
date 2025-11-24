@@ -19,12 +19,9 @@ export interface CardDueMetadata {
 const SOON_THRESHOLD_DAYS = 3
 
 export const CARD_DUE_STATUS_STYLES: Record<CardDueStatus, string> = {
-  overdue:
-    'bg-rose-500/10 text-rose-600 dark:text-rose-300',
-  today:
-    'bg-amber-500/10 text-amber-600 dark:text-amber-300',
-  soon:
-    'bg-amber-500/10 text-amber-600 dark:text-amber-300',
+  overdue: 'bg-rose-500/10 text-rose-600 dark:text-rose-300',
+  today: 'bg-amber-500/10 text-amber-600 dark:text-amber-300',
+  soon: 'bg-amber-500/10 text-amber-600 dark:text-amber-300',
   upcoming: 'bg-muted/50 text-foreground',
 }
 
@@ -58,7 +55,7 @@ export function getCardDueMetadata(
     status = 'upcoming'
     const relativeText = formatDistanceToNow(date, { addSuffix: true })
     display = `Due ${formattedDate}`
-    
+
     return {
       status,
       display,

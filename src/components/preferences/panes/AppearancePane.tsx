@@ -77,14 +77,13 @@ export const AppearancePane: React.FC = () => {
               disabled={savePreferences.isPending}
               className={cn(
                 'group flex flex-col items-center gap-2 text-sm',
-                theme === 'system' ? 'text-foreground' : 'text-muted-foreground',
+                theme === 'system' ? 'text-foreground' : 'text-muted-foreground'
               )}
             >
               <div
                 className={cn(
                   'w-full max-w-[140px] aspect-[16/9] rounded-xl border bg-muted flex overflow-hidden shadow-sm',
-                  theme === 'system' &&
-                    'border-primary ring-2 ring-primary/60',
+                  theme === 'system' && 'border-primary ring-2 ring-primary/60'
                 )}
               >
                 <div className="w-1/4 bg-slate-900/80" />
@@ -104,14 +103,13 @@ export const AppearancePane: React.FC = () => {
               disabled={savePreferences.isPending}
               className={cn(
                 'group flex flex-col items-center gap-2 text-sm',
-                theme === 'light' ? 'text-foreground' : 'text-muted-foreground',
+                theme === 'light' ? 'text-foreground' : 'text-muted-foreground'
               )}
             >
               <div
                 className={cn(
                   'w-full max-w-[140px] aspect-[16/9] rounded-xl border bg-slate-50 flex overflow-hidden shadow-sm',
-                  theme === 'light' &&
-                    'border-primary ring-2 ring-primary/60',
+                  theme === 'light' && 'border-primary ring-2 ring-primary/60'
                 )}
               >
                 <div className="w-1/4 bg-slate-200" />
@@ -131,14 +129,13 @@ export const AppearancePane: React.FC = () => {
               disabled={savePreferences.isPending}
               className={cn(
                 'group flex flex-col items-center gap-2 text-sm',
-                theme === 'dark' ? 'text-foreground' : 'text-muted-foreground',
+                theme === 'dark' ? 'text-foreground' : 'text-muted-foreground'
               )}
             >
               <div
                 className={cn(
                   'w-full max-w-[140px] aspect-[16/9] rounded-xl border bg-slate-900 flex overflow-hidden shadow-sm',
-                  theme === 'dark' &&
-                    'border-primary ring-2 ring-primary/60',
+                  theme === 'dark' && 'border-primary ring-2 ring-primary/60'
                 )}
               >
                 <div className="w-1/4 bg-slate-800" />

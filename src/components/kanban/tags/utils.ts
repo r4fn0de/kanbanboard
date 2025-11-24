@@ -25,7 +25,9 @@ export function getAccessibleTextColor(
     return luminance > 0.4 ? '#000000' : '#ffffff'
   }
 
-  return luminance > 0.5 ? '#000000' : '#ffffff'
+  // No modo claro, use um tom de texto mais suave em fundos muito claros
+  // (#1f2937 ~ tailwind slate-800)
+  return luminance > 0.5 ? '#1f2937' : '#ffffff'
 }
 
 export function getTagBadgeStyle(tag: KanbanTag, isDarkMode = false) {
@@ -33,11 +35,9 @@ export function getTagBadgeStyle(tag: KanbanTag, isDarkMode = false) {
     return undefined
   }
 
-  const opacity = isDarkMode ? '40' : '30'
-
   return {
-    backgroundColor: `${tag.color}${opacity}`,
-    color: tag.color,
-    borderColor: 'transparent',
+    backgroundColor: tag.color,
+    color: getAccessibleTextColor(tag.color, isDarkMode),
+    borderColor: tag.color,
   } as const
 }

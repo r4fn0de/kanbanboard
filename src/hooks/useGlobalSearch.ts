@@ -47,49 +47,56 @@ export function useGlobalSearch() {
     setQuery('')
   }, [])
 
-  const handleSelect = useCallback((result: SearchResult) => {
-    console.log('=== DEBUG: handleSelect called ===')
-    console.log('Result data:', result)
-    console.log('Result item_type:', result.item_type, typeof result.item_type)
-    console.log('Result id:', result.id)
-    console.log('Result board_id:', result.board_id)
-    
-    // Navigate based on item type
-    let path = ''
-    switch (result.item_type as string) {
-      case 'board':
-        path = `/projects/${result.id}`
-        console.log('Board path calculated:', path)
-        break
-      case 'card':
-        path = `/projects/${result.board_id}`
-        console.log('Card path calculated:', path)
-        break
-      case 'note':
-        path = `/projects/${result.board_id}/notes`
-        console.log('Note path calculated:', path)
-        break
-      default:
-        console.log('Unknown item_type:', result.item_type)
-    }
-    
-    console.log('Final path:', path)
-    
-    if (path) {
-      console.log('Attempting to navigate to:', path)
-      try {
-        navigate(path)
-        console.log('Navigation called successfully')
-      } catch (error) {
-        console.error('Navigation failed:', error)
+  const handleSelect = useCallback(
+    (result: SearchResult) => {
+      console.log('=== DEBUG: handleSelect called ===')
+      console.log('Result data:', result)
+      console.log(
+        'Result item_type:',
+        result.item_type,
+        typeof result.item_type
+      )
+      console.log('Result id:', result.id)
+      console.log('Result board_id:', result.board_id)
+
+      // Navigate based on item type
+      let path = ''
+      switch (result.item_type as string) {
+        case 'board':
+          path = `/projects/${result.id}`
+          console.log('Board path calculated:', path)
+          break
+        case 'card':
+          path = `/projects/${result.board_id}`
+          console.log('Card path calculated:', path)
+          break
+        case 'note':
+          path = `/projects/${result.board_id}/notes`
+          console.log('Note path calculated:', path)
+          break
+        default:
+          console.log('Unknown item_type:', result.item_type)
       }
-    } else {
-      console.log('No path to navigate to')
-    }
-    
-    console.log('Calling handleClose()')
-    handleClose()
-  }, [navigate, handleClose])
+
+      console.log('Final path:', path)
+
+      if (path) {
+        console.log('Attempting to navigate to:', path)
+        try {
+          navigate(path)
+          console.log('Navigation called successfully')
+        } catch (error) {
+          console.error('Navigation failed:', error)
+        }
+      } else {
+        console.log('No path to navigate to')
+      }
+
+      console.log('Calling handleClose()')
+      handleClose()
+    },
+    [navigate, handleClose]
+  )
 
   return {
     query,

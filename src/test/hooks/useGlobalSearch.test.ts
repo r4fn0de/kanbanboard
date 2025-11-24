@@ -10,7 +10,14 @@ vi.mock('@tauri-apps/api/core', () => ({
 
 // Mock useDebounce
 vi.mock('@/hooks/use-debounce', () => ({
-  useDebounce: vi.fn((value) => value),
+  useDebounce: vi.fn(value => value),
+}))
+
+// Mock react-router navigation so we don't need a real Router in tests
+const mockNavigate = vi.fn()
+
+vi.mock('react-router-dom', () => ({
+  useNavigate: () => mockNavigate,
 }))
 
 describe('useGlobalSearch', () => {
@@ -71,13 +78,6 @@ describe('useGlobalSearch', () => {
     const mockInvoke = vi.mocked(tauriModule.invoke)
     mockInvoke.mockResolvedValue(mockResults)
 
-    // Mock window.location.href
-    const mockLocation = { href: '' }
-    Object.defineProperty(window, 'location', {
-      value: mockLocation,
-      writable: true,
-    })
-
     const { result } = renderHook(() => useGlobalSearch())
 
     act(() => {
@@ -93,7 +93,8 @@ describe('useGlobalSearch', () => {
       result.current.handleSelect(firstResult)
     })
 
-    expect(mockLocation.href).toBe('/board/board-1')
+    // For item_type 'board', the hook navigates to `/projects/${result.id}`
+    expect(mockNavigate).toHaveBeenCalledWith('/projects/1')
     expect(result.current.isOpen).toBe(false)
   })
 

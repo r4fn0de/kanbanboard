@@ -11,14 +11,8 @@ interface GlobalSearchProps {
 }
 
 export function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) {
-  const {
-    query,
-    results,
-    isLoading,
-    handleSearch,
-    handleClose,
-    handleSelect,
-  } = useGlobalSearch()
+  const { query, results, isLoading, handleSearch, handleClose, handleSelect } =
+    useGlobalSearch()
   const inputRef = useRef<HTMLInputElement>(null)
   const [selectedIndex, setSelectedIndex] = useState(0)
   const selectedIndexRef = useRef(0)
@@ -67,7 +61,8 @@ export function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) {
           selectedIndexRef.current = newIndex
         } else if (e.key === 'ArrowUp') {
           e.preventDefault()
-          const newIndex = (selectedIndexRef.current - 1 + results.length) % results.length
+          const newIndex =
+            (selectedIndexRef.current - 1 + results.length) % results.length
           setSelectedIndex(newIndex)
           selectedIndexRef.current = newIndex
         } else if (e.key === 'Enter') {
@@ -142,9 +137,9 @@ export function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) {
             exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black/50 z-50"
             onClick={() => {
-          handleClose()
-          onOpenChange(false)
-        }}
+              handleClose()
+              onOpenChange(false)
+            }}
           />
 
           {/* Dialog */}
@@ -164,7 +159,7 @@ export function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) {
                   type="text"
                   placeholder="Search boards, tasks, notes..."
                   value={query}
-                  onChange={(e) => handleSearch(e.target.value)}
+                  onChange={e => handleSearch(e.target.value)}
                   className="flex-1 bg-transparent outline-none text-sm"
                 />
                 <div className="flex items-center gap-1 text-xs text-muted-foreground">
@@ -218,9 +213,7 @@ export function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) {
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
-                            <p className="text-sm truncate">
-                              {result.title}
-                            </p>
+                            <p className="text-sm truncate">{result.title}</p>
                             <span
                               className={cn(
                                 'text-xs px-2 py-0.5 rounded flex-shrink-0',
@@ -253,18 +246,21 @@ export function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) {
                       ↑
                     </kbd>
                     <kbd className="px-1.5 py-0.5 rounded bg-background border text-xs">
-                      ↓                    </kbd>
+                      ↓{' '}
+                    </kbd>
                     to navigate
                   </span>
                   <span className="flex items-center gap-1">
                     <kbd className="px-1.5 py-0.5 rounded bg-background border text-xs">
-                      ↵                    </kbd>
+                      ↵{' '}
+                    </kbd>
                     to select
                   </span>
                 </div>
                 <span className="flex items-center gap-1">
                   <kbd className="px-1.5 py-0.5 rounded bg-background border text-xs">
-                    esc                    </kbd>
+                    esc{' '}
+                  </kbd>
                   to close
                 </span>
               </div>

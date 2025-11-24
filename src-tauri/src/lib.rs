@@ -1,8 +1,10 @@
 use anyhow::anyhow;
 use base64::{Engine as _, engine::general_purpose};
+use chrono::{DateTime, Utc};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
+use sha2::{Digest, Sha256};
 use sqlx::{
     Acquire, QueryBuilder, Row, Sqlite, Transaction,
     sqlite::{SqliteConnectOptions, SqliteJournalMode, SqlitePool, SqlitePoolOptions, SqliteRow},
@@ -14,11 +16,9 @@ use std::path::{Path, PathBuf};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tauri::menu::{MenuBuilder, MenuItemBuilder, PredefinedMenuItem, SubmenuBuilder};
 use tauri::{AppHandle, Emitter, Manager, State};
-use chrono::{DateTime, Utc};
-use tokio::time as tokio_time;
 use tauri_plugin_opener::OpenerExt;
+use tokio::time as tokio_time;
 use uuid::Uuid;
-use sha2::{Digest, Sha256};
 
 const KANBAN_SCHEMA: &str = include_str!("../schema/kanban.sql");
 const DATABASE_FILE: &str = "modulo.db";
@@ -101,10 +101,7 @@ async fn establish_pool(app: &AppHandle) -> Result<DbPool, String> {
 }
 
 #[tauri::command]
-async fn create_subtask(
-    pool: State<'_, DbPool>,
-    args: CreateSubtaskArgs,
-) -> Result<Value, String> {
+async fn create_subtask(pool: State<'_, DbPool>, args: CreateSubtaskArgs) -> Result<Value, String> {
     let title = args.title.trim().to_string();
     if title.is_empty() {
         return Err("O título da subtask não pode ser vazio.".to_string());
@@ -116,14 +113,13 @@ async fn create_subtask(
         .await
         .map_err(|e| format!("Falha ao abrir transação: {e}"))?;
 
-    let card_board_id = sqlx::query_scalar::<_, Option<String>>(
-        "SELECT board_id FROM kanban_cards WHERE id = ?",
-    )
-    .bind(&args.card_id)
-    .fetch_one(&mut *tx)
-    .await
-    .map_err(|e| format!("Falha ao carregar cartão: {e}"))?
-    .ok_or_else(|| "Cartão não encontrado.".to_string())?;
+    let card_board_id =
+        sqlx::query_scalar::<_, Option<String>>("SELECT board_id FROM kanban_cards WHERE id = ?")
+            .bind(&args.card_id)
+            .fetch_one(&mut *tx)
+            .await
+            .map_err(|e| format!("Falha ao carregar cartão: {e}"))?
+            .ok_or_else(|| "Cartão não encontrado.".to_string())?;
 
     if card_board_id != args.board_id {
         return Err("A subtask precisa pertencer ao mesmo quadro do cartão.".to_string());
@@ -189,10 +185,7 @@ async fn create_subtask(
 }
 
 #[tauri::command]
-async fn update_subtask(
-    pool: State<'_, DbPool>,
-    args: UpdateSubtaskArgs,
-) -> Result<Value, String> {
+async fn update_subtask(pool: State<'_, DbPool>, args: UpdateSubtaskArgs) -> Result<Value, String> {
     let mut tx = pool
         .begin()
         .await
@@ -253,7 +246,7 @@ async fn update_subtask(
     }
 
     if let Some(target_position) = args.target_position {
-        let mut subtask_ids = sqlx::query_as::<_, (String,)>(
+        let subtask_ids = sqlx::query_as::<_, (String,)>(
             "SELECT id FROM kanban_subtasks WHERE card_id = ? ORDER BY position ASC, created_at ASC",
         )
         .bind(&args.card_id)
@@ -314,10 +307,7 @@ async fn update_subtask(
 }
 
 #[tauri::command]
-async fn delete_subtask(
-    pool: State<'_, DbPool>,
-    args: DeleteSubtaskArgs,
-) -> Result<(), String> {
+async fn delete_subtask(pool: State<'_, DbPool>, args: DeleteSubtaskArgs) -> Result<(), String> {
     let mut tx = pool
         .begin()
         .await
@@ -403,7 +393,7 @@ async fn get_storage_stats(app: AppHandle) -> Result<StorageStats, String> {
     let db_path = app_data_dir.join(DATABASE_FILE);
     let attachments_path = app_data_dir.join("attachments");
     let workspace_icons_path = app_data_dir.join(WORKSPACE_ICON_DIR);
-    let preferences_path = get_preferences_path(&app).map_err(|e| format!("{e}"))?;
+    let preferences_path = get_preferences_path(&app).map_err(|e| e.to_string())?;
 
     let database_bytes = fs::metadata(&db_path).map(|m| m.len()).unwrap_or(0);
     let attachments_bytes = directory_size(&attachments_path).map_err(|e| {
@@ -414,7 +404,9 @@ async fn get_storage_stats(app: AppHandle) -> Result<StorageStats, String> {
         log::error!("Failed to measure workspace icon directory size: {e}");
         format!("Failed to measure workspace icon directory size: {e}")
     })?;
-    let preferences_bytes = fs::metadata(&preferences_path).map(|m| m.len()).unwrap_or(0);
+    let preferences_bytes = fs::metadata(&preferences_path)
+        .map(|m| m.len())
+        .unwrap_or(0);
 
     Ok(StorageStats {
         database_bytes,
@@ -422,18 +414,10 @@ async fn get_storage_stats(app: AppHandle) -> Result<StorageStats, String> {
         workspace_icons_bytes,
         preferences_bytes,
         total_bytes: database_bytes + attachments_bytes + workspace_icons_bytes + preferences_bytes,
-        database_path: db_path
-            .to_string_lossy()
-            .into_owned(),
-        attachments_path: attachments_path
-            .to_string_lossy()
-            .into_owned(),
-        workspace_icons_path: workspace_icons_path
-            .to_string_lossy()
-            .into_owned(),
-        preferences_path: preferences_path
-            .to_string_lossy()
-            .into_owned(),
+        database_path: db_path.to_string_lossy().into_owned(),
+        attachments_path: attachments_path.to_string_lossy().into_owned(),
+        workspace_icons_path: workspace_icons_path.to_string_lossy().into_owned(),
+        preferences_path: preferences_path.to_string_lossy().into_owned(),
     })
 }
 
@@ -489,11 +473,11 @@ async fn reset_application_data(app: AppHandle, pool: State<'_, DbPool>) -> Resu
     fs::create_dir_all(&icons_dir)
         .map_err(|e| format!("Failed to recreate workspace icon directory: {e}"))?;
 
-    if let Ok(pref_path) = get_preferences_path(&app) {
-        if pref_path.exists() {
-            fs::remove_file(&pref_path)
-                .map_err(|e| format!("Failed to remove preferences file: {e}"))?;
-        }
+    if let Ok(pref_path) = get_preferences_path(&app)
+        && pref_path.exists()
+    {
+        fs::remove_file(&pref_path)
+            .map_err(|e| format!("Failed to remove preferences file: {e}"))?;
     }
 
     // Clear database contents
@@ -717,7 +701,11 @@ struct UpdateWorkspaceArgs {
 }
 
 #[tauri::command]
-async fn update_card(app: AppHandle, pool: State<'_, DbPool>, args: UpdateCardArgs) -> Result<(), String> {
+async fn update_card(
+    app: AppHandle,
+    pool: State<'_, DbPool>,
+    args: UpdateCardArgs,
+) -> Result<(), String> {
     log::info!(
         "Attempting to update card with id: {}, board_id: {}",
         args.id,
@@ -888,7 +876,9 @@ fn schedule_card_reminder(app: AppHandle, when_iso: String, card_id: String) {
             Err(e) => {
                 log::warn!(
                     "Failed to parse remind_at '{}' for card {}: {}",
-                    when_iso, card_id, e
+                    when_iso,
+                    card_id,
+                    e
                 );
                 return;
             }
@@ -904,7 +894,11 @@ fn schedule_card_reminder(app: AppHandle, when_iso: String, card_id: String) {
             );
         } else {
             let delay = delay_ms as u64;
-            log::info!("Waiting {} ms before firing reminder for card {}", delay, card_id);
+            log::info!(
+                "Waiting {} ms before firing reminder for card {}",
+                delay,
+                card_id
+            );
             tokio_time::sleep(Duration::from_millis(delay)).await;
         }
 
@@ -915,7 +909,11 @@ fn schedule_card_reminder(app: AppHandle, when_iso: String, card_id: String) {
         )
         .await
         {
-            log::error!("Failed to send scheduled reminder notification for card {}: {}", card_id, e);
+            log::error!(
+                "Failed to send scheduled reminder notification for card {}: {}",
+                card_id,
+                e
+            );
         }
     });
 }
@@ -1447,6 +1445,7 @@ fn map_subtask_row(row: SqliteRow) -> Result<Value, sqlx::Error> {
 }
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 struct AttachmentRecord {
     id: String,
     card_id: String,
@@ -1503,6 +1502,7 @@ impl AttachmentRecord {
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
+#[allow(dead_code)]
 struct ListAttachmentsArgs {
     board_id: String,
     card_id: String,
@@ -1510,6 +1510,7 @@ struct ListAttachmentsArgs {
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
+#[allow(dead_code)]
 struct ManageAttachmentVersionArgs {
     board_id: String,
     card_id: String,
@@ -1543,7 +1544,7 @@ fn map_card_row(row: SqliteRow) -> Result<Value, sqlx::Error> {
             .map(|storage_path| {
                 let filename = storage_path
                     .split('/')
-                    .last()
+                    .next_back()
                     .map(|segment| segment.to_string())
                     .unwrap_or_else(|| storage_path.clone());
 
@@ -2027,10 +2028,7 @@ struct CreateBoardArgs {
 }
 
 #[tauri::command]
-async fn create_board(
-    pool: State<'_, DbPool>,
-    args: CreateBoardArgs,
-) -> Result<(), String> {
+async fn create_board(pool: State<'_, DbPool>, args: CreateBoardArgs) -> Result<(), String> {
     if args.workspace_id.is_empty() {
         return Err("O workspace informado é inválido.".to_string());
     }
@@ -2383,6 +2381,7 @@ async fn load_columns(pool: State<'_, DbPool>, board_id: String) -> Result<Vec<V
 }
 
 #[tauri::command]
+#[allow(clippy::too_many_arguments)]
 async fn create_column(
     pool: State<'_, DbPool>,
     id: String,
@@ -2582,7 +2581,7 @@ async fn delete_column(
 
     // Check if column has any cards
     let card_count = sqlx::query_scalar::<_, i64>(
-        "SELECT COUNT(*) FROM kanban_cards WHERE column_id = ? AND archived_at IS NULL"
+        "SELECT COUNT(*) FROM kanban_cards WHERE column_id = ? AND archived_at IS NULL",
     )
     .bind(&id)
     .fetch_one(&mut *tx)
@@ -2885,6 +2884,7 @@ async fn set_card_tags(
     Ok(tags)
 }
 #[tauri::command]
+#[allow(clippy::too_many_arguments)]
 async fn create_card(
     pool: State<'_, DbPool>,
     id: String,
@@ -3675,9 +3675,7 @@ pub struct TaskStats {
 }
 
 #[tauri::command]
-async fn get_task_statistics(
-    pool: State<'_, DbPool>,
-) -> Result<TaskStats, String> {
+async fn get_task_statistics(pool: State<'_, DbPool>) -> Result<TaskStats, String> {
     let query = r#"
         SELECT
             COUNT(DISTINCT b.id) as total_projects,
@@ -3824,9 +3822,7 @@ async fn get_recent_activity(
 }
 
 #[tauri::command]
-async fn get_favorite_boards(
-    pool: State<'_, DbPool>,
-) -> Result<Vec<Value>, String> {
+async fn get_favorite_boards(pool: State<'_, DbPool>) -> Result<Vec<Value>, String> {
     let query = r#"
         SELECT
             b.id,
@@ -3952,7 +3948,7 @@ async fn get_upcoming_deadlines(
     let mut mapped_tasks_with_days: Vec<TaskWithDeadline> = Vec::new();
     for task in mapped_tasks {
         let days_until = sqlx::query_scalar::<_, Option<i64>>(
-            "SELECT CAST(julianday(?) - julianday('now') AS INTEGER)"
+            "SELECT CAST(julianday(?) - julianday('now') AS INTEGER)",
         )
         .bind(&task.deadline)
         .fetch_one(&*pool)
@@ -3960,10 +3956,7 @@ async fn get_upcoming_deadlines(
         .unwrap_or(None)
         .unwrap_or(0);
 
-        mapped_tasks_with_days.push(TaskWithDeadline {
-            days_until,
-            ..task
-        });
+        mapped_tasks_with_days.push(TaskWithDeadline { days_until, ..task });
     }
 
     Ok(mapped_tasks_with_days)
@@ -4003,7 +3996,7 @@ async fn global_search(
         AND (b.title LIKE ? OR b.description LIKE ?)
         ORDER BY b.title ASC
         LIMIT 20
-        "#
+        "#,
     )
     .bind(&search_term)
     .bind(&search_term)
@@ -4039,7 +4032,7 @@ async fn global_search(
         AND (c.title LIKE ? OR c.description LIKE ?)
         ORDER BY c.updated_at DESC
         LIMIT 50
-        "#
+        "#,
     )
     .bind(&search_term)
     .bind(&search_term)
@@ -4074,7 +4067,7 @@ async fn global_search(
         AND (n.title LIKE ? OR n.content LIKE ?)
         ORDER BY n.updated_at DESC
         LIMIT 30
-        "#
+        "#,
     )
     .bind(&search_term)
     .bind(&search_term)
@@ -4570,8 +4563,8 @@ async fn upload_image(
         "jpg", "jpeg", "png", "gif", "webp", "svg", "bmp", "ico", "tiff", "tif",
     ];
     let document_extensions = [
-        "pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "txt", "csv", "md", "rtf",
-        "zip", "rar", "7z", "tar", "json",
+        "pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "txt", "csv", "md", "rtf", "zip",
+        "rar", "7z", "tar", "json",
     ];
 
     let is_image_by_extension = image_extensions.contains(&ext_lower.as_str());
@@ -4632,8 +4625,20 @@ async fn upload_image(
             .as_secs();
 
         let (base, ext) = match destination_path.file_stem().and_then(|s| s.to_str()) {
-            Some(stem) => (stem.to_string(), source_path.extension().and_then(|e| e.to_str()).map(|e| e.to_string())),
-            None => ("attachment".to_string(), source_path.extension().and_then(|e| e.to_str()).map(|e| e.to_string())),
+            Some(stem) => (
+                stem.to_string(),
+                source_path
+                    .extension()
+                    .and_then(|e| e.to_str())
+                    .map(|e| e.to_string()),
+            ),
+            None => (
+                "attachment".to_string(),
+                source_path
+                    .extension()
+                    .and_then(|e| e.to_str())
+                    .map(|e| e.to_string()),
+            ),
         };
 
         let mut counter = 1u32;
@@ -4654,11 +4659,7 @@ async fn upload_image(
         }
     }
 
-    println!(
-        "Copying from {:?} to {:?}",
-        source_path,
-        destination_path
-    );
+    println!("Copying from {:?} to {:?}", source_path, destination_path);
 
     fs::copy(&source_path, &destination_path).map_err(|e| {
         println!("Failed to copy file: {}", e);
@@ -4717,17 +4718,16 @@ async fn upload_image(
     })?;
 
     // Maintain legacy attachment JSON for existing clients
-    let existing_attachments: Option<String> = sqlx::query_scalar(
-        "SELECT attachments FROM kanban_cards WHERE id = ? AND board_id = ?",
-    )
-    .bind(&card_id)
-    .bind(&board_id)
-    .fetch_one(&mut *tx)
-    .await
-    .map_err(|e| {
-        println!("Failed to fetch legacy attachments: {}", e);
-        format!("Failed to fetch legacy attachments: {e}")
-    })?;
+    let existing_attachments: Option<String> =
+        sqlx::query_scalar("SELECT attachments FROM kanban_cards WHERE id = ? AND board_id = ?")
+            .bind(&card_id)
+            .bind(&board_id)
+            .fetch_one(&mut *tx)
+            .await
+            .map_err(|e| {
+                println!("Failed to fetch legacy attachments: {}", e);
+                format!("Failed to fetch legacy attachments: {e}")
+            })?;
 
     let mut attachments_vec: Vec<String> = existing_attachments
         .as_deref()
@@ -4811,6 +4811,7 @@ async fn upload_image(
 }
 
 #[tauri::command]
+#[allow(dead_code)]
 async fn list_card_attachments(
     pool: State<'_, DbPool>,
     args: ListAttachmentsArgs,
@@ -4876,14 +4877,13 @@ async fn remove_image(
         .map_err(|e| format!("Failed to delete attachment metadata: {e}"))?;
     }
 
-    let existing_attachments: Option<String> = sqlx::query_scalar(
-        "SELECT attachments FROM kanban_cards WHERE id = ? AND board_id = ?",
-    )
-    .bind(&card_id)
-    .bind(&board_id)
-    .fetch_one(&mut *tx)
-    .await
-    .map_err(|e| format!("Failed to fetch existing attachments: {e}"))?;
+    let existing_attachments: Option<String> =
+        sqlx::query_scalar("SELECT attachments FROM kanban_cards WHERE id = ? AND board_id = ?")
+            .bind(&card_id)
+            .bind(&board_id)
+            .fetch_one(&mut *tx)
+            .await
+            .map_err(|e| format!("Failed to fetch existing attachments: {e}"))?;
 
     let mut attachments_vec: Vec<String> = existing_attachments
         .as_deref()
@@ -4908,13 +4908,12 @@ async fn remove_image(
         .await
         .map_err(|e| format!("Failed to commit transaction: {e}"))?;
 
-    let remaining_references: i64 = sqlx::query_scalar(
-        "SELECT COUNT(*) FROM kanban_attachments WHERE storage_path = ?",
-    )
-    .bind(&file_path)
-    .fetch_one(&*pool)
-    .await
-    .map_err(|e| format!("Failed to check attachment references: {e}"))?;
+    let remaining_references: i64 =
+        sqlx::query_scalar("SELECT COUNT(*) FROM kanban_attachments WHERE storage_path = ?")
+            .bind(&file_path)
+            .fetch_one(&*pool)
+            .await
+            .map_err(|e| format!("Failed to check attachment references: {e}"))?;
 
     if remaining_references == 0 {
         let full_file_path = app_data_dir.join(&file_path);
@@ -4971,6 +4970,7 @@ async fn get_attachment_url(app: AppHandle, file_path: String) -> Result<String,
 }
 
 #[tauri::command]
+#[allow(dead_code)]
 async fn restore_attachment_version(
     pool: State<'_, DbPool>,
     args: ManageAttachmentVersionArgs,
@@ -5017,14 +5017,13 @@ async fn restore_attachment_version(
 
     let attachment_clone = attachment.clone();
 
-    let existing_attachments: Option<String> = sqlx::query_scalar(
-        "SELECT attachments FROM kanban_cards WHERE id = ? AND board_id = ?",
-    )
-    .bind(&card_id)
-    .bind(&board_id)
-    .fetch_one(&mut *tx)
-    .await
-    .map_err(|e| format!("Failed to fetch existing attachments: {e}"))?;
+    let existing_attachments: Option<String> =
+        sqlx::query_scalar("SELECT attachments FROM kanban_cards WHERE id = ? AND board_id = ?")
+            .bind(&card_id)
+            .bind(&board_id)
+            .fetch_one(&mut *tx)
+            .await
+            .map_err(|e| format!("Failed to fetch existing attachments: {e}"))?;
 
     let mut attachments_vec: Vec<String> = existing_attachments
         .as_deref()
@@ -5055,6 +5054,7 @@ async fn restore_attachment_version(
 }
 
 #[tauri::command]
+#[allow(dead_code)]
 async fn delete_attachment_version(
     app: AppHandle,
     pool: State<'_, DbPool>,
@@ -5113,12 +5113,10 @@ async fn delete_attachment_version(
         .bind(&card_id)
         .bind(version)
     } else {
-        sqlx::query(
-            "DELETE FROM kanban_attachments WHERE id = ? AND board_id = ? AND card_id = ?",
-        )
-        .bind(&attachment_id)
-        .bind(&board_id)
-        .bind(&card_id)
+        sqlx::query("DELETE FROM kanban_attachments WHERE id = ? AND board_id = ? AND card_id = ?")
+            .bind(&attachment_id)
+            .bind(&board_id)
+            .bind(&card_id)
     };
 
     delete_query
@@ -5153,13 +5151,12 @@ async fn delete_attachment_version(
         .map_err(|e| format!("Failed to commit transaction: {e}"))?;
 
     for storage_path in storage_paths_to_check {
-        let remaining: i64 = sqlx::query_scalar(
-            "SELECT COUNT(*) FROM kanban_attachments WHERE storage_path = ?",
-        )
-        .bind(&storage_path)
-        .fetch_one(&*pool)
-        .await
-        .map_err(|e| format!("Failed to check attachment references: {e}"))?;
+        let remaining: i64 =
+            sqlx::query_scalar("SELECT COUNT(*) FROM kanban_attachments WHERE storage_path = ?")
+                .bind(&storage_path)
+                .fetch_one(&*pool)
+                .await
+                .map_err(|e| format!("Failed to check attachment references: {e}"))?;
 
         if remaining == 0 {
             let full_file_path = app_data_dir.join(&storage_path);

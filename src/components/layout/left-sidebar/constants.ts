@@ -81,4 +81,3 @@ export const PROJECT_ICON_MAP = PROJECT_ICON_OPTIONS.reduce<
 
 export const DEFAULT_PROJECT_ICON = PROJECT_ICON_OPTIONS[0]?.value ?? 'Folder'
 export const DEFAULT_WORKSPACE_COLOR = '#6366F1'
-

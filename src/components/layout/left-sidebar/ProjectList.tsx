@@ -182,7 +182,9 @@ export const ProjectList = memo(function ProjectList({
         <div
           className={cn(
             'flex items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm transition-all duration-200',
-            useTransparentStyle ? 'text-white/90 font-semibold' : 'text-foreground'
+            useTransparentStyle
+              ? 'text-white/90 font-semibold'
+              : 'text-foreground'
           )}
         >
           <span className="font-bold">Projects</span>
@@ -214,9 +216,7 @@ export const ProjectList = memo(function ProjectList({
                   <div
                     className={cn(
                       'h-3 w-3 animate-pulse rounded-full',
-                      useTransparentStyle
-                        ? 'bg-white/70'
-                        : 'bg-accent/60'
+                      useTransparentStyle ? 'bg-white/70' : 'bg-accent/60'
                     )}
                   ></div>
                   <span>Loading…</span>
@@ -265,9 +265,7 @@ export const ProjectList = memo(function ProjectList({
                   <div
                     className={cn(
                       'h-2 w-2 rounded-full',
-                      useTransparentStyle
-                        ? 'bg-white/70'
-                        : 'bg-accent/60'
+                      useTransparentStyle ? 'bg-white/70' : 'bg-accent/60'
                     )}
                   ></div>
                   <span>No projects yet</span>
@@ -295,4 +293,3 @@ export const ProjectList = memo(function ProjectList({
     </motion.nav>
   )
 })
-

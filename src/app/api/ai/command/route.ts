@@ -56,15 +56,19 @@ export async function POST(req: Request) {
           throw new Error('No user message found in request')
         }
 
+        const lastUserMessage = messages[lastIndex]
+
+        if (!lastUserMessage) {
+          throw new Error('No user message found in request')
+        }
+
         messages[lastIndex] = replaceMessagePlaceholders(
           editor,
-          messages[lastIndex]!,
+          lastUserMessage,
           {
             isSelecting,
           }
         )
-
-        const lastUserMessage = messages[lastIndex]
 
         let toolName = toolNameParam
 
@@ -186,7 +190,10 @@ export async function POST(req: Request) {
 
     return createUIMessageStreamResponse({ stream })
   } catch {
-    return jsonResponse({ error: 'Failed to process AI request' }, { status: 500 })
+    return jsonResponse(
+      { error: 'Failed to process AI request' },
+      { status: 500 }
+    )
   }
 }
 
@@ -347,10 +354,7 @@ const replaceMessagePlaceholders = (
 
   const template = promptTemplate({ isSelecting })
 
-  const originalParts = (message.parts ?? []) as {
-    type?: string
-    text?: string
-  }[]
+  const originalParts = message.parts ?? []
 
   const parts = originalParts.map(part => {
     if (part.type !== 'text' || !part.text) return part
@@ -361,10 +365,10 @@ const replaceMessagePlaceholders = (
 
     if (isSelecting) text = removeEscapeSelection(editor, text)
 
-    return { ...part, text } as typeof part
+    return { ...part, text }
   })
 
-  return { ...message, parts: parts as any }
+  return { ...message, parts }
 }
 
 const SELECTION_START = '<Selection>'

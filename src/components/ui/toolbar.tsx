@@ -265,7 +265,7 @@ function withTooltip<T extends React.ElementType>(Component: T) {
         setMounted(true)
       }, [])
 
-      const Comp = Component as React.ComponentType<any>
+      const Comp = Component as React.ComponentType<unknown>
 
       const component = (
         <Comp
@@ -309,8 +309,8 @@ export function ToolbarMenuGroup({
   children,
   className,
   label,
-  value,
-  onValueChange,
+  value: _value,
+  onValueChange: _onValueChange,
   ...props
 }: React.ComponentProps<'div'> & {
   label?: string

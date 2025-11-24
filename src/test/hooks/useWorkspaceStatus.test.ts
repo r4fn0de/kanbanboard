@@ -37,9 +37,7 @@ describe('useWorkspaceStatus', () => {
   it('should detect new user when boards exist but no activity', async () => {
     const mockInvoke = vi.mocked(tauriModule.invoke)
     mockInvoke
-      .mockResolvedValueOnce([
-        { id: '1', title: 'Test Board' },
-      ]) // load_boards returns one board
+      .mockResolvedValueOnce([{ id: '1', title: 'Test Board' }]) // load_boards returns one board
       .mockResolvedValueOnce([]) // get_recent_activity returns empty array
 
     const { result } = renderHook(() => useWorkspaceStatus())

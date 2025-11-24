@@ -5,10 +5,7 @@ import { cn } from '@/lib/utils'
 import { useMemo, type CSSProperties } from 'react'
 import { useTheme } from '@/hooks/use-theme'
 import { PriorityBadge, CalendarIcon } from './board-shared'
-import {
-  CARD_DUE_STATUS_STYLES,
-  getCardDueMetadata,
-} from './card-date'
+import { CARD_DUE_STATUS_STYLES, getCardDueMetadata } from './card-date'
 import {
   ContextMenu,
   ContextMenuContent,
@@ -183,7 +180,7 @@ export function BoardTimelineView({
 
                 const resolvedIconKey =
                   !column?.icon || column.icon === DEFAULT_COLUMN_ICON
-                    ? inferredStatusIcon ?? DEFAULT_COLUMN_ICON
+                    ? (inferredStatusIcon ?? DEFAULT_COLUMN_ICON)
                     : column.icon
 
                 const IconComponent = getColumnIconComponent(resolvedIconKey)

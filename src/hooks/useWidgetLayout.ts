@@ -1,7 +1,12 @@
 import { useState, useEffect } from 'react'
 import { useUIStore } from '@/store/ui-store'
 
-export type WidgetType = 'overview' | 'quick-actions' | 'favorites' | 'activity' | 'deadlines'
+export type WidgetType =
+  | 'overview'
+  | 'quick-actions'
+  | 'favorites'
+  | 'activity'
+  | 'deadlines'
 
 export interface WidgetConfig {
   id: string
@@ -13,10 +18,34 @@ export interface WidgetConfig {
 
 const DEFAULT_WIDGETS: WidgetConfig[] = [
   { id: '1', type: 'overview', title: 'Overview', visible: true, order: 0 },
-  { id: '2', type: 'quick-actions', title: 'Quick Actions', visible: true, order: 1 },
-  { id: '3', type: 'favorites', title: 'Favorite Projects', visible: true, order: 2 },
-  { id: '4', type: 'activity', title: 'Recent Activity', visible: true, order: 3 },
-  { id: '5', type: 'deadlines', title: 'Upcoming Deadlines', visible: true, order: 4 },
+  {
+    id: '2',
+    type: 'quick-actions',
+    title: 'Quick Actions',
+    visible: true,
+    order: 1,
+  },
+  {
+    id: '3',
+    type: 'favorites',
+    title: 'Favorite Projects',
+    visible: true,
+    order: 2,
+  },
+  {
+    id: '4',
+    type: 'activity',
+    title: 'Recent Activity',
+    visible: true,
+    order: 3,
+  },
+  {
+    id: '5',
+    type: 'deadlines',
+    title: 'Upcoming Deadlines',
+    visible: true,
+    order: 4,
+  },
 ]
 
 export function useWidgetLayout() {

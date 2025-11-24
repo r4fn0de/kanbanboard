@@ -8,9 +8,12 @@ interface ProjectCardProps {
 }
 
 export function ProjectCard({ board, onClick }: ProjectCardProps) {
-  const completionRate = board.totalCards > 0
-    ? Math.round(((board.totalCards - board.activeCards) / board.totalCards) * 100)
-    : 0
+  const completionRate =
+    board.totalCards > 0
+      ? Math.round(
+          ((board.totalCards - board.activeCards) / board.totalCards) * 100
+        )
+      : 0
 
   return (
     <div
@@ -26,7 +29,10 @@ export function ProjectCard({ board, onClick }: ProjectCardProps) {
             <Folder className="h-5 w-5 text-primary" />
           </div>
           <div>
-            <h3 className="font-semibold text-sm truncate max-w-[150px]" title={board.title}>
+            <h3
+              className="font-semibold text-sm truncate max-w-[150px]"
+              title={board.title}
+            >
               {board.title}
             </h3>
             <p className="text-xs text-muted-foreground">

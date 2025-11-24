@@ -1,8 +1,8 @@
-import * as React from "react"
-import type { ComponentProps } from "react"
-import { cn } from "@/lib/utils"
+import * as React from 'react'
+import type { ComponentProps } from 'react'
+import { cn } from '@/lib/utils'
 
-export interface IconProps extends ComponentProps<"svg"> {}
+export type IconProps = ComponentProps<'svg'>
 
 const PenIcon = React.forwardRef<SVGSVGElement, IconProps>(
   ({ className, ...props }, ref) => {
@@ -12,7 +12,7 @@ const PenIcon = React.forwardRef<SVGSVGElement, IconProps>(
         xmlns="http://www.w3.org/2000/svg"
         fill="none"
         viewBox="0 0 48 48"
-        className={cn("h-4 w-4", className)}
+        className={cn('h-4 w-4', className)}
         {...props}
       >
         <path
@@ -26,6 +26,6 @@ const PenIcon = React.forwardRef<SVGSVGElement, IconProps>(
   }
 )
 
-PenIcon.displayName = "PenIcon"
+PenIcon.displayName = 'PenIcon'
 
 export { PenIcon }

@@ -13,8 +13,10 @@ export function useWorkspaceStatus() {
   return useQuery({
     queryKey: ['workspace', 'status'],
     queryFn: async (): Promise<WorkspaceStatus> => {
-      const boards = await invoke<any[]>('load_boards')
-      const activity = await invoke<any[]>('get_recent_activity', { limit: 1 })
+      const boards = await invoke<unknown[]>('load_boards')
+      const activity = await invoke<unknown[]>('get_recent_activity', {
+        limit: 1,
+      })
 
       const hasBoards = boards.length > 0
       const hasActivity = activity.length > 0
@@ -30,6 +32,6 @@ export function useWorkspaceStatus() {
       }
     },
     staleTime: 30 * 1000, // 30 seconds - workspace status doesn't change often
-    retry: 1,
+    retry: false,
   })
 }

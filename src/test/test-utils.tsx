@@ -1,5 +1,10 @@
 import React from 'react'
-import { render, type RenderOptions, renderHook as renderHookRTL, type RenderHookOptions } from '@testing-library/react'
+import {
+  render,
+  type RenderOptions,
+  renderHook as renderHookRTL,
+  type RenderHookOptions,
+} from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
 const createTestQueryClient = () =>
@@ -34,7 +39,8 @@ const customRender = (
 const customRenderHook = <Result, Props>(
   hookFn: (initialProps: Props) => Result,
   options?: RenderHookOptions<Props>
-) => renderHookRTL<Result, Props>(hookFn, { wrapper: AllTheProviders, ...options })
+) =>
+  renderHookRTL<Result, Props>(hookFn, { wrapper: AllTheProviders, ...options })
 
 export * from '@testing-library/react'
 export { customRender as render, customRenderHook as renderHook }

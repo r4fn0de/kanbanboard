@@ -70,9 +70,9 @@ const MEDIA_CONFIG = {
 >
 
 function filesToFileList(files: File[]): FileList {
-	const dataTransfer = new DataTransfer()
-	files.forEach(file => dataTransfer.items.add(file))
-	return dataTransfer.files
+  const dataTransfer = new DataTransfer()
+  files.forEach(file => dataTransfer.items.add(file))
+  return dataTransfer.files
 }
 
 interface MediaToolbarButtonProps {
@@ -100,9 +100,9 @@ export function MediaToolbarButton({
       const updatedFiles = data.plainFiles ?? []
       if (!updatedFiles.length) return
 
-		  editor
-				.getTransforms(PlaceholderPlugin)
-				.insert.media(filesToFileList(updatedFiles))
+      editor
+        .getTransforms(PlaceholderPlugin)
+        .insert.media(filesToFileList(updatedFiles))
     },
   })
 

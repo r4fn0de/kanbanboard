@@ -40,7 +40,10 @@ export function SidebarHeader({
           title={leftSidebarVisible ? 'Hide Left Sidebar' : 'Show Left Sidebar'}
           disabled={leftSidebarLocked}
         >
-          <LeftSidebarIcon className="h-3 w-3" collapsed={!leftSidebarVisible} />
+          <LeftSidebarIcon
+            className="h-3 w-3"
+            collapsed={!leftSidebarVisible}
+          />
         </Button>
         <Button
           onClick={() => executeCommand('open-preferences', commandContext)}
@@ -60,4 +63,3 @@ export function SidebarHeader({
     </div>
   )
 }
-

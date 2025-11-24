@@ -17,12 +17,7 @@ export function WidgetContainer({
   actionButton,
 }: WidgetContainerProps) {
   return (
-    <section
-      className={cn(
-        'space-y-4 transition-all duration-200',
-        className
-      )}
-    >
+    <section className={cn('space-y-4 transition-all duration-200', className)}>
       <div className="flex items-center justify-between group">
         <h2 className="text-lg font-semibold">{title}</h2>
         <div className="flex items-center gap-2">

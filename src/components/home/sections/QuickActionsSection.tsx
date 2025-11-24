@@ -50,17 +50,17 @@ export function QuickActionsSection({
 
   return (
     <div className="grid gap-3 grid-cols-1 md:grid-cols-3">
-        {actions.map((action) => (
-          <QuickActionCard
-            key={action.label}
-            icon={action.icon}
-            label={action.label}
-            description={action.description}
-            shortcut={action.shortcut}
-            onClick={action.onClick}
-            delay={action.delay}
-          />
-        ))}
+      {actions.map(action => (
+        <QuickActionCard
+          key={action.label}
+          icon={action.icon}
+          label={action.label}
+          description={action.description}
+          shortcut={action.shortcut}
+          onClick={action.onClick}
+          delay={action.delay}
+        />
+      ))}
     </div>
   )
 }

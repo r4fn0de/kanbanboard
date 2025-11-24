@@ -5,15 +5,17 @@ This document describes the implementation of rich content rendering in the Note
 ## Changes Made
 
 ### 1. NoteContentRenderer Component
+
 - **File**: `src/components/notes/NoteContentRenderer.tsx`
 - **Purpose**: Renders BlockNote content in read-only mode for preview in NotesList
-- **Features**: 
+- **Features**:
   - Read-only BlockNote editor
   - Theme support (light/dark)
   - Configurable height and styling
   - Error handling for malformed content
 
 ### 2. NotesList Integration
+
 - **File**: `src/components/notes/NotesList.tsx`
 - **Changes**:
   - Added NoteContentRenderer import
@@ -22,6 +24,7 @@ This document describes the implementation of rich content rendering in the Note
   - Maintained all existing functionality (pin, delete, search)
 
 ### 3. CSS Styling
+
 - **File**: `src/App.css`
 - **Changes**:
   - Added `.note-content-renderer` styles
@@ -54,6 +57,7 @@ The NoteContentRenderer is automatically used in NotesList to display rich conte
 ## Future Enhancements
 
 Potential improvements that could be implemented:
+
 - In-place editing in the list view
 - Expandable content for longer notes
 - Content truncation with "show more" functionality

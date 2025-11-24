@@ -25,13 +25,17 @@ export function ImageGallery({
   const [loadingImages, setLoadingImages] = useState<Set<string>>(new Set())
   const [selectedImage, setSelectedImage] = useState<ImageItem | null>(null)
 
-  const loadImageUrl = async (attachment: KanbanAttachment): Promise<string | null> => {
+  const loadImageUrl = async (
+    attachment: KanbanAttachment
+  ): Promise<string | null> => {
     if (loadingImages.has(attachment.storagePath)) return null
 
     setLoadingImages(prev => new Set(prev).add(attachment.storagePath))
 
     try {
-      const url = (await invoke('get_attachment_url', { filePath: attachment.storagePath })) as string
+      const url = (await invoke('get_attachment_url', {
+        filePath: attachment.storagePath,
+      })) as string
       return `file://${url}`
     } catch (error) {
       console.error('Failed to get image URL:', error)
@@ -88,7 +92,11 @@ export function ImageGallery({
         <h4 className="text-sm font-medium">Images</h4>
         <div className="grid grid-cols-2 gap-3">
           {attachments.map(attachment => {
-            const image = images.find(img => img.attachment.id === attachment.id && img.attachment.version === attachment.version)
+            const image = images.find(
+              img =>
+                img.attachment.id === attachment.id &&
+                img.attachment.version === attachment.version
+            )
             const filename = attachment.filename || attachment.originalName
 
             return (
@@ -192,7 +200,9 @@ export function ImageGallery({
             </div>
 
             <div className="p-4 border-t">
-              <p className="text-sm font-medium" id="image-modal-title">{selectedImage.filename}</p>
+              <p className="text-sm font-medium" id="image-modal-title">
+                {selectedImage.filename}
+              </p>
               <p className="text-xs text-muted-foreground">
                 {selectedImage.attachment.storagePath}
               </p>

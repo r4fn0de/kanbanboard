@@ -16,7 +16,9 @@ export function useRecentActivity(limit = 10) {
   return useQuery({
     queryKey: ['home', 'recent-activity', limit],
     queryFn: async () => {
-      const activities = await invoke<Activity[]>('get_recent_activity', { limit })
+      const activities = await invoke<Activity[]>('get_recent_activity', {
+        limit,
+      })
       return activities
     },
     staleTime: 2 * 60 * 1000, // 2 minutes

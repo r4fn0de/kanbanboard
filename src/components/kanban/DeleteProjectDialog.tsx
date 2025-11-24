@@ -52,7 +52,8 @@ export function DeleteProjectDialog({
           }
         },
         onError: error => {
-          const message = error instanceof Error ? error.message : 'Unknown error'
+          const message =
+            error instanceof Error ? error.message : 'Unknown error'
           toast.error('Failed to delete project', { description: message })
         },
       }
