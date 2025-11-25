@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/context-menu'
 import { Calendar } from '@/components/ui/calendar'
 import { useTheme } from '@/hooks/use-theme'
+import { useShortcutLabel } from '@/hooks/useShortcutLabel'
 import { cn } from '@/lib/utils'
 import type { KanbanCard } from '@/types/common'
 import { Circle, Check, Plus } from 'lucide-react'
@@ -117,6 +118,8 @@ export function KanbanCardItem(props: KanbanCardItemProps) {
     onDuplicate,
     maxVisibleTags = 3,
     showSubtasksSummary = true,
+    onQuickMoveToNext,
+    onQuickMarkDone,
     onChangePriority,
     moveColumnOptions,
     onMoveToColumn,
@@ -170,6 +173,10 @@ export function KanbanCardItem(props: KanbanCardItemProps) {
   const hasAttachments = card.attachments && card.attachments.length > 0
   const priorityConfig = PRIORITY_CONFIG[card.priority]
   const PriorityIcon = priorityConfig.icon
+
+  const openDetailsShortcut = useShortcutLabel('board-open-card')
+  const moveNextShortcut = useShortcutLabel('board-move-card-next-column')
+  const markDoneShortcut = useShortcutLabel('board-mark-card-done')
 
   const cardTagIds = React.useMemo(
     () => (card.tags ?? []).map(tag => tag.id),
@@ -708,7 +715,12 @@ export function KanbanCardItem(props: KanbanCardItemProps) {
             }}
           >
             <EyeIcon className="h-4 w-4" />
-            Open details
+            <span>Open details</span>
+            {openDetailsShortcut ? (
+              <span className="ml-auto text-xs text-muted-foreground">
+                {openDetailsShortcut}
+              </span>
+            ) : null}
           </ContextMenuItem>
 
           {(onChangePriority ||
@@ -1541,6 +1553,42 @@ export function KanbanCardItem(props: KanbanCardItemProps) {
                 </ContextMenuSubContent>
               </ContextMenuSub>
             )}
+
+          {(onQuickMoveToNext || onQuickMarkDone) && <ContextMenuSeparator />}
+
+          {onQuickMoveToNext && (
+            <ContextMenuItem
+              className="flex items-center gap-2"
+              onSelect={() => {
+                onQuickMoveToNext()
+              }}
+            >
+              <Circle className="h-4 w-4" />
+              <span>Move to next column</span>
+              {moveNextShortcut ? (
+                <span className="ml-auto text-xs text-muted-foreground">
+                  {moveNextShortcut}
+                </span>
+              ) : null}
+            </ContextMenuItem>
+          )}
+
+          {onQuickMarkDone && (
+            <ContextMenuItem
+              className="flex items-center gap-2"
+              onSelect={() => {
+                onQuickMarkDone()
+              }}
+            >
+              <Check className="h-4 w-4" />
+              <span>Mark as done</span>
+              {markDoneShortcut ? (
+                <span className="ml-auto text-xs text-muted-foreground">
+                  {markDoneShortcut}
+                </span>
+              ) : null}
+            </ContextMenuItem>
+          )}
 
           <ContextMenuSeparator />
           <ContextMenuItem
