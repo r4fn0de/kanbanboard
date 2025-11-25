@@ -50,19 +50,6 @@ export function CommandPalette() {
     [commandContext, setCommandPaletteOpen]
   )
 
-  // Keyboard shortcut handler
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
-        e.preventDefault()
-        setCommandPaletteOpen(!commandPaletteOpen)
-      }
-    }
-
-    document.addEventListener('keydown', handleKeyDown)
-    return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [commandPaletteOpen, setCommandPaletteOpen])
-
   // Clear search when dialog opens
   useEffect(() => {
     if (commandPaletteOpen) {

@@ -17,6 +17,7 @@ import { useUIStore } from '@/store/ui-store'
 import { AppearancePane } from './panes/AppearancePane'
 import { WorkspacesPane } from './panes/WorkspacesPane'
 import { StoragePane } from './panes/StoragePane'
+import { KeyboardShortcutsPane } from './panes/KeyboardShortcutsPane'
 import { PreferencesSidebar, type PreferencePane } from './PreferencesSidebar'
 
 const getPaneTitle = (pane: PreferencePane): string => {
@@ -25,6 +26,8 @@ const getPaneTitle = (pane: PreferencePane): string => {
       return 'Appearance'
     case 'workspaces':
       return 'Workspaces'
+    case 'shortcuts':
+      return 'Keyboard Shortcuts'
     case 'storage':
       return 'Storage'
     default:
@@ -89,6 +92,7 @@ export function PreferencesDialog() {
                 {activePane === 'workspaces' && (
                   <WorkspacesPane editingWorkspaceId={editingWorkspaceId} />
                 )}
+                {activePane === 'shortcuts' && <KeyboardShortcutsPane />}
                 {activePane === 'storage' && <StoragePane />}
               </div>
             </main>

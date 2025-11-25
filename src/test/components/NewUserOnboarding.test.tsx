@@ -25,7 +25,7 @@ describe('NewUserOnboarding', () => {
     render(<NewUserOnboarding />)
 
     expect(
-      screen.getByText('Press Cmd+K (Ctrl+K) to quickly find anything')
+      screen.getByText(/Press .*K to quickly find anything/)
     ).toBeInTheDocument()
     expect(
       screen.getByText('Reorder widgets and cards by dragging them')

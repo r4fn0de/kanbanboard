@@ -11,6 +11,7 @@ import {
 import { KEYS } from 'platejs'
 import { useEditorReadOnly } from 'platejs/react'
 
+import { formatChordForDisplay } from '@/hooks/useShortcutLabel'
 import { AIToolbarButton } from './ai-toolbar-button'
 import { CommentToolbarButton } from './comment-toolbar-button'
 import { InlineEquationToolbarButton } from './equation-toolbar-button'
@@ -35,29 +36,38 @@ export function FloatingToolbarButtons() {
           </ToolbarGroup>
 
           <ToolbarGroup>
-            <MarkToolbarButton nodeType={KEYS.bold} tooltip="Bold (⌘+B)">
+            <MarkToolbarButton
+              nodeType={KEYS.bold}
+              tooltip={`Bold (${formatChordForDisplay('mod+b')})`}
+            >
               <BoldIcon />
             </MarkToolbarButton>
 
-            <MarkToolbarButton nodeType={KEYS.italic} tooltip="Italic (⌘+I)">
+            <MarkToolbarButton
+              nodeType={KEYS.italic}
+              tooltip={`Italic (${formatChordForDisplay('mod+i')})`}
+            >
               <ItalicIcon />
             </MarkToolbarButton>
 
             <MarkToolbarButton
               nodeType={KEYS.underline}
-              tooltip="Underline (⌘+U)"
+              tooltip={`Underline (${formatChordForDisplay('mod+u')})`}
             >
               <UnderlineIcon />
             </MarkToolbarButton>
 
             <MarkToolbarButton
               nodeType={KEYS.strikethrough}
-              tooltip="Strikethrough (⌘+⇧+M)"
+              tooltip={`Strikethrough (${formatChordForDisplay('mod+shift+m')})`}
             >
               <StrikethroughIcon />
             </MarkToolbarButton>
 
-            <MarkToolbarButton nodeType={KEYS.code} tooltip="Code (⌘+E)">
+            <MarkToolbarButton
+              nodeType={KEYS.code}
+              tooltip={`Code (${formatChordForDisplay('mod+e')})`}
+            >
               <Code2Icon />
             </MarkToolbarButton>
 

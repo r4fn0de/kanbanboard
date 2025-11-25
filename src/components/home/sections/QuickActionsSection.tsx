@@ -1,5 +1,6 @@
 import { Plus, FileText, Search } from 'lucide-react'
 import { QuickActionCard } from '../cards/QuickActionCard'
+import { formatChordForDisplay } from '@/hooks/useShortcutLabel'
 
 interface QuickActionsSectionProps {
   onCreateProject?: () => void
@@ -14,7 +15,7 @@ export function QuickActionsSection({
     {
       icon: Plus,
       label: 'New Project',
-      shortcut: 'Cmd+N',
+      shortcut: formatChordForDisplay('mod+shift+n'),
       description: 'Create a new project board',
       delay: 0,
       onClick: () => {
@@ -26,7 +27,7 @@ export function QuickActionsSection({
     {
       icon: FileText,
       label: 'New Task',
-      shortcut: 'Cmd+T',
+      shortcut: formatChordForDisplay('mod+t'),
       description: 'Add a task to any board',
       delay: 0.05,
       onClick: () => {
@@ -37,7 +38,7 @@ export function QuickActionsSection({
     {
       icon: Search,
       label: 'Search',
-      shortcut: 'Cmd+K',
+      shortcut: formatChordForDisplay('mod+k'),
       description: 'Find anything quickly',
       delay: 0.1,
       onClick: () => {

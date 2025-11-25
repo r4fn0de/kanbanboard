@@ -32,6 +32,8 @@ vi.mock('@/store/ui-store', () => ({
   useUIStore: () => ({
     commandPaletteOpen: false,
     setCommandPaletteOpen: vi.fn(),
+    createProjectDialogOpen: false,
+    setCreateProjectDialogOpen: vi.fn(),
   }),
 }))
 
@@ -66,9 +68,9 @@ describe('Dashboard', () => {
 
     render(<Dashboard />)
 
-    expect(screen.getByText('Dashboard')).toBeInTheDocument()
+    expect(screen.getByText('Activity')).toBeInTheDocument()
     expect(
-      screen.getByText('Organize your projects and keep track of what matters.')
+      screen.getByText('See the latest changes across your projects.')
     ).toBeInTheDocument()
   })
 
@@ -82,10 +84,8 @@ describe('Dashboard', () => {
 
     render(<Dashboard />)
 
-    const searchButton = screen.getByTitle('Search (Cmd+K)')
+    const searchButton = screen.getByRole('button', { name: /search/i })
     expect(searchButton).toBeInTheDocument()
-    const settingsButton = screen.getByTitle('Customize dashboard')
-    expect(settingsButton).toBeInTheDocument()
   })
 
   it('should render EmptyOnboarding when workspace is empty', async () => {
@@ -145,8 +145,8 @@ describe('Dashboard', () => {
 
     render(<Dashboard />)
 
-    // Widgets should be rendered
-    expect(screen.getByText('Overview')).toBeInTheDocument()
+    // Main activity widget should be rendered
+    expect(screen.getByText('Recent activity')).toBeInTheDocument()
   })
 
   it('should handle keyboard shortcut for search', () => {

@@ -3118,6 +3118,27 @@ fn get_preferences_path(app: &AppHandle) -> Result<PathBuf, String> {
     Ok(app_data_dir.join("preferences.json"))
 }
 
+// Shortcuts configuration stored separately from preferences
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct ShortcutsConfig {
+    /// Map from logical binding id (e.g. "open-command-palette") to a normalized
+    /// shortcut string representation (e.g. "mod+k").
+    #[serde(default)]
+    pub bindings: std::collections::HashMap<String, String>,
+}
+
+fn get_shortcuts_path(app: &AppHandle) -> Result<PathBuf, String> {
+    let app_data_dir = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| format!("Failed to get app data directory: {e}"))?;
+
+    std::fs::create_dir_all(&app_data_dir)
+        .map_err(|e| format!("Failed to create app data directory: {e}"))?;
+
+    Ok(app_data_dir.join("shortcuts.json"))
+}
+
 #[tauri::command]
 async fn load_preferences(app: AppHandle) -> Result<AppPreferences, String> {
     log::debug!("Loading preferences from disk");
@@ -3169,6 +3190,56 @@ async fn save_preferences(app: AppHandle, preferences: AppPreferences) -> Result
     })?;
 
     log::info!("Successfully saved preferences to {prefs_path:?}");
+    Ok(())
+}
+
+#[tauri::command]
+async fn load_shortcuts(app: AppHandle) -> Result<ShortcutsConfig, String> {
+    log::debug!("Loading shortcuts configuration from disk");
+    let shortcuts_path = get_shortcuts_path(&app)?;
+
+    if !shortcuts_path.exists() {
+        log::info!("Shortcuts file not found, using defaults (empty config)");
+        return Ok(ShortcutsConfig::default());
+    }
+
+    let contents = std::fs::read_to_string(&shortcuts_path).map_err(|e| {
+        log::error!("Failed to read shortcuts file: {e}");
+        format!("Failed to read shortcuts file: {e}")
+    })?;
+
+    let config: ShortcutsConfig = serde_json::from_str(&contents).map_err(|e| {
+        log::error!("Failed to parse shortcuts JSON: {e}");
+        format!("Failed to parse shortcuts: {e}")
+    })?;
+
+    log::info!("Successfully loaded shortcuts configuration");
+    Ok(config)
+}
+
+#[tauri::command]
+async fn save_shortcuts(app: AppHandle, config: ShortcutsConfig) -> Result<(), String> {
+    log::debug!("Saving shortcuts configuration to disk: {config:?}");
+    let shortcuts_path = get_shortcuts_path(&app)?;
+
+    let json_content = serde_json::to_string_pretty(&config).map_err(|e| {
+        log::error!("Failed to serialize shortcuts config: {e}");
+        format!("Failed to serialize shortcuts config: {e}")
+    })?;
+
+    let temp_path = shortcuts_path.with_extension("tmp");
+
+    std::fs::write(&temp_path, json_content).map_err(|e| {
+        log::error!("Failed to write shortcuts file: {e}");
+        format!("Failed to write shortcuts file: {e}")
+    })?;
+
+    std::fs::rename(&temp_path, &shortcuts_path).map_err(|e| {
+        log::error!("Failed to finalize shortcuts file: {e}");
+        format!("Failed to finalize shortcuts file: {e}")
+    })?;
+
+    log::info!("Successfully saved shortcuts configuration to {shortcuts_path:?}");
     Ok(())
 }
 
@@ -4278,6 +4349,8 @@ pub fn run() {
             greet,
             load_preferences,
             save_preferences,
+            load_shortcuts,
+            save_shortcuts,
             send_native_notification,
             save_emergency_data,
             load_emergency_data,

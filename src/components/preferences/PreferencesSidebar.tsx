@@ -3,11 +3,13 @@ import {
   PaintPaletteIcon,
   FolderIcon,
   HardDriveIcon,
+  KeyboardIcon,
 } from '@/components/ui/icons'
 
 const navigationItems = [
   { id: 'appearance' as const, name: 'Appearance', icon: PaintPaletteIcon },
   { id: 'workspaces' as const, name: 'Workspaces', icon: FolderIcon },
+  { id: 'shortcuts' as const, name: 'Keyboard Shortcuts', icon: KeyboardIcon },
   { id: 'storage' as const, name: 'Storage', icon: HardDriveIcon },
 ]
 

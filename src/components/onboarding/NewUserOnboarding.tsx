@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion'
 import { Sparkles, ArrowRight, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { formatChordForDisplay } from '@/hooks/useShortcutLabel'
 
 interface NewUserOnboardingProps {
   onDismiss?: () => void
@@ -15,7 +16,7 @@ export function NewUserOnboarding({
     {
       icon: Search,
       title: 'Quick Search',
-      description: 'Press Cmd+K (Ctrl+K) to quickly find anything',
+      description: `Press ${formatChordForDisplay('mod+k')} to quickly find anything`,
     },
     {
       icon: ArrowRight,

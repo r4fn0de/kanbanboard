@@ -37,6 +37,7 @@ import {
 } from '@blocknote/react'
 import { Popover } from '@base-ui-components/react/popover'
 import { Tooltip } from '@base-ui-components/react/tooltip'
+import { formatChordForDisplay } from '@/hooks/useShortcutLabel'
 
 const LINK_FEATURE_ENABLED = false
 
@@ -967,19 +968,25 @@ export function NoteEditor({ note, boardId, onBack }: NoteEditorProps) {
                       key="customBlockTypeButton"
                       editor={editor}
                     />
-                    <ToolbarButtonWithTooltip tooltip="Bold (Ctrl+B)">
+                    <ToolbarButtonWithTooltip
+                      tooltip={`Bold (${formatChordForDisplay('mod+b')})`}
+                    >
                       <BasicTextStyleButton
                         basicTextStyle="bold"
                         key="boldStyleButton"
                       />
                     </ToolbarButtonWithTooltip>
-                    <ToolbarButtonWithTooltip tooltip="Italic (Ctrl+I)">
+                    <ToolbarButtonWithTooltip
+                      tooltip={`Italic (${formatChordForDisplay('mod+i')})`}
+                    >
                       <BasicTextStyleButton
                         basicTextStyle="italic"
                         key="italicStyleButton"
                       />
                     </ToolbarButtonWithTooltip>
-                    <ToolbarButtonWithTooltip tooltip="Underline (Ctrl+U)">
+                    <ToolbarButtonWithTooltip
+                      tooltip={`Underline (${formatChordForDisplay('mod+u')})`}
+                    >
                       <BasicTextStyleButton
                         basicTextStyle="underline"
                         key="underlineStyleButton"

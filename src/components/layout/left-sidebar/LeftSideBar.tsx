@@ -51,8 +51,9 @@ export function LeftSideBar({
     null
   )
   const [deleteWorkspaceName, _setDeleteWorkspaceName] = useState('')
-  const [openProjectMenuBoardId, setOpenProjectMenuBoardId] =
-    useState<string | null>(null)
+  const [openProjectMenuBoardId, setOpenProjectMenuBoardId] = useState<
+    string | null
+  >(null)
 
   const { leftSidebarVisible, toggleLeftSidebar, leftSidebarLocked } =
     useUIStore()

@@ -19,6 +19,8 @@ vi.mock('@/store/ui-store', () => ({
   useUIStore: () => ({
     commandPaletteOpen: false,
     setCommandPaletteOpen: vi.fn(),
+    createProjectDialogOpen: false,
+    setCreateProjectDialogOpen: vi.fn(),
   }),
 }))
 vi.mock('framer-motion', () => ({
@@ -152,12 +154,11 @@ describe('Dashboard E2E', () => {
       render(<Dashboard />)
 
       await waitFor(() => {
-        expect(screen.getByText('Dashboard')).toBeInTheDocument()
+        expect(screen.getByText('Activity')).toBeInTheDocument()
       })
 
-      // Should show dashboard sections
-      expect(screen.getByText('Overview')).toBeInTheDocument()
-      expect(screen.getByText('Quick actions')).toBeInTheDocument()
+      // Should show main activity section
+      expect(screen.getByText('Recent activity')).toBeInTheDocument()
     })
   })
 
@@ -190,7 +191,7 @@ describe('Dashboard E2E', () => {
 
       render(<Dashboard />)
 
-      const searchButton = screen.getByTitle('Search (Cmd+K)')
+      const searchButton = screen.getByRole('button', { name: /search/i })
       fireEvent.click(searchButton)
 
       await waitFor(() => {

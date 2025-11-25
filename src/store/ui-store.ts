@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { devtools } from 'zustand/middleware'
 
-type PreferencePane = 'appearance' | 'workspaces' | 'storage'
+type PreferencePane = 'appearance' | 'workspaces' | 'storage' | 'shortcuts'
 
 export interface WidgetConfig {
   id: string
@@ -20,6 +20,7 @@ interface UIState {
   preferencesActivePane: PreferencePane
   editingWorkspaceId: string | null
   widgetLayout: WidgetConfig[]
+  createProjectDialogOpen: boolean
 
   toggleLeftSidebar: () => void
   setLeftSidebarVisible: (visible: boolean) => void
@@ -37,6 +38,7 @@ interface UIState {
   setPreferencesActivePane: (pane: PreferencePane) => void
   setEditingWorkspaceId: (id: string | null) => void
   setWidgetLayout: (layout: WidgetConfig[]) => void
+  setCreateProjectDialogOpen: (open: boolean) => void
 }
 
 export const useUIStore = create<UIState>()(
@@ -50,6 +52,7 @@ export const useUIStore = create<UIState>()(
       preferencesActivePane: 'appearance',
       editingWorkspaceId: null,
       widgetLayout: [],
+      createProjectDialogOpen: false,
 
       toggleLeftSidebar: () =>
         set(
@@ -125,6 +128,13 @@ export const useUIStore = create<UIState>()(
 
       setWidgetLayout: layout =>
         set({ widgetLayout: layout }, undefined, 'setWidgetLayout'),
+
+      setCreateProjectDialogOpen: open =>
+        set(
+          { createProjectDialogOpen: open },
+          undefined,
+          'setCreateProjectDialogOpen'
+        ),
     }),
     {
       name: 'ui-store',

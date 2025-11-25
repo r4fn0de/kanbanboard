@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useCallback } from 'react'
 import { SearchIcon } from '@/components/ui/icons'
+import { useShortcutLabel } from '@/hooks/useShortcutLabel'
 import { useWorkspaceStatus } from '@/hooks/useWorkspaceStatus'
 import { useUIStore } from '@/store/ui-store'
 import { useWorkspaceStore } from '@/store/workspace-store'
@@ -18,12 +19,18 @@ export function Dashboard() {
   const { data: workspaceStatus, isLoading: statusLoading } =
     useWorkspaceStatus()
   const [settingsOpen, setSettingsOpen] = useState(false)
-  const [createProjectOpen, setCreateProjectOpen] = useState(false)
   const [showNewUserTips, setShowNewUserTips] = useState(true)
-  const { commandPaletteOpen, setCommandPaletteOpen } = useUIStore()
+  const {
+    commandPaletteOpen,
+    setCommandPaletteOpen,
+    createProjectDialogOpen,
+    setCreateProjectDialogOpen,
+  } = useUIStore()
   const selectedWorkspaceId = useWorkspaceStore(
     state => state.selectedWorkspaceId
   )
+
+  const searchShortcutLabel = useShortcutLabel('open-command-palette')
 
   const isNewUser = workspaceStatus?.isNewUser ?? false
   const isEmpty = workspaceStatus?.isEmpty ?? false
@@ -43,23 +50,10 @@ export function Dashboard() {
   const handleCreateBoard = useCallback(() => {
     // TODO: Open create board dialog
     console.log('Create board')
-    setCreateProjectOpen(true)
-  }, [])
+    setCreateProjectDialogOpen(true)
+  }, [setCreateProjectDialogOpen])
 
   // Layout of sections is now fixed and minimal; widget layout is not dynamic here.
-
-  // Keyboard shortcut for search
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-        e.preventDefault()
-        handleSearchOpen()
-      }
-    }
-
-    document.addEventListener('keydown', handleKeyDown)
-    return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [handleSearchOpen])
 
   // Show loading skeleton while checking workspace status
   if (statusLoading) {
@@ -110,7 +104,11 @@ export function Dashboard() {
                 variant="ghost"
                 onClick={handleSearchOpen}
                 className="gap-2"
-                title="Search (Cmd+K)"
+                title={
+                  searchShortcutLabel
+                    ? `Search (${searchShortcutLabel})`
+                    : 'Search'
+                }
               >
                 <SearchIcon className="h-4 w-4" />
                 <span className="hidden sm:inline text-sm">Search</span>
@@ -150,7 +148,11 @@ export function Dashboard() {
                 variant="ghost"
                 onClick={handleSearchOpen}
                 className="gap-2"
-                title="Search (Cmd+K)"
+                title={
+                  searchShortcutLabel
+                    ? `Search (${searchShortcutLabel})`
+                    : 'Search'
+                }
               >
                 <SearchIcon className="h-4 w-4" />
                 <span className="hidden sm:inline text-sm">Search</span>
@@ -182,8 +184,8 @@ export function Dashboard() {
       />
 
       <CreateProjectDialog
-        open={createProjectOpen}
-        onOpenChange={setCreateProjectOpen}
+        open={createProjectDialogOpen}
+        onOpenChange={setCreateProjectDialogOpen}
         workspaceId={selectedWorkspaceId}
       />
     </>

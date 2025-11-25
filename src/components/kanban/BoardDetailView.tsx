@@ -69,6 +69,9 @@ import type {
   DragStartEvent,
   DragCancelEvent,
 } from '@dnd-kit/core'
+import type { ShortcutBinding } from '@/lib/shortcuts'
+import { buildEffectiveBindings, formatChord } from '@/lib/shortcuts'
+import { useShortcutsConfig } from '@/services/shortcuts'
 import { createCardSchema } from '@/schemas/kanban'
 
 interface BoardDetailViewProps {
@@ -130,6 +133,36 @@ function saveBoardDisplayPreferences(
   } catch {
     // ignore storage errors
   }
+}
+
+function getBoardChordKeyFromEvent(event: KeyboardEvent): string | null {
+  const parts: string[] = []
+
+  if (event.metaKey || event.ctrlKey) {
+    parts.push('mod')
+  }
+  if (event.shiftKey) {
+    parts.push('shift')
+  }
+  if (event.altKey) {
+    parts.push('alt')
+  }
+
+  const key = event.key.toLowerCase()
+
+  if (
+    !key ||
+    key === 'meta' ||
+    key === 'control' ||
+    key === 'shift' ||
+    key === 'alt'
+  ) {
+    return null
+  }
+
+  parts.push(key)
+
+  return parts.join('+')
 }
 
 function inferColumnStatusRole(
@@ -200,6 +233,8 @@ export function BoardDetailView({
   const [orderDoneByRecency, setOrderDoneByRecency] = useState(false)
   const [showSubtasksSummary, setShowSubtasksSummary] = useState(true)
   const [displayTagFilterIds, setDisplayTagFilterIds] = useState<string[]>([])
+
+  const { data: shortcutsConfig } = useShortcutsConfig()
 
   const { data: allTags = [] } = useTags(board.id)
 
@@ -405,6 +440,22 @@ export function BoardDetailView({
       displayTagFilterIds,
     ]
   )
+
+  const effectiveBindings = useMemo(
+    () => buildEffectiveBindings(shortcutsConfig ?? null),
+    [shortcutsConfig]
+  )
+
+  const boardBindingsByChord = useMemo(() => {
+    const map = new Map<string, ShortcutBinding>()
+    for (const binding of effectiveBindings) {
+      if (binding.scope !== 'board' || !binding.chord) continue
+      const key = formatChord(binding.chord)
+      if (!key) continue
+      map.set(key, binding)
+    }
+    return map
+  }, [effectiveBindings])
 
   const handleMoveCardToNextColumn = useCallback(
     async (card: KanbanCard) => {
@@ -740,6 +791,101 @@ export function BoardDetailView({
       setSelectedCardId(null)
     }
   }, [visibleCards, selectedCardId])
+
+  useEffect(() => {
+    if (activeNavTab !== 'tasks') return
+    if (boardBindingsByChord.size === 0) return
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null
+
+      if (target) {
+        const tagName = target.tagName
+        const isEditable =
+          target.isContentEditable ||
+          tagName === 'INPUT' ||
+          tagName === 'TEXTAREA' ||
+          tagName === 'SELECT'
+
+        if (isEditable || target.closest('[data-ignore-board-shortcuts]')) {
+          return
+        }
+      }
+
+      const chordKey = getBoardChordKeyFromEvent(event)
+      if (!chordKey) return
+
+      const binding = boardBindingsByChord.get(chordKey)
+      if (!binding) return
+
+      switch (binding.commandId) {
+        case 'board-new-card': {
+          const targetColumn = selectedCard
+            ? (columnsById.get(selectedCard.columnId) ?? null)
+            : (visibleColumns[0] ?? null)
+
+          if (!targetColumn) {
+            return
+          }
+
+          event.preventDefault()
+          setCardDialogColumn(targetColumn)
+          setIsCardDialogOpen(true)
+          break
+        }
+        case 'board-open-card': {
+          event.preventDefault()
+
+          if (selectedCard) {
+            return
+          }
+
+          const firstCard = visibleCards[0]
+          if (!firstCard) return
+          setSelectedCardId(firstCard.id)
+          break
+        }
+        case 'board-move-card-next-column': {
+          if (!selectedCard) return
+          event.preventDefault()
+          void handleMoveCardToNextColumn(selectedCard)
+          break
+        }
+        case 'board-mark-card-done': {
+          if (!selectedCard) return
+          event.preventDefault()
+          void handleMarkCardDone(selectedCard)
+          break
+        }
+        case 'board-toggle-view-mode': {
+          if (!onViewModeChange) return
+          event.preventDefault()
+
+          const nextViewMode = viewMode === 'kanban' ? 'list' : 'kanban'
+          if (isBoardViewMode(nextViewMode)) {
+            onViewModeChange(nextViewMode)
+          }
+          break
+        }
+        default:
+          break
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [
+    activeNavTab,
+    boardBindingsByChord,
+    columnsById,
+    handleMarkCardDone,
+    handleMoveCardToNextColumn,
+    selectedCard,
+    visibleCards,
+    visibleColumns,
+    onViewModeChange,
+    viewMode,
+  ])
 
   const resetCardForm = useCallback(() => {
     setCardTitle('')

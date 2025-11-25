@@ -107,7 +107,10 @@ export function MainWindow() {
                 transition={{ duration: 0.2, ease: 'easeOut' }}
                 onMouseEnter={() => setIsHoveringEdge(true)}
                 onMouseLeave={() => {
-                  if (!isFloatingWorkspaceSelectOpen && !isFloatingProjectMenuOpen) {
+                  if (
+                    !isFloatingWorkspaceSelectOpen &&
+                    !isFloatingProjectMenuOpen
+                  ) {
                     setIsHoveringEdge(false)
                   }
                 }}
