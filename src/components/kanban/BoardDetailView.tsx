@@ -74,6 +74,10 @@ import { buildEffectiveBindings, formatChord } from '@/lib/shortcuts'
 import { useShortcutsConfig } from '@/services/shortcuts'
 import { createCardSchema } from '@/schemas/kanban'
 
+const BOARD_VIEW_MODE_ORDER: BoardViewMode[] = BOARD_VIEW_OPTIONS.map(
+  option => option.value
+)
+
 interface BoardDetailViewProps {
   board: KanbanBoard
   viewMode?: BoardViewMode
@@ -785,12 +789,26 @@ export function BoardDetailView({
     [visibleCards, selectedCardId]
   )
 
+  const [openCardId, setOpenCardId] = useState<string | null>(null)
+
+  const openCard = useMemo(
+    () => visibleCards.find(card => card.id === openCardId) ?? null,
+    [visibleCards, openCardId]
+  )
+
   useEffect(() => {
     if (!selectedCardId) return
     if (!visibleCards.some(card => card.id === selectedCardId)) {
       setSelectedCardId(null)
     }
   }, [visibleCards, selectedCardId])
+
+  useEffect(() => {
+    if (!openCardId) return
+    if (!visibleCards.some(card => card.id === openCardId)) {
+      setOpenCardId(null)
+    }
+  }, [visibleCards, openCardId])
 
   useEffect(() => {
     if (activeNavTab !== 'tasks') return
@@ -835,14 +853,22 @@ export function BoardDetailView({
         }
         case 'board-open-card': {
           event.preventDefault()
-
-          if (selectedCard) {
+          if (visibleCards.length === 0) {
             return
           }
 
-          const firstCard = visibleCards[0]
-          if (!firstCard) return
-          setSelectedCardId(firstCard.id)
+          if (!selectedCard) {
+            const firstCard = visibleCards[0]
+            if (!firstCard) return
+            setSelectedCardId(firstCard.id)
+            setOpenCardId(firstCard.id)
+            break
+          }
+
+          // Toggle details panel for the currently selected card
+          setOpenCardId(current =>
+            current === selectedCard.id ? null : selectedCard.id
+          )
           break
         }
         case 'board-move-card-next-column': {
@@ -857,11 +883,80 @@ export function BoardDetailView({
           void handleMarkCardDone(selectedCard)
           break
         }
+        case 'board-select-next-card': {
+          event.preventDefault()
+
+          if (visibleCards.length === 0) {
+            return
+          }
+
+          if (!selectedCard) {
+            setSelectedCardId(visibleCards[0]?.id ?? null)
+            return
+          }
+
+          const currentIndex = visibleCards.findIndex(
+            card => card.id === selectedCard.id
+          )
+
+          if (currentIndex === -1) {
+            setSelectedCardId(visibleCards[0]?.id ?? null)
+            return
+          }
+
+          const nextIndex = Math.min(
+            currentIndex + 1,
+            visibleCards.length - 1
+          )
+
+          setSelectedCardId(visibleCards[nextIndex]?.id ?? null)
+          break
+        }
+        case 'board-select-previous-card': {
+          event.preventDefault()
+
+          if (visibleCards.length === 0) {
+            return
+          }
+
+          if (!selectedCard) {
+            const last = visibleCards[visibleCards.length - 1]
+            setSelectedCardId(last?.id ?? null)
+            return
+          }
+
+          const currentIndex = visibleCards.findIndex(
+            card => card.id === selectedCard.id
+          )
+
+          if (currentIndex === -1) {
+            const last = visibleCards[visibleCards.length - 1]
+            setSelectedCardId(last?.id ?? null)
+            return
+          }
+
+          const prevIndex = Math.max(currentIndex - 1, 0)
+
+          setSelectedCardId(visibleCards[prevIndex]?.id ?? null)
+          break
+        }
+        case 'board-clear-selection': {
+          event.preventDefault()
+          setOpenCardId(null)
+          setSelectedCardId(null)
+          break
+        }
         case 'board-toggle-view-mode': {
           if (!onViewModeChange) return
           event.preventDefault()
 
-          const nextViewMode = viewMode === 'kanban' ? 'list' : 'kanban'
+          const currentIndex = BOARD_VIEW_MODE_ORDER.indexOf(viewMode)
+          const nextIndex =
+            currentIndex === -1
+              ? 0
+              : (currentIndex + 1) % BOARD_VIEW_MODE_ORDER.length
+
+          const nextViewMode = BOARD_VIEW_MODE_ORDER[nextIndex]
           if (isBoardViewMode(nextViewMode)) {
             onViewModeChange(nextViewMode)
           }
@@ -961,12 +1056,14 @@ export function BoardDetailView({
 
   const handleCardSelect = useCallback(
     (card: KanbanCard) => {
-      setSelectedCardId(card.id === selectedCardId ? null : card.id)
+      setSelectedCardId(prev => (prev === card.id ? null : card.id))
+      setOpenCardId(prev => (prev === card.id ? null : card.id))
     },
-    [selectedCardId]
+    []
   )
 
   const handleCloseDetails = useCallback(() => {
+    setOpenCardId(null)
     setSelectedCardId(null)
   }, [])
 
@@ -1942,10 +2039,10 @@ export function BoardDetailView({
         />
 
         {/* Task Details Panel */}
-        {selectedCard ? (
+        {openCard ? (
           <TaskDetailsPanel
-            card={selectedCard}
-            column={columnsById.get(selectedCard.columnId) ?? null}
+            card={openCard}
+            column={columnsById.get(openCard.columnId) ?? null}
             onClose={handleCloseDetails}
           />
         ) : null}

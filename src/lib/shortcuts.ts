@@ -196,6 +196,13 @@ export const defaultShortcutBindings: ShortcutBinding[] = [
     chord: { key: 'arrowup', modifiers: [] },
   },
   {
+    id: 'board-clear-selection',
+    commandId: 'board-clear-selection',
+    scope: 'board',
+    description: 'Clear card selection',
+    chord: { key: 'escape', modifiers: [] },
+  },
+  {
     id: 'board-toggle-subtasks-summary',
     commandId: 'board-toggle-subtasks-summary',
     scope: 'board',
