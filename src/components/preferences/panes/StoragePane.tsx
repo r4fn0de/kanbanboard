@@ -22,7 +22,11 @@ import {
   useClearAttachments,
   useResetApplicationData,
   useStorageStats,
+  useExportApplicationData,
+  useImportApplicationData,
 } from '@/services/storage'
+import { save, open } from '@tauri-apps/plugin-dialog'
+import { relaunch } from '@tauri-apps/plugin-process'
 
 const SettingsSection: React.FC<{
   title: string
@@ -57,6 +61,8 @@ export function StoragePane() {
   const statsQuery = useStorageStats()
   const clearAttachmentsMutation = useClearAttachments()
   const resetDataMutation = useResetApplicationData()
+  const exportDataMutation = useExportApplicationData()
+  const importDataMutation = useImportApplicationData()
 
   const [confirmClearOpen, setConfirmClearOpen] = useState(false)
   const [confirmResetOpen, setConfirmResetOpen] = useState(false)
@@ -111,6 +117,64 @@ export function StoragePane() {
         setConfirmClearOpen(false)
       },
     })
+  }
+
+  const handleImportData = async () => {
+    try {
+      const selected = await open({
+        multiple: false,
+        filters: [
+          {
+            name: 'ZIP archive',
+            extensions: ['zip'],
+          },
+        ],
+      })
+
+      if (!selected) return
+
+      const backupPath = Array.isArray(selected) ? selected[0] : selected
+      if (!backupPath) return
+
+      importDataMutation.mutate(backupPath, {
+        onSuccess: () => {
+          // Relaunch the entire application so the backend picks up the restored database
+          void relaunch()
+        },
+      })
+    } catch {
+      // errors are surfaced via mutation onError/toasts
+    }
+  }
+
+  const handleExportData = async () => {
+    try {
+      const now = new Date()
+      const pad = (n: number) => n.toString().padStart(2, '0')
+      const yyyy = now.getFullYear()
+      const mm = pad(now.getMonth() + 1)
+      const dd = pad(now.getDate())
+      const hh = pad(now.getHours())
+      const mi = pad(now.getMinutes())
+
+      const defaultFileName = `modulo-backup-${yyyy}${mm}${dd}-${hh}${mi}.zip`
+
+      const selectedPath = await save({
+        defaultPath: defaultFileName,
+        filters: [
+          {
+            name: 'ZIP archive',
+            extensions: ['zip'],
+          },
+        ],
+      })
+
+      if (!selectedPath) return
+
+      exportDataMutation.mutate(selectedPath)
+    } catch {
+      // errors are surfaced via mutation onError/toasts
+    }
   }
 
   const handleResetData = () => {
@@ -221,6 +285,45 @@ export function StoragePane() {
             disabled={isLoading || isRefetching}
           >
             <RefreshCw className="mr-2 h-4 w-4" /> Refresh
+          </Button>
+        </div>
+      </SettingsSection>
+
+      <SettingsSection title="Export data for backup">
+        <div className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Create a ZIP backup of your local Modulo data, including boards,
+            cards, notes, attachments, preferences, and shortcuts. Use this
+            file to restore your workspace on another machine.
+          </p>
+          <p className="text-xs text-muted-foreground">
+            The backup stays on your device and is not uploaded anywhere.
+          </p>
+          <Button
+            variant="secondary"
+            onClick={() => void handleExportData()}
+            disabled={exportDataMutation.isPending || isLoading}
+          >
+            Export data for backup
+          </Button>
+        </div>
+      </SettingsSection>
+
+      <SettingsSection title="Import data from backup">
+        <div className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Restore your local Modulo data from a previously created ZIP
+            backup. This will overwrite your current local data.
+          </p>
+          <p className="text-xs text-muted-foreground">
+            After import, Modulo will reload to apply the restored data.
+          </p>
+          <Button
+            variant="secondary"
+            onClick={() => void handleImportData()}
+            disabled={importDataMutation.isPending || isLoading}
+          >
+            Import data from backup
           </Button>
         </div>
       </SettingsSection>

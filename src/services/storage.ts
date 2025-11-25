@@ -73,3 +73,39 @@ export function useResetApplicationData() {
     },
   })
 }
+
+export async function exportApplicationData(destinationPath: string) {
+  await invoke('export_application_data', { destinationPath })
+}
+
+export function useExportApplicationData() {
+  return useMutation({
+    mutationFn: exportApplicationData,
+    onSuccess: () => {
+      toast.success('Backup created successfully')
+    },
+    onError: error => {
+      const description =
+        error instanceof Error ? error.message : 'Unknown error'
+      toast.error('Failed to export data', { description })
+    },
+  })
+}
+
+export async function importApplicationData(backupPath: string) {
+  await invoke('import_application_data', { destinationPath: backupPath })
+}
+
+export function useImportApplicationData() {
+  return useMutation({
+    mutationFn: importApplicationData,
+    onSuccess: () => {
+      toast.success('Data imported successfully. Modulo will reload.')
+    },
+    onError: error => {
+      const description =
+        error instanceof Error ? error.message : 'Unknown error'
+      toast.error('Failed to import data', { description })
+    },
+  })
+}

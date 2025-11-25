@@ -11,7 +11,8 @@ use sqlx::{
 };
 use std::collections::{BTreeSet, HashMap};
 use std::convert::TryInto;
-use std::fs;
+use std::fs::{self, File};
+use std::io::{self};
 use std::path::{Path, PathBuf};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tauri::menu::{MenuBuilder, MenuItemBuilder, PredefinedMenuItem, SubmenuBuilder};
@@ -19,6 +20,7 @@ use tauri::{AppHandle, Emitter, Manager, State};
 use tauri_plugin_opener::OpenerExt;
 use tokio::time as tokio_time;
 use uuid::Uuid;
+use zip::{write::FileOptions, CompressionMethod, ZipArchive, ZipWriter};
 
 const KANBAN_SCHEMA: &str = include_str!("../schema/kanban.sql");
 const DATABASE_FILE: &str = "modulo.db";
@@ -545,6 +547,152 @@ async fn reset_application_data(app: AppHandle, pool: State<'_, DbPool>) -> Resu
     initialize_schema(pool_ref)
         .await
         .map_err(|e| format!("Failed to reinitialize schema after reset: {e}"))?;
+
+    Ok(())
+}
+
+#[tauri::command]
+async fn export_application_data(app: AppHandle, destination_path: String) -> Result<(), String> {
+    use std::path::PathBuf;
+
+    let app_data_dir = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| format!("Failed to resolve app data directory: {e}"))?;
+
+    if !app_data_dir.exists() {
+        return Err("Application data directory does not exist".to_string());
+    }
+
+    let backup_path = PathBuf::from(&destination_path);
+
+    if let Some(parent) = backup_path.parent() {
+        if !parent.as_os_str().is_empty() {
+            fs::create_dir_all(parent)
+                .map_err(|e| format!("Failed to create backup directory {parent:?}: {e}"))?;
+        }
+    }
+
+    let file = File::create(&backup_path)
+        .map_err(|e| format!("Failed to create backup file {backup_path:?}: {e}"))?;
+
+    let mut zip = ZipWriter::new(file);
+    let options = FileOptions::default().compression_method(CompressionMethod::Deflated);
+
+    let mut dirs = vec![app_data_dir.clone()];
+
+    while let Some(dir) = dirs.pop() {
+        let entries = fs::read_dir(&dir)
+            .map_err(|e| format!("Failed to read directory {dir:?}: {e}"))?;
+
+        for entry_result in entries {
+            let entry = entry_result.map_err(|e| format!("Failed to access entry in {dir:?}: {e}"))?;
+            let path = entry.path();
+
+            // Skip the backup file itself if it happens to be inside app_data_dir
+            if path == backup_path {
+                continue;
+            }
+
+            if path.is_dir() {
+                dirs.push(path);
+            } else {
+                let rel_path = path
+                    .strip_prefix(&app_data_dir)
+                    .unwrap_or(&path)
+                    .to_string_lossy()
+                    .replace('\\', "/");
+
+                zip.start_file(rel_path, options)
+                    .map_err(|e| format!("Failed to start file in zip: {e}"))?;
+
+                let mut src = File::open(&path)
+                    .map_err(|e| format!("Failed to open file {path:?} for backup: {e}"))?;
+                io::copy(&mut src, &mut zip)
+                    .map_err(|e| format!("Failed to write file {path:?} to backup: {e}"))?;
+            }
+        }
+    }
+
+    zip.finish()
+        .map_err(|e| format!("Failed to finalize backup archive: {e}"))?;
+
+    Ok(())
+}
+
+#[tauri::command]
+async fn import_application_data(app: AppHandle, destination_path: String) -> Result<(), String> {
+    use std::path::PathBuf;
+
+    let app_data_dir = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| format!("Failed to resolve app data directory: {e}"))?;
+
+    if !app_data_dir.exists() {
+        fs::create_dir_all(&app_data_dir)
+            .map_err(|e| format!("Failed to create app data directory: {e}"))?;
+    }
+
+    let backup_path = PathBuf::from(&destination_path);
+
+    // Open the backup archive first so it is available even if located inside app_data_dir
+    let file = File::open(&backup_path)
+        .map_err(|e| format!("Failed to open backup file {backup_path:?}: {e}"))?;
+
+    // Clear existing contents of app_data_dir, but never delete the backup file itself
+    for entry in fs::read_dir(&app_data_dir)
+        .map_err(|e| format!("Failed to read application data directory: {e}"))?
+    {
+        let entry = entry.map_err(|e| format!("Failed to access entry: {e}"))?;
+        let path = entry.path();
+
+        if path == backup_path {
+            continue;
+        }
+
+        if path.is_dir() {
+            fs::remove_dir_all(&path)
+                .map_err(|e| format!("Failed to remove directory {path:?}: {e}"))?;
+        } else {
+            fs::remove_file(&path)
+                .map_err(|e| format!("Failed to remove file {path:?}: {e}"))?;
+        }
+    }
+
+    let mut archive = ZipArchive::new(file)
+        .map_err(|e| format!("Failed to open backup archive: {e}"))?;
+
+    for i in 0..archive.len() {
+        let mut entry = archive
+            .by_index(i)
+            .map_err(|e| format!("Failed to read entry {i} from backup: {e}"))?;
+
+        // Use enclosed_name to avoid path traversal outside app_data_dir
+        let Some(rel_path) = entry.enclosed_name() else {
+            continue;
+        };
+
+        let outpath = app_data_dir.join(rel_path);
+
+        if entry.name().ends_with('/') || entry.is_dir() {
+            fs::create_dir_all(&outpath)
+                .map_err(|e| format!("Failed to create directory {outpath:?}: {e}"))?;
+        } else {
+            if let Some(parent) = outpath.parent() {
+                if !parent.as_os_str().is_empty() {
+                    fs::create_dir_all(parent)
+                        .map_err(|e| format!("Failed to create directory {parent:?}: {e}"))?;
+                }
+            }
+
+            let mut outfile = File::create(&outpath)
+                .map_err(|e| format!("Failed to create file {outpath:?}: {e}"))?;
+
+            io::copy(&mut entry, &mut outfile)
+                .map_err(|e| format!("Failed to extract file {outpath:?}: {e}"))?;
+        }
+    }
 
     Ok(())
 }
@@ -4395,6 +4543,8 @@ pub fn run() {
             get_storage_stats,
             clear_attachments,
             reset_application_data,
+            import_application_data,
+            export_application_data,
             load_notes,
             create_note,
             update_note,
