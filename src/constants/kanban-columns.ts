@@ -47,4 +47,5 @@ export const FALLBACK_COLUMN_COLORS = [
 ] as const
 
 // Default monochromatic color when user doesn't select a color
-export const DEFAULT_MONOCHROMATIC_COLOR = '#64748B' as const
+// Neutral slate tone used for default status columns (Backlog, To Do, In Progress, Done)
+export const DEFAULT_MONOCHROMATIC_COLOR = '#94A3B8' as const

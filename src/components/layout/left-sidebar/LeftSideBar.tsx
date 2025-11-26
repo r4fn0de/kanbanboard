@@ -127,7 +127,7 @@ export function LeftSideBar({
   const sidebarClasses = cn(
     'flex h-full flex-col rounded-l-[12px]',
     useTransparentStyle
-      ? 'bg-background/20 backdrop-blur-lg supports-[backdrop-filter]:bg-background/10 supports-[backdrop-filter]:backdrop-blur-xl'
+      ? 'bg-background/5 backdrop-blur-xl supports-[backdrop-filter]:bg-background/3 supports-[backdrop-filter]:backdrop-blur-2xl'
       : 'bg-background'
   )
 
@@ -169,11 +169,6 @@ export function LeftSideBar({
     <motion.div
       className={cn(sidebarClasses, className)}
       initial={false}
-      animate={{
-        backgroundColor: useTransparentStyle
-          ? 'rgba(255, 255, 255, 0)'
-          : 'hsl(var(--background))',
-      }}
       transition={{
         duration: 0.5,
         ease: [0.25, 0.1, 0.25, 1.0], // Custom easing similar to Apple

@@ -127,8 +127,8 @@ export function BoardNavbar({
                   {tabs.map(tab => {
                     const isActive = activeTab === tab.id
                     return (
-                      <div key={tab.id} className="relative shrink-0">
-                        {isActive && (
+                      <div key={tab.id} className="group relative shrink-0">
+                        {isActive ? (
                           <motion.div
                             layoutId="activeTabBackground"
                             className="absolute inset-0 rounded-md bg-accent"
@@ -139,6 +139,8 @@ export function BoardNavbar({
                               damping: 30,
                             }}
                           />
+                        ) : (
+                          <div className="pointer-events-none absolute inset-0 rounded-md bg-accent/40 opacity-0 transition-opacity group-hover:opacity-100" />
                         )}
                         <Button
                           variant="ghost"
@@ -147,7 +149,7 @@ export function BoardNavbar({
                             'relative z-10 h-9 px-3 text-sm font-medium transition-colors duration-200 whitespace-nowrap md:px-4',
                             isActive
                               ? 'bg-transparent text-foreground hover:bg-transparent'
-                              : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'
+                              : 'text-muted-foreground hover:text-foreground'
                           )}
                           onClick={() => onTabChange?.(tab.id)}
                         >

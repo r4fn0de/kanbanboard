@@ -209,54 +209,68 @@ export function StoragePane() {
             <Skeleton className="h-4 w-2/3" />
           </div>
         ) : stats ? (
-          <div className="space-y-6">
-            <div>
-              <Label className="text-sm font-medium text-muted-foreground">
-                Total usage
-              </Label>
-              <div className="mt-1 text-2xl font-semibold">
-                {formatBytes(stats.totalBytes)}
-              </div>
-              {isRefetching ? (
-                <div className="text-xs text-muted-foreground">
-                  Refreshing metrics…
+          <div className="space-y-4 rounded-lg border border-border/60 bg-muted/30 p-4">
+            <div className="flex flex-wrap items-baseline justify-between gap-2">
+              <div>
+                <Label className="text-sm font-medium text-muted-foreground">
+                  Total usage
+                </Label>
+                <div className="mt-1 text-2xl font-semibold">
+                  {formatBytes(stats.totalBytes)}
                 </div>
-              ) : null}
+              </div>
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                {isRefetching ? (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-background/60 px-2 py-0.5">
+                    <RefreshCw className="h-3 w-3 animate-spin" />
+                    <span>Refreshing metrics…</span>
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-background/60 px-2 py-0.5">
+                    <span>{formatBytes(stats.totalBytes)}</span>
+                  </span>
+                )}
+              </div>
             </div>
 
-            <div className="space-y-5">
+            <div className="space-y-4">
               {storageBreakdown.map(item => {
                 const percent = totalBytes
                   ? Math.round((item.value / totalBytes) * 1000) / 10
                   : 0
 
                 return (
-                  <div key={item.id} className="space-y-2">
-                    <div className="flex items-center justify-between gap-4">
-                      <div>
-                        <div className="text-sm font-medium text-foreground">
-                          {item.label}
+                  <div
+                    key={item.id}
+                    className="space-y-2 rounded-md bg-background/70 p-3 shadow-sm"
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium text-foreground">
+                            {item.label}
+                          </span>
+                          <span className="text-[11px] text-muted-foreground">
+                            {formatBytes(item.value)}
+                          </span>
                         </div>
-                        <p className="text-sm text-muted-foreground">
+                        <p className="text-xs text-muted-foreground">
                           {item.description}
                         </p>
                       </div>
-                      <div className="text-right">
-                        <div className="text-sm font-medium">
-                          {formatBytes(item.value)}
-                        </div>
-                        <div className="text-xs text-muted-foreground">
+                      <div className="flex flex-col items-end gap-1">
+                        <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">
+                          {percent}% of total
+                        </span>
+                        <span className="max-w-[220px] truncate text-[11px] font-mono text-muted-foreground/80">
                           {item.path}
-                        </div>
+                        </span>
                       </div>
                     </div>
                     <Progress
                       value={percent}
                       aria-label={`${item.label} usage`}
                     />
-                    <div className="text-xs text-muted-foreground">
-                      {percent}% of total storage
-                    </div>
                   </div>
                 )
               })}
@@ -289,83 +303,86 @@ export function StoragePane() {
         </div>
       </SettingsSection>
 
-      <SettingsSection title="Export data for backup">
-        <div className="space-y-4">
-          <p className="text-sm text-muted-foreground">
-            Create a ZIP backup of your local Modulo data, including boards,
-            cards, notes, attachments, preferences, and shortcuts. Use this
-            file to restore your workspace on another machine.
-          </p>
-          <p className="text-xs text-muted-foreground">
-            The backup stays on your device and is not uploaded anywhere.
-          </p>
-          <Button
-            variant="secondary"
-            onClick={() => void handleExportData()}
-            disabled={exportDataMutation.isPending || isLoading}
-          >
-            Export data for backup
-          </Button>
+      <SettingsSection title="Backups">
+        <div className="grid gap-6 md:grid-cols-2">
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Create a ZIP backup of your local Modulo data, including boards,
+              cards, notes, attachments, preferences, and shortcuts. Use this
+              file to restore your workspace on another machine.
+            </p>
+            <p className="text-xs text-muted-foreground">
+              The backup stays on your device and is not uploaded anywhere.
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Restoring from a backup will overwrite your current local data
+              and reload Modulo.
+            </p>
+          </div>
+          <div className="space-y-3">
+            <Button
+              className="w-full justify-between"
+              variant="secondary"
+              onClick={() => void handleExportData()}
+              disabled={exportDataMutation.isPending || isLoading}
+            >
+              <span>Export data for backup</span>
+            </Button>
+            <Button
+              className="w-full justify-between"
+              variant="secondary"
+              onClick={() => void handleImportData()}
+              disabled={importDataMutation.isPending || isLoading}
+            >
+              <span>Import data from backup</span>
+            </Button>
+          </div>
         </div>
       </SettingsSection>
 
-      <SettingsSection title="Import data from backup">
-        <div className="space-y-4">
-          <p className="text-sm text-muted-foreground">
-            Restore your local Modulo data from a previously created ZIP
-            backup. This will overwrite your current local data.
-          </p>
-          <p className="text-xs text-muted-foreground">
-            After import, Modulo will reload to apply the restored data.
-          </p>
-          <Button
-            variant="secondary"
-            onClick={() => void handleImportData()}
-            disabled={importDataMutation.isPending || isLoading}
-          >
-            Import data from backup
-          </Button>
-        </div>
-      </SettingsSection>
+      <SettingsSection title="Maintenance tools">
+        <div className="grid gap-6 md:grid-cols-2">
+          <div className="space-y-3 rounded-lg border border-border/60 bg-muted/30 p-4">
+            <p className="text-sm font-medium text-foreground">Clear attachments</p>
+            <p className="text-sm text-muted-foreground">
+              Delete all card attachments from disk. Card metadata is preserved,
+              but file downloads will be removed.
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Use this if disk usage is high and you no longer need stored
+              files.
+            </p>
+            <Button
+              variant="secondary"
+              onClick={() => setConfirmClearOpen(true)}
+              disabled={clearAttachmentsMutation.isPending || isLoading}
+            >
+              <TrashIcon className="mr-2 h-4 w-4" />
+              Clear attachments
+            </Button>
+          </div>
 
-      <SettingsSection title="Clear attachments">
-        <div className="space-y-4">
-          <p className="text-sm text-muted-foreground">
-            Delete all card attachments from disk. Card metadata is preserved,
-            but file downloads will be removed.
-          </p>
-          <p className="text-xs text-muted-foreground">
-            Use this if disk usage is high and you no longer need stored files.
-          </p>
-          <Button
-            variant="secondary"
-            onClick={() => setConfirmClearOpen(true)}
-            disabled={clearAttachmentsMutation.isPending || isLoading}
-          >
-            <TrashIcon className="mr-2 h-4 w-4" />
-            Clear attachments
-          </Button>
-        </div>
-      </SettingsSection>
-
-      <SettingsSection title="Reset Modulo data">
-        <div className="space-y-4">
-          <p className="text-sm text-muted-foreground">
-            Removes every workspace, board, card, attachment, and preference.
-            This action is irreversible.
-          </p>
-          <p className="text-xs text-muted-foreground">
-            Modulo will restart after completion. Make sure everything is backed
-            up.
-          </p>
-          <Button
-            variant="destructive"
-            onClick={() => setConfirmResetOpen(true)}
-            disabled={resetDataMutation.isPending || isLoading}
-          >
-            <WarningIcon className="mr-2 h-4 w-4" />
-            Reset application
-          </Button>
+          <div className="space-y-3 rounded-lg border border-destructive/40 bg-destructive/5 p-4">
+            <p className="text-sm font-medium text-destructive-foreground">
+              Reset Modulo data
+            </p>
+            <p className="text-sm text-destructive-foreground/90">
+              Removes every workspace, board, card, attachment, and
+              preference. This action is irreversible.
+            </p>
+            <p className="text-xs text-destructive-foreground/80">
+              Modulo will restart after completion. Make sure everything is
+              backed up.
+            </p>
+            <Button
+              variant="destructive"
+              onClick={() => setConfirmResetOpen(true)}
+              disabled={resetDataMutation.isPending || isLoading}
+            >
+              <WarningIcon className="mr-2 h-4 w-4" />
+              Reset application
+            </Button>
+          </div>
         </div>
       </SettingsSection>
 
