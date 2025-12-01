@@ -1342,7 +1342,7 @@ export function BoardDetailView({
         <PopoverContent
           align="end"
           sideOffset={8}
-          className="w-64 rounded-lg border border-border/40 bg-popover/95 p-2 shadow-lg"
+          className="w-64 rounded-lg border border-border/40 bg-popover p-2 shadow-lg"
         >
           <div className="space-y-3">
             <div className="space-y-1.5">
@@ -1419,7 +1419,7 @@ export function BoardDetailView({
                 </SelectTrigger>
                 <SelectContent
                   sideOffset={4}
-                  className="rounded-md border border-border/40 bg-popover/95 shadow-md"
+                  className="rounded-md border border-border/40 bg-popover shadow-md"
                 >
                   <SelectGroup>
                     <SelectGroupLabel className="px-2 pt-1 pb-1 text-[11px] font-medium text-muted-foreground/80">
@@ -1520,7 +1520,7 @@ export function BoardDetailView({
                 </SelectTrigger>
                 <SelectContent
                   sideOffset={4}
-                  className="rounded-md border border-border/40 bg-popover/95 shadow-md"
+                  className="rounded-md border border-border/40 bg-popover shadow-md"
                 >
                   <SelectItem
                     value="all"
@@ -1627,7 +1627,7 @@ export function BoardDetailView({
         <PopoverContent
           align="end"
           sideOffset={8}
-          className="w-80 rounded-lg border border-border/40 bg-popover/95 p-2 shadow-lg"
+          className="w-80 rounded-lg border border-border/40 bg-popover p-2 shadow-lg"
         >
           <div className="space-y-3">
             {/* Botões de view (Kanban / List / Timeline) */}

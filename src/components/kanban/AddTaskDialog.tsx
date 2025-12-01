@@ -15,7 +15,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb'
-import { Columns3, Check } from 'lucide-react'
+import { Columns3, Check, X } from 'lucide-react'
 import {
   PriorityIcon,
   PriorityLowIcon,
@@ -183,7 +183,7 @@ export function AddTaskDialog({
       <Dialog.Portal>
         <Dialog.Backdrop className="fixed inset-0 bg-black/50 z-50" />
         <Dialog.Popup className="fixed left-1/2 top-1/2 z-50 w-full max-w-[760px] -translate-x-1/2 -translate-y-1/2 rounded-xl border bg-background">
-          <div className="border-b px-6 py-4">
+          <div className="border-b px-6 py-4 flex items-center justify-between gap-3">
             <Breadcrumb>
               <BreadcrumbList className="items-center gap-1 text-xs font-medium text-muted-foreground">
                 <BreadcrumbItem>
@@ -206,6 +206,19 @@ export function AddTaskDialog({
                 </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>
+            <Dialog.Close
+              render={
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted"
+                  disabled={isCreating}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              }
+            />
           </div>
 
           <form
@@ -328,14 +341,7 @@ export function AddTaskDialog({
               </p>
             )}
 
-            <div className="flex items-center justify-between border-t px-0 pt-4">
-              <Dialog.Close
-                render={
-                  <Button type="button" variant="ghost" disabled={isCreating}>
-                    Cancel
-                  </Button>
-                }
-              />
+            <div className="flex items-center justify-end border-t px-0 pt-4">
               <Button
                 type="submit"
                 disabled={isCreating || !title.trim() || !column}

@@ -4,6 +4,8 @@ import {
   useSensor,
   useSensors,
   type DragEndEvent,
+  type DragStartEvent,
+  type DragCancelEvent,
 } from '@dnd-kit/core'
 import {
   SortableContext,
@@ -265,6 +267,30 @@ export function ColumnManagerDialog({
     setNewColumnError(null)
   }
 
+  const handleDragStartColumns = useCallback((_: DragStartEvent) => {
+    if (typeof document === 'undefined') return
+    document.body.style.cursor = 'grabbing'
+    document.body.style.userSelect = 'none'
+  }, [])
+
+  const resetBodyCursor = () => {
+    if (typeof document === 'undefined') return
+    document.body.style.cursor = ''
+    document.body.style.userSelect = ''
+  }
+
+  const handleDragEndColumns = useCallback(
+    (event: DragEndEvent) => {
+      resetBodyCursor()
+      void handleDragEnd(event)
+    },
+    [handleDragEnd]
+  )
+
+  const handleDragCancelColumns = useCallback((_: DragCancelEvent) => {
+    resetBodyCursor()
+  }, [])
+
   return (
     <TooltipProvider>
       <Dialog open={open} onOpenChange={onOpenChange}>
@@ -431,7 +457,12 @@ export function ColumnManagerDialog({
           )}
 
           <ScrollArea className="max-h-[420px] pr-4">
-            <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+            <DndContext
+              sensors={sensors}
+              onDragStart={handleDragStartColumns}
+              onDragEnd={handleDragEndColumns}
+              onDragCancel={handleDragCancelColumns}
+            >
               <SortableContext
                 items={sortedColumns.map(column => column.id)}
                 strategy={verticalListSortingStrategy}
@@ -669,7 +700,7 @@ function ColumnManagerRow({
     >
       <button
         type="button"
-        className="flex h-8 w-8 items-center justify-center rounded border border-dashed border-muted-foreground/40 text-muted-foreground hover:border-muted-foreground/60"
+        className="flex h-8 w-8 items-center justify-center rounded border border-dashed border-muted-foreground/40 text-muted-foreground hover:border-muted-foreground/60 cursor-grab active:cursor-grabbing"
         style={{ touchAction: 'none' }}
         {...attributes}
         {...listeners}
