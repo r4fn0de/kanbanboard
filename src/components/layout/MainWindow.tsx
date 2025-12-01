@@ -157,7 +157,9 @@ export function MainWindow() {
           >
             {/* Main Content */}
             <ResizablePanel minSize={30} defaultSize={mainPanelDefault}>
-              <MainWindowContent />
+              <MainWindowContent
+                className={leftSidebarVisible ? 'pl-0' : 'pl-2'}
+              />
             </ResizablePanel>
 
             <ResizableHandle className={cn(!rightSidebarVisible && 'hidden')} />

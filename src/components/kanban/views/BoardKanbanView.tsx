@@ -594,10 +594,6 @@ function DraggableColumn({
         <div
           ref={setDroppableRef}
           className="flex-1 overflow-y-auto overflow-x-visible transition-all duration-200 kanban-column-cards"
-          style={{
-            scrollbarWidth: 'none',
-            msOverflowStyle: 'none',
-          }}
         >
           <div className="flex flex-col gap-4 p-1 pt-4">
             <SortableContext

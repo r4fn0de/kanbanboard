@@ -4,22 +4,28 @@
   overflow-y: auto;
   overflow-x: hidden;
 
-  /* Esconde a barra de rolagem no Chrome, Safari e Edge */
-  .kanban-column-cards::-webkit-scrollbar {
-    width: 0.25rem;
-    background: transparent;
-  }
-
-  .kanban-column-cards::-webkit-scrollbar-thumb {
-    background: transparent;
-  }
-
-  /* Esconde a barra de rolagem no Firefox */
+  /* Scrollbars acompanham a paleta da coluna */
+  --scrollbar-size: 0.45rem;
+  --scrollbar-track: color-mix(in srgb, var(--card) 78%, transparent);
+  --scrollbar-thumb: color-mix(
+    in srgb,
+    var(--primary) 22%,
+    var(--foreground) 78%
+  );
+  --scrollbar-thumb-hover: color-mix(
+    in srgb,
+    var(--primary) 32%,
+    var(--foreground) 68%
+  );
+  --scrollbar-thumb-active: color-mix(
+    in srgb,
+    var(--primary) 42%,
+    var(--foreground) 58%
+  );
   scrollbar-width: thin;
-  scrollbar-color: transparent transparent;
-
-  /* Suporte para IE e Edge antigos */
-  -ms-overflow-style: none;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+  -ms-overflow-style: auto;
+  scrollbar-gutter: stable both-edge;
 
   /* Melhora a performance de renderização */
   -webkit-overflow-scrolling: touch;

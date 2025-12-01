@@ -53,7 +53,7 @@ function ProjectListItem({
   return (
     <motion.div
       key={board.id}
-      className="group relative flex items-center rounded-lg"
+      className="group relative flex w-full items-center rounded-lg mx-1"
       initial={{ opacity: 0, filter: 'blur(4px)', y: -10 }}
       animate={{ opacity: 1, filter: 'blur(0px)', y: 0 }}
       exit={{ opacity: 0, filter: 'blur(4px)', y: 10 }}
@@ -70,7 +70,7 @@ function ProjectListItem({
         to={`/projects/${board.id}`}
         className={({ isActive }) =>
           cn(
-            'flex grow items-center gap-2.5 rounded-lg px-3 py-1.5 text-left text-sm transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+            'flex w-full items-center gap-2.5 rounded-lg pl-3 pr-8 py-1.5 text-left text-sm overflow-hidden transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
             useTransparentStyle
               ? isActive
                 ? 'bg-white/25 text-white backdrop-blur-sm'
@@ -86,7 +86,9 @@ function ProjectListItem({
         ) : (
           <IconComponent className="h-4 w-4" style={{ color: projectColor }} />
         )}
-        <span className="truncate font-medium">{board.title}</span>
+        <span className="truncate font-medium flex-1 min-w-0">
+          {board.title}
+        </span>
       </NavLink>
       <DropdownMenu open={isMenuOpen} onOpenChange={onMenuOpenChange}>
         <DropdownMenuTrigger asChild>

@@ -556,111 +556,121 @@
   }
   body {
     @apply bg-background text-foreground;
+    scrollbar-gutter: stable both-inline;
   }
 }
 
-/* Modern, subtle scrollbars aligned with popover colors */
+:root {
+  --scrollbar-size: 0.55rem;
+  --scrollbar-radius: 999px;
+  --scrollbar-track: color-mix(in srgb, var(--muted) 42%, transparent);
+  --scrollbar-thumb: color-mix(
+    in srgb,
+    var(--muted-foreground) 24%,
+    var(--muted) 76%
+  );
+  --scrollbar-thumb-hover: color-mix(
+    in srgb,
+    var(--primary) 28%,
+    var(--muted-foreground) 72%
+  );
+  --scrollbar-thumb-active: color-mix(
+    in srgb,
+    var(--primary) 36%,
+    var(--muted-foreground) 64%
+  );
+  --scrollbar-border: color-mix(in srgb, var(--background) 70%, transparent);
+  --scrollbar-shadow: color-mix(in srgb, var(--foreground) 16%, transparent);
+}
+
+.dark {
+  --scrollbar-track: color-mix(in srgb, var(--muted) 18%, transparent);
+  --scrollbar-thumb: color-mix(
+    in srgb,
+    var(--muted-foreground) 42%,
+    var(--muted) 58%
+  );
+  --scrollbar-thumb-hover: color-mix(
+    in srgb,
+    var(--primary) 38%,
+    var(--muted-foreground) 62%
+  );
+  --scrollbar-thumb-active: color-mix(
+    in srgb,
+    var(--primary) 48%,
+    var(--muted-foreground) 52%
+  );
+  --scrollbar-border: color-mix(in srgb, var(--foreground) 12%, transparent);
+  --scrollbar-shadow: color-mix(in srgb, var(--foreground) 28%, transparent);
+}
+
+/* Modern scrollbars tuned for light, dark, and glassmorphism surfaces */
 * {
   scrollbar-width: thin;
-  scrollbar-color: color-mix(
-      in srgb,
-      var(--popover-foreground) 18%,
-      var(--popover) 82%
-    )
-    transparent;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
 }
 
 *::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: var(--scrollbar-size);
+  height: var(--scrollbar-size);
 }
 
 *::-webkit-scrollbar-track {
-  background: color-mix(in srgb, var(--popover) 85%, transparent);
+  background: var(--scrollbar-track);
+  border-radius: var(--scrollbar-radius);
 }
 
 *::-webkit-scrollbar-thumb {
-  background-color: color-mix(
-    in srgb,
-    var(--popover-foreground) 15%,
-    var(--popover) 85%
-  );
-  border-radius: 999px;
-  border: 2px solid transparent;
-  background-clip: padding-box;
+  background: var(--scrollbar-thumb);
+  border-radius: var(--scrollbar-radius);
+  border: 2px solid var(--scrollbar-track);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--scrollbar-border) 80%, transparent),
+    0 1px 2px var(--scrollbar-shadow);
+  transition:
+    background-color 150ms ease,
+    box-shadow 150ms ease;
 }
 
 *::-webkit-scrollbar-thumb:hover {
-  background-color: color-mix(
-    in srgb,
-    var(--popover-foreground) 25%,
-    var(--popover) 75%
-  );
+  background: var(--scrollbar-thumb-hover);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--scrollbar-border) 60%, transparent),
+    0 2px 6px var(--scrollbar-shadow);
 }
 
-.dark * {
-  scrollbar-color: color-mix(
-      in srgb,
-      var(--popover-foreground) 24%,
-      var(--popover) 76%
-    )
-    transparent;
+*::-webkit-scrollbar-thumb:active {
+  background: var(--scrollbar-thumb-active);
 }
 
-.dark *::-webkit-scrollbar-track {
-  background: color-mix(in srgb, var(--popover) 75%, transparent);
+*::-webkit-scrollbar-corner {
+  background: transparent;
 }
 
-.dark *::-webkit-scrollbar-thumb {
-  background-color: color-mix(
+@media (pointer: coarse) {
+  *::-webkit-scrollbar {
+    width: calc(var(--scrollbar-size) + 4px);
+    height: calc(var(--scrollbar-size) + 4px);
+  }
+}
+
+/* Icon picker scroll areas stay feather-light */
+.icon-picker-scroll {
+  --scrollbar-size: 0.4rem;
+  --scrollbar-track: color-mix(in srgb, var(--popover) 92%, transparent);
+  --scrollbar-thumb: color-mix(
     in srgb,
     var(--popover-foreground) 22%,
     var(--popover) 78%
   );
-}
-
-.dark *::-webkit-scrollbar-thumb:hover {
-  background-color: color-mix(
+  --scrollbar-thumb-hover: color-mix(
     in srgb,
-    var(--popover-foreground) 32%,
-    var(--popover) 68%
+    var(--popover-foreground) 30%,
+    var(--popover) 70%
   );
-}
-
-/* Icon picker-specific scrollbar, closely matching popover background */
-.icon-picker-scroll {
-  scrollbar-width: thin;
-  scrollbar-color: color-mix(
-      in srgb,
-      var(--popover-foreground) 16%,
-      var(--popover) 84%
-    )
-    transparent;
-}
-
-.icon-picker-scroll::-webkit-scrollbar {
-  width: 6px;
-}
-
-.icon-picker-scroll::-webkit-scrollbar-track {
-  background: color-mix(in srgb, var(--popover) 94%, transparent);
-}
-
-.icon-picker-scroll::-webkit-scrollbar-thumb {
-  background-color: color-mix(
+  --scrollbar-thumb-active: color-mix(
     in srgb,
-    var(--popover-foreground) 16%,
-    var(--popover) 84%
-  );
-  border-radius: 999px;
-  border: 2px solid transparent;
-  background-clip: padding-box;
-}
-
-.icon-picker-scroll::-webkit-scrollbar-thumb:hover {
-  background-color: color-mix(
-    in srgb,
-    var(--popover-foreground) 24%,
-    var(--popover) 76%
+    var(--popover-foreground) 38%,
+    var(--popover) 62%
   );
 }

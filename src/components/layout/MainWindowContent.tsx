@@ -16,7 +16,7 @@ export function MainWindowContent({
   return (
     <div
       className={cn(
-        'flex h-full flex-col px-0 py-2',
+        'flex h-full flex-col py-2 pr-2 pl-2',
         transparencyEnabled
           ? 'border-border/20 bg-background/5 backdrop-blur-xl supports-[backdrop-filter]:bg-background/3 supports-[backdrop-filter]:backdrop-blur-2xl'
           : 'bg-background',
