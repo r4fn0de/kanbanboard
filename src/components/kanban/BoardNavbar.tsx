@@ -101,19 +101,7 @@ export function BoardNavbar({
               />
             )}
           </div>
-
           <div className="flex items-center gap-2 min-w-0">
-            {workspaceName && (
-              <>
-                <Link
-                  to="/"
-                  className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-                >
-                  {workspaceName}
-                </Link>
-                <ChevronRight className="h-4 w-4 flex-shrink-0 text-muted-foreground/50" />
-              </>
-            )}
             <h1 className="truncate text-lg font-semibold text-foreground">
               {boardTitle}
             </h1>

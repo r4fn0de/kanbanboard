@@ -477,7 +477,6 @@
   * {
     @apply border-border outline-ring/50;
     box-sizing: border-box;
-    cursor: default;
   }
 
   html,
@@ -547,6 +546,12 @@
   /* Utility class for when pointer cursor is explicitly needed */
   .cursor-pointer {
     cursor: pointer !important;
+  }
+
+  /* Force grabbing cursor while dragging Kanban cards */
+  body.dragging-card,
+  body.dragging-card * {
+    cursor: grabbing !important;
   }
 }
 
