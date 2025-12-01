@@ -20,7 +20,7 @@ use tauri::{AppHandle, Emitter, Manager, State};
 use tauri_plugin_opener::OpenerExt;
 use tokio::time as tokio_time;
 use uuid::Uuid;
-use zip::{write::FileOptions, CompressionMethod, ZipArchive, ZipWriter};
+use zip::{CompressionMethod, ZipArchive, ZipWriter, write::FileOptions};
 
 const KANBAN_SCHEMA: &str = include_str!("../schema/kanban.sql");
 const DATABASE_FILE: &str = "modulo.db";
@@ -587,11 +587,11 @@ async fn export_application_data(app: AppHandle, destination_path: String) -> Re
 
     let backup_path = PathBuf::from(&destination_path);
 
-    if let Some(parent) = backup_path.parent() {
-        if !parent.as_os_str().is_empty() {
-            fs::create_dir_all(parent)
-                .map_err(|e| format!("Failed to create backup directory {parent:?}: {e}"))?;
-        }
+    if let Some(parent) = backup_path.parent()
+        && !parent.as_os_str().is_empty()
+    {
+        fs::create_dir_all(parent)
+            .map_err(|e| format!("Failed to create backup directory {parent:?}: {e}"))?;
     }
 
     let file = File::create(&backup_path)
@@ -603,11 +603,12 @@ async fn export_application_data(app: AppHandle, destination_path: String) -> Re
     let mut dirs = vec![app_data_dir.clone()];
 
     while let Some(dir) = dirs.pop() {
-        let entries = fs::read_dir(&dir)
-            .map_err(|e| format!("Failed to read directory {dir:?}: {e}"))?;
+        let entries =
+            fs::read_dir(&dir).map_err(|e| format!("Failed to read directory {dir:?}: {e}"))?;
 
         for entry_result in entries {
-            let entry = entry_result.map_err(|e| format!("Failed to access entry in {dir:?}: {e}"))?;
+            let entry =
+                entry_result.map_err(|e| format!("Failed to access entry in {dir:?}: {e}"))?;
             let path = entry.path();
 
             // Skip the backup file itself if it happens to be inside app_data_dir
@@ -676,13 +677,12 @@ async fn import_application_data(app: AppHandle, destination_path: String) -> Re
             fs::remove_dir_all(&path)
                 .map_err(|e| format!("Failed to remove directory {path:?}: {e}"))?;
         } else {
-            fs::remove_file(&path)
-                .map_err(|e| format!("Failed to remove file {path:?}: {e}"))?;
+            fs::remove_file(&path).map_err(|e| format!("Failed to remove file {path:?}: {e}"))?;
         }
     }
 
-    let mut archive = ZipArchive::new(file)
-        .map_err(|e| format!("Failed to open backup archive: {e}"))?;
+    let mut archive =
+        ZipArchive::new(file).map_err(|e| format!("Failed to open backup archive: {e}"))?;
 
     for i in 0..archive.len() {
         let mut entry = archive
@@ -700,11 +700,11 @@ async fn import_application_data(app: AppHandle, destination_path: String) -> Re
             fs::create_dir_all(&outpath)
                 .map_err(|e| format!("Failed to create directory {outpath:?}: {e}"))?;
         } else {
-            if let Some(parent) = outpath.parent() {
-                if !parent.as_os_str().is_empty() {
-                    fs::create_dir_all(parent)
-                        .map_err(|e| format!("Failed to create directory {parent:?}: {e}"))?;
-                }
+            if let Some(parent) = outpath.parent()
+                && !parent.as_os_str().is_empty()
+            {
+                fs::create_dir_all(parent)
+                    .map_err(|e| format!("Failed to create directory {parent:?}: {e}"))?;
             }
 
             let mut outfile = File::create(&outpath)

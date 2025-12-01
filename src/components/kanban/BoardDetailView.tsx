@@ -904,10 +904,7 @@ export function BoardDetailView({
             return
           }
 
-          const nextIndex = Math.min(
-            currentIndex + 1,
-            visibleCards.length - 1
-          )
+          const nextIndex = Math.min(currentIndex + 1, visibleCards.length - 1)
 
           setSelectedCardId(visibleCards[nextIndex]?.id ?? null)
           break
@@ -1054,13 +1051,10 @@ export function BoardDetailView({
     ]
   )
 
-  const handleCardSelect = useCallback(
-    (card: KanbanCard) => {
-      setSelectedCardId(prev => (prev === card.id ? null : card.id))
-      setOpenCardId(prev => (prev === card.id ? null : card.id))
-    },
-    []
-  )
+  const handleCardSelect = useCallback((card: KanbanCard) => {
+    setSelectedCardId(prev => (prev === card.id ? null : card.id))
+    setOpenCardId(prev => (prev === card.id ? null : card.id))
+  }, [])
 
   const handleCloseDetails = useCallback(() => {
     setOpenCardId(null)

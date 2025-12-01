@@ -315,8 +315,8 @@ export function StoragePane() {
               The backup stays on your device and is not uploaded anywhere.
             </p>
             <p className="text-xs text-muted-foreground">
-              Restoring from a backup will overwrite your current local data
-              and reload Modulo.
+              Restoring from a backup will overwrite your current local data and
+              reload Modulo.
             </p>
           </div>
           <div className="space-y-3">
@@ -343,7 +343,9 @@ export function StoragePane() {
       <SettingsSection title="Maintenance tools">
         <div className="grid gap-6 md:grid-cols-2">
           <div className="space-y-3 rounded-lg border border-border/60 bg-muted/30 p-4">
-            <p className="text-sm font-medium text-foreground">Clear attachments</p>
+            <p className="text-sm font-medium text-foreground">
+              Clear attachments
+            </p>
             <p className="text-sm text-muted-foreground">
               Delete all card attachments from disk. Card metadata is preserved,
               but file downloads will be removed.
@@ -367,8 +369,8 @@ export function StoragePane() {
               Reset Modulo data
             </p>
             <p className="text-sm text-destructive-foreground/90">
-              Removes every workspace, board, card, attachment, and
-              preference. This action is irreversible.
+              Removes every workspace, board, card, attachment, and preference.
+              This action is irreversible.
             </p>
             <p className="text-xs text-destructive-foreground/80">
               Modulo will restart after completion. Make sure everything is

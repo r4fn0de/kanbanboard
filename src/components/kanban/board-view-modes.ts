@@ -1,5 +1,5 @@
 import type { LucideIcon } from 'lucide-react'
-import {ListIcon, KanbanIcon } from '@/components/ui/icons'
+import { ListIcon, KanbanIcon } from '@/components/ui/icons'
 
 export const BOARD_VIEW_VALUES = ['kanban', 'list'] as const
 export type BoardViewMode = (typeof BOARD_VIEW_VALUES)[number]

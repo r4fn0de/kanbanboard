@@ -63,12 +63,11 @@ export function PrioritySelector({
       </Popover.Trigger>
       <Popover.Portal>
         <Popover.Positioner>
-          <Popover.Popup className="w-40 p-2 bg-background border border-border/20 rounded-md shadow-lg">
+          <Popover.Popup className="w-40 p-2 bg-popover/95 border border-border/20 rounded-md shadow-md">
             <div className="flex flex-col gap-1">
               {Object.entries(PRIORITY_VARIANTS).map(([key, config]) => {
                 const priorityKey = key as KanbanCard['priority']
                 const PriorityIcon = config.icon
-                const isSelected = priority === priorityKey
                 return (
                   <button
                     key={priorityKey}
@@ -77,25 +76,20 @@ export function PrioritySelector({
                       onChange(priorityKey)
                     }}
                     className={cn(
-                      'w-full justify-start h-auto rounded px-2 py-1.5 text-xs font-semibold leading-none',
-                      'hover:bg-accent/50',
-                      'focus:bg-accent/50 focus:outline-none',
-                      'border-0 cursor-pointer',
-                      isSelected && 'bg-accent/30'
+                      'group w-full justify-start h-auto rounded px-0 py-0 text-xs font-semibold leading-none',
+                      'bg-transparent hover:bg-transparent focus:bg-transparent focus:outline-none',
+                      'border-0 cursor-pointer'
                     )}
                   >
                     <div
                       className={cn(
-                        'rounded px-2 py-1 text-xs font-semibold flex items-center gap-1',
+                        'rounded px-2 py-1 text-xs font-semibold flex items-center gap-1 transition group-hover:ring-2 group-hover:ring-ring/40',
                         config.className
                       )}
                     >
                       <PriorityIcon className="h-3 w-3" />
                       {config.label}
                     </div>
-                    {isSelected && (
-                      <div className="ml-auto h-2 w-2 rounded-full bg-foreground/80" />
-                    )}
                   </button>
                 )
               })}

@@ -1,11 +1,40 @@
 import { Popover as PopoverPrimitive } from '@base-ui-components/react/popover'
+import * as React from 'react'
 
 import { cn } from '@/lib/utils'
 
 const Popover = PopoverPrimitive.Root
 
-function PopoverTrigger(props: PopoverPrimitive.Trigger.Props) {
-  return <PopoverPrimitive.Trigger data-slot="popover-trigger" {...props} />
+interface PopoverTriggerProps extends PopoverPrimitive.Trigger.Props {
+  asChild?: boolean
+}
+
+function PopoverTrigger({
+  asChild,
+  children,
+  className,
+  ...props
+}: PopoverTriggerProps) {
+  if (asChild && React.isValidElement(children)) {
+    return (
+      <PopoverPrimitive.Trigger
+        data-slot="popover-trigger"
+        render={children as React.ReactElement<Record<string, unknown>>}
+        className={className}
+        {...props}
+      />
+    )
+  }
+
+  return (
+    <PopoverPrimitive.Trigger
+      data-slot="popover-trigger"
+      className={className}
+      {...props}
+    >
+      {children}
+    </PopoverPrimitive.Trigger>
+  )
 }
 
 function PopoverPopup({
