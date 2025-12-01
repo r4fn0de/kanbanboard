@@ -4,7 +4,6 @@ import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
 import { cn } from '@/lib/utils'
 import { preloadTldraw } from '@/components/whiteboard/preloadTldraw'
 import {
-  ChevronRight,
   Folder,
   LayoutDashboard,
   Layers,
@@ -22,7 +21,6 @@ import {
   Palette,
   PenTool,
 } from 'lucide-react'
-import { Link } from 'react-router-dom'
 import type { ReactNode } from 'react'
 import { motion } from 'framer-motion'
 
@@ -73,7 +71,6 @@ export function BoardNavbar({
   boardIcon,
   boardEmoji,
   boardColor = '#6366F1',
-  workspaceName,
   activeTab = 'tasks',
   onTabChange,
   taskControls,
