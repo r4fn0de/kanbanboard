@@ -116,7 +116,7 @@ export function BoardListView({
                   color: iconColor,
                 } as CSSProperties)
             const buttonClasses = cn(
-              'flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-60',
+              'flex items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-60',
               buttonBackground
                 ? 'bg-[color:var(--column-button-bg)] hover:bg-[color:var(--column-button-bg-hover)] text-muted-foreground'
                 : 'bg-muted/50 text-muted-foreground hover:bg-primary hover:text-primary-foreground'
@@ -150,26 +150,26 @@ export function BoardListView({
               >
                 {/* Enhanced Column Header */}
                 <div
-                  className="flex flex-col gap-4 border-b border-border/30 bg-gradient-to-r from-background to-muted/20 px-6 py-5 transition-all duration-300 sm:flex-row sm:items-center sm:justify-between"
+                  className="flex flex-col gap-3 border-b border-border/30 bg-gradient-to-r from-background to-muted/20 px-5 py-3 transition-all duration-300 sm:flex-row sm:items-center sm:justify-between"
                   style={{
                     borderColor: headerBorder,
                     backgroundColor: headerBackground ?? undefined,
                   }}
                 >
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-3">
                     <div
-                      className="flex h-10 w-10 items-center justify-center transition-all duration-300 group-hover:scale-105"
+                      className="flex h-8 w-8 items-center justify-center transition-all duration-300 group-hover:scale-105"
                       style={{
                         color: iconColor,
                       }}
                     >
-                      <IconComponent className="h-5 w-5" />
+                      <IconComponent className="h-4 w-4" />
                     </div>
                     <div className="flex flex-col">
-                      <h3 className="text-base font-bold leading-tight text-foreground">
+                      <h3 className="text-sm font-semibold leading-tight text-foreground">
                         {column.title}
                       </h3>
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-xs text-muted-foreground">
                         {columnCards.length === 1
                           ? '1 task'
                           : `${columnCards.length} tasks`}

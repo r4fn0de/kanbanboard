@@ -1348,7 +1348,7 @@ export function BoardDetailView({
         <PopoverContent
           align="end"
           sideOffset={8}
-          className="w-80 rounded-lg border border-border/40 bg-popover/95 p-2 shadow-lg"
+          className="w-64 rounded-lg border border-border/40 bg-popover/95 p-2 shadow-lg"
         >
           <div className="space-y-3">
             <div className="space-y-1.5">

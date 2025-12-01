@@ -2,6 +2,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
 import { cn } from '@/lib/utils'
+import { preloadTldraw } from '@/components/whiteboard/preloadTldraw'
 import {
   ChevronRight,
   Folder,
@@ -126,6 +127,7 @@ export function BoardNavbar({
                 <nav className="relative flex min-w-max items-center gap-1 pr-3">
                   {tabs.map(tab => {
                     const isActive = activeTab === tab.id
+                    const isWhiteboardTab = tab.id === 'whiteboard'
                     return (
                       <div key={tab.id} className="group relative shrink-0">
                         {isActive ? (
@@ -151,6 +153,16 @@ export function BoardNavbar({
                               ? 'bg-transparent text-foreground hover:bg-transparent'
                               : 'text-muted-foreground hover:text-foreground'
                           )}
+                          onMouseEnter={() => {
+                            if (isWhiteboardTab) {
+                              preloadTldraw()
+                            }
+                          }}
+                          onFocus={() => {
+                            if (isWhiteboardTab) {
+                              preloadTldraw()
+                            }
+                          }}
                           onClick={() => onTabChange?.(tab.id)}
                         >
                           {tab.label}

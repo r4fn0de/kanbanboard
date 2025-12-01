@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useMemo } from 'react'
+import { useCallback, useEffect, useMemo, lazy, Suspense } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { getAssetUrls } from '@tldraw/assets/selfHosted'
-import { Tldraw, type TldrawProps } from '@tldraw/tldraw'
+import type { TldrawProps } from '@tldraw/tldraw'
 import '@tldraw/tldraw/tldraw.css'
 
 import { BoardNavbar } from '@/components/kanban/BoardNavbar'
@@ -14,6 +14,10 @@ import { useWorkspaceStore } from '@/store/workspace-store'
 const assetUrls: TldrawProps['assetUrls'] = getAssetUrls({
   baseUrl: '/tldraw-assets',
 })
+
+const TldrawLazy = lazy(() =>
+  import('@tldraw/tldraw').then(mod => ({ default: mod.Tldraw }))
+)
 
 export function BoardDrawView() {
   const { boardId } = useParams<{ boardId: string }>()
@@ -140,11 +144,19 @@ export function BoardDrawView() {
         style={{ cursor: 'auto', userSelect: 'auto' }}
       >
         <div className="absolute inset-0">
-          <Tldraw
-            licenseKey="tldraw-2026-01-18/WyJhQlFqNDN0QiIsWyIqIl0sMTYsIjIwMjYtMDEtMTgiXQ.QYRIuxzb9KtFcg5AyxPtczlCkgqRtQrbRUO/4+o7ikWsPxGZdUg44h1NRD2cOcjTfHlmZhDsXe55+4j2r3LOUg"
-            assetUrls={assetUrls}
-            persistenceKey={`board-${boardId}-draws`}
-          />
+          <Suspense
+            fallback={
+              <div className="flex h-full w-full items-center justify-center text-sm text-muted-foreground">
+                Loading whiteboard…
+              </div>
+            }
+          >
+            <TldrawLazy
+              licenseKey="tldraw-2026-01-18/WyJhQlFqNDN0QiIsWyIqIl0sMTYsIjIwMjYtMDEtMTgiXQ.QYRIuxzb9KtFcg5AyxPtczlCkgqRtQrbRUO/4+o7ikWsPxGZdUg44h1NRD2cOcjTfHlmZhDsXe55+4j2r3LOUg"
+              assetUrls={assetUrls}
+              persistenceKey={`board-${boardId}-draws`}
+            />
+          </Suspense>
         </div>
       </div>
     </div>

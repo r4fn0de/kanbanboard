@@ -119,7 +119,7 @@ export function BoardTimelineView({
         {groups.map(group => (
           <div
             key={group.key}
-            className="relative flex flex-col gap-4 rounded-3xl border border-border/40 bg-card/60 p-4 sm:flex-row sm:items-start sm:gap-6"
+            className="relative flex flex-col gap-4 rounded-3xl border border-border/40 p-4 shadow-none sm:flex-row sm:items-start sm:gap-6"
           >
             <div className="flex items-center gap-3 sm:w-64">
               <div className="flex h-9 w-9 items-center justify-center rounded-full border border-border/70 bg-muted/40 text-muted-foreground">

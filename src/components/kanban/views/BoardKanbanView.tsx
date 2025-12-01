@@ -32,7 +32,7 @@ import type { KanbanCard, KanbanColumn } from '@/types/common'
 import { Plus } from 'lucide-react'
 import { PaperclipIcon, CalendarIcon } from '@/components/ui/icons'
 import { Badge } from '@/components/ui/badge'
-import { useMemo, useState, useCallback } from 'react'
+import { useMemo, useState, useCallback, useEffect } from 'react'
 import '../../../styles/kanban.css'
 import { KanbanCardItem } from '../card/KanbanCardItem'
 import { CARD_DUE_STATUS_STYLES, getCardDueMetadata } from './card-date'
@@ -220,6 +220,19 @@ export function BoardKanbanView({
     [activeCard, columnsMap]
   )
 
+  useEffect(() => {
+    if (typeof document === 'undefined') return
+
+    if (!activeCard) return
+
+    const previousCursor = document.body.style.cursor
+    document.body.style.cursor = 'grabbing'
+
+    return () => {
+      document.body.style.cursor = previousCursor
+    }
+  }, [activeCard])
+
   return (
     <>
       <DndContext
@@ -320,7 +333,7 @@ function CardOverlay({
   const PriorityIcon = priorityConfig.icon
 
   return (
-    <div className="pointer-events-none group/card relative w-full flex flex-col gap-4 rounded-2xl border border-border/60 bg-background/95 p-4 text-left">
+    <div className="group/card relative w-full flex flex-col gap-4 rounded-2xl border border-border/60 bg-background/95 p-4 text-left cursor-grabbing">
       {/* Header: Tags */}
       {tagList.length > 0 && (
         <div className="flex flex-wrap items-center gap-1.5">
@@ -474,7 +487,6 @@ function DraggableColumn({
     FALLBACK_COLUMN_COLORS[accentIndex % FALLBACK_COLUMN_COLORS.length] ??
     FALLBACK_COLUMN_COLORS[0]
   const baseColor = column.color ?? fallbackColor
-  const countColor = baseColor
   const normalizedTitle = column.title.trim().toLowerCase()
   let inferredStatusIcon: string | null = null
   if (normalizedTitle === 'backlog') {
@@ -559,21 +571,11 @@ function DraggableColumn({
               {column.title}
             </h2>
             <p className="text-xs text-muted-foreground">
-              {columnCards.length} cards
+              {columnCards.length} tasks
             </p>
           </div>
         </div>
         <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
-          <span
-            className="inline-flex items-center gap-1 rounded-full border border-border/60 px-2 py-0.5 text-[0.7rem] uppercase tracking-[0.08em]"
-            style={{ color: countColor }}
-          >
-            <span
-              className="h-1.5 w-1.5 rounded-full"
-              style={{ backgroundColor: countColor }}
-            />
-            {columnCards.length}
-          </span>
           <button
             type="button"
             onClick={onAddCard}
