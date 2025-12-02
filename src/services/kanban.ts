@@ -431,10 +431,12 @@ export async function deleteAttachmentVersion(input: {
   version?: number
 }): Promise<void> {
   await invoke('delete_attachment_version', {
-    boardId: input.boardId,
-    cardId: input.cardId,
-    attachmentId: input.attachmentId,
-    targetVersion: input.version ?? null,
+    args: {
+      boardId: input.boardId,
+      cardId: input.cardId,
+      attachmentId: input.attachmentId,
+      targetVersion: input.version ?? null,
+    },
   })
 }
 

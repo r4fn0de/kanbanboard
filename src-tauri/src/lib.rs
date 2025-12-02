@@ -4561,6 +4561,8 @@ pub fn run() {
             remove_image,
             get_attachment_url,
             open_attachment,
+            restore_attachment_version,
+            delete_attachment_version,
             get_storage_stats,
             clear_attachments,
             reset_application_data,
