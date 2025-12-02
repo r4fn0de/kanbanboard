@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { RefreshCw } from 'lucide-react'
 import { HardDriveIcon, TrashIcon, WarningIcon } from '@/components/ui/icons'
 
@@ -58,6 +59,7 @@ function formatBytes(bytes: number): string {
 }
 
 export function StoragePane() {
+  const navigate = useNavigate()
   const statsQuery = useStorageStats()
   const clearAttachmentsMutation = useClearAttachments()
   const resetDataMutation = useResetApplicationData()
@@ -181,6 +183,8 @@ export function StoragePane() {
     resetDataMutation.mutate(undefined, {
       onSuccess: () => {
         setConfirmResetOpen(false)
+        // Navigate to a safe route before reloading to avoid opening a deleted project
+        navigate('/', { replace: true })
         // Reload the renderer to ensure state sync with the freshly reset database
         setTimeout(() => {
           window.location.reload()
@@ -365,14 +369,14 @@ export function StoragePane() {
           </div>
 
           <div className="space-y-3 rounded-lg border border-destructive/40 bg-destructive/5 p-4">
-            <p className="text-sm font-medium text-destructive-foreground">
+            <p className="text-sm font-medium text-destructive">
               Reset Modulo data
             </p>
-            <p className="text-sm text-destructive-foreground/90">
+            <p className="text-sm text-destructive/90">
               Removes every workspace, board, card, attachment, and preference.
               This action is irreversible.
             </p>
-            <p className="text-xs text-destructive-foreground/80">
+            <p className="text-xs text-destructive/80">
               Modulo will restart after completion. Make sure everything is
               backed up.
             </p>
@@ -437,7 +441,7 @@ export function StoragePane() {
                 handleResetData()
               }}
               disabled={resetDataMutation.isPending}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 border-0"
             >
               {resetDataMutation.isPending ? 'Resetting…' : 'Reset everything'}
             </AlertDialogAction>
