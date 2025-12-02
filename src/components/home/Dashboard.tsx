@@ -1,6 +1,4 @@
 import { useState, useCallback } from 'react'
-import { SearchIcon } from '@/components/ui/icons'
-import { useShortcutLabel } from '@/hooks/useShortcutLabel'
 import { useWorkspaceStatus } from '@/hooks/useWorkspaceStatus'
 import { useUIStore } from '@/store/ui-store'
 import { useWorkspaceStore } from '@/store/workspace-store'
@@ -9,7 +7,6 @@ import { ActivitySection } from './sections/ActivitySection'
 import { WidgetContainer } from './WidgetContainer'
 import { Button } from '@/components/ui/button'
 import { SettingsDialog } from './SettingsDialog'
-import { GlobalSearch } from '@/components/search/GlobalSearch'
 import { EmptyOnboarding, NewUserOnboarding } from '@/components/onboarding'
 import { CreateProjectDialog } from '@/components/kanban/CreateProjectDialog'
 
@@ -20,17 +17,10 @@ export function Dashboard() {
     useWorkspaceStatus()
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [showNewUserTips, setShowNewUserTips] = useState(true)
-  const {
-    commandPaletteOpen,
-    setCommandPaletteOpen,
-    createProjectDialogOpen,
-    setCreateProjectDialogOpen,
-  } = useUIStore()
+  const { createProjectDialogOpen, setCreateProjectDialogOpen } = useUIStore()
   const selectedWorkspaceId = useWorkspaceStore(
     state => state.selectedWorkspaceId
   )
-
-  const searchShortcutLabel = useShortcutLabel('open-command-palette')
 
   const isNewUser = workspaceStatus?.isNewUser ?? false
   const isEmpty = workspaceStatus?.isEmpty ?? false
@@ -38,10 +28,6 @@ export function Dashboard() {
   const handleSettingsClose = useCallback(
     (open: boolean) => setSettingsOpen(open),
     []
-  )
-  const handleSearchOpen = useCallback(
-    () => setCommandPaletteOpen(true),
-    [setCommandPaletteOpen]
   )
   const handleDismissNewUserTips = useCallback(
     () => setShowNewUserTips(false),
@@ -100,19 +86,6 @@ export function Dashboard() {
               <Button onClick={handleCreateBoard} className="gap-2">
                 New project
               </Button>
-              <Button
-                variant="ghost"
-                onClick={handleSearchOpen}
-                className="gap-2"
-                title={
-                  searchShortcutLabel
-                    ? `Search (${searchShortcutLabel})`
-                    : 'Search'
-                }
-              >
-                <SearchIcon className="h-4 w-4" />
-                <span className="hidden sm:inline text-sm">Search</span>
-              </Button>
             </div>
           </div>
 
@@ -144,29 +117,13 @@ export function Dashboard() {
               <Button onClick={handleCreateBoard} className="gap-2">
                 New project
               </Button>
-              <Button
-                variant="ghost"
-                onClick={handleSearchOpen}
-                className="gap-2"
-                title={
-                  searchShortcutLabel
-                    ? `Search (${searchShortcutLabel})`
-                    : 'Search'
-                }
-              >
-                <SearchIcon className="h-4 w-4" />
-                <span className="hidden sm:inline text-sm">Search</span>
-              </Button>
             </div>
           </div>
         </div>
 
         {/* New User Onboarding Tips */}
         {isNewUser && showNewUserTips && (
-          <NewUserOnboarding
-            onDismiss={handleDismissNewUserTips}
-            onOpenSearch={handleSearchOpen}
-          />
+          <NewUserOnboarding onDismiss={handleDismissNewUserTips} />
         )}
 
         <div className="space-y-6">
@@ -177,11 +134,6 @@ export function Dashboard() {
       </div>
 
       <SettingsDialog open={settingsOpen} onOpenChange={handleSettingsClose} />
-
-      <GlobalSearch
-        open={commandPaletteOpen}
-        onOpenChange={setCommandPaletteOpen}
-      />
 
       <CreateProjectDialog
         open={createProjectDialogOpen}
