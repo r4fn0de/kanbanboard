@@ -156,7 +156,7 @@ export function CardContent({ card }: { card: KanbanCard }) {
                 CARD_DUE_STATUS_STYLES[dueMetadata.status]
               )}
             >
-              {dueMetadata.display}
+              {dueMetadata.formattedDate}
             </Badge>
           )}
         </div>

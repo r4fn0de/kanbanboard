@@ -686,7 +686,7 @@ export function KanbanCardItem(props: KanbanCardItemProps) {
                   )}
                 >
                   <CalendarIcon className="h-3 w-3" />
-                  <span>{dueMetadata.display}</span>
+                  <span>{dueMetadata.formattedDate}</span>
                 </Badge>
               )}
 
@@ -700,7 +700,7 @@ export function KanbanCardItem(props: KanbanCardItemProps) {
               {showSubtasksSummary && totalSubtasks > 0 && (
                 <div className="inline-flex items-center gap-1.5 rounded-lg bg-muted px-2.5 py-1 text-xs font-semibold text-muted-foreground">
                   <span>
-                    {completedSubtasks}/{totalSubtasks} subtasks
+                    {completedSubtasks}/{totalSubtasks}
                   </span>
                 </div>
               )}
@@ -1253,7 +1253,7 @@ export function KanbanCardItem(props: KanbanCardItemProps) {
                     </span>
                     <span className="text-[11px] text-muted-foreground">
                       {card.dueDate && dueMetadata
-                        ? dueMetadata.display
+                        ? dueMetadata.formattedDate
                         : 'No date'}
                     </span>
                   </div>

@@ -607,7 +607,7 @@ export function TaskDetailsPanel({
                           CARD_DUE_STATUS_STYLES[dueMetadata.status]
                         )}
                       >
-                        {dueMetadata.display}
+                        {dueMetadata.formattedDate}
                       </Badge>
                     )}
                   </div>

@@ -243,7 +243,7 @@ export function BoardTimelineView({
                               )}
                             >
                               <CalendarIcon className="h-3 w-3" />
-                              <span>{dueMetadata.display}</span>
+                              <span>{dueMetadata.formattedDate}</span>
                             </Badge>
                           ) : null}
                         </div>

@@ -403,7 +403,7 @@ function CardOverlay({
             )}
           >
             <CalendarIcon className="h-3 w-3" />
-            <span>{dueMetadata.display}</span>
+            <span>{dueMetadata.formattedDate}</span>
           </Badge>
         )}
 
@@ -419,7 +419,7 @@ function CardOverlay({
         {showSubtasksSummary && totalSubtasks > 0 && (
           <div className="inline-flex items-center gap-1.5 rounded-lg bg-muted px-2.5 py-1 text-xs font-semibold text-muted-foreground">
             <span>
-              {completedSubtasks}/{totalSubtasks} subtasks
+              {completedSubtasks}/{totalSubtasks}
             </span>
           </div>
         )}
