@@ -52,10 +52,12 @@ function SelectPopup({
   children,
   sideOffset = 4,
   alignItemWithTrigger = true,
+  frameClassName,
   ...props
 }: SelectPrimitive.Popup.Props & {
   sideOffset?: SelectPrimitive.Positioner.Props['sideOffset']
   alignItemWithTrigger?: SelectPrimitive.Positioner.Props['alignItemWithTrigger']
+  frameClassName?: string
 }) {
   return (
     <SelectPrimitive.Portal>
@@ -76,7 +78,12 @@ function SelectPopup({
           >
             <ChevronUpIcon className="relative size-4" />
           </SelectPrimitive.ScrollUpArrow>
-          <span className="relative block h-full rounded-lg border bg-popover bg-clip-padding before:pointer-events-none before:absolute before:inset-0 before:rounded-[calc(var(--radius-lg)-1px)] before:shadow-lg dark:not-in-data-[slot=group]:bg-clip-border">
+          <span
+            className={cn(
+              'relative block h-full rounded-lg border bg-popover bg-clip-padding before:pointer-events-none before:absolute before:inset-0 before:rounded-[calc(var(--radius-lg)-1px)] before:shadow-lg dark:not-in-data-[slot=group]:bg-clip-border',
+              frameClassName
+            )}
+          >
             <SelectPrimitive.List
               data-slot="select-list"
               className={cn(

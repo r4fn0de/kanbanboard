@@ -289,7 +289,7 @@ export function WorkspaceSelect({
       >
         <SelectTrigger
           className={cn(
-            'w-full border-0 bg-transparent px-2.5 py-2 text-left focus:ring-0 focus:ring-offset-0 min-w-0 hover:bg-accent/50 rounded-lg transition-colors',
+            'w-full border-0 bg-transparent px-2.5 py-2 text-left focus:ring-0 focus:ring-offset-0 min-w-0 hover:bg-accent/50 rounded-lg transition-colors shadow-none before:shadow-none',
             useTransparentStyle &&
               'text-white/95 hover:text-white hover:bg-white/20 focus:bg-white/25'
           )}
@@ -344,6 +344,7 @@ export function WorkspaceSelect({
               'backdrop-blur-xl bg-popover/90 dark:bg-popover/95 supports-[backdrop-filter]:bg-popover/85 dark:supports-[backdrop-filter]:bg-popover/90 border border-border/60',
             activeId && '[&>*:not([data-dnd-kit-sortable])]:pointer-events-none'
           )}
+          frameClassName="before:shadow-none shadow-none"
         >
           <SortableContext
             items={orderedWorkspaces.map(ws => ws.id)}
