@@ -74,16 +74,9 @@ export function Dashboard() {
       <>
         <div className="flex h-full flex-col gap-6 p-6 overflow-y-auto">
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-                Welcome to Modulo
-              </h1>
-              <p className="text-sm text-muted-foreground">
-                Organize your work, keep projects on track, and stay focused
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button onClick={handleCreateBoard} className="gap-2">
+            <div />
+            <div className="flex items-center gap-2 ml-auto">
+              <Button variant="ghost" onClick={handleCreateBoard} className="gap-2">
                 New project
               </Button>
             </div>
@@ -95,6 +88,12 @@ export function Dashboard() {
         <SettingsDialog
           open={settingsOpen}
           onOpenChange={handleSettingsClose}
+        />
+
+        <CreateProjectDialog
+          open={createProjectDialogOpen}
+          onOpenChange={setCreateProjectDialogOpen}
+          workspaceId={selectedWorkspaceId}
         />
       </>
     )

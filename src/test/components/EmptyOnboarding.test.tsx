@@ -19,10 +19,10 @@ describe('EmptyOnboarding', () => {
   it('should render welcome message', () => {
     render(<EmptyOnboarding />)
 
-    expect(screen.getByText('Welcome to Modulo! 🎉')).toBeInTheDocument()
+    expect(screen.getByText('Welcome to Modulo')).toBeInTheDocument()
     expect(
       screen.getByText(
-        "Your productivity journey starts here. Let's create your first project!"
+        'Your productivity journey starts here. Create your first project to start organizing tasks and managing your workflow effectively.'
       )
     ).toBeInTheDocument()
   })
@@ -35,16 +35,18 @@ describe('EmptyOnboarding', () => {
     expect(screen.getByText('Stay Focused')).toBeInTheDocument()
     expect(
       screen.getByText(
-        'Create boards to track your work and keep everything organized'
+        'Create boards to track your work and keep everything organized in one place.'
       )
     ).toBeInTheDocument()
     expect(
       screen.getByText(
-        'Use drag-and-drop to manage tasks and deadlines efficiently'
+        'Use drag-and-drop to manage tasks, set priorities, and meet deadlines efficiently.'
       )
     ).toBeInTheDocument()
     expect(
-      screen.getByText('Quick actions and smart widgets keep you on track')
+      screen.getByText(
+        'Quick actions, smart widgets, and a clean interface help you stay on track.'
+      )
     ).toBeInTheDocument()
   })
 
@@ -70,14 +72,6 @@ describe('EmptyOnboarding', () => {
     expect(button.tagName).toBe('BUTTON')
   })
 
-  it('should render help text', () => {
-    render(<EmptyOnboarding />)
-
-    expect(
-      screen.getByText('It takes less than a minute to get started')
-    ).toBeInTheDocument()
-  })
-
   it('should have proper structure', () => {
     const { container } = render(<EmptyOnboarding />)
 
@@ -85,15 +79,13 @@ describe('EmptyOnboarding', () => {
     const mainContainer = container.firstChild
     expect(mainContainer).toBeInTheDocument()
 
-    // Check for feature grid
-    const featureCards = screen.getAllByRole('button') // icons are rendered as buttons
-    expect(featureCards.length).toBeGreaterThan(0)
+    // Check for feature grid - checking for generic structure
+    // Note: Lucide icons might not be buttons, but Card structure is there
+    expect(container.querySelector('.grid')).toBeInTheDocument()
   })
 
-  it('should display folder icon', () => {
+  it('should display welcome text', () => {
     render(<EmptyOnboarding />)
-
-    // The folder icon should be present in the hero section
-    expect(screen.getByText('Welcome to Modulo! 🎉')).toBeInTheDocument()
+    expect(screen.getByText('Welcome to Modulo')).toBeInTheDocument()
   })
 })

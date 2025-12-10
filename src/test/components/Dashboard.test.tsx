@@ -99,7 +99,7 @@ describe('Dashboard', () => {
     render(<Dashboard />)
 
     await waitFor(() => {
-      expect(screen.getByText('Welcome to Modulo! 🎉')).toBeInTheDocument()
+      expect(screen.getByText('Welcome to Modulo')).toBeInTheDocument()
     })
   })
 

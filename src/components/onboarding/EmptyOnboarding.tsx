@@ -1,6 +1,13 @@
 import { motion } from 'framer-motion'
-import { PlusCircle, FolderKanban, Lightbulb, Zap } from 'lucide-react'
+import { PlusCircle, FolderKanban, Lightbulb, Zap, ArrowRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 
 interface EmptyOnboardingProps {
   onCreateBoard?: () => void
@@ -12,99 +19,102 @@ export function EmptyOnboarding({ onCreateBoard }: EmptyOnboardingProps) {
       icon: FolderKanban,
       title: 'Organize Projects',
       description:
-        'Create boards to track your work and keep everything organized',
+        'Create boards to track your work and keep everything organized in one place.',
     },
     {
       icon: Zap,
       title: 'Boost Productivity',
       description:
-        'Use drag-and-drop to manage tasks and deadlines efficiently',
+        'Use drag-and-drop to manage tasks, set priorities, and meet deadlines efficiently.',
     },
     {
       icon: Lightbulb,
       title: 'Stay Focused',
-      description: 'Quick actions and smart widgets keep you on track',
+      description:
+        'Quick actions, smart widgets, and a clean interface help you stay on track.',
     },
   ]
 
+  const container = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+      },
+    },
+  }
+
+  const item = {
+    hidden: { opacity: 0, y: 20 },
+    show: { opacity: 1, y: 0 },
+  }
+
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-      className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4"
-    >
-      <div className="max-w-2xl space-y-8">
+    <div className="flex flex-col items-center justify-center min-h-[70vh] w-full px-4 py-12">
+      <motion.div
+        variants={container}
+        initial="hidden"
+        animate="show"
+        className="w-full max-w-4xl space-y-12 text-center"
+      >
         {/* Hero Section */}
-        <div className="space-y-4">
+        <div className="space-y-6">
           <motion.div
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ delay: 0.2, duration: 0.5 }}
-            className="w-24 h-24 mx-auto bg-primary/10 rounded-full flex items-center justify-center"
+            variants={item}
+            className="mx-auto w-20 h-20 rounded-3xl bg-primary/10 flex items-center justify-center shadow-sm"
           >
-            <FolderKanban className="w-12 h-12 text-primary" />
+            <FolderKanban className="w-10 h-10 text-primary" />
           </motion.div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3, duration: 0.5 }}
-          >
-            <h2 className="text-3xl font-bold tracking-tight">
-              Welcome to Modulo! 🎉
-            </h2>
-            <p className="mt-2 text-lg text-muted-foreground">
-              Your productivity journey starts here. Let&apos;s create your
-              first project!
+          <motion.div variants={item} className="space-y-4">
+            <h1 className="text-4xl font-bold tracking-tight sm:text-6xl text-foreground">
+              Welcome to Modulo
+            </h1>
+            <p className="mx-auto max-w-2xl text-lg text-muted-foreground leading-relaxed">
+              Your productivity journey starts here. Create your first project to
+              start organizing tasks and managing your workflow effectively.
             </p>
+          </motion.div>
+
+          <motion.div variants={item} className="pt-4">
+            <Button
+              onClick={onCreateBoard}
+              size="lg"
+              className="h-12 px-8 text-base rounded-full shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all"
+            >
+              <PlusCircle className="mr-2 w-5 h-5" />
+              Create Your First Project
+              <ArrowRight className="ml-2 w-4 h-4 opacity-50" />
+            </Button>
           </motion.div>
         </div>
 
-        {/* Feature List */}
+        {/* Feature Grid */}
         <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.4, duration: 0.5 }}
-          className="grid gap-4 md:grid-cols-3"
+          variants={item}
+          className="grid gap-6 md:grid-cols-3 text-left"
         >
-          {features.map((feature, index) => (
-            <motion.div
+          {features.map((feature) => (
+            <Card
               key={feature.title}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5 + index * 0.1, duration: 0.5 }}
-              className="p-4 rounded-lg border bg-card space-y-2"
+              className="border-muted/40 bg-card/50 hover:bg-card hover:border-primary/20 transition-colors duration-300"
             >
-              <feature.icon className="w-8 h-8 text-primary mx-auto" />
-              <h3 className="font-semibold text-sm">{feature.title}</h3>
-              <p className="text-xs text-muted-foreground">
-                {feature.description}
-              </p>
-            </motion.div>
+              <CardHeader>
+                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mb-2">
+                  <feature.icon className="w-5 h-5 text-primary" />
+                </div>
+                <CardTitle className="text-lg">{feature.title}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <CardDescription className="text-sm leading-relaxed">
+                  {feature.description}
+                </CardDescription>
+              </CardContent>
+            </Card>
           ))}
         </motion.div>
-
-        {/* CTA */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.8, duration: 0.5 }}
-          className="space-y-4"
-        >
-          <Button
-            onClick={onCreateBoard}
-            size="lg"
-            className="gap-2 h-12 px-8 text-base"
-          >
-            <PlusCircle className="w-5 h-5" />
-            Create Your First Project
-          </Button>
-          <p className="text-sm text-muted-foreground">
-            It takes less than a minute to get started
-          </p>
-        </motion.div>
-      </div>
-    </motion.div>
+      </motion.div>
+    </div>
   )
 }
