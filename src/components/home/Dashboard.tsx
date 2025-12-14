@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { SettingsDialog } from './SettingsDialog'
 import { EmptyOnboarding, NewUserOnboarding } from '@/components/onboarding'
 import { CreateProjectDialog } from '@/components/kanban/CreateProjectDialog'
+import { useAddDemoData } from "@/services/demo-data";
 
 export function Dashboard() {
   usePerformanceMonitor('Dashboard')
@@ -21,6 +22,7 @@ export function Dashboard() {
   const selectedWorkspaceId = useWorkspaceStore(
     state => state.selectedWorkspaceId
   )
+  const { mutate: addDemoData, isPending: addingDemo } = useAddDemoData();
 
   const isNewUser = workspaceStatus?.isNewUser ?? false
   const isEmpty = workspaceStatus?.isEmpty ?? false
@@ -38,6 +40,10 @@ export function Dashboard() {
     console.log('Create board')
     setCreateProjectDialogOpen(true)
   }, [setCreateProjectDialogOpen])
+
+  const handleAddDemoData = useCallback(() => {
+			addDemoData();
+		}, [addDemoData]);
 
   // Layout of sections is now fixed and minimal; widget layout is not dynamic here.
 
@@ -71,74 +77,97 @@ export function Dashboard() {
   // Show empty state onboarding when workspace is empty
   if (isEmpty) {
     return (
-      <>
-        <div className="flex h-full flex-col gap-6 p-6 overflow-y-auto">
-          <div className="flex items-center justify-between">
-            <div />
-            <div className="flex items-center gap-2 ml-auto">
-              <Button variant="ghost" onClick={handleCreateBoard} className="gap-2">
-                New project
-              </Button>
-            </div>
-          </div>
+					<>
+						<div className="flex h-full flex-col gap-6 p-6 overflow-y-auto">
+							<div className="flex items-center justify-between">
+								<div />
+								<div className="flex items-center gap-2 ml-auto">
+									<Button
+										variant="outline"
+										onClick={handleAddDemoData}
+										disabled={addingDemo}
+										className="gap-2"
+									>
+										{addingDemo ? "Adding demo…" : "Add demo data"}
+									</Button>
+									<Button
+										variant="ghost"
+										onClick={handleCreateBoard}
+										className="gap-2"
+									>
+										New project
+									</Button>
+								</div>
+							</div>
 
-          <EmptyOnboarding onCreateBoard={handleCreateBoard} />
-        </div>
+							<EmptyOnboarding onCreateBoard={handleCreateBoard} />
+						</div>
 
-        <SettingsDialog
-          open={settingsOpen}
-          onOpenChange={handleSettingsClose}
-        />
+						<SettingsDialog
+							open={settingsOpen}
+							onOpenChange={handleSettingsClose}
+						/>
 
-        <CreateProjectDialog
-          open={createProjectDialogOpen}
-          onOpenChange={setCreateProjectDialogOpen}
-          workspaceId={selectedWorkspaceId}
-        />
-      </>
-    )
+						<CreateProjectDialog
+							open={createProjectDialogOpen}
+							onOpenChange={setCreateProjectDialogOpen}
+							workspaceId={selectedWorkspaceId}
+						/>
+					</>
+				);
   }
 
   return (
-    <>
-      <div className="flex h-full flex-col gap-6 p-6 overflow-y-auto">
-        <div className="flex flex-col gap-2">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-                Activity
-              </h1>
-              <p className="text-sm text-muted-foreground">
-                See the latest changes across your projects.
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button onClick={handleCreateBoard} className="gap-2">
-                New project
-              </Button>
-            </div>
-          </div>
-        </div>
+			<>
+				<div className="flex h-full flex-col gap-6 p-6 overflow-y-auto">
+					<div className="flex flex-col gap-2">
+						<div className="flex items-center justify-between">
+							<div>
+								<h1 className="text-2xl font-semibold tracking-tight text-foreground">
+									Activity
+								</h1>
+								<p className="text-sm text-muted-foreground">
+									See the latest changes across your projects.
+								</p>
+							</div>
+							<div className="flex items-center gap-2">
+								<Button
+									variant="outline"
+									onClick={handleAddDemoData}
+									disabled={addingDemo}
+									className="gap-2"
+								>
+									{addingDemo ? "Adding demo…" : "Add demo data"}
+								</Button>
+								<Button onClick={handleCreateBoard} className="gap-2">
+									New project
+								</Button>
+							</div>
+						</div>
+					</div>
 
-        {/* New User Onboarding Tips */}
-        {isNewUser && showNewUserTips && (
-          <NewUserOnboarding onDismiss={handleDismissNewUserTips} />
-        )}
+					{/* New User Onboarding Tips */}
+					{isNewUser && showNewUserTips && (
+						<NewUserOnboarding onDismiss={handleDismissNewUserTips} />
+					)}
 
-        <div className="space-y-6">
-          <WidgetContainer title="Recent activity">
-            <ActivitySection />
-          </WidgetContainer>
-        </div>
-      </div>
+					<div className="space-y-6">
+						<WidgetContainer title="Recent activity">
+							<ActivitySection />
+						</WidgetContainer>
+					</div>
+				</div>
 
-      <SettingsDialog open={settingsOpen} onOpenChange={handleSettingsClose} />
+				<SettingsDialog
+					open={settingsOpen}
+					onOpenChange={handleSettingsClose}
+				/>
 
-      <CreateProjectDialog
-        open={createProjectDialogOpen}
-        onOpenChange={setCreateProjectDialogOpen}
-        workspaceId={selectedWorkspaceId}
-      />
-    </>
-  )
+				<CreateProjectDialog
+					open={createProjectDialogOpen}
+					onOpenChange={setCreateProjectDialogOpen}
+					workspaceId={selectedWorkspaceId}
+				/>
+			</>
+		);
 }

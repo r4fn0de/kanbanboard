@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useMemo, lazy, Suspense } from 'react'
+import { useCallback, useEffect, useMemo, useRef, lazy, Suspense } from "react";
 import { useNavigate, useParams } from 'react-router-dom'
 import { getAssetUrls } from '@tldraw/assets/selfHosted'
-import type { TldrawProps } from '@tldraw/tldraw'
+import type { Editor as TldrawEditor, TldrawProps } from "@tldraw/tldraw";
 import '@tldraw/tldraw/tldraw.css'
 
 import { BoardNavbar } from '@/components/kanban/BoardNavbar'
@@ -10,6 +10,7 @@ import { useWorkspaces } from '@/services/workspaces'
 import { Button } from '@/components/ui/button'
 import { useUIStore } from '@/store/ui-store'
 import { useWorkspaceStore } from '@/store/workspace-store'
+import { getWhiteboardSeedKey } from "@/services/demo-data";
 
 const assetUrls: TldrawProps['assetUrls'] = getAssetUrls({
   baseUrl: '/tldraw-assets',
@@ -24,6 +25,7 @@ export function BoardDrawView() {
   const navigate = useNavigate()
   const { data: boards = [], isLoading, isError, error, refetch } = useBoards()
   const { data: workspaces = [] } = useWorkspaces()
+  const hasAppliedSeed = useRef(false);
 
   const setLeftSidebarVisible = useUIStore(state => state.setLeftSidebarVisible)
   const setLeftSidebarLocked = useUIStore(state => state.setLeftSidebarLocked)
@@ -85,6 +87,44 @@ export function BoardDrawView() {
     [boardId, navigate]
   )
 
+  const handleWhiteboardMount = useCallback(
+			(editor: TldrawEditor) => {
+				if (!boardId || hasAppliedSeed.current) {
+					return;
+				}
+				hasAppliedSeed.current = true;
+
+				if (typeof window === "undefined") {
+					return;
+				}
+
+				const raw = window.localStorage.getItem(getWhiteboardSeedKey(boardId));
+				if (!raw) return;
+
+				try {
+					const payload = JSON.parse(raw) as {
+						shapes?: Array<Record<string, unknown>>;
+					};
+					if (!payload?.shapes?.length) {
+						return;
+					}
+
+					editor.createShapes(
+						payload.shapes as Parameters<TldrawEditor["createShapes"]>[0],
+					);
+
+					if (typeof editor.zoomToFit === "function") {
+						editor.zoomToFit(undefined, { animation: { duration: 240 } });
+					}
+				} catch (seedError) {
+					console.warn("Failed to apply whiteboard demo seed", seedError);
+				} finally {
+					window.localStorage.removeItem(getWhiteboardSeedKey(boardId));
+				}
+			},
+			[boardId],
+		);
+
   if (!boardId) {
     return (
       <div className="flex h-full items-center justify-center p-6">
@@ -128,39 +168,42 @@ export function BoardDrawView() {
   }
 
   return (
-    <div className="flex h-screen max-h-screen flex-col overflow-hidden">
-      <BoardNavbar
-        boardTitle={board.title}
-        boardIcon={board.icon ?? undefined}
-        boardEmoji={board.emoji ?? undefined}
-        boardColor={board.color ?? undefined}
-        workspaceName={workspaces.find(ws => ws.id === board.workspaceId)?.name}
-        activeTab="whiteboard"
-        onTabChange={handleTabChange}
-      />
+			<div className="flex h-screen max-h-screen flex-col overflow-hidden">
+				<BoardNavbar
+					boardTitle={board.title}
+					boardIcon={board.icon ?? undefined}
+					boardEmoji={board.emoji ?? undefined}
+					boardColor={board.color ?? undefined}
+					workspaceName={
+						workspaces.find((ws) => ws.id === board.workspaceId)?.name
+					}
+					activeTab="whiteboard"
+					onTabChange={handleTabChange}
+				/>
 
-      <div
-        className="relative flex-1 overflow-hidden"
-        style={{ cursor: 'auto', userSelect: 'auto' }}
-      >
-        <div className="absolute inset-0">
-          <Suspense
-            fallback={
-              <div className="flex h-full w-full items-center justify-center text-sm text-muted-foreground">
-                Loading whiteboard…
-              </div>
-            }
-          >
-            <TldrawLazy
-              licenseKey="tldraw-2026-01-18/WyJhQlFqNDN0QiIsWyIqIl0sMTYsIjIwMjYtMDEtMTgiXQ.QYRIuxzb9KtFcg5AyxPtczlCkgqRtQrbRUO/4+o7ikWsPxGZdUg44h1NRD2cOcjTfHlmZhDsXe55+4j2r3LOUg"
-              assetUrls={assetUrls}
-              persistenceKey={`board-${boardId}-draws`}
-            />
-          </Suspense>
-        </div>
-      </div>
-    </div>
-  )
+				<div
+					className="relative flex-1 overflow-hidden"
+					style={{ cursor: "auto", userSelect: "auto" }}
+				>
+					<div className="absolute inset-0">
+						<Suspense
+							fallback={
+								<div className="flex h-full w-full items-center justify-center text-sm text-muted-foreground">
+									Loading whiteboard…
+								</div>
+							}
+						>
+							<TldrawLazy
+								licenseKey="tldraw-2026-01-18/WyJhQlFqNDN0QiIsWyIqIl0sMTYsIjIwMjYtMDEtMTgiXQ.QYRIuxzb9KtFcg5AyxPtczlCkgqRtQrbRUO/4+o7ikWsPxGZdUg44h1NRD2cOcjTfHlmZhDsXe55+4j2r3LOUg"
+								assetUrls={assetUrls}
+								persistenceKey={`board-${boardId}-draws`}
+								onMount={handleWhiteboardMount}
+							/>
+						</Suspense>
+					</div>
+				</div>
+			</div>
+		);
 }
 
 export default BoardDrawView
