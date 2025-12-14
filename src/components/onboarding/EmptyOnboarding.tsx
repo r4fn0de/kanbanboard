@@ -1,5 +1,11 @@
 import { motion } from 'framer-motion'
-import { PlusCircle, FolderKanban, Lightbulb, Zap, ArrowRight } from 'lucide-react'
+import {
+  PlusCircle,
+  FolderKanban,
+  Lightbulb,
+  Zap,
+  ArrowRight,
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -72,8 +78,8 @@ export function EmptyOnboarding({ onCreateBoard }: EmptyOnboardingProps) {
               Welcome to Modulo
             </h1>
             <p className="mx-auto max-w-2xl text-lg text-muted-foreground leading-relaxed">
-              Your productivity journey starts here. Create your first project to
-              start organizing tasks and managing your workflow effectively.
+              Your productivity journey starts here. Create your first project
+              to start organizing tasks and managing your workflow effectively.
             </p>
           </motion.div>
 
@@ -95,7 +101,7 @@ export function EmptyOnboarding({ onCreateBoard }: EmptyOnboardingProps) {
           variants={item}
           className="grid gap-6 md:grid-cols-3 text-left"
         >
-          {features.map((feature) => (
+          {features.map(feature => (
             <Card
               key={feature.title}
               className="border-muted/40 bg-card/50 hover:bg-card hover:border-primary/20 transition-colors duration-300"

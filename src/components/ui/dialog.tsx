@@ -24,15 +24,15 @@ function DialogBackdrop({
   ...props
 }: DialogPrimitive.Backdrop.Props) {
   return (
-			<DialogPrimitive.Backdrop
-				className={cn(
-					"fixed inset-0 z-50 bg-black/32 backdrop-blur-sm transition-all duration-200 data-ending-style:opacity-0 data-starting-style:opacity-0 rounded-[12px] overflow-hidden supports-[backdrop-filter]:rounded-[12px] supports-[backdrop-filter]:overflow-hidden",
-					className,
-				)}
-				data-slot="dialog-backdrop"
-				{...props}
-			/>
-		);
+    <DialogPrimitive.Backdrop
+      className={cn(
+        'fixed inset-0 z-50 bg-black/32 backdrop-blur-sm transition-all duration-200 data-ending-style:opacity-0 data-starting-style:opacity-0 rounded-[12px] overflow-hidden supports-[backdrop-filter]:rounded-[12px] supports-[backdrop-filter]:overflow-hidden',
+        className
+      )}
+      data-slot="dialog-backdrop"
+      {...props}
+    />
+  )
 }
 
 function DialogPopup({

@@ -246,7 +246,9 @@ export function BoardListView({
                                           )}
                                         >
                                           <CalendarIcon className="h-3 w-3" />
-                                          <span>{dueMetadata.formattedDate}</span>
+                                          <span>
+                                            {dueMetadata.formattedDate}
+                                          </span>
                                         </Badge>
                                       )}
                                     </div>

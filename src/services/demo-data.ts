@@ -186,11 +186,16 @@ const createDemoData = async (): Promise<DemoDataResult> => {
       column: 'Backlog',
       dueDate: daysFromNow(10),
       tags: ['Product'],
-      subtasks: ['Draft interview outline', 'Invite customers', 'Synthesize findings'],
+      subtasks: [
+        'Draft interview outline',
+        'Invite customers',
+        'Synthesize findings',
+      ],
     },
     {
       title: 'Define success metrics',
-      description: 'Agree on activation, retention, and latency targets for launch.',
+      description:
+        'Agree on activation, retention, and latency targets for launch.',
       priority: 'low' as const,
       column: 'Backlog',
       dueDate: null,
@@ -321,7 +326,9 @@ export function useAddDemoData() {
       queryClient.invalidateQueries({
         queryKey: kanbanQueryKeys.columns(boardId),
       })
-      queryClient.invalidateQueries({ queryKey: kanbanQueryKeys.cards(boardId) })
+      queryClient.invalidateQueries({
+        queryKey: kanbanQueryKeys.cards(boardId),
+      })
       queryClient.invalidateQueries({ queryKey: kanbanQueryKeys.tags(boardId) })
       queryClient.invalidateQueries({ queryKey: ['notes', boardId] })
     },
