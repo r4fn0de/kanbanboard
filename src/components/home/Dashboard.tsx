@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react'
+import { Search } from 'lucide-react'
 import { useWorkspaceStatus } from '@/hooks/useWorkspaceStatus'
 import { useUIStore } from '@/store/ui-store'
 import { useWorkspaceStore } from '@/store/workspace-store'
@@ -9,6 +10,7 @@ import { Button } from '@/components/ui/button'
 import { SettingsDialog } from './SettingsDialog'
 import { EmptyOnboarding, NewUserOnboarding } from '@/components/onboarding'
 import { CreateProjectDialog } from '@/components/kanban/CreateProjectDialog'
+import { GlobalSearch } from '@/components/search/GlobalSearch'
 
 export function Dashboard() {
   usePerformanceMonitor('Dashboard')
@@ -17,7 +19,12 @@ export function Dashboard() {
     useWorkspaceStatus()
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [showNewUserTips, setShowNewUserTips] = useState(true)
-  const { createProjectDialogOpen, setCreateProjectDialogOpen } = useUIStore()
+  const {
+    createProjectDialogOpen,
+    setCreateProjectDialogOpen,
+    commandPaletteOpen,
+    setCommandPaletteOpen,
+  } = useUIStore()
   const selectedWorkspaceId = useWorkspaceStore(
     state => state.selectedWorkspaceId
   )
@@ -78,6 +85,15 @@ export function Dashboard() {
             <div className="flex items-center gap-2 ml-auto">
               <Button
                 variant="ghost"
+                size="sm"
+                onClick={() => setCommandPaletteOpen(true)}
+                className="gap-2"
+              >
+                <Search className="h-4 w-4" />
+                Search
+              </Button>
+              <Button
+                variant="ghost"
                 onClick={handleCreateBoard}
                 className="gap-2"
               >
@@ -99,6 +115,11 @@ export function Dashboard() {
           onOpenChange={setCreateProjectDialogOpen}
           workspaceId={selectedWorkspaceId}
         />
+
+        <GlobalSearch
+          open={commandPaletteOpen}
+          onOpenChange={setCommandPaletteOpen}
+        />
       </>
     )
   }
@@ -117,6 +138,15 @@ export function Dashboard() {
               </p>
             </div>
             <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setCommandPaletteOpen(true)}
+                className="gap-2"
+              >
+                <Search className="h-4 w-4" />
+                Search
+              </Button>
               <Button onClick={handleCreateBoard} className="gap-2">
                 New project
               </Button>
@@ -142,6 +172,11 @@ export function Dashboard() {
         open={createProjectDialogOpen}
         onOpenChange={setCreateProjectDialogOpen}
         workspaceId={selectedWorkspaceId}
+      />
+
+      <GlobalSearch
+        open={commandPaletteOpen}
+        onOpenChange={setCommandPaletteOpen}
       />
     </>
   )

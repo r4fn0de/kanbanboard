@@ -149,6 +149,7 @@ export function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) {
             exit={{ opacity: 0, scale: 0.95, y: -10 }}
             transition={{ duration: 0.15 }}
             className="fixed top-[20%] left-1/2 -translate-x-1/2 w-full max-w-2xl z-50"
+            data-testid="global-search"
           >
             <div className="bg-background border rounded-lg shadow-2xl overflow-hidden">
               {/* Search Input */}

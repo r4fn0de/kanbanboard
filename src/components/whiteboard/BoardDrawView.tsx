@@ -200,6 +200,7 @@ export function BoardDrawView() {
               assetUrls={assetUrls}
               persistenceKey={`board-${boardId}-draws`}
               onMount={handleWhiteboardMount}
+              data-testid="tldraw"
             />
           </Suspense>
         </div>

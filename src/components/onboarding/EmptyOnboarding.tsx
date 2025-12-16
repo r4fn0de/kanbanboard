@@ -75,11 +75,11 @@ export function EmptyOnboarding({ onCreateBoard }: EmptyOnboardingProps) {
 
           <motion.div variants={item} className="space-y-4">
             <h1 className="text-4xl font-bold tracking-tight sm:text-6xl text-foreground">
-              Welcome to Modulo
+              Welcome to Modulo! 🎉
             </h1>
             <p className="mx-auto max-w-2xl text-lg text-muted-foreground leading-relaxed">
-              Your productivity journey starts here. Create your first project
-              to start organizing tasks and managing your workflow effectively.
+              Your productivity journey starts here. Let's create your first
+              project!
             </p>
           </motion.div>
 
@@ -93,6 +93,9 @@ export function EmptyOnboarding({ onCreateBoard }: EmptyOnboardingProps) {
               Create Your First Project
               <ArrowRight className="ml-2 w-4 h-4 opacity-50" />
             </Button>
+            <p className="mt-4 text-sm text-muted-foreground">
+              It takes less than a minute to get started
+            </p>
           </motion.div>
         </div>
 
