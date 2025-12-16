@@ -9,14 +9,19 @@ vi.mock('@tldraw/tldraw', () => ({
   Tldraw: ({
     persistenceKey,
     assetUrls,
+    'data-testid': testId,
+    ...props
   }: {
     persistenceKey?: string
     assetUrls?: unknown
+    'data-testid'?: string
+    [key: string]: any
   }) => (
     <div
-      data-testid="tldraw"
+      data-testid={testId || 'tldraw'}
       data-persistence-key={persistenceKey ?? ''}
       data-has-asset-urls={assetUrls ? 'true' : 'false'}
+      {...props}
     />
   ),
 }))
@@ -96,7 +101,7 @@ describe('BoardDrawView', () => {
     expect(screen.getByText('Board not found.')).toBeInTheDocument()
   })
 
-  it('renders tldraw canvas for existing board', () => {
+  it('renders tldraw canvas for existing board', async () => {
     mockedUseBoards.mockReturnValue(
       createUseBoardsResult([
         {
@@ -114,7 +119,10 @@ describe('BoardDrawView', () => {
 
     renderWithRouter('/projects/board-123/whiteboard')
 
-    expect(screen.getByText('Design Board')).toBeInTheDocument()
+    await waitFor(() => {
+      expect(screen.getByText('Design Board')).toBeInTheDocument()
+    })
+
     const canvas = screen.getByTestId('tldraw')
     expect(canvas).toHaveAttribute(
       'data-persistence-key',
