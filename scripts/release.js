@@ -4,7 +4,6 @@ import fs from 'fs'
 import path from 'path'
 import { execSync } from 'child_process'
 import readline from 'readline'
-import crypto from 'crypto'
 
 function exec(command, options = {}) {
   try {
@@ -32,20 +31,15 @@ function askQuestion(question) {
   })
 }
 
-function generateSignature(filePath, privateKey) {
-  try {
-    const fileContent = fs.readFileSync(filePath)
-    const signature = crypto
-      .createSign('sha256')
-      .update(fileContent)
-      .sign(privateKey, 'base64')
-    return signature
-  } catch (error) {
-    console.warn(
-      `⚠️  Could not sign ${filePath}: ${error.message}. Using placeholder.`
+function readUpdaterSignature(filePath) {
+  const sigPath = `${filePath}.sig`
+  if (!fs.existsSync(sigPath)) {
+    throw new Error(
+      `Updater signature file not found: ${sigPath}. Ensure TAURI_SIGNING_PRIVATE_KEY is set (base64) and rebuild.`
     )
-    return 'placeholder-signature-for-development'
   }
+
+  return fs.readFileSync(sigPath, 'utf8').trim()
 }
 
 function findBuildArtifacts() {
@@ -64,7 +58,7 @@ function findBuildArtifacts() {
   // macOS Universal Binary (.app.tar.gz)
   const macUniversal = findFile(
     path.join(tauriDir, 'macos'),
-    /Modulo_.*\.app\.tar\.gz$/
+    /Modulo(?:_.*)?\.app\.tar\.gz$/
   )
   if (macUniversal) {
     artifacts['darwin-aarch64'] = macUniversal
@@ -170,7 +164,7 @@ async function releaseApp() {
 
     foundArtifacts.forEach(([platform, filePath]) => {
       const fileName = path.basename(filePath)
-      const signature = privateKey ? generateSignature(filePath, privateKey) : 'placeholder-signature'
+      const signature = readUpdaterSignature(filePath)
 
       latestJson.platforms[platform] = {
         signature,

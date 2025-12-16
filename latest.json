@@ -1,6 +1,15 @@
 {
-  "version": "1.0.2",
-  "notes": "v1.0.2 - Release build",
-  "pub_date": "2025-12-16T01:59:09.581Z",
-  "platforms": {}
+  "version": "1.0.3",
+  "notes": "v1.0.3 - Release build",
+  "pub_date": "2025-12-16T14:49:13.739Z",
+  "platforms": {
+    "darwin-aarch64": {
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTZlZSdmpnSVdLZGhpdkgwUWNMNXQvemM3WUQrbkVuVTlhSmcwZHh3aW5QczlMbk5oK3N4KzgzM2VwRmg0LzAxZEpWNUx6RUFUaVVnTWo2ZHg2dkZJSTRqYlU0RWZvdFFvPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzY1ODk2NTUzCWZpbGU6TW9kdWxvLmFwcC50YXIuZ3oKV0hkQXdrNUhoV2pWdTFsK0VkSGVlOGIyeWNuY1d2MlZUcHVCS3RYUlhrQW1LL2wxR0d4aHRDSDRMVXAwNzh3ekV6UjVqblNWVTdnNnpYRjVCL0t6Q1E9PQo=",
+      "url": "https://github.com/r4fn0de/kanbanboard/releases/download/v1.0.3/Modulo.app.tar.gz"
+    },
+    "darwin-x86_64": {
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTZlZSdmpnSVdLZGhpdkgwUWNMNXQvemM3WUQrbkVuVTlhSmcwZHh3aW5QczlMbk5oK3N4KzgzM2VwRmg0LzAxZEpWNUx6RUFUaVVnTWo2ZHg2dkZJSTRqYlU0RWZvdFFvPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzY1ODk2NTUzCWZpbGU6TW9kdWxvLmFwcC50YXIuZ3oKV0hkQXdrNUhoV2pWdTFsK0VkSGVlOGIyeWNuY1d2MlZUcHVCS3RYUlhrQW1LL2wxR0d4aHRDSDRMVXAwNzh3ekV6UjVqblNWVTdnNnpYRjVCL0t6Q1E9PQo=",
+      "url": "https://github.com/r4fn0de/kanbanboard/releases/download/v1.0.3/Modulo.app.tar.gz"
+    }
+  }
 }
