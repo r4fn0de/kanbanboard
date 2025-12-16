@@ -15,7 +15,7 @@ vi.mock('@tldraw/tldraw', () => ({
     persistenceKey?: string
     assetUrls?: unknown
     'data-testid'?: string
-    [key: string]: any
+    [key: string]: unknown
   }) => (
     <div
       data-testid={testId || 'tldraw'}
