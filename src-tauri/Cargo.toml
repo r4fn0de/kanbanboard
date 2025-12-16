@@ -5,14 +5,19 @@ description = "A lightweight, elegant offline kanban board for productivity"
 authors = ["r4fn0de"]
 edition = "2024"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
+# Build for both Intel and Apple Silicon Macs
 [lib]
 # The `_lib` suffix may seem redundant but it is necessary
 # to make the lib name unique and wouldn't conflict with the bin name.
 # This seems to be only an issue on Windows, see https://github.com/rust-lang/cargo/issues/8519
 name = "modulo_app_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
+
+# Universal binary settings for macOS
+[target.'cfg(target_os = "macos")'.dependencies]
+tauri = { version = "2", features = ["macos-private-api"] }
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
