@@ -78,8 +78,8 @@ export function EmptyOnboarding({ onCreateBoard }: EmptyOnboardingProps) {
               Welcome to Modulo! 🎉
             </h1>
             <p className="mx-auto max-w-2xl text-lg text-muted-foreground leading-relaxed">
-              Your productivity journey starts here. Let's create your first
-              project!
+              Your productivity journey starts here. Let&apos;s create your
+              first project!
             </p>
           </motion.div>
 
