@@ -57,12 +57,12 @@ describe('Dashboard E2E', () => {
       render(<Dashboard />)
 
       await waitFor(() => {
-        expect(screen.getByText('Welcome to Modulo! 🎉')).toBeInTheDocument()
+        expect(screen.getByText('Welcome to Modulo')).toBeInTheDocument()
       })
 
       expect(
         screen.getByText(
-          "Your productivity journey starts here. Let's create your first project!"
+          'Your productivity journey starts here. Create your first project to start organizing tasks and managing your workflow effectively.'
         )
       ).toBeInTheDocument()
       expect(screen.getByText('Create Your First Project')).toBeInTheDocument()

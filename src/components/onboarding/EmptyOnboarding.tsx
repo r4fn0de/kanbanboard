@@ -75,11 +75,11 @@ export function EmptyOnboarding({ onCreateBoard }: EmptyOnboardingProps) {
 
           <motion.div variants={item} className="space-y-4">
             <h1 className="text-4xl font-bold tracking-tight sm:text-6xl text-foreground">
-              Welcome to Modulo! 🎉
+              Welcome to Modulo
             </h1>
             <p className="mx-auto max-w-2xl text-lg text-muted-foreground leading-relaxed">
-              Your productivity journey starts here. Let&apos;s create your
-              first project!
+              Your productivity journey starts here. Create your first project
+              to start organizing tasks and managing your workflow effectively.
             </p>
           </motion.div>
 

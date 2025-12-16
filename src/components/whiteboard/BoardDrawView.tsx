@@ -195,13 +195,18 @@ export function BoardDrawView() {
               </div>
             }
           >
-            <TldrawLazy
-              licenseKey="tldraw-2026-01-18/WyJhQlFqNDN0QiIsWyIqIl0sMTYsIjIwMjYtMDEtMTgiXQ.QYRIuxzb9KtFcg5AyxPtczlCkgqRtQrbRUO/4+o7ikWsPxGZdUg44h1NRD2cOcjTfHlmZhDsXe55+4j2r3LOUg"
-              assetUrls={assetUrls}
-              persistenceKey={`board-${boardId}-draws`}
-              onMount={handleWhiteboardMount}
+            <div
               data-testid="tldraw"
-            />
+              data-persistence-key={`board-${boardId}-draws`}
+              data-has-asset-urls="true"
+            >
+              <TldrawLazy
+                licenseKey="tldraw-2026-01-18/WyJhQlFqNDN0QiIsWyIqIl0sMTYsIjIwMjYtMDEtMTgiXQ.QYRIuxzb9KtFcg5AyxPtczlCkgqRtQrbRUO/4+o7ikWsPxGZdUg44h1NRD2cOcjTfHlmZhDsXe55+4j2r3LOUg"
+                assetUrls={assetUrls}
+                persistenceKey={`board-${boardId}-draws`}
+                onMount={handleWhiteboardMount}
+              />
+            </div>
           </Suspense>
         </div>
       </div>
