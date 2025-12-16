@@ -1,6 +1,6 @@
 [package]
 name = "Modulo"
-version = "1.0.0"
+version = "1.0.1"
 description = "A lightweight, elegant offline kanban board for productivity"
 authors = ["r4fn0de"]
 edition = "2024"
