@@ -1,15 +1,15 @@
 {
-  "version": "1.0.4",
-  "notes": "v1.0.4 - Release build",
-  "pub_date": "2025-12-16T15:07:02.715Z",
+  "version": "1.0.5",
+  "notes": "v1.0.5 - Release build",
+  "pub_date": "2025-12-16T15:18:57.396Z",
   "platforms": {
     "darwin-aarch64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTZlZSdmpnSVdLZGtZRUJRNk9CQWQ2dUFzdUxqSDlLNU96eWNqZVpuWlV1U3VsN2M0QnBqLzFiOEU2TU10b3dkN1RRYU9aTGgrRUhNcHhEbWE4dkIyTTJxN2YzUUQzYVFnPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzY1ODk3NjIyCWZpbGU6TW9kdWxvLmFwcC50YXIuZ3oKcm40VEt3VGF6bUpraldKczdVRlV6dyt6QUdkdVYxKzNwYVdjOHZLOWloNDJ3akdST2FYeURqRW42cnVrTzlFelRBMWxrYUR2UnhvR2xYM2ZaOWJlQXc9PQo=",
-      "url": "https://github.com/r4fn0de/kanbanboard/releases/download/v1.0.4/Modulo.app.tar.gz"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTZlZSdmpnSVdLZGpXQTltaXhUME51Yy8yWWdHbHdxNFVQbDFydWovYmczVGswQkdjY3FodEY1YzN3czgwcm1ZQTIxQUtWZWhpNHB2QnkwajVrcjVtT3NETTAvZFFNamdvPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzY1ODk4MzM3CWZpbGU6TW9kdWxvLmFwcC50YXIuZ3oKRXh1N1c2MERhemZKSDNLZlFBc0xTQkM3cmdoUHNCMTBod2lSL0RJVzFTclQ0dTlZZU9jcldaRDF1RTYyU3h2aElmNWhXTlN6RWtaMFU0eGJScWFmQWc9PQo=",
+      "url": "https://github.com/r4fn0de/kanbanboard/releases/download/v1.0.5/Modulo.app.tar.gz"
     },
     "darwin-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTZlZSdmpnSVdLZGtZRUJRNk9CQWQ2dUFzdUxqSDlLNU96eWNqZVpuWlV1U3VsN2M0QnBqLzFiOEU2TU10b3dkN1RRYU9aTGgrRUhNcHhEbWE4dkIyTTJxN2YzUUQzYVFnPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzY1ODk3NjIyCWZpbGU6TW9kdWxvLmFwcC50YXIuZ3oKcm40VEt3VGF6bUpraldKczdVRlV6dyt6QUdkdVYxKzNwYVdjOHZLOWloNDJ3akdST2FYeURqRW42cnVrTzlFelRBMWxrYUR2UnhvR2xYM2ZaOWJlQXc9PQo=",
-      "url": "https://github.com/r4fn0de/kanbanboard/releases/download/v1.0.4/Modulo.app.tar.gz"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTZlZSdmpnSVdLZGpXQTltaXhUME51Yy8yWWdHbHdxNFVQbDFydWovYmczVGswQkdjY3FodEY1YzN3czgwcm1ZQTIxQUtWZWhpNHB2QnkwajVrcjVtT3NETTAvZFFNamdvPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzY1ODk4MzM3CWZpbGU6TW9kdWxvLmFwcC50YXIuZ3oKRXh1N1c2MERhemZKSDNLZlFBc0xTQkM3cmdoUHNCMTBod2lSL0RJVzFTclQ0dTlZZU9jcldaRDF1RTYyU3h2aElmNWhXTlN6RWtaMFU0eGJScWFmQWc9PQo=",
+      "url": "https://github.com/r4fn0de/kanbanboard/releases/download/v1.0.5/Modulo.app.tar.gz"
     }
   }
 }

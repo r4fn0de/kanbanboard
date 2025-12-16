@@ -193,11 +193,30 @@ The application supports automatic updates. Check the app settings to enable aut
     // Prepare release command with artifacts
     let releaseCmd = `gh release create ${tagVersion} --draft --title "v${cleanVersion}" --notes "${releaseNotes}"`
 
-    // Add artifact files
+    // Add artifact files (deduplicated) + signatures
+    const uploadFiles = []
+    const seenUploadPaths = new Set()
     foundArtifacts.forEach(([, filePath]) => {
+      if (!seenUploadPaths.has(filePath)) {
+        uploadFiles.push(filePath)
+        seenUploadPaths.add(filePath)
+      }
+
+      const sigPath = `${filePath}.sig`
+      if (fs.existsSync(sigPath) && !seenUploadPaths.has(sigPath)) {
+        uploadFiles.push(sigPath)
+        seenUploadPaths.add(sigPath)
+      }
+    })
+
+    if (!seenUploadPaths.has('latest.json')) {
+      uploadFiles.push('latest.json')
+      seenUploadPaths.add('latest.json')
+    }
+
+    uploadFiles.forEach(filePath => {
       releaseCmd += ` "${filePath}"`
     })
-    releaseCmd += ' latest.json'
 
     exec(releaseCmd)
     console.log(`✅ GitHub release created: ${tagVersion}`)
