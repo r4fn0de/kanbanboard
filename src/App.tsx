@@ -1,7 +1,6 @@
 import { useEffect } from 'react'
 import { RouterProvider } from 'react-router-dom'
 import { check } from '@tauri-apps/plugin-updater'
-import { relaunch } from '@tauri-apps/plugin-process'
 import { initializeCommandSystem } from './lib/commands'
 import { logger } from './lib/logger'
 import { cleanupOldFiles } from './lib/recovery'
@@ -9,6 +8,7 @@ import './App.css'
 import { ThemeProvider } from './components/ThemeProvider'
 import ErrorBoundary from './components/ErrorBoundary'
 import { appRouter } from './routes/router'
+import { useUIStore } from './store/ui-store'
 
 function App() {
   // Initialize command system and cleanup on app startup
@@ -35,43 +35,24 @@ function App() {
         if (update) {
           logger.info(`Update available: ${update.version}`)
 
-          // Show confirmation dialog
-          const shouldUpdate = confirm(
-            `Update available: ${update.version}\n\nWould you like to install this update now?`
-          )
+          const notes =
+            typeof (update as any).body === 'string'
+              ? ((update as any).body as string)
+              : typeof (update as any).notes === 'string'
+                ? ((update as any).notes as string)
+                : undefined
+          const pubDate =
+            typeof (update as any).date === 'string'
+              ? ((update as any).date as string)
+              : typeof (update as any).pubDate === 'string'
+                ? ((update as any).pubDate as string)
+                : undefined
 
-          if (shouldUpdate) {
-            try {
-              // Download and install with progress logging
-              await update.downloadAndInstall(event => {
-                switch (event.event) {
-                  case 'Started':
-                    logger.info(`Downloading ${event.data.contentLength} bytes`)
-                    break
-                  case 'Progress':
-                    logger.info(`Downloaded: ${event.data.chunkLength} bytes`)
-                    break
-                  case 'Finished':
-                    logger.info('Download complete, installing...')
-                    break
-                }
-              })
-
-              // Ask if user wants to restart now
-              const shouldRestart = confirm(
-                'Update completed successfully!\n\nWould you like to restart the app now to use the new version?'
-              )
-
-              if (shouldRestart) {
-                await relaunch()
-              }
-            } catch (updateError) {
-              logger.error(`Update installation failed: ${String(updateError)}`)
-              alert(
-                `Update failed: There was a problem with the automatic download.\n\n${String(updateError)}`
-              )
-            }
-          }
+          useUIStore.getState().setUpdateAvailable({
+            version: update.version,
+            notes,
+            pubDate,
+          })
         }
       } catch (checkError) {
         logger.error(`Update check failed: ${String(checkError)}`)

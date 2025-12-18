@@ -121,6 +121,25 @@ export function useMainWindowEventListeners() {
           try {
             const update = await check()
             if (update) {
+              const notes =
+                typeof (update as any).body === 'string'
+                  ? ((update as any).body as string)
+                  : typeof (update as any).notes === 'string'
+                    ? ((update as any).notes as string)
+                    : undefined
+              const pubDate =
+                typeof (update as any).date === 'string'
+                  ? ((update as any).date as string)
+                  : typeof (update as any).pubDate === 'string'
+                    ? ((update as any).pubDate as string)
+                    : undefined
+
+              useUIStore.getState().setUpdateAvailable({
+                version: update.version,
+                notes,
+                pubDate,
+              })
+
               commandContext.showToast(
                 `Update available: ${update.version}`,
                 'info'
@@ -165,23 +184,38 @@ export function useMainWindowEventListeners() {
 
     document.addEventListener('keydown', handleKeyDown)
 
+    let disposed = false
     let menuUnlisteners: (() => void)[] = []
-    setupMenuListeners()
+    const setupPromise = setupMenuListeners()
       .then(unlisteners => {
+        if (disposed) {
+          unlisteners.forEach(unlisten => {
+            if (unlisten && typeof unlisten === 'function') {
+              unlisten()
+            }
+          })
+          return
+        }
+
         menuUnlisteners = unlisteners
         logger.debug('Menu listeners initialized successfully')
       })
       .catch(error => {
-        logger.error('Failed to setup menu listeners:', error)
+        if (!disposed) {
+          logger.error('Failed to setup menu listeners:', error)
+        }
       })
 
     return () => {
+      disposed = true
       document.removeEventListener('keydown', handleKeyDown)
       menuUnlisteners.forEach(unlisten => {
         if (unlisten && typeof unlisten === 'function') {
           unlisten()
         }
       })
+
+      void setupPromise
     }
   }, [commandContext, globalBindingsByChord])
 

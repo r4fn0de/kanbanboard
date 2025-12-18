@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { cn } from '@/lib/utils'
 import { useTheme } from '@/hooks/use-theme'
-import { motion } from 'framer-motion'
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { useWorkspaceStore } from '@/store/workspace-store'
 import { useUIStore } from '@/store/ui-store'
 import { useBoards } from '@/services/kanban'
@@ -10,6 +10,11 @@ import { useWorkspaceIconUrls } from '@/hooks/useWorkspaceIconUrls'
 import { SidebarHeader } from './SidebarHeader'
 import { WorkspaceSelect } from './WorkspaceSelect'
 import { ProjectList } from './ProjectList'
+import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { check } from '@tauri-apps/plugin-updater'
+import { relaunch } from '@tauri-apps/plugin-process'
+import { notify } from '@/lib/notifications'
 import { CreateWorkspaceDialog } from '@/components/workspace/CreateWorkspaceDialog'
 import { EditWorkspaceDialog } from '@/components/workspace/EditWorkspaceDialog'
 import { DeleteWorkspaceDialog } from '@/components/workspace/DeleteWorkspaceDialog'
@@ -34,6 +39,8 @@ export function LeftSideBar({
   onProjectMenuOpenChange,
 }: LeftSideBarProps) {
   const { transparencyEnabled } = useTheme()
+  const shouldReduceMotion = useReducedMotion()
+  const [isUpdateCardHovered, setIsUpdateCardHovered] = useState(false)
   const [createProjectOpen, setCreateProjectOpen] = useState(false)
   const [settingsProjectOpen, setSettingsProjectOpen] = useState(false)
   const [settingsProjectBoard, setSettingsProjectBoard] =
@@ -57,6 +64,14 @@ export function LeftSideBar({
 
   const { leftSidebarVisible, toggleLeftSidebar, leftSidebarLocked } =
     useUIStore()
+
+  const {
+    updateInfo,
+    updateStatus,
+    setUpdateInstalling,
+    setUpdateInstalled,
+    dismissUpdate,
+  } = useUIStore()
   const selectedWorkspaceId = useWorkspaceStore(
     state => state.selectedWorkspaceId
   )
@@ -165,6 +180,35 @@ export function LeftSideBar({
     setDeleteProjectOpen(true)
   }
 
+  const handleInstallUpdate = async () => {
+    try {
+      setUpdateInstalling()
+      const update = await check()
+
+      if (!update) {
+        dismissUpdate()
+        await notify('No updates available', undefined, { type: 'success' })
+        return
+      }
+
+      await update.downloadAndInstall()
+      setUpdateInstalled()
+      await notify('Update installed', 'Restart to apply the new version', {
+        type: 'success',
+      })
+    } catch (error) {
+      await notify('Failed to install update', String(error), { type: 'error' })
+    }
+  }
+
+  const handleRestartNow = async () => {
+    try {
+      await relaunch()
+    } catch (error) {
+      await notify('Failed to restart', String(error), { type: 'error' })
+    }
+  }
+
   return (
     <motion.div
       className={cn(sidebarClasses, className)}
@@ -213,6 +257,169 @@ export function LeftSideBar({
       />
 
       {children}
+
+      <AnimatePresence initial={false}>
+        {updateInfo && updateStatus ? (
+          <motion.div
+            key={`update-card-${updateInfo.version}`}
+            className="mt-auto px-4 pb-4"
+            layout
+            onHoverStart={() => {
+              if (updateStatus === 'available') setIsUpdateCardHovered(true)
+            }}
+            onHoverEnd={() => {
+              if (updateStatus === 'available') setIsUpdateCardHovered(false)
+            }}
+            whileHover={
+              shouldReduceMotion || updateStatus !== 'available'
+                ? undefined
+                : { y: -8 }
+            }
+            initial={
+              shouldReduceMotion
+                ? { opacity: 1 }
+                : { opacity: 0, y: 10, scale: 0.98 }
+            }
+            animate={
+              shouldReduceMotion
+                ? { opacity: 1 }
+                : { opacity: 1, y: 0, scale: 1 }
+            }
+            exit={
+              shouldReduceMotion
+                ? { opacity: 0 }
+                : { opacity: 0, y: 10, scale: 0.98 }
+            }
+            transition={
+              shouldReduceMotion
+                ? { duration: 0 }
+                : { type: 'spring', stiffness: 520, damping: 42, mass: 0.9 }
+            }
+          >
+            <Card
+              className={cn(
+                'py-4 gap-3 border-border/60 shadow-none overflow-hidden',
+                useTransparentStyle
+                  ? 'bg-background/10 backdrop-blur-xl supports-[backdrop-filter]:bg-background/10'
+                  : 'bg-card'
+              )}
+            >
+              <CardHeader className="px-4">
+                <CardTitle className="text-base">Update available</CardTitle>
+                <AnimatePresence initial={false} mode="popLayout">
+                  {updateStatus !== 'available' || isUpdateCardHovered ? (
+                    <motion.div
+                      key="update-details"
+                      initial={
+                        shouldReduceMotion
+                          ? { opacity: 1, y: 0 }
+                          : { opacity: 0, y: 4 }
+                      }
+                      animate={
+                        shouldReduceMotion
+                          ? { opacity: 1, y: 0 }
+                          : { opacity: 1, y: 0 }
+                      }
+                      exit={
+                        shouldReduceMotion
+                          ? { opacity: 0, y: 0 }
+                          : { opacity: 0, y: 4 }
+                      }
+                      transition={
+                        shouldReduceMotion
+                          ? { duration: 0 }
+                          : { duration: 0.18, ease: 'easeOut' }
+                      }
+                    >
+                      <CardDescription className="text-xs">
+                        Version {updateInfo.version}
+                      </CardDescription>
+                      {updateInfo.notes ? (
+                        <CardDescription className="text-xs line-clamp-2">
+                          {updateInfo.notes}
+                        </CardDescription>
+                      ) : null}
+                    </motion.div>
+                  ) : null}
+                </AnimatePresence>
+              </CardHeader>
+
+              <AnimatePresence initial={false} mode="popLayout">
+                {updateStatus !== 'available' || isUpdateCardHovered ? (
+                  <motion.div
+                    key="update-actions"
+                    initial={
+                      shouldReduceMotion
+                        ? { opacity: 1, y: 0 }
+                        : { opacity: 0, y: 6 }
+                    }
+                    animate={
+                      shouldReduceMotion
+                        ? { opacity: 1, y: 0 }
+                        : { opacity: 1, y: 0 }
+                    }
+                    exit={
+                      shouldReduceMotion
+                        ? { opacity: 0, y: 0 }
+                        : { opacity: 0, y: 6 }
+                    }
+                    transition={
+                      shouldReduceMotion
+                        ? { duration: 0 }
+                        : { duration: 0.18, ease: 'easeOut' }
+                    }
+                  >
+                    <CardFooter className="px-4 pt-0 gap-2 flex-wrap">
+                      {updateStatus === 'available' ? (
+                        <>
+                          <Button
+                            size="sm"
+                            onClick={() => void handleInstallUpdate()}
+                          >
+                            Install now
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={dismissUpdate}
+                          >
+                            Later
+                          </Button>
+                        </>
+                      ) : updateStatus === 'installing' ? (
+                        <>
+                          <Button size="sm" disabled>
+                            Installing…
+                          </Button>
+                          <Button size="sm" variant="secondary" disabled>
+                            Later
+                          </Button>
+                        </>
+                      ) : (
+                        <>
+                          <Button
+                            size="sm"
+                            onClick={() => void handleRestartNow()}
+                          >
+                            Restart now
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={dismissUpdate}
+                          >
+                            Later
+                          </Button>
+                        </>
+                      )}
+                    </CardFooter>
+                  </motion.div>
+                ) : null}
+              </AnimatePresence>
+            </Card>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
 
       <CreateWorkspaceDialog
         open={createWorkspaceOpen}

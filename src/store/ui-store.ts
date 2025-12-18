@@ -11,6 +11,12 @@ export interface WidgetConfig {
   order: number
 }
 
+interface UpdateInfo {
+  version: string
+  notes?: string
+  pubDate?: string
+}
+
 interface UIState {
   leftSidebarVisible: boolean
   leftSidebarLocked: boolean
@@ -22,6 +28,10 @@ interface UIState {
   widgetLayout: WidgetConfig[]
   createProjectDialogOpen: boolean
 
+  updateInfo: UpdateInfo | null
+  updateStatus: 'available' | 'installing' | 'installed' | null
+  dismissedUpdateVersion: string | null
+
   toggleLeftSidebar: () => void
   setLeftSidebarVisible: (visible: boolean) => void
   setLeftSidebarLocked: (locked: boolean) => void
@@ -31,14 +41,16 @@ interface UIState {
   setCommandPaletteOpen: (open: boolean) => void
   togglePreferences: () => void
   setPreferencesOpen: (open: boolean) => void
-  openPreferencesWithPane: (
-    pane: PreferencePane,
-    workspaceId?: string | null
-  ) => void
+  openPreferencesWithPane: (pane: PreferencePane, workspaceId?: string | null) => void
   setPreferencesActivePane: (pane: PreferencePane) => void
   setEditingWorkspaceId: (id: string | null) => void
   setWidgetLayout: (layout: WidgetConfig[]) => void
   setCreateProjectDialogOpen: (open: boolean) => void
+
+  setUpdateAvailable: (info: UpdateInfo) => void
+  setUpdateInstalling: () => void
+  setUpdateInstalled: () => void
+  dismissUpdate: () => void
 }
 
 export const useUIStore = create<UIState>()(
@@ -53,6 +65,10 @@ export const useUIStore = create<UIState>()(
       editingWorkspaceId: null,
       widgetLayout: [],
       createProjectDialogOpen: false,
+
+      updateInfo: null,
+      updateStatus: null,
+      dismissedUpdateVersion: null,
 
       toggleLeftSidebar: () =>
         set(
@@ -134,6 +150,35 @@ export const useUIStore = create<UIState>()(
           { createProjectDialogOpen: open },
           undefined,
           'setCreateProjectDialogOpen'
+        ),
+
+      setUpdateAvailable: info =>
+        set(
+          state => {
+            if (state.dismissedUpdateVersion === info.version) {
+              return {}
+            }
+            return { updateInfo: info, updateStatus: 'available' }
+          },
+          undefined,
+          'setUpdateAvailable'
+        ),
+
+      setUpdateInstalling: () =>
+        set({ updateStatus: 'installing' }, undefined, 'setUpdateInstalling'),
+
+      setUpdateInstalled: () =>
+        set({ updateStatus: 'installed' }, undefined, 'setUpdateInstalled'),
+
+      dismissUpdate: () =>
+        set(
+          state => ({
+            updateInfo: null,
+            updateStatus: null,
+            dismissedUpdateVersion: state.updateInfo?.version ?? null,
+          }),
+          undefined,
+          'dismissUpdate'
         ),
     }),
     {
