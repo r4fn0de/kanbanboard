@@ -590,6 +590,26 @@ function CustomColorButton({ editor }: { editor: BlockNoteEditor }) {
   )
 }
 
+function CustomDeleteButton({ editor }: { editor: BlockNoteEditor }) {
+  const Components = useComponentsContext()
+
+  const handleDelete = () => {
+    editor.insertInlineContent('')
+  }
+
+  if (!Components?.FormattingToolbar?.Button) {
+    return null
+  }
+
+  return (
+    <ToolbarButtonWithTooltip tooltip="Delete selected text">
+      <Components.FormattingToolbar.Button onClick={handleDelete}>
+        <span className="text-sm font-medium">×</span>
+      </Components.FormattingToolbar.Button>
+    </ToolbarButtonWithTooltip>
+  )
+}
+
 interface NoteEditorProps {
   note: Note
   boardId: string
@@ -1021,6 +1041,10 @@ export function NoteEditor({ note, boardId, onBack }: NoteEditorProps) {
                         key="textAlignRightButton"
                       />
                     </ToolbarButtonWithTooltip>
+                    <CustomDeleteButton
+                      key="customDeleteButton"
+                      editor={editor}
+                    />
                   </FormattingToolbar>
                 )}
               />

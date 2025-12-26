@@ -5,7 +5,8 @@ import { initializeCommandSystem } from './lib/commands'
 import { logger } from './lib/logger'
 import { cleanupOldFiles } from './lib/recovery'
 import './App.css'
-import { ThemeProvider } from './components/ThemeProvider'
+import './design-system/novon.css'
+import { NovonProvider } from './design-system/NovonProvider'
 import ErrorBoundary from './components/ErrorBoundary'
 import { appRouter } from './routes/router'
 import { useUIStore } from './store/ui-store'
@@ -67,9 +68,9 @@ function App() {
 
   return (
     <ErrorBoundary>
-      <ThemeProvider>
+      <NovonProvider>
         <RouterProvider router={appRouter} />
-      </ThemeProvider>
+      </NovonProvider>
     </ErrorBoundary>
   )
 }

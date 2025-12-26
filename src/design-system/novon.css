@@ -1,0 +1,3 @@
+html[data-novon-app='modulo'].dark {
+  --brand: oklch(0.707 0.165 254.624);
+}
